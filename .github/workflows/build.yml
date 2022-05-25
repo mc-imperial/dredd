@@ -85,7 +85,7 @@ jobs:
       - name: setup_python
         uses: ./../.github/actions/setup-python
         with:
-          python-version: 3.6
+          python-version: 3.9
           architecture: x64
 
       - name: build_step_nix
