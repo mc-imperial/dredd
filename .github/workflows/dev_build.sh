@@ -41,6 +41,9 @@ case "$(uname)" in
   ;;
 esac
 
+# Get cmake-format and cmake-lint
+pip install cmakelang
+
 export PATH="${HOME}/bin:$PATH"
 mkdir -p "${HOME}/bin"
 pushd "${HOME}/bin"
