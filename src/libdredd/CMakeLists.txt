@@ -25,18 +25,7 @@ target_include_directories(
   PUBLIC include
   PRIVATE include_private/include)
 
-llvm_map_components_to_libnames(LLVM_LIBS support)
-
-set(CLANG_LIBS
-    clangAST
-    clangASTMatchers
-    clangBasic
-    clangDriver
-    clangFrontend
-    clangRewriteFrontend
-    clangSerialization
-    clangStaticAnalyzerFrontend
-    clangTooling)
+set(CLANG_LIBS clangTooling)
 
 foreach(clang_target ${CLANG_LIBS})
   if(NOT TARGET ${clang_target})
@@ -44,12 +33,6 @@ foreach(clang_target ${CLANG_LIBS})
   endif()
 endforeach()
 
-foreach(llvm_target ${LLVM_LIBS})
-  if(NOT TARGET ${llvm_target})
-    message(FATAL_ERROR "${llvm_target} is not a target")
-  endif()
-endforeach()
-
-target_link_libraries(libdredd PRIVATE ${LLVM_LIBS} ${CLANG_LIBS})
+target_link_libraries(libdredd PRIVATE ${CLANG_LIBS})
 
 target_compile_features(libdredd PUBLIC cxx_std_20)
