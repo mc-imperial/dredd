@@ -12,23 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef DREDD_NEW_MUTATE_FRONTEND_ACTION_FACTORY_H
-#define DREDD_NEW_MUTATE_FRONTEND_ACTION_FACTORY_H
+#include "libdredd/mutate_ast_consumer.h"
 
-#include <cstddef>
-#include <memory>
-#include <random>
-#include <string>
-
-#include "clang/Tooling/Tooling.h"
+#include "clang/AST/ASTContext.h"
+#include "clang/Basic/Diagnostic.h"
 
 namespace dredd {
 
-std::unique_ptr<clang::tooling::FrontendActionFactory>
-NewMutateFrontendActionFactory(size_t num_mutations,
-                               const std::string& output_filename,
-                               std::mt19937& generator);
-
+void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& context) {
+  (void)ci_;
+  (void)generator_;
+  (void)num_mutations_;
+  (void)output_file_;
+  if (context.getDiagnostics().hasErrorOccurred()) {
+    // There has been an error, so we don't do any processing.
+    return;
+  }
 }
 
-#endif  // DREDD_NEW_MUTATE_FRONTEND_ACTION_FACTORY_H
+}  // namespace dredd

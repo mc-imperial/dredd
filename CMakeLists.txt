@@ -29,11 +29,6 @@ endif()
 
 # Options (i.e. cache variables) defined via "option" (if ON/OFF) or "set" (if not ON/OFF):
 option(
-    DREDD_USE_LLVM_LIBCPP
-    "Use LLVM's libc++ when using Clang, plus various other LLVM options, but only if Dredd is the root project."
-    OFF)
-
-option(
     DREDD_WARNINGS_AS_ERRORS
     "Enable warnings as errors for Dredd targets."
     ${DREDD_PROJECT_IS_ROOT})
@@ -65,54 +60,28 @@ if(DREDD_PROJECT_IS_ROOT)
 
     include(CTest)
 
-    # DREDD_USE_LLVM_LIBCPP=ON means we will statically link (if using non-Android Clang):
-    #  - libc++
-    #  - compiler-rt
-    #  - libc++abi
-    #  - libunwind
-    # This is very useful for getting binaries that only depend on libc.
-    if(
-        DREDD_USE_LLVM_LIBCPP AND
-        CMAKE_CXX_COMPILER_ID STREQUAL Clang AND
-        NOT ANDROID)
-
-        # TODO(afd): We may want to build a custom version of Clang instead of messing with its options.
-
-        # Use LLVM's libc++ instead of GCC's libstdc++.
-        add_compile_options(-stdlib=libc++)
-
-        # Link options:
-        # Use LLVM's libc++ instead of GCC's libstdc++.
-        add_link_options(-stdlib=libc++)
-        # Use LLVM's lld as the linker.
-        add_link_options(-fuse-ld=lld)
-        # Statically link the C++ library (which is not GCC's libstdc++ because of the -stdlib flag above).
-        add_link_options(-static-libstdc++)
-        # Use LLVM's compiler-rt instead of libgcc, which will be statically linked.
-        add_link_options(--rtlib=compiler-rt)
-
-        # Include the path to LLVM's libc++abi.a
-        execute_process(
-            COMMAND ${CMAKE_CXX_COMPILER} --print-file-name=libc++abi.a
-            OUTPUT_VARIABLE DREDD_TEMP_CPP_ABI_PATH
-        )
-        string(REGEX REPLACE "\n" "" DREDD_TEMP_CPP_ABI_PATH ${DREDD_TEMP_CPP_ABI_PATH})
-
-        add_link_options(${DREDD_TEMP_CPP_ABI_PATH})
-
-        # Include the path to LLVM's libunwind.a
-        execute_process(
-            COMMAND ${CMAKE_CXX_COMPILER} --print-file-name=libunwind.a
-            OUTPUT_VARIABLE DREDD_TEMP_UNWIND_PATH
-        )
-        string(REGEX REPLACE "\n" "" DREDD_TEMP_UNWIND_PATH ${DREDD_TEMP_UNWIND_PATH})
-
-        add_link_options(${DREDD_TEMP_UNWIND_PATH})
-    endif()
 endif()
 
 
 ## Third party targets.
+
+set(LLVM_DIR "${CMAKE_SOURCE_DIR}/third_party/clang+llvm-13.0.1/lib/cmake/llvm")
+set(Clang_DIR "${CMAKE_SOURCE_DIR}/third_party/clang+llvm-13.0.1/lib/cmake/clang")
+
+if(NOT EXISTS "${LLVM_DIR}/LLVMConfig.cmake")
+  message(FATAL_ERROR "Could not find LLVMConfig.cmake under ${LLVM_DIR}. Make sure you have downloaded a release of Clang/LLVM.")
+endif()
+
+if(NOT EXISTS "${Clang_DIR}/ClangConfig.cmake")
+  message(FATAL_ERROR "Could not find ClangConfig.cmake under ${Clang_DIR}. Make sure you have downloaded a release of Clang/LLVM.")
+endif()
+
+find_package(LLVM REQUIRED CONFIG)
+find_package(Clang REQUIRED)
+
+include_directories(SYSTEM ${LLVM_INCLUDE_DIRS})
+include_directories(SYSTEM ${CLANG_INCLUDE_DIRS})
+add_definitions(${LLVM_DEFINITIONS})
 
 #if(DREDD_BUILD_TESTING)
 #    add_subdirectory(third_party/googletest)
@@ -126,13 +95,6 @@ endif()
 ## add_subdirectory(...) and will not be PUBLIC compile options (i.e. they
 ## will NOT propagate to targets above this project that link with these
 ## targets.
-
-find_package(Clang REQUIRED)
-find_package(LLVM REQUIRED CONFIG)
-
-include_directories(SYSTEM ${LLVM_INCLUDE_DIRS})
-include_directories(SYSTEM ${CLANG_INCLUDE_DIRS})
-add_definitions(${LLVM_DEFINITIONS})
 
 if(DREDD_WARNINGS_AS_ERRORS)
     if(MSVC)
@@ -188,6 +150,12 @@ if(DREDD_WARNING_SUPPRESSIONS)
             -Wno-switch-enum
         )
     endif()
+endif()
+
+# Disable RTTI, as LLVM releases are not built with RTTI
+if(MSVC)
+else()
+  add_compile_options(-fno-rtti)
 endif()
 
 add_subdirectory(src/libdredd)
