@@ -14,15 +14,16 @@
 
 cmake_minimum_required(VERSION 3.13)
 
-add_library(libdredd STATIC
-        include/libdredd/new_mutate_frontend_action_factory.h
-        include_private/include/libdredd/mutate_ast_consumer.h
+add_library(
+  libdredd STATIC
+  include/libdredd/new_mutate_frontend_action_factory.h
+  include_private/include/libdredd/mutate_ast_consumer.h
+  src/mutate_ast_consumer.cc src/new_mutate_frontend_action_factory.cc)
 
-        src/mutate_ast_consumer.cc
-        src/new_mutate_frontend_action_factory.cc
-        )
-
-target_include_directories(libdredd PUBLIC include PRIVATE include_private/include)
+target_include_directories(
+  libdredd
+  PUBLIC include
+  PRIVATE include_private/include)
 
 llvm_map_components_to_libnames(llvm_libs support)
 
@@ -37,21 +38,18 @@ set(clang_libs
     clangStaticAnalyzerFrontend
     clangTooling)
 
-  foreach(clang_target ${clang_libs})
-    if (NOT TARGET ${clang_target})
-      message(FATAL_ERROR "${clang_target} is not a target")
-    endif()
-  endforeach()
-  
-  foreach(llvm_target ${llvm_libs})
-    if (NOT TARGET ${llvm_target})
-      message(FATAL_ERROR "${llvm_target} is not a target")
-    endif()
-  endforeach()
+foreach(clang_target ${clang_libs})
+  if(NOT TARGET ${clang_target})
+    message(FATAL_ERROR "${clang_target} is not a target")
+  endif()
+endforeach()
 
-target_link_libraries(libdredd PRIVATE
-  ${llvm_libs}
-  ${clang_libs}
-)
+foreach(llvm_target ${llvm_libs})
+  if(NOT TARGET ${llvm_target})
+    message(FATAL_ERROR "${llvm_target} is not a target")
+  endif()
+endforeach()
+
+target_link_libraries(libdredd PRIVATE ${llvm_libs} ${clang_libs})
 
 target_compile_features(libdredd PUBLIC cxx_std_20)

@@ -14,66 +14,63 @@
 
 cmake_minimum_required(VERSION 3.13)
 
-project(dredd
-    VERSION 1.0
-    DESCRIPTION "Dredd"
-    LANGUAGES CXX)
+project(
+  dredd
+  VERSION 1.0
+  DESCRIPTION "Dredd"
+  LANGUAGES CXX)
 
-# Note: this is not an option; it is used to set the default value for some options below.
-# It is set to ON if Dredd is the root project being built, and OFF otherwise.
+# Note: this is not an option; it is used to set the default value for some
+# options below. It is set to ON if Dredd is the root project being built, and
+# OFF otherwise.
 set(DREDD_PROJECT_IS_ROOT OFF)
 if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
-    set(DREDD_PROJECT_IS_ROOT ON)
+  set(DREDD_PROJECT_IS_ROOT ON)
 endif()
 
+# Options (i.e. cache variables) defined via "option" (if ON/OFF) or "set" (if
+# not ON/OFF):
+option(DREDD_WARNINGS_AS_ERRORS "Enable warnings as errors for Dredd targets."
+       ${DREDD_PROJECT_IS_ROOT})
 
-# Options (i.e. cache variables) defined via "option" (if ON/OFF) or "set" (if not ON/OFF):
-option(
-    DREDD_WARNINGS_AS_ERRORS
-    "Enable warnings as errors for Dredd targets."
-    ${DREDD_PROJECT_IS_ROOT})
+option(DREDD_WARNINGS_EXTRA
+       "Enable extra warnings via compile flags for Dredd targets."
+       ${DREDD_PROJECT_IS_ROOT})
 
-option(
-    DREDD_WARNINGS_EXTRA
-    "Enable extra warnings via compile flags for Dredd targets."
-    ${DREDD_PROJECT_IS_ROOT})
+option(DREDD_WARNING_SUPPRESSIONS
+       "Enable suppression of specific warnings for Dredd targets."
+       ${DREDD_PROJECT_IS_ROOT})
 
-option(
-    DREDD_WARNING_SUPPRESSIONS
-    "Enable suppression of specific warnings for Dredd targets."
-    ${DREDD_PROJECT_IS_ROOT})
-
-option(
-    DREDD_BUILD_TESTING
-    "Build tests."
-    ${DREDD_PROJECT_IS_ROOT})
+option(DREDD_BUILD_TESTING "Build tests." ${DREDD_PROJECT_IS_ROOT})
 
 if(DREDD_PROJECT_IS_ROOT)
-    # Set some global compiler flags.
-    set(CMAKE_CXX_STANDARD 20)
-    set(CMAKE_CXX_STANDARD_REQUIRED ON)
-    set(CMAKE_CXX_EXTENSIONS OFF)
+  # Set some global compiler flags.
+  set(CMAKE_CXX_STANDARD 20)
+  set(CMAKE_CXX_STANDARD_REQUIRED ON)
+  set(CMAKE_CXX_EXTENSIONS OFF)
 
-    set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+  set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-    set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+  set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-    include(CTest)
+  include(CTest)
 
 endif()
 
-
-## Third party targets.
+# Third party targets.
 
 set(LLVM_DIR "${CMAKE_SOURCE_DIR}/third_party/clang+llvm-13.0.1/lib/cmake/llvm")
-set(Clang_DIR "${CMAKE_SOURCE_DIR}/third_party/clang+llvm-13.0.1/lib/cmake/clang")
+set(Clang_DIR
+    "${CMAKE_SOURCE_DIR}/third_party/clang+llvm-13.0.1/lib/cmake/clang")
 
 if(NOT EXISTS "${LLVM_DIR}/LLVMConfig.cmake")
-  message(FATAL_ERROR "Could not find LLVMConfig.cmake under ${LLVM_DIR}. Make sure you have downloaded a release of Clang/LLVM.")
+  message(FATAL_ERROR "Could not find LLVMConfig.cmake under ${LLVM_DIR}. \
+Make sure you have downloaded a release of Clang/LLVM.")
 endif()
 
 if(NOT EXISTS "${Clang_DIR}/ClangConfig.cmake")
-  message(FATAL_ERROR "Could not find ClangConfig.cmake under ${Clang_DIR}. Make sure you have downloaded a release of Clang/LLVM.")
+  message(FATAL_ERROR "Could not find ClangConfig.cmake under ${Clang_DIR}. \
+Make sure you have downloaded a release of Clang/LLVM.")
 endif()
 
 find_package(LLVM REQUIRED CONFIG)
@@ -83,85 +80,82 @@ include_directories(SYSTEM ${LLVM_INCLUDE_DIRS})
 include_directories(SYSTEM ${CLANG_INCLUDE_DIRS})
 add_definitions(${LLVM_DEFINITIONS})
 
-#if(DREDD_BUILD_TESTING)
-#    add_subdirectory(third_party/googletest)
-#endif()
+# if(DREDD_BUILD_TESTING) add_subdirectory(third_party/googletest) endif()
 
-## The targets that follow are all Dredd targets.
-## We now conditionally set some compile options related to warnings.
-## Most of these will only be set if Dredd is the root project being built.
-## Using "add_*" functions is generally discouraged, but is suitable for
-## "global" compile options. These will propagate to subdirectories via
-## add_subdirectory(...) and will not be PUBLIC compile options (i.e. they
-## will NOT propagate to targets above this project that link with these
-## targets.
+# The targets that follow are all Dredd targets. We now conditionally set some
+# compile options related to warnings. Most of these will only be set if Dredd
+# is the root project being built. Using "add_*" functions is generally
+# discouraged, but is suitable for "global" compile options. These will
+# propagate to subdirectories via add_subdirectory(...) and will not be PUBLIC
+# compile options (i.e. they will NOT propagate to targets above this project
+# that link with these targets.
 
 if(DREDD_WARNINGS_AS_ERRORS)
-    if(MSVC)
-        add_compile_options(/WX)
-    else()
-        add_compile_options(-Werror)
-    endif()
+  if(MSVC)
+    add_compile_options(/WX)
+  else()
+    add_compile_options(-Werror)
+  endif()
 endif()
 
 if(DREDD_WARNINGS_EXTRA)
-    if(MSVC)
-        add_compile_options(/Wall)
-    else()
-        add_compile_options(-Wall -Wextra -pedantic)
-        if(CMAKE_CXX_COMPILER_ID STREQUAL Clang)
-            add_compile_options(-Weverything)
-        endif()
+  if(MSVC)
+    add_compile_options(/Wall)
+  else()
+    add_compile_options(-Wall -Wextra -pedantic)
+    if(CMAKE_CXX_COMPILER_ID STREQUAL Clang)
+      add_compile_options(-Weverything)
     endif()
+  endif()
 endif()
 
 if(DREDD_WARNING_SUPPRESSIONS)
-    if(MSVC)
-        add_compile_options(
-            # Treat angle bracket headers as external headers.
-            #/external:anglebrackets
-
-            # Disable warnings from external headers.
-            #/external:W0
-
-            # Disable specific warnings:
-            /wd4068  # warning C4068: unknown pragma
-            /wd4820  # warning C4820: 'xxx': 'x' bytes padding added after data member 'xxx'
-            /wd4191  # warning C4191: 'reinterpret_cast': unsafe conversion from 'x' to 'x'
-            /wd4625  # copy constructor was implicitly defined as deleted
-            /wd5026  # move constructor was implicitly defined as deleted
-            /wd4626  # assignment operator was implicitly defined as deleted
-            /wd5027  # move assignment operator was implicitly defined as deleted
-            /wd4514  # warning C4514: 'x': unreferenced inline function has been removed
-            /wd4711  # warning C4711: function 'x' selected for automatic inline expansion (informational)
-            /wd4710  # warning C4710: 'x': function not inlined (informational)
-            /wd4996  # warning C4996: 'getenv': This function or variable may be unsafe.
-            /wd5045  # warning C5045: Compiler will insert Spectre mitigation for memory load if /Qspectre switch specified
-            /wd4061  # warning C4061: enumerator 'identifier' in switch of enum 'enumeration' is not explicitly handled by a case label
-            /wd4868  # warning C4868: compiler may not enforce left-to-right evaluation order in braced initializer list
-        )
-    else()
-        add_compile_options(
-            -Wno-unknown-pragmas
-            -Wno-unknown-warning-option
-            -Wno-c++98-compat
-            -Wno-c++98-compat-pedantic
-            -Wno-padded
-            -Wno-switch-enum
-        )
-    endif()
+  if(MSVC)
+    add_compile_options(
+      # Disable specific warnings:
+      /wd4068 # warning C4068: unknown pragma
+      /wd4820 # warning C4820: 'xxx': 'x' bytes padding added after data member
+              # 'xxx'
+      /wd4191 # warning C4191: 'reinterpret_cast': unsafe conversion from 'x' to
+              # 'x'
+      /wd4625 # copy constructor was implicitly defined as deleted
+      /wd5026 # move constructor was implicitly defined as deleted
+      /wd4626 # assignment operator was implicitly defined as deleted
+      /wd5027 # move assignment operator was implicitly defined as deleted
+      /wd4514 # warning C4514: 'x': unreferenced inline function has been
+              # removed
+      /wd4711 # warning C4711: function 'x' selected for automatic inline
+              # expansion (informational)
+      /wd4710 # warning C4710: 'x': function not inlined (informational)
+      /wd4996 # warning C4996: 'getenv': This function or variable may be
+              # unsafe.
+      /wd5045 # warning C5045: Compiler will insert Spectre mitigation for
+              # memory load if /Qspectre switch specified
+      /wd4061 # warning C4061: enumerator 'identifier' in switch of enum
+              # 'enumeration' is not explicitly handled by a case label
+      /wd4868 # warning C4868: compiler may not enforce left-to-right evaluation
+              # order in braced initializer list
+    )
+  else()
+    add_compile_options(
+      -Wno-unknown-pragmas -Wno-unknown-warning-option -Wno-c++98-compat
+      -Wno-c++98-compat-pedantic -Wno-padded -Wno-switch-enum)
+  endif()
 endif()
 
 # Disable RTTI, as LLVM releases are not built with RTTI
 if(MSVC)
+
 else()
   add_compile_options(-fno-rtti)
 endif()
 
 add_subdirectory(src/libdredd)
 
-#if(DREDD_BUILD_TESTING)
-#    add_subdirectory(src/libdreddtest)
-#endif()
+# ~~~
+# if(DREDD_BUILD_TESTING)
+#   add_subdirectory(src/libdreddtest)
+# endif()
+# ~~~
 
 add_subdirectory(src/dredd)

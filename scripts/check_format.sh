@@ -21,3 +21,7 @@ set -x
 cd "${DREDD_REPO_ROOT}"
 
 dredd_source_files.sh | xargs -t clang-format --dry-run --Werror
+for f in `dredd_cmake_files.sh`
+do
+    cmake-format --first-comment-is-literal TRUE --check $f
+done
