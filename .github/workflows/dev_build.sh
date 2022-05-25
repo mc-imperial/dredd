@@ -51,9 +51,9 @@ pushd "${HOME}/bin"
 popd
 
 # Install clang.
-CLANG_VERSION=clang+llvm-13.0.1-x86_64-linux-gnu-ubuntu-20.04
-curl -fsSL "https://github.com/llvm/llvm-project/releases/download/llvmorg-13.0.1/${CLANG_VERSION}.tar.xz"
-tar xf "${CLANG_VERSION}"
+CLANG_VERSION=clang+llvm-13.0.1-x86_64-linux-gnu-ubuntu-18.04
+curl -fsSL -o ${CLANG_VERSION}.tar.xz "https://github.com/llvm/llvm-project/releases/download/llvmorg-13.0.1/${CLANG_VERSION}.tar.xz"
+tar xf "${CLANG_VERSION}".tar.xz
 mv "{CLANG_VERSION}" ./third_party/clang+llvm-13.0.1
 
 

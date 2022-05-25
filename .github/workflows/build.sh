@@ -40,9 +40,9 @@ case "$(uname)" in
   export CXX="${LINUX_CXX}"
 
   # Install clang.
-  CLANG_VERSION=clang+llvm-13.0.1-x86_64-linux-gnu-ubuntu-20.04
-  curl -fsSL -o ${CLANG_VERSION} "https://github.com/llvm/llvm-project/releases/download/llvmorg-13.0.1/${CLANG_VERSION}.tar.xz"
-  tar xf "${CLANG_VERSION}"
+  CLANG_VERSION=clang+llvm-13.0.1-x86_64-linux-gnu-ubuntu-18.04
+  curl -fsSL -o ${CLANG_VERSION}.tar.xz "https://github.com/llvm/llvm-project/releases/download/llvmorg-13.0.1/${CLANG_VERSION}.tar.xz"
+  tar xf "${CLANG_VERSION}".tar.xz
   mv "{CLANG_VERSION}" ./third_party/clang+llvm-13.0.1
   ;;
 
@@ -50,8 +50,8 @@ case "$(uname)" in
   NINJA_OS="mac"
   # Install clang.
   CLANG_VERSION=clang+llvm-13.0.1-x86_64-apple-darwin
-  curl -fsSL -o ${CLANG_VERSION} "https://github.com/llvm/llvm-project/releases/download/llvmorg-13.0.1/${CLANG_VERSION}.tar.xz"
-  tar xf "${CLANG_VERSION}"
+  curl -fsSL -o ${CLANG_VERSION}.tar.xz "https://github.com/llvm/llvm-project/releases/download/llvmorg-13.0.1/${CLANG_VERSION}.tar.xz"
+  tar xf "${CLANG_VERSION}".tar.xz
   mv "{CLANG_VERSION}" ./third_party/clang+llvm-13.0.1
   ;;
 
