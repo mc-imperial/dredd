@@ -55,7 +55,7 @@ CLANG_VERSION=clang+llvm-13.0.1-x86_64-linux-gnu-ubuntu-18.04
 curl -fsSL -o ${CLANG_VERSION}.tar.xz "https://github.com/llvm/llvm-project/releases/download/llvmorg-13.0.1/${CLANG_VERSION}.tar.xz"
 tar xf "${CLANG_VERSION}".tar.xz
 mv "${CLANG_VERSION}" ./third_party/clang+llvm-13.0.1
-
+rm ${CLANG_VERSION}.tar.xz
 
 # Source the dev shell to download clang-tidy and other tools.
 # Developers should *run* the dev shell, but we want to continue executing this script.
