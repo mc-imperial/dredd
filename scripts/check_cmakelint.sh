@@ -18,8 +18,9 @@ set -e
 set -u
 set -x
 
-check_headers.py
-check_format.sh
-check_cmakelint.sh
-check_cpplint.sh
-check_clean_build.sh
+cd "${DREDD_REPO_ROOT}"
+
+for f in `dredd_cmake_files.sh`
+do
+    cmake-lint $f
+done
