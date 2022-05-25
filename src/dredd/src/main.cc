@@ -33,6 +33,7 @@
 #pragma clang diagnostic ignored "-Wexit-time-destructors"
 #pragma clang diagnostic ignored "-Wglobal-constructors"
 #elif defined(__GNUC__)
+#error should fail CI
 #pragma GCC diagnostic push
 #elif defined(_MSC_VER)
 #pragma warning(push)
