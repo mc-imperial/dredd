@@ -19,8 +19,12 @@ add_library(
   include/libdredd/new_mutate_frontend_action_factory.h
   include_private/include/libdredd/mutate_ast_consumer.h
   include_private/include/libdredd/mutate_visitor.h
+  include_private/include/libdredd/mutation.h
+  include_private/include/libdredd/mutation_replace_eager_binary_operator.h
   src/mutate_ast_consumer.cc
   src/mutate_visitor.cc
+  src/mutation.cc
+  src/mutation_replace_eager_binary_operator.cc
   src/new_mutate_frontend_action_factory.cc)
 
 target_include_directories(

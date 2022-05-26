@@ -16,7 +16,7 @@
 #define DREDD_MUTATE_VISITOR_H
 
 #include <cassert>
-#include <utility>
+#include <memory>
 #include <vector>
 
 #include "clang/AST/ASTContext.h"
@@ -37,6 +37,8 @@
 #include "clang/Basic/SourceLocation.h"
 #include "clang/Basic/SourceManager.h"
 #include "clang/Frontend/CompilerInstance.h"
+#include "libdredd/mutation.h"
+#include "libdredd/mutation_replace_eager_binary_operator.h"
 #include "llvm/ADT/ArrayRef.h"
 
 namespace dredd {
@@ -117,14 +119,14 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
     if (binary_operator->getOpcode() != clang::BinaryOperatorKind::BO_Add) {
       return true;
     }
-    to_replace_.emplace_back(binary_operator, enclosing_function_);
+    mutations_.push_back(std::make_unique<MutationReplaceEagerBinaryOperator>(
+        binary_operator, enclosing_function_));
     return true;
   }
 
-  // Return opportunities to replace + with -
-  const std::vector<std::pair<clang::BinaryOperator*, clang::FunctionDecl*>>&
-  GetReplacements() const {
-    return to_replace_;
+  [[nodiscard]] const std::vector<std::unique_ptr<Mutation>>& GetMutations()
+      const {
+    return mutations_;
   }
 
  private:
@@ -136,8 +138,7 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
 
   // As a proof of concept this currently stores opportunities for changing a +
   // to a -.
-  std::vector<std::pair<clang::BinaryOperator*, clang::FunctionDecl*>>
-      to_replace_;
+  std::vector<std::unique_ptr<Mutation>> mutations_;
 };
 
 }  // namespace dredd
