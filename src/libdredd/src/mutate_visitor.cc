@@ -19,6 +19,7 @@
 namespace dredd {
 
 MutateVisitor::MutateVisitor(const clang::CompilerInstance& compiler_instance)
-    : ast_context_(compiler_instance.getASTContext()) {}
+    : ast_context_(compiler_instance.getASTContext()),
+      enclosing_function_(nullptr) {}
 
 }  // namespace dredd

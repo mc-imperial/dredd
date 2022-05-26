@@ -13,4 +13,7 @@
 # limitations under the License.
 
 [
+  # libc++.
+  { symbol:  ["std::ofstream", "private", "<fstream>", "public"] },
+  { symbol:  ["std::stringstream", "private", "<sstream>", "public"] }
 ]
