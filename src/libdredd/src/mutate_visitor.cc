@@ -12,24 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "libdredd/mutate_ast_consumer.h"
+#include "libdredd/mutate_visitor.h"
 
-#include "clang/AST/ASTContext.h"
-#include "clang/AST/Decl.h"
-#include "clang/Basic/Diagnostic.h"
+#include "clang/Frontend/CompilerInstance.h"
 
 namespace dredd {
 
-void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& context) {
-  (void)compiler_instance_;
-  (void)generator_;
-  (void)num_mutations_;
-  (void)output_file_;
-  if (context.getDiagnostics().hasErrorOccurred()) {
-    // There has been an error, so we don't do any processing.
-    return;
-  }
-  visitor_->TraverseDecl(context.getTranslationUnitDecl());
-}
+MutateVisitor::MutateVisitor(const clang::CompilerInstance& compiler_instance)
+    : ast_context_(compiler_instance.getASTContext()) {}
 
 }  // namespace dredd

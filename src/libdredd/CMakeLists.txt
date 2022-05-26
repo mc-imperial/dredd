@@ -18,7 +18,10 @@ add_library(
   libdredd STATIC
   include/libdredd/new_mutate_frontend_action_factory.h
   include_private/include/libdredd/mutate_ast_consumer.h
-  src/mutate_ast_consumer.cc src/new_mutate_frontend_action_factory.cc)
+  include_private/include/libdredd/mutate_visitor.h
+  src/mutate_ast_consumer.cc
+  src/mutate_visitor.cc
+  src/new_mutate_frontend_action_factory.cc)
 
 target_include_directories(
   libdredd

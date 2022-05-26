@@ -16,6 +16,7 @@
 #define DREDD_MUTATE_AST_CONSUMER_H
 
 #include <cstddef>
+#include <memory>
 #include <random>
 #include <string>
 
@@ -23,78 +24,29 @@
 #include "clang/AST/ASTContext.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Rewrite/Core/Rewriter.h"
+#include "libdredd/mutate_visitor.h"
 
 namespace dredd {
 
 class MutateAstConsumer : public clang::ASTConsumer {
  public:
-  MutateAstConsumer(const clang::CompilerInstance& ci, size_t num_mutations,
-                    const std::string& output_file, std::mt19937& generator)
-      : ci_(ci),
+  MutateAstConsumer(const clang::CompilerInstance& compiler_instance,
+                    size_t num_mutations, const std::string& output_file,
+                    std::mt19937& generator)
+      : compiler_instance_(compiler_instance),
         num_mutations_(num_mutations),
         output_file_(output_file),
-        generator_(generator)
-  // ,        Visitor(std::make_unique<MutateVisitor>(ci))
-  {}
-
-  //  void
-  //  showDeclWithIndirection(const AddAtomicVisitor::DeclWithIndirection &DDWI)
-  //  {
-  //    if (DDWI.second == -1) {
-  //      errs() << "&";
-  //    } else {
-  //      assert(DDWI.second >= 0);
-  //      for (int i = 0; i < DDWI.second; i++) {
-  //        errs() << "*";
-  //      }
-  //    }
-  //    errs() << DDWI.first->getDeclName();
-  //  }
+        generator_(generator),
+        visitor_(std::make_unique<MutateVisitor>(compiler_instance)) {}
 
   void HandleTranslationUnit(clang::ASTContext& context) override;
 
  private:
-  //  void rewriteType(const TypeLoc &TL, size_t IndirectionLevel) {
-  //    if (TL.getTypeLocClass() == TypeLoc::Qualified) {
-  //      rewriteType(TL.castAs<QualifiedTypeLoc>().getUnqualifiedLoc(),
-  //                  IndirectionLevel);
-  //      return;
-  //    }
-  //    if (TL.getTypeLocClass() == TypeLoc::FunctionProto) {
-  //      rewriteType(TL.castAs<FunctionProtoTypeLoc>().getReturnLoc(),
-  //                  IndirectionLevel);
-  //      return;
-  //    }
-  //    if (TL.getTypeLocClass() == TypeLoc::FunctionNoProto) {
-  //      rewriteType(TL.castAs<FunctionNoProtoTypeLoc>().getReturnLoc(),
-  //                  IndirectionLevel);
-  //      return;
-  //    }
-  //    if (IndirectionLevel == 0) {
-  //      assert(TL.getTypeLocClass() != TypeLoc::IncompleteArray);
-  //      assert(TL.getTypeLocClass() != TypeLoc::ConstantArray);
-  //      TheRewriter.InsertTextAfterToken(TL.getEndLoc(), " _Atomic ");
-  //      return;
-  //    }
-  //    if (TL.getTypeLocClass() == TypeLoc::Pointer) {
-  //      rewriteType(TL.castAs<PointerTypeLoc>().getPointeeLoc(),
-  //                  IndirectionLevel - 1);
-  //      return;
-  //    }
-  //    if (TL.getTypeLocClass() == TypeLoc::ConstantArray) {
-  //      rewriteType(TL.castAs<ConstantArrayTypeLoc>().getElementLoc(),
-  //                  IndirectionLevel - 1);
-  //      return;
-  //    }
-  //    errs() << "Unhandled type loc " << TL.getTypeLocClass() << "\n";
-  //    exit(1);
-  //  }
-
-  const clang::CompilerInstance& ci_;
+  const clang::CompilerInstance& compiler_instance_;
   const size_t num_mutations_;
   const std::string& output_file_;
   std::mt19937& generator_;
-  // std::unique_ptr<MutateVisitor> visitor_;
+  std::unique_ptr<MutateVisitor> visitor_;
   clang::Rewriter rewriter_;
 };
 
