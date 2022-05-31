@@ -39,7 +39,7 @@ TEST(MutationReplaceEagerBinaryOperatorTest, BasicTest) {
   std::string original = "void foo() { 1 + 2; }";
   std::string expected = R"(
 int __dredd_add_to_sub_0(int arg1, int arg2) {
-  return arg1 - arg2 ;
+  return arg1 - arg2;
 }
 
 void foo() { __dredd_add_to_sub_0(1, 2); })";
