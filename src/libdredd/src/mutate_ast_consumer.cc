@@ -62,6 +62,7 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& context) {
   std::ofstream output_file_stream(output_file_, std::ofstream::out);
   output_file_stream << std::string(rewrite_buffer->begin(),
                                     rewrite_buffer->end());
+
   output_file_stream.close();
 }
 

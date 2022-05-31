@@ -4,7 +4,7 @@
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
-#     https://www.apache.org/licenses/LICENSE-2.0
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
@@ -12,12 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-[
-  # libc++.
-  { symbol:  ["std::ofstream", "private", "<fstream>", "public"] },
-  { symbol:  ["std::stringstream", "private", "<sstream>", "public"] },
+if(DREDD_WARNING_SUPPRESSIONS)
+  if(MSVC)
 
-  # Googletest "gtest/gtest.h"
-  { include: ["<gtest/gtest-message.h>", "private", "\"gtest/gtest.h\"", "public"] },
-  { include: ["<gtest/gtest-test-part.h>", "private", "\"gtest/gtest.h\"", "public"] },
-]
+  else()
+    add_compile_options(-Wno-global-constructors)
+  endif()
+endif()
+
+add_executable(libdreddtest include_private/include/libdreddtest/gtest.h
+                            src/mutation_replace_eager_binary_operator_test.cc)
+target_link_libraries(libdreddtest PRIVATE libdredd gtest_main)
+target_include_directories(libdreddtest PRIVATE include_private/include)
+
+add_test(NAME libdreddtest COMMAND libdreddtest)

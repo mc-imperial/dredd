@@ -29,8 +29,8 @@
 namespace dredd {
 
 MutationReplaceEagerBinaryOperator::MutationReplaceEagerBinaryOperator(
-    clang::BinaryOperator* binary_operator,
-    clang::FunctionDecl* enclosing_function)
+    const clang::BinaryOperator& binary_operator,
+    const clang::FunctionDecl& enclosing_function)
     : binary_operator_(binary_operator),
       enclosing_function_(enclosing_function) {}
 
@@ -44,26 +44,26 @@ void MutationReplaceEagerBinaryOperator::Apply(
 
   // Replace the binary operator expression with a call to the wrapper
   // function.
-  rewriter.ReplaceText(binary_operator_->getSourceRange(),
+  rewriter.ReplaceText(binary_operator_.getSourceRange(),
                        mutation_function_name + "(" +
                            rewriter.getRewrittenText(
-                               binary_operator_->getLHS()->getSourceRange()) +
+                               binary_operator_.getLHS()->getSourceRange()) +
                            +", " +
                            rewriter.getRewrittenText(
-                               binary_operator_->getRHS()->getSourceRange()) +
+                               binary_operator_.getRHS()->getSourceRange()) +
                            ")");
 
   // Generate the wrapper function declaration and insert it before the
   // enclosing function.
   std::stringstream new_function;
   const clang::BuiltinType* result_type =
-      binary_operator_->getType()->getAs<clang::BuiltinType>();
+      binary_operator_.getType()->getAs<clang::BuiltinType>();
   assert(result_type != nullptr);
   const clang::BuiltinType* lhs_type =
-      binary_operator_->getLHS()->getType()->getAs<clang::BuiltinType>();
+      binary_operator_.getLHS()->getType()->getAs<clang::BuiltinType>();
   assert(lhs_type != nullptr);
   const clang::BuiltinType* rhs_type =
-      binary_operator_->getRHS()->getType()->getAs<clang::BuiltinType>();
+      binary_operator_.getRHS()->getType()->getAs<clang::BuiltinType>();
   assert(rhs_type != nullptr);
   new_function << "\n"
                << result_type->getName(printing_policy).str() << " "
@@ -74,7 +74,7 @@ void MutationReplaceEagerBinaryOperator::Apply(
                << "  return arg1 - arg2;\n"
                << "}\n\n";
 
-  rewriter.InsertTextBefore(enclosing_function_->getSourceRange().getBegin(),
+  rewriter.InsertTextBefore(enclosing_function_.getSourceRange().getBegin(),
                             new_function.str());
 }
 

@@ -16,11 +16,11 @@ cmake_minimum_required(VERSION 3.13)
 
 add_library(
   libdredd STATIC
+  include/libdredd/mutation.h
+  include/libdredd/mutation_replace_eager_binary_operator.h
   include/libdredd/new_mutate_frontend_action_factory.h
   include_private/include/libdredd/mutate_ast_consumer.h
   include_private/include/libdredd/mutate_visitor.h
-  include_private/include/libdredd/mutation.h
-  include_private/include/libdredd/mutation_replace_eager_binary_operator.h
   src/mutate_ast_consumer.cc
   src/mutate_visitor.cc
   src/mutation.cc

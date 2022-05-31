@@ -120,7 +120,7 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
       return true;
     }
     mutations_.push_back(std::make_unique<MutationReplaceEagerBinaryOperator>(
-        binary_operator, enclosing_function_));
+        *binary_operator, *enclosing_function_));
     return true;
   }
 
