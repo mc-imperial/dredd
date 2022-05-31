@@ -25,15 +25,16 @@ namespace dredd {
 
 class MutationReplaceEagerBinaryOperator : public Mutation {
  public:
-  MutationReplaceEagerBinaryOperator(clang::BinaryOperator* binary_operator,
-                                     clang::FunctionDecl* enclosing_function);
+  MutationReplaceEagerBinaryOperator(
+      const clang::BinaryOperator& binary_operator,
+      const clang::FunctionDecl& enclosing_function);
 
   void Apply(int mutation_id, clang::Rewriter& rewriter,
              clang::PrintingPolicy& printing_policy) const override;
 
  private:
-  clang::BinaryOperator* binary_operator_;
-  clang::FunctionDecl* enclosing_function_;
+  const clang::BinaryOperator& binary_operator_;
+  const clang::FunctionDecl& enclosing_function_;
 };
 
 }  // namespace dredd

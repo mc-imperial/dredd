@@ -30,6 +30,10 @@ endif()
 
 # Options (i.e. cache variables) defined via "option" (if ON/OFF) or "set" (if
 # not ON/OFF):
+set(DREDD_GOOGLETEST_REPO_DIR
+    ${CMAKE_CURRENT_SOURCE_DIR}/third_party/googletest/googletest
+    CACHE PATH "Path to a https://github.com/google/googletest repo.")
+
 option(DREDD_WARNINGS_AS_ERRORS "Enable warnings as errors for Dredd targets."
        ${DREDD_PROJECT_IS_ROOT})
 
@@ -85,7 +89,9 @@ include_directories(SYSTEM ${LLVM_INCLUDE_DIRS})
 include_directories(SYSTEM ${CLANG_INCLUDE_DIRS})
 add_definitions(${LLVM_DEFINITIONS})
 
-# if(DREDD_BUILD_TESTING) add_subdirectory(third_party/googletest) endif()
+if(DREDD_BUILD_TESTING)
+  add_subdirectory(third_party/googletest)
+endif()
 
 # The targets that follow are all Dredd targets. We now conditionally set some
 # compile options related to warnings. Most of these will only be set if Dredd
@@ -157,10 +163,8 @@ endif()
 
 add_subdirectory(src/libdredd)
 
-# ~~~
-# if(DREDD_BUILD_TESTING)
-#   add_subdirectory(src/libdreddtest)
-# endif()
-# ~~~
+if(DREDD_BUILD_TESTING)
+  add_subdirectory(src/libdreddtest)
+endif()
 
 add_subdirectory(src/dredd)
