@@ -18,7 +18,7 @@ add_library(
   libdredd STATIC
   include/libdredd/mersenne_random_generator.h
   include/libdredd/mutation.h
-  include/libdredd/mutation_replace_eager_binary_operator.h
+  include/libdredd/mutation_replace_binary_operator.h
   include/libdredd/new_mutate_frontend_action_factory.h
   include/libdredd/random_generator.h
   include_private/include/libdredd/mutate_ast_consumer.h
@@ -27,7 +27,7 @@ add_library(
   src/mutate_ast_consumer.cc
   src/mutate_visitor.cc
   src/mutation.cc
-  src/mutation_replace_eager_binary_operator.cc
+  src/mutation_replace_binary_operator.cc
   src/new_mutate_frontend_action_factory.cc
   src/random_generator.cc)
 

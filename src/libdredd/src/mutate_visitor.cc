@@ -34,7 +34,7 @@
 #include "clang/AST/Type.h"
 #include "clang/Basic/SourceLocation.h"
 #include "clang/Basic/SourceManager.h"
-#include "libdredd/mutation_replace_eager_binary_operator.h"
+#include "libdredd/mutation_replace_binary_operator.h"
 #include "llvm/ADT/ArrayRef.h"
 
 namespace dredd {
@@ -156,7 +156,7 @@ bool MutateVisitor::TraverseBinaryOperator(
                                       available_operators.end(),
                                       binary_operator->getOpcode()));
 
-  mutations_.push_back(std::make_unique<MutationReplaceEagerBinaryOperator>(
+  mutations_.push_back(std::make_unique<MutationReplaceBinaryOperator>(
       *binary_operator, *enclosing_function_,
       generator_.GetRandomElement(available_operators)));
   return true;
