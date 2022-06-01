@@ -1,0 +1,40 @@
+---
+Checks: >
+  -*,
+  llvm-header-guard,
+  cppcoreguidelines-*,
+  clang-analyser-*,
+  google-*,
+  modernize-*,
+  portability-*,
+  readability-*,
+  misc-*,
+  -google-objc-*,
+  -modernize-use-trailing-return-type,
+  -cppcoreguidelines-init-variables,
+  -cppcoreguidelines-pro-bounds-array-to-pointer-decay,
+  -cppcoreguidelines-pro-bounds-pointer-arithmetic,
+  -cppcoreguidelines-pro-type-vararg,
+  -readability-simplify-boolean-expr,
+  -readability-use-anyofallof,
+  -misc-no-recursion,
+
+  # It is quite common to implement a method as a series of checks
+  # with returns, with a final return true at the end.  This check
+  # forces the final "if(c) { return false} return true;" to be
+  # turned into "return !c", which isn't always clearer.
+  #-readability-simplify-boolean-expr,
+
+  # In this project we often think that using a good old for loop is
+  # more readable than using a lambda, especially if you want to be
+  # able to early-exit from the loop.
+  #-readability-use-anyofallof,
+
+  # Recursion is used a lot by design
+  #-misc-no-recursion,
+
+WarningsAsErrors: '*'
+HeaderFilterRegex: '.*dredd.*'
+AnalyzeTemporaryDtors: false
+FormatStyle:     file
+...

@@ -20,6 +20,7 @@
 
 #include "clang/AST/Decl.h"
 #include "clang/AST/Expr.h"
+#include "clang/AST/OperationKinds.h"
 #include "clang/AST/PrettyPrinter.h"
 #include "clang/AST/Type.h"
 #include "clang/Basic/SourceLocation.h"
@@ -30,16 +31,18 @@ namespace dredd {
 
 MutationReplaceEagerBinaryOperator::MutationReplaceEagerBinaryOperator(
     const clang::BinaryOperator& binary_operator,
-    const clang::FunctionDecl& enclosing_function)
+    const clang::FunctionDecl& enclosing_function,
+    clang::BinaryOperatorKind new_operator)
     : binary_operator_(binary_operator),
-      enclosing_function_(enclosing_function) {}
+      enclosing_function_(enclosing_function),
+      new_operator_(new_operator) {}
 
 void MutationReplaceEagerBinaryOperator::Apply(
     int mutation_id, clang::Rewriter& rewriter,
     clang::PrintingPolicy& printing_policy) const {
   // The name of the mutation wrapper function to be used for this
   // replacement. Right now add-to-sub is the only mutation supported.
-  std::string mutation_function_name("__dredd_add_to_sub_" +
+  std::string mutation_function_name("__dredd_replace_eager_binary_operator_" +
                                      std::to_string(mutation_id));
 
   // Replace the binary operator expression with a call to the wrapper
@@ -71,7 +74,9 @@ void MutationReplaceEagerBinaryOperator::Apply(
                << lhs_type->getName(printing_policy).str() << " arg1, "
                << rhs_type->getName(printing_policy).str() << " arg2"
                << ") {\n"
-               << "  return arg1 - arg2;\n"
+               << "  return arg1 "
+               << clang::BinaryOperator::getOpcodeStr(new_operator_).str()
+               << " arg2;\n"
                << "}\n\n";
 
   rewriter.InsertTextBefore(enclosing_function_.getSourceRange().getBegin(),

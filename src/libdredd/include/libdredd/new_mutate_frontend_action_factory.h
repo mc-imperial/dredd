@@ -12,23 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef DREDD_NEW_MUTATE_FRONTEND_ACTION_FACTORY_H
-#define DREDD_NEW_MUTATE_FRONTEND_ACTION_FACTORY_H
+#ifndef LIBDREDD_NEW_MUTATE_FRONTEND_ACTION_FACTORY_H
+#define LIBDREDD_NEW_MUTATE_FRONTEND_ACTION_FACTORY_H
 
 #include <cstddef>
 #include <memory>
-#include <random>
 #include <string>
 
 #include "clang/Tooling/Tooling.h"
+#include "libdredd/random_generator.h"
 
 namespace dredd {
 
 std::unique_ptr<clang::tooling::FrontendActionFactory>
 NewMutateFrontendActionFactory(size_t num_mutations,
                                const std::string& output_filename,
-                               std::mt19937& generator);
+                               RandomGenerator& generator);
 
 }
 
-#endif  // DREDD_NEW_MUTATE_FRONTEND_ACTION_FACTORY_H
+#endif  // LIBDREDD_NEW_MUTATE_FRONTEND_ACTION_FACTORY_H

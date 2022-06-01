@@ -12,33 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef LIBDREDD_MUTATION_H
-#define LIBDREDD_MUTATION_H
-
-#include "clang/AST/PrettyPrinter.h"
-#include "clang/Rewrite/Core/Rewriter.h"
+#include "libdredd/random_generator.h"
 
 namespace dredd {
 
-// Interface that source code mutations should implement.
-class Mutation {
- public:
-  Mutation() = default;
-
-  Mutation(const Mutation&) = delete;
-
-  Mutation& operator=(const Mutation&) = delete;
-
-  Mutation(Mutation&&) = delete;
-
-  Mutation& operator=(Mutation&&) = delete;
-
-  virtual ~Mutation();
-
-  virtual void Apply(int mutation_id, clang::Rewriter& rewriter,
-                     clang::PrintingPolicy& printing_policy) const = 0;
-};
+RandomGenerator::~RandomGenerator() = default;
 
 }  // namespace dredd
-
-#endif  // LIBDREDD_MUTATION_H

@@ -12,33 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef LIBDREDD_MUTATION_H
-#define LIBDREDD_MUTATION_H
+#include "libdredd/mersenne_random_generator.h"
 
-#include "clang/AST/PrettyPrinter.h"
-#include "clang/Rewrite/Core/Rewriter.h"
+#include <cassert>
 
 namespace dredd {
 
-// Interface that source code mutations should implement.
-class Mutation {
- public:
-  Mutation() = default;
+MersenneRandomGenerator::MersenneRandomGenerator(std::mt19937& twister)
+    : twister_(twister) {}
 
-  Mutation(const Mutation&) = delete;
-
-  Mutation& operator=(const Mutation&) = delete;
-
-  Mutation(Mutation&&) = delete;
-
-  Mutation& operator=(Mutation&&) = delete;
-
-  virtual ~Mutation();
-
-  virtual void Apply(int mutation_id, clang::Rewriter& rewriter,
-                     clang::PrintingPolicy& printing_policy) const = 0;
-};
+size_t MersenneRandomGenerator::GetSize(size_t bound) {
+  assert(bound > 0 && "Bound must be positive");
+  return std::uniform_int_distribution<size_t>(0, bound - 1)(twister_);
+}
 
 }  // namespace dredd
-
-#endif  // LIBDREDD_MUTATION_H

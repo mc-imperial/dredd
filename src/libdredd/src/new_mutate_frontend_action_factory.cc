@@ -26,7 +26,7 @@ namespace dredd {
 class MutateFrontendAction : public clang::ASTFrontendAction {
  public:
   MutateFrontendAction(size_t num_mutations, const std::string& output_file,
-                       std::mt19937& generator)
+                       RandomGenerator& generator)
       : num_mutations_(num_mutations),
         output_file_(output_file),
         generator_(generator) {}
@@ -37,19 +37,19 @@ class MutateFrontendAction : public clang::ASTFrontendAction {
  private:
   const size_t num_mutations_;
   const std::string& output_file_;
-  std::mt19937& generator_;
+  RandomGenerator& generator_;
 };
 
 std::unique_ptr<clang::tooling::FrontendActionFactory>
 NewMutateFrontendActionFactory(size_t num_mutations,
                                const std::string& output_filename,
-                               std::mt19937& generator) {
+                               RandomGenerator& generator) {
   class MutateFrontendActionFactory
       : public clang::tooling::FrontendActionFactory {
    public:
     MutateFrontendActionFactory(size_t num_mutations,
                                 const std::string& output_filename,
-                                std::mt19937& generator)
+                                RandomGenerator& generator)
         : num_mutations_(num_mutations),
           output_filename_(output_filename),
           generator_(generator) {}
@@ -62,7 +62,7 @@ NewMutateFrontendActionFactory(size_t num_mutations,
    private:
     size_t num_mutations_;
     const std::string& output_filename_;
-    std::mt19937& generator_;
+    RandomGenerator& generator_;
   };
 
   return std::make_unique<MutateFrontendActionFactory>(

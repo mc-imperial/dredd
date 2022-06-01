@@ -19,6 +19,7 @@
 
 #include "clang/AST/Decl.h"
 #include "clang/AST/Expr.h"
+#include "clang/AST/OperationKinds.h"
 #include "clang/AST/PrettyPrinter.h"
 #include "clang/ASTMatchers/ASTMatchFinder.h"
 #include "clang/ASTMatchers/ASTMatchers.h"
@@ -38,11 +39,11 @@ namespace {
 TEST(MutationReplaceEagerBinaryOperatorTest, BasicTest) {
   std::string original = "void foo() { 1 + 2; }";
   std::string expected = R"(
-int __dredd_add_to_sub_0(int arg1, int arg2) {
+int __dredd_replace_eager_binary_operator_0(int arg1, int arg2) {
   return arg1 - arg2;
 }
 
-void foo() { __dredd_add_to_sub_0(1, 2); })";
+void foo() { __dredd_replace_eager_binary_operator_0(1, 2); })";
   auto ast_unit = clang::tooling::buildASTFromCodeWithArgs(original, {"-w"});
   ASSERT_FALSE(ast_unit->getDiagnostics().hasErrorOccurred());
   auto function_decl = clang::ast_matchers::match(
@@ -58,7 +59,8 @@ void foo() { __dredd_add_to_sub_0(1, 2); })";
 
   MutationReplaceEagerBinaryOperator mutation(
       *binary_operator[0].getNodeAs<clang::BinaryOperator>("op"),
-      *function_decl[0].getNodeAs<clang::FunctionDecl>("fn"));
+      *function_decl[0].getNodeAs<clang::FunctionDecl>("fn"),
+      clang::BinaryOperatorKind::BO_Sub);
 
   clang::Rewriter rewriter(ast_unit->getSourceManager(),
                            ast_unit->getLangOpts());

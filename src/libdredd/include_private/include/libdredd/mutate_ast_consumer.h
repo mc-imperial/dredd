@@ -12,12 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef DREDD_MUTATE_AST_CONSUMER_H
-#define DREDD_MUTATE_AST_CONSUMER_H
+#ifndef LIBDREDD_MUTATE_AST_CONSUMER_H
+#define LIBDREDD_MUTATE_AST_CONSUMER_H
 
 #include <cstddef>
 #include <memory>
-#include <random>
 #include <string>
 
 #include "clang/AST/ASTConsumer.h"
@@ -25,6 +24,7 @@
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Rewrite/Core/Rewriter.h"
 #include "libdredd/mutate_visitor.h"
+#include "libdredd/random_generator.h"
 
 namespace dredd {
 
@@ -32,12 +32,13 @@ class MutateAstConsumer : public clang::ASTConsumer {
  public:
   MutateAstConsumer(const clang::CompilerInstance& compiler_instance,
                     size_t num_mutations, const std::string& output_file,
-                    std::mt19937& generator)
+                    RandomGenerator& generator)
       : compiler_instance_(compiler_instance),
         num_mutations_(num_mutations),
         output_file_(output_file),
         generator_(generator),
-        visitor_(std::make_unique<MutateVisitor>(compiler_instance)) {}
+        visitor_(std::make_unique<MutateVisitor>(
+            compiler_instance.getASTContext(), generator)) {}
 
   void HandleTranslationUnit(clang::ASTContext& context) override;
 
@@ -45,11 +46,11 @@ class MutateAstConsumer : public clang::ASTConsumer {
   const clang::CompilerInstance& compiler_instance_;
   const size_t num_mutations_;
   const std::string& output_file_;
-  std::mt19937& generator_;
+  RandomGenerator& generator_;
   std::unique_ptr<MutateVisitor> visitor_;
   clang::Rewriter rewriter_;
 };
 
 }  // namespace dredd
 
-#endif  // DREDD_MUTATE_AST_CONSUMER_H
+#endif  // LIBDREDD_MUTATE_AST_CONSUMER_H

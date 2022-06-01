@@ -32,9 +32,8 @@ for CONFIG in Debug Release; do
 
     cmake --build . --config "${CONFIG}"
 
-    # TODO(afd): Enable once tests are in place
     # Run the unit tests
-    #./src/libdreddtest/libdreddtest
+    ./src/libdreddtest/libdreddtest
 
     check_compile_commands.sh compile_commands.json
 

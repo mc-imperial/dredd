@@ -67,7 +67,3 @@ export DREDD_SKIP_BASH=1
 source ./dev_shell.sh.template
 
 check_all.sh
-
-# Run the unit tests
-./temp/build-Debug/src/libdreddtest/libdreddtest
-./temp/build-Release/src/libdreddtest/libdreddtest

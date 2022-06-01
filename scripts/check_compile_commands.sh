@@ -20,7 +20,7 @@ set -x
 
 if [ -z "${DREDD_SKIP_CHECK_COMPILE_COMMANDS+x}" ]
 then
-  check_clang_tidy.sh "${1}"
   check_cppcheck.sh "${1}"
   check_iwyu.sh "${1}"
+  check_clang_tidy.sh "${1}"
 fi
