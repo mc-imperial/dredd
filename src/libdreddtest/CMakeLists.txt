@@ -21,7 +21,7 @@ if(DREDD_WARNING_SUPPRESSIONS)
 endif()
 
 add_executable(libdreddtest include_private/include/libdreddtest/gtest.h
-                            src/mutation_replace_eager_binary_operator_test.cc)
+                            src/mutation_replace_binary_operator_test.cc)
 target_link_libraries(libdreddtest PRIVATE libdredd gtest_main)
 target_include_directories(libdreddtest PRIVATE include_private/include)
 

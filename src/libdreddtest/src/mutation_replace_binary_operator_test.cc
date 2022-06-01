@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "libdredd/mutation_replace_eager_binary_operator.h"
+#include "libdredd/mutation_replace_binary_operator.h"
 
 #include <memory>
 #include <string>
@@ -36,14 +36,19 @@
 namespace dredd {
 namespace {
 
-TEST(MutationReplaceEagerBinaryOperatorTest, BasicTest) {
+TEST(MutationReplaceBinaryOperatorTest, BasicTest) {
   std::string original = "void foo() { 1 + 2; }";
   std::string expected = R"(
-int __dredd_replace_eager_binary_operator_0(int arg1, int arg2) {
-  return arg1 - arg2;
+extern "C" int __dredd_enabled_mutation;
+
+int __dredd_replace_binary_operator_0(int arg1, int arg2) {
+  if (__dredd_enabled_mutation == 0) {
+    return arg1 - arg2;
+  }
+  return arg1 + arg2;
 }
 
-void foo() { __dredd_replace_eager_binary_operator_0(1, 2); })";
+void foo() { __dredd_replace_binary_operator_0(1, 2); })";
   auto ast_unit = clang::tooling::buildASTFromCodeWithArgs(original, {"-w"});
   ASSERT_FALSE(ast_unit->getDiagnostics().hasErrorOccurred());
   auto function_decl = clang::ast_matchers::match(
@@ -57,10 +62,64 @@ void foo() { __dredd_replace_eager_binary_operator_0(1, 2); })";
       ast_unit->getASTContext());
   ASSERT_EQ(1, binary_operator.size());
 
-  MutationReplaceEagerBinaryOperator mutation(
+  MutationReplaceBinaryOperator mutation(
       *binary_operator[0].getNodeAs<clang::BinaryOperator>("op"),
       *function_decl[0].getNodeAs<clang::FunctionDecl>("fn"),
       clang::BinaryOperatorKind::BO_Sub);
+
+  clang::Rewriter rewriter(ast_unit->getSourceManager(),
+                           ast_unit->getLangOpts());
+  clang::PrintingPolicy printing_policy(ast_unit->getLangOpts());
+  mutation.Apply(0, rewriter, printing_policy);
+
+  const clang::RewriteBuffer* rewrite_buffer = rewriter.getRewriteBufferFor(
+      ast_unit->getSourceManager().getMainFileID());
+  std::string rewritten_text(rewrite_buffer->begin(), rewrite_buffer->end());
+  ASSERT_EQ(expected, rewritten_text);
+}
+
+TEST(MutationReplaceBinaryOperatorTest, AndToShift) {
+  std::string original = R"(void foo() {
+  int x = 1;
+  int y = 2;
+  int z = x && y;
+}
+)";
+  std::string expected = R"(
+extern "C" int __dredd_enabled_mutation;
+
+#include <functional>
+
+bool __dredd_replace_binary_operator_0(std::function<bool()> arg1, std::function<bool()> arg2) {
+  if (__dredd_enabled_mutation == 0) {
+    return arg1() >> arg2();
+  }
+  return arg1() && arg2();
+}
+
+void foo() {
+  int x = 1;
+  int y = 2;
+  int z = __dredd_replace_binary_operator_0([&]() -> bool { return x; }, [&]() -> bool { return y; });
+}
+)";
+  auto ast_unit = clang::tooling::buildASTFromCodeWithArgs(original, {"-w"});
+  ASSERT_FALSE(ast_unit->getDiagnostics().hasErrorOccurred());
+  auto function_decl = clang::ast_matchers::match(
+      clang::ast_matchers::functionDecl(clang::ast_matchers::hasName("foo"))
+          .bind("fn"),
+      ast_unit->getASTContext());
+  ASSERT_EQ(1, function_decl.size());
+
+  auto binary_operator = clang::ast_matchers::match(
+      clang::ast_matchers::binaryOperator().bind("op"),
+      ast_unit->getASTContext());
+  ASSERT_EQ(1, binary_operator.size());
+
+  MutationReplaceBinaryOperator mutation(
+      *binary_operator[0].getNodeAs<clang::BinaryOperator>("op"),
+      *function_decl[0].getNodeAs<clang::FunctionDecl>("fn"),
+      clang::BinaryOperatorKind::BO_Shr);
 
   clang::Rewriter rewriter(ast_unit->getSourceManager(),
                            ast_unit->getLangOpts());
