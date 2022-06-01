@@ -51,7 +51,7 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& context) {
   // fashion. This property should be preserved when the specific replacements
   // are made at random, to avoid attempts to rewrite a child node after its
   // parent has been rewritten.
-  for (auto& replacement : visitor_->GetMutations()) {
+  for (const auto& replacement : visitor_->GetMutations()) {
     replacement->Apply(count, rewriter_, printing_policy);
     count++;
   }

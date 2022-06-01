@@ -20,6 +20,7 @@
 
 #include "clang/Tooling/CommonOptionsParser.h"
 #include "clang/Tooling/Tooling.h"
+#include "libdredd/mersenne_random_generator.h"
 #include "libdredd/new_mutate_frontend_action_factory.h"
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/StringRef.h"
@@ -39,15 +40,20 @@
 #endif
 
 // Set up the command line options
+// NOLINTNEXTLINE
 static llvm::cl::extrahelp common_help(
     clang::tooling::CommonOptionsParser::HelpMessage);
+// NOLINTNEXTLINE
 static llvm::cl::OptionCategory mutate_category("mutate options");
+// NOLINTNEXTLINE
 static llvm::cl::opt<std::string> output_filename(
     "o", llvm::cl::desc("Specify output filename"),
     llvm::cl::value_desc("filename"));
+// NOLINTNEXTLINE
 static llvm::cl::opt<std::string> seed(
     "seed", llvm::cl::desc("Specify seed for random number generation"),
     llvm::cl::value_desc("seed"));
+// NOLINTNEXTLINE
 static llvm::cl::opt<std::string> num_mutations(
     "num_mutations", llvm::cl::desc("Specify number of mutations to apply"),
     llvm::cl::value_desc("num_mutations"));
@@ -89,7 +95,8 @@ int main(int argc, const char** argv) {
                           ? static_cast<size_t>(std::random_device()())
                           : static_cast<size_t>(std::stoi(seed.getValue()));
 
-  std::mt19937 generator(seed_value);
+  std::mt19937 twister(seed_value);
+  dredd::MersenneRandomGenerator generator(twister);
 
   std::unique_ptr<clang::tooling::FrontendActionFactory> factory =
       dredd::NewMutateFrontendActionFactory(

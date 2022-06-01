@@ -16,16 +16,20 @@ cmake_minimum_required(VERSION 3.13)
 
 add_library(
   libdredd STATIC
+  include/libdredd/mersenne_random_generator.h
   include/libdredd/mutation.h
   include/libdredd/mutation_replace_eager_binary_operator.h
   include/libdredd/new_mutate_frontend_action_factory.h
+  include/libdredd/random_generator.h
   include_private/include/libdredd/mutate_ast_consumer.h
   include_private/include/libdredd/mutate_visitor.h
+  src/mersenne_random_generator.cc
   src/mutate_ast_consumer.cc
   src/mutate_visitor.cc
   src/mutation.cc
   src/mutation_replace_eager_binary_operator.cc
-  src/new_mutate_frontend_action_factory.cc)
+  src/new_mutate_frontend_action_factory.cc
+  src/random_generator.cc)
 
 target_include_directories(
   libdredd

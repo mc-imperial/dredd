@@ -12,11 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef DREDD_MUTATION_REPLACE_EAGER_BINARY_OPERATOR_H
-#define DREDD_MUTATION_REPLACE_EAGER_BINARY_OPERATOR_H
+#ifndef LIBDREDD_MUTATION_REPLACE_EAGER_BINARY_OPERATOR_H
+#define LIBDREDD_MUTATION_REPLACE_EAGER_BINARY_OPERATOR_H
 
 #include "clang/AST/Decl.h"
 #include "clang/AST/Expr.h"
+#include "clang/AST/OperationKinds.h"
 #include "clang/AST/PrettyPrinter.h"
 #include "clang/Rewrite/Core/Rewriter.h"
 #include "libdredd/mutation.h"
@@ -27,7 +28,8 @@ class MutationReplaceEagerBinaryOperator : public Mutation {
  public:
   MutationReplaceEagerBinaryOperator(
       const clang::BinaryOperator& binary_operator,
-      const clang::FunctionDecl& enclosing_function);
+      const clang::FunctionDecl& enclosing_function,
+      clang::BinaryOperatorKind new_operator);
 
   void Apply(int mutation_id, clang::Rewriter& rewriter,
              clang::PrintingPolicy& printing_policy) const override;
@@ -35,8 +37,9 @@ class MutationReplaceEagerBinaryOperator : public Mutation {
  private:
   const clang::BinaryOperator& binary_operator_;
   const clang::FunctionDecl& enclosing_function_;
+  clang::BinaryOperatorKind new_operator_;
 };
 
 }  // namespace dredd
 
-#endif  // DREDD_MUTATION_REPLACE_EAGER_BINARY_OPERATOR_H
+#endif  // LIBDREDD_MUTATION_REPLACE_EAGER_BINARY_OPERATOR_H
