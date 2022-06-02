@@ -32,7 +32,6 @@
 #include "clang/AST/Stmt.h"
 #include "clang/AST/StmtIterator.h"
 #include "clang/AST/Type.h"
-#include "clang/Basic/SourceLocation.h"
 #include "clang/Basic/SourceManager.h"
 #include "libdredd/mutation_replace_binary_operator.h"
 #include "llvm/ADT/ArrayRef.h"
@@ -43,23 +42,24 @@ MutateVisitor::MutateVisitor(const clang::ASTContext& ast_context,
                              RandomGenerator& generator)
     : ast_context_(ast_context),
       generator_(generator),
-      enclosing_function_(nullptr) {}
+      enclosing_function_(nullptr),
+      main_(nullptr) {}
 
 bool MutateVisitor::TraverseFunctionDecl(clang::FunctionDecl* function_decl) {
-  // Check whether this function declaration is in the main source file. If it
-  // is not, do not traverse it. If it is, record that it is the enclosing
-  // function while traversing it, so that declarations arising from mutations
-  // inside the function can be inserted directly before it.
+  if (main_ == nullptr && function_decl->isMain() && function_decl->hasBody() &&
+      StartsAndEndsInMainSourceFile(*function_decl) &&
+      StartsAndEndsInMainSourceFile(*function_decl->getBody())) {
+    // This is the first time "main", the executable's entry point, has been
+    // encountered.
+    main_ = function_decl;
+  }
 
-  const clang::SourceManager& source_manager = ast_context_.getSourceManager();
-  auto begin_file_id =
-      source_manager.getFileID(function_decl->getSourceRange().getBegin());
-  auto end_file_id =
-      source_manager.getFileID(function_decl->getSourceRange().getEnd());
-  auto main_file_id = source_manager.getMainFileID();
-  if (begin_file_id != main_file_id || end_file_id != main_file_id) {
-    // This indicates either that the function is not in the main file, or
-    // that it is inside a macro. Either way, skip it.
+  // Check whether this function declaration is in the main source file for the
+  // translation unit. If it is not, do not traverse it. If it is, record that
+  // it is the enclosing function while traversing it, so that declarations
+  // arising from mutations inside the function can be inserted directly before
+  // it.
+  if (!StartsAndEndsInMainSourceFile(*function_decl)) {
     return true;
   }
   // Traverse the function, recording that it is the enclosing function during
@@ -85,29 +85,9 @@ bool MutateVisitor::TraverseBinaryOperator(
   // ranges that are part of the main file. In particular, this avoids
   // mutating expressions that directly involve the use of macros (though it
   // is OK if sub-expressions of arguments use macros).
-  const clang::SourceManager& source_manager = ast_context_.getSourceManager();
-  auto begin_file_id =
-      source_manager.getFileID(binary_operator->getSourceRange().getBegin());
-  auto end_file_id =
-      source_manager.getFileID(binary_operator->getSourceRange().getEnd());
-
-  auto lhs_begin_file_id = source_manager.getFileID(
-      binary_operator->getLHS()->getSourceRange().getBegin());
-  auto lhs_end_file_id = source_manager.getFileID(
-      binary_operator->getLHS()->getSourceRange().getEnd());
-
-  auto rhs_begin_file_id = source_manager.getFileID(
-      binary_operator->getRHS()->getSourceRange().getBegin());
-  auto rhs_end_file_id = source_manager.getFileID(
-      binary_operator->getRHS()->getSourceRange().getEnd());
-
-  auto main_file_id = source_manager.getMainFileID();
-
-  // TODO(afd): It is likely that a lot of checks such as this will be
-  // required throughout the code-base, so a helper function would make sense.
-  if (!(main_file_id == begin_file_id && main_file_id == end_file_id &&
-        main_file_id == lhs_begin_file_id && main_file_id == lhs_end_file_id &&
-        main_file_id == rhs_begin_file_id && main_file_id == rhs_end_file_id)) {
+  if (!StartsAndEndsInMainSourceFile(*binary_operator) ||
+      !StartsAndEndsInMainSourceFile(*binary_operator->getLHS()) ||
+      !StartsAndEndsInMainSourceFile(*binary_operator->getRHS())) {
     return true;
   }
 
@@ -160,6 +140,18 @@ bool MutateVisitor::TraverseBinaryOperator(
       *binary_operator, *enclosing_function_,
       generator_.GetRandomElement(available_operators)));
   return true;
+}
+
+template <typename HasSourceRange>
+bool MutateVisitor::StartsAndEndsInMainSourceFile(
+    const HasSourceRange& ast_node) const {
+  const clang::SourceManager& source_manager = ast_context_.getSourceManager();
+  auto begin_file_id =
+      source_manager.getFileID(ast_node.getSourceRange().getBegin());
+  auto end_file_id =
+      source_manager.getFileID(ast_node.getSourceRange().getEnd());
+  auto main_file_id = source_manager.getMainFileID();
+  return begin_file_id == main_file_id && end_file_id == main_file_id;
 }
 
 }  // namespace dredd

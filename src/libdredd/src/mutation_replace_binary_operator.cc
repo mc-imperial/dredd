@@ -85,7 +85,7 @@ void MutationReplaceBinaryOperator::Apply(
   // Generate the wrapper function declaration and insert it before the
   // enclosing function.
   std::stringstream new_function;
-  new_function << "\nextern \"C\" int __dredd_enabled_mutation;\n\n";
+  new_function << "\nextern int __dredd_enabled_mutation;\n\n";
   if (binary_operator_.isLogicalOp()) {
     new_function << "#include <functional>\n\n";
   }

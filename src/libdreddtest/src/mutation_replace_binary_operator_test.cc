@@ -39,7 +39,7 @@ namespace {
 TEST(MutationReplaceBinaryOperatorTest, BasicTest) {
   std::string original = "void foo() { 1 + 2; }";
   std::string expected = R"(
-extern "C" int __dredd_enabled_mutation;
+extern int __dredd_enabled_mutation;
 
 int __dredd_replace_binary_operator_0(int arg1, int arg2) {
   if (__dredd_enabled_mutation == 0) {
@@ -86,7 +86,7 @@ TEST(MutationReplaceBinaryOperatorTest, AndToShift) {
 }
 )";
   std::string expected = R"(
-extern "C" int __dredd_enabled_mutation;
+extern int __dredd_enabled_mutation;
 
 #include <functional>
 

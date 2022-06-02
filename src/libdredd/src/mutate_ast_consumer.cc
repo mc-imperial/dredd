@@ -14,25 +14,25 @@
 
 #include "libdredd/mutate_ast_consumer.h"
 
-#include <fstream>
+#include <cassert>
+#include <sstream>
 #include <vector>
 
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/Decl.h"
 #include "clang/AST/PrettyPrinter.h"
+#include "clang/AST/Stmt.h"
 #include "clang/Basic/Diagnostic.h"
-#include "clang/Basic/SourceManager.h"
 #include "clang/Frontend/CompilerInstance.h"
-#include "clang/Rewrite/Core/RewriteBuffer.h"
 #include "clang/Rewrite/Core/Rewriter.h"
 #include "libdredd/mutation.h"
+#include "llvm/Support/Casting.h"
 
 namespace dredd {
 
 void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& context) {
   (void)generator_;
   (void)num_mutations_;
-  (void)output_file_;
   if (context.getDiagnostics().hasErrorOccurred()) {
     // There has been an error, so we don't do any processing.
     return;
@@ -43,8 +43,28 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& context) {
 
   clang::PrintingPolicy printing_policy(compiler_instance_.getLangOpts());
 
-  // Used to make each mutation wrapper function unique.
-  int count = 0;
+  if (visitor_->GetMain() != nullptr) {
+    std::stringstream pre_main;
+    pre_main << "\nint __dredd_enabled_mutation;\n\n"
+             << "#include <cstdlib>\n\n";
+    std::stringstream start_of_main;
+    start_of_main << "\n  {\n"
+                  << "    const char* __dredd_environment_variable = "
+                     "std::getenv(\"DREDD_ENABLED_MUTATION\");\n"
+                  << "    if (__dredd_environment_variable == nullptr) {\n"
+                  << "      __dredd_enabled_mutation = -1;\n"
+                  << "    } else {\n"
+                  << "      __dredd_enabled_mutation = "
+                     "atoi(__dredd_environment_variable);\n"
+                  << "    }\n"
+                  << "  }\n\n";
+    rewriter_.InsertTextBefore(visitor_->GetMain()->getBeginLoc(),
+                               pre_main.str());
+    const auto* body =
+        llvm::cast<clang::CompoundStmt>(visitor_->GetMain()->getBody());
+    rewriter_.InsertTextAfterToken(body->getLBracLoc(), start_of_main.str());
+  }
+
   // At present, all possible replacements are made. This should be changed so
   // that a random subset of replacements are made, of the desired number of
   // mutations. By construction, replacements are processed in a bottom-up
@@ -52,18 +72,13 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& context) {
   // are made at random, to avoid attempts to rewrite a child node after its
   // parent has been rewritten.
   for (const auto& replacement : visitor_->GetMutations()) {
-    replacement->Apply(count, rewriter_, printing_policy);
-    count++;
+    replacement->Apply(mutation_id_, rewriter_, printing_policy);
+    mutation_id_++;
   }
-  // TODO(afd): This fails if no rewrites actually took place, so that should be
-  // accounted for.
-  const clang::RewriteBuffer* rewrite_buffer = rewriter_.getRewriteBufferFor(
-      compiler_instance_.getSourceManager().getMainFileID());
-  std::ofstream output_file_stream(output_file_, std::ofstream::out);
-  output_file_stream << std::string(rewrite_buffer->begin(),
-                                    rewrite_buffer->end());
-
-  output_file_stream.close();
+  bool result = rewriter_.overwriteChangedFiles();
+  // Keep release mode compilers happy
+  (void)result;
+  assert(!result && "Something went wrong emitting rewritten files.");
 }
 
 }  // namespace dredd

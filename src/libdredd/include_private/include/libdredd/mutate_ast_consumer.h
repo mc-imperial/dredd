@@ -17,7 +17,6 @@
 
 #include <cstddef>
 #include <memory>
-#include <string>
 
 #include "clang/AST/ASTConsumer.h"
 #include "clang/AST/ASTContext.h"
@@ -31,24 +30,27 @@ namespace dredd {
 class MutateAstConsumer : public clang::ASTConsumer {
  public:
   MutateAstConsumer(const clang::CompilerInstance& compiler_instance,
-                    size_t num_mutations, const std::string& output_file,
-                    RandomGenerator& generator)
+                    size_t num_mutations, RandomGenerator& generator,
+                    int& mutation_id)
       : compiler_instance_(compiler_instance),
         num_mutations_(num_mutations),
-        output_file_(output_file),
         generator_(generator),
         visitor_(std::make_unique<MutateVisitor>(
-            compiler_instance.getASTContext(), generator)) {}
+            compiler_instance.getASTContext(), generator)),
+        mutation_id_(mutation_id) {}
 
   void HandleTranslationUnit(clang::ASTContext& context) override;
 
  private:
   const clang::CompilerInstance& compiler_instance_;
   const size_t num_mutations_;
-  const std::string& output_file_;
   RandomGenerator& generator_;
   std::unique_ptr<MutateVisitor> visitor_;
   clang::Rewriter rewriter_;
+
+  // Counter used to give each mutation a unique id; shared among AST consumers
+  // for different translation units.
+  int& mutation_id_;
 };
 
 }  // namespace dredd
