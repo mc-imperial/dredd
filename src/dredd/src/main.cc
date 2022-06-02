@@ -46,10 +46,6 @@ static llvm::cl::extrahelp common_help(
 // NOLINTNEXTLINE
 static llvm::cl::OptionCategory mutate_category("mutate options");
 // NOLINTNEXTLINE
-static llvm::cl::opt<std::string> output_filename(
-    "o", llvm::cl::desc("Specify output filename"),
-    llvm::cl::value_desc("filename"));
-// NOLINTNEXTLINE
 static llvm::cl::opt<std::string> seed(
     "seed", llvm::cl::desc("Specify seed for random number generation"),
     llvm::cl::value_desc("seed"));
@@ -77,11 +73,6 @@ int main(int argc, const char** argv) {
     return 1;
   }
 
-  if (output_filename.empty()) {
-    llvm::errs() << "Please specify an output filename using the -o option.\n";
-    return 1;
-  }
-
   if (num_mutations.empty()) {
     llvm::errs() << "Please specify a number of mutations to apply, using the "
                     "-num_mutations option.\n";
@@ -98,10 +89,12 @@ int main(int argc, const char** argv) {
   std::mt19937 twister(seed_value);
   dredd::MersenneRandomGenerator generator(twister);
 
+  int mutation_id = 0;
+
   std::unique_ptr<clang::tooling::FrontendActionFactory> factory =
       dredd::NewMutateFrontendActionFactory(
-          static_cast<size_t>(std::stoi(num_mutations.getValue())),
-          output_filename.getValue(), generator);
+          static_cast<size_t>(std::stoi(num_mutations.getValue())), generator,
+          mutation_id);
 
   return Tool.run(factory.get());
 }

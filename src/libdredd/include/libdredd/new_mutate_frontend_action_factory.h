@@ -17,7 +17,6 @@
 
 #include <cstddef>
 #include <memory>
-#include <string>
 
 #include "clang/Tooling/Tooling.h"
 #include "libdredd/random_generator.h"
@@ -25,9 +24,8 @@
 namespace dredd {
 
 std::unique_ptr<clang::tooling::FrontendActionFactory>
-NewMutateFrontendActionFactory(size_t num_mutations,
-                               const std::string& output_filename,
-                               RandomGenerator& generator);
+NewMutateFrontendActionFactory(size_t num_mutations, RandomGenerator& generator,
+                               int& mutation_id);
 
 }
 

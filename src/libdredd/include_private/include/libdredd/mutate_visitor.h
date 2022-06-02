@@ -41,7 +41,13 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
     return mutations_;
   }
 
+  [[nodiscard]] const clang::FunctionDecl* GetMain() const { return main_; }
+
  private:
+  template <typename HasSourceRange>
+  [[nodiscard]] bool StartsAndEndsInMainSourceFile(
+      const HasSourceRange& ast_node) const;
+
   const clang::ASTContext& ast_context_;
 
   // Used to randomize the creation of mutations.
@@ -49,7 +55,11 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
 
   // Tracks the function currently being traversed; nullptr if there is no such
   // function.
-  clang::FunctionDecl* enclosing_function_;
+  const clang::FunctionDecl* enclosing_function_;
+
+  // If the 'main' method -- the entry point to the executable -- is
+  // encountered, it is recorded here.
+  const clang::FunctionDecl* main_;
 
   // As a proof of concept this currently stores opportunities for changing a +
   // to a -.
