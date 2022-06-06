@@ -20,6 +20,7 @@
 
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/Decl.h"
+#include "clang/AST/DeclBase.h"
 #include "clang/AST/Expr.h"
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "libdredd/mutation.h"
@@ -32,6 +33,8 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
   MutateVisitor(const clang::ASTContext& ast_context,
                 RandomGenerator& generator);
 
+  bool TraverseDecl(clang::Decl* function_decl);
+
   bool TraverseFunctionDecl(clang::FunctionDecl* function_decl);
 
   bool TraverseBinaryOperator(clang::BinaryOperator* binary_operator);
@@ -41,7 +44,9 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
     return mutations_;
   }
 
-  [[nodiscard]] const clang::FunctionDecl* GetMain() const { return main_; }
+  [[nodiscard]] const clang::Decl* GetFirstDeclInSourceFile() const {
+    return first_decl_in_source_file_;
+  }
 
  private:
   template <typename HasSourceRange>
@@ -53,16 +58,15 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
   // Used to randomize the creation of mutations.
   RandomGenerator& generator_;
 
+  // Records the very first declaration in the source file, before which
+  // directives such as includes can be placed.
+  const clang::Decl* first_decl_in_source_file_;
+
   // Tracks the function currently being traversed; nullptr if there is no such
   // function.
   const clang::FunctionDecl* enclosing_function_;
 
-  // If the 'main' method -- the entry point to the executable -- is
-  // encountered, it is recorded here.
-  const clang::FunctionDecl* main_;
-
-  // As a proof of concept this currently stores opportunities for changing a +
-  // to a -.
+  // Records the mutations that can be applied.
   std::vector<std::unique_ptr<Mutation>> mutations_;
 };
 

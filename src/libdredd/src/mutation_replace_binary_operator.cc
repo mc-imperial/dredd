@@ -14,6 +14,7 @@
 
 #include "libdredd/mutation_replace_binary_operator.h"
 
+#include <cassert>
 #include <sstream>
 #include <string>
 
@@ -62,34 +63,34 @@ void MutationReplaceBinaryOperator::Apply(
   // Replace the binary operator expression with a call to the wrapper
   // function.
   if (binary_operator_.isLogicalOp()) {
-    rewriter.ReplaceText(binary_operator_.getSourceRange(),
-                         mutation_function_name + "([&]() -> " + lhs_type +
-                             " { return " +
-                             rewriter.getRewrittenText(
-                                 binary_operator_.getLHS()->getSourceRange()) +
-                             +"; }, [&]() -> " + rhs_type + " { return " +
-                             rewriter.getRewrittenText(
-                                 binary_operator_.getRHS()->getSourceRange()) +
-                             "; })");
+    bool result = rewriter.ReplaceText(
+        binary_operator_.getSourceRange(),
+        mutation_function_name + "([&]() -> " + lhs_type + " { return " +
+            rewriter.getRewrittenText(
+                binary_operator_.getLHS()->getSourceRange()) +
+            +"; }, [&]() -> " + rhs_type + " { return " +
+            rewriter.getRewrittenText(
+                binary_operator_.getRHS()->getSourceRange()) +
+            "; })");
+    (void)result;  // Keep release-mode compilers happy.
+    assert(!result && "Rewrite failed.\n");
   } else {
-    rewriter.ReplaceText(binary_operator_.getSourceRange(),
-                         mutation_function_name + "(" +
-                             rewriter.getRewrittenText(
-                                 binary_operator_.getLHS()->getSourceRange()) +
-                             +", " +
-                             rewriter.getRewrittenText(
-                                 binary_operator_.getRHS()->getSourceRange()) +
-                             ")");
+    bool result = rewriter.ReplaceText(
+        binary_operator_.getSourceRange(),
+        mutation_function_name + "(" +
+            rewriter.getRewrittenText(
+                binary_operator_.getLHS()->getSourceRange()) +
+            +", " +
+            rewriter.getRewrittenText(
+                binary_operator_.getRHS()->getSourceRange()) +
+            ")");
+    (void)result;  // Keep release-mode compilers happy.
+    assert(!result && "Rewrite failed.\n");
   }
 
   // Generate the wrapper function declaration and insert it before the
   // enclosing function.
   std::stringstream new_function;
-  new_function << "\nextern int __dredd_enabled_mutation;\n\n";
-  if (binary_operator_.isLogicalOp()) {
-    new_function << "#include <functional>\n\n";
-  }
-
   new_function << result_type << " " << mutation_function_name << "(";
 
   std::string arg1_evaluated("arg1");
@@ -110,7 +111,7 @@ void MutationReplaceBinaryOperator::Apply(
   }
   new_function
       << " arg2) {\n"
-      << "  if (__dredd_enabled_mutation == " << mutation_id << ") {\n"
+      << "  if (__dredd_enabled_mutation() == " << mutation_id << ") {\n"
       << "    return " + arg1_evaluated << " "
       << clang::BinaryOperator::getOpcodeStr(new_operator_).str() << " "
       << arg2_evaluated << ";\n"
@@ -120,8 +121,10 @@ void MutationReplaceBinaryOperator::Apply(
       << " " << arg2_evaluated << ";\n"
       << "}\n\n";
 
-  rewriter.InsertTextBefore(enclosing_function_.getSourceRange().getBegin(),
-                            new_function.str());
+  bool result = rewriter.InsertTextBefore(
+      enclosing_function_.getSourceRange().getBegin(), new_function.str());
+  (void)result;  // Keep release-mode compilers happy.
+  assert(!result && "Rewrite failed.\n");
 }
 
 }  // namespace dredd
