@@ -20,13 +20,12 @@
 
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/Decl.h"
+#include "clang/AST/DeclBase.h"
 #include "clang/AST/PrettyPrinter.h"
-#include "clang/AST/Stmt.h"
 #include "clang/Basic/Diagnostic.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Rewrite/Core/Rewriter.h"
 #include "libdredd/mutation.h"
-#include "llvm/Support/Casting.h"
 
 namespace dredd {
 
@@ -43,26 +42,23 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& context) {
 
   clang::PrintingPolicy printing_policy(compiler_instance_.getLangOpts());
 
-  if (visitor_->GetMain() != nullptr) {
-    std::stringstream pre_main;
-    pre_main << "\nint __dredd_enabled_mutation;\n\n"
-             << "#include <cstdlib>\n\n";
-    std::stringstream start_of_main;
-    start_of_main << "\n  {\n"
-                  << "    const char* __dredd_environment_variable = "
-                     "std::getenv(\"DREDD_ENABLED_MUTATION\");\n"
-                  << "    if (__dredd_environment_variable == nullptr) {\n"
-                  << "      __dredd_enabled_mutation = -1;\n"
-                  << "    } else {\n"
-                  << "      __dredd_enabled_mutation = "
-                     "atoi(__dredd_environment_variable);\n"
-                  << "    }\n"
-                  << "  }\n\n";
-    rewriter_.InsertTextBefore(visitor_->GetMain()->getBeginLoc(),
-                               pre_main.str());
-    const auto* body =
-        llvm::cast<clang::CompoundStmt>(visitor_->GetMain()->getBody());
-    rewriter_.InsertTextAfterToken(body->getLBracLoc(), start_of_main.str());
+  if (visitor_->GetFirstDeclInSourceFile() != nullptr) {
+    std::stringstream dredd_prelude;
+    dredd_prelude << "#include <cstdlib>\n";
+    dredd_prelude << "#include <functional>\n\n";
+    dredd_prelude << "static int __dredd_enabled_mutation() {\n";
+    dredd_prelude << "  const char* __dredd_environment_variable = "
+                     "std::getenv(\"DREDD_ENABLED_MUTATION\");\n";
+    dredd_prelude << "  if (__dredd_environment_variable == nullptr) {\n";
+    dredd_prelude << "    return -1;\n";
+    dredd_prelude << "  }\n";
+    dredd_prelude << "  return atoi(__dredd_environment_variable);\n";
+    dredd_prelude << "}\n\n";
+    bool result = rewriter_.InsertTextBefore(
+        visitor_->GetFirstDeclInSourceFile()->getBeginLoc(),
+        dredd_prelude.str());
+    (void)result;  // Keep release-mode compilers happy.
+    assert(!result && "Rewrite failed.\n");
   }
 
   // At present, all possible replacements are made. This should be changed so
@@ -76,8 +72,7 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& context) {
     mutation_id_++;
   }
   bool result = rewriter_.overwriteChangedFiles();
-  // Keep release mode compilers happy
-  (void)result;
+  (void)result;  // Keep release mode compilers happy
   assert(!result && "Something went wrong emitting rewritten files.");
 }
 

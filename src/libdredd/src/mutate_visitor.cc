@@ -20,21 +20,18 @@
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/Decl.h"
 #include "clang/AST/DeclBase.h"
-#include "clang/AST/DeclCXX.h"
-#include "clang/AST/DeclObjC.h"
-#include "clang/AST/DeclOpenMP.h"
 #include "clang/AST/DeclTemplate.h"
 #include "clang/AST/Expr.h"
 #include "clang/AST/OpenMPClause.h"
 #include "clang/AST/OperationKinds.h"
 #include "clang/AST/RecursiveASTVisitor.h"
-#include "clang/AST/Redeclarable.h"
 #include "clang/AST/Stmt.h"
 #include "clang/AST/StmtIterator.h"
 #include "clang/AST/Type.h"
 #include "clang/Basic/SourceManager.h"
 #include "libdredd/mutation_replace_binary_operator.h"
 #include "llvm/ADT/ArrayRef.h"
+#include "llvm/Support/Casting.h"
 
 namespace dredd {
 
@@ -42,18 +39,30 @@ MutateVisitor::MutateVisitor(const clang::ASTContext& ast_context,
                              RandomGenerator& generator)
     : ast_context_(ast_context),
       generator_(generator),
-      enclosing_function_(nullptr),
-      main_(nullptr) {}
+      first_decl_in_source_file_(nullptr),
+      enclosing_function_(nullptr) {}
+
+bool MutateVisitor::TraverseDecl(clang::Decl* decl) {
+  if (llvm::dyn_cast<clang::TranslationUnitDecl>(decl) != nullptr) {
+    // This is the top-level translation unit declaration, so descend into it.
+    return RecursiveASTVisitor::TraverseDecl(decl);
+  }
+  if (!StartsAndEndsInMainSourceFile(*decl)) {
+    // This declaration is not wholly contained in the main file, so do not
+    // consider it for mutation.
+    return true;
+  }
+  if (first_decl_in_source_file_ == nullptr) {
+    // This is the first declaration wholly contained in the main file that has
+    // been encountered: record it so that the dredd prelude can be inserted
+    // before it.
+    first_decl_in_source_file_ = decl;
+  }
+  // Consider the declaration for mutation.
+  return RecursiveASTVisitor::TraverseDecl(decl);
+}
 
 bool MutateVisitor::TraverseFunctionDecl(clang::FunctionDecl* function_decl) {
-  if (main_ == nullptr && function_decl->isMain() && function_decl->hasBody() &&
-      StartsAndEndsInMainSourceFile(*function_decl) &&
-      StartsAndEndsInMainSourceFile(*function_decl->getBody())) {
-    // This is the first time "main", the executable's entry point, has been
-    // encountered.
-    main_ = function_decl;
-  }
-
   // Check whether this function declaration is in the main source file for the
   // translation unit. If it is not, do not traverse it. If it is, record that
   // it is the enclosing function while traversing it, so that declarations
