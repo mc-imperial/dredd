@@ -49,10 +49,6 @@ static llvm::cl::OptionCategory mutate_category("mutate options");
 static llvm::cl::opt<std::string> seed(
     "seed", llvm::cl::desc("Specify seed for random number generation"),
     llvm::cl::value_desc("seed"));
-// NOLINTNEXTLINE
-static llvm::cl::opt<std::string> num_mutations(
-    "num_mutations", llvm::cl::desc("Specify number of mutations to apply"),
-    llvm::cl::value_desc("num_mutations"));
 
 #if defined(__clang__)
 #pragma clang diagnostic pop
@@ -73,12 +69,6 @@ int main(int argc, const char** argv) {
     return 1;
   }
 
-  if (num_mutations.empty()) {
-    llvm::errs() << "Please specify a number of mutations to apply, using the "
-                    "-num_mutations option.\n";
-    return 1;
-  }
-
   clang::tooling::ClangTool Tool(options.get().getCompilations(),
                                  options.get().getSourcePathList());
 
@@ -92,9 +82,7 @@ int main(int argc, const char** argv) {
   int mutation_id = 0;
 
   std::unique_ptr<clang::tooling::FrontendActionFactory> factory =
-      dredd::NewMutateFrontendActionFactory(
-          static_cast<size_t>(std::stoi(num_mutations.getValue())), generator,
-          mutation_id);
+      dredd::NewMutateFrontendActionFactory(generator, mutation_id);
 
   return Tool.run(factory.get());
 }

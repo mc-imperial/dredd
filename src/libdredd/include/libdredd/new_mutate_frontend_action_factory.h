@@ -24,8 +24,7 @@
 namespace dredd {
 
 std::unique_ptr<clang::tooling::FrontendActionFactory>
-NewMutateFrontendActionFactory(size_t num_mutations, RandomGenerator& generator,
-                               int& mutation_id);
+NewMutateFrontendActionFactory(RandomGenerator& generator, int& mutation_id);
 
 }
 

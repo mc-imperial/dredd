@@ -30,10 +30,8 @@ namespace dredd {
 class MutateAstConsumer : public clang::ASTConsumer {
  public:
   MutateAstConsumer(const clang::CompilerInstance& compiler_instance,
-                    size_t num_mutations, RandomGenerator& generator,
-                    int& mutation_id)
+                    RandomGenerator& generator, int& mutation_id)
       : compiler_instance_(compiler_instance),
-        num_mutations_(num_mutations),
         generator_(generator),
         visitor_(std::make_unique<MutateVisitor>(
             compiler_instance.getASTContext(), generator)),
@@ -43,7 +41,6 @@ class MutateAstConsumer : public clang::ASTConsumer {
 
  private:
   const clang::CompilerInstance& compiler_instance_;
-  const size_t num_mutations_;
   RandomGenerator& generator_;
   std::unique_ptr<MutateVisitor> visitor_;
   clang::Rewriter rewriter_;
