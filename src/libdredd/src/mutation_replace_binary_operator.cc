@@ -49,11 +49,18 @@ void MutationReplaceBinaryOperator::Apply(
                                 ->getAs<clang::BuiltinType>()
                                 ->getName(printing_policy)
                                 .str();
+  if (binary_operator_.isAssignmentOp()) {
+    result_type += "&";
+  }
+
   std::string lhs_type = binary_operator_.getLHS()
                              ->getType()
                              ->getAs<clang::BuiltinType>()
                              ->getName(printing_policy)
                              .str();
+  if (binary_operator_.isAssignmentOp()) {
+    lhs_type += "&";
+  }
   std::string rhs_type = binary_operator_.getRHS()
                              ->getType()
                              ->getAs<clang::BuiltinType>()

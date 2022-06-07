@@ -126,5 +126,53 @@ void foo() {
   ASSERT_EQ(expected, rewritten_text);
 }
 
+TEST(MutationReplaceBinaryOperatorTest, AssignToAddAssign) {
+  std::string original = R"(void foo() {
+  int x;
+  x = 1;
+}
+)";
+  std::string expected =
+      R"(int& __dredd_replace_binary_operator_0(int& arg1, int arg2) {
+  if (__dredd_enabled_mutation() == 0) {
+    return arg1 += arg2;
+  }
+  return arg1 = arg2;
+}
+
+void foo() {
+  int x;
+  __dredd_replace_binary_operator_0(x, 1);
+}
+)";
+  auto ast_unit = clang::tooling::buildASTFromCodeWithArgs(original, {"-w"});
+  ASSERT_FALSE(ast_unit->getDiagnostics().hasErrorOccurred());
+  auto function_decl = clang::ast_matchers::match(
+      clang::ast_matchers::functionDecl(clang::ast_matchers::hasName("foo"))
+          .bind("fn"),
+      ast_unit->getASTContext());
+  ASSERT_EQ(1, function_decl.size());
+
+  auto binary_operator = clang::ast_matchers::match(
+      clang::ast_matchers::binaryOperator().bind("op"),
+      ast_unit->getASTContext());
+  ASSERT_EQ(1, binary_operator.size());
+
+  MutationReplaceBinaryOperator mutation(
+      *binary_operator[0].getNodeAs<clang::BinaryOperator>("op"),
+      *function_decl[0].getNodeAs<clang::FunctionDecl>("fn"),
+      clang::BinaryOperatorKind::BO_AddAssign);
+
+  clang::Rewriter rewriter(ast_unit->getSourceManager(),
+                           ast_unit->getLangOpts());
+  clang::PrintingPolicy printing_policy(ast_unit->getLangOpts());
+  mutation.Apply(0, rewriter, printing_policy);
+
+  const clang::RewriteBuffer* rewrite_buffer = rewriter.getRewriteBufferFor(
+      ast_unit->getSourceManager().getMainFileID());
+  std::string rewritten_text(rewrite_buffer->begin(), rewrite_buffer->end());
+  ASSERT_EQ(expected, rewritten_text);
+}
+
 }  // namespace
 }  // namespace dredd
