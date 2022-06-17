@@ -15,7 +15,6 @@
 #ifndef LIBDREDD_NEW_MUTATE_FRONTEND_ACTION_FACTORY_H
 #define LIBDREDD_NEW_MUTATE_FRONTEND_ACTION_FACTORY_H
 
-#include <cstddef>
 #include <memory>
 
 #include "clang/Tooling/Tooling.h"

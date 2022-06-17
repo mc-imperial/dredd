@@ -15,7 +15,6 @@
 #ifndef LIBDREDD_MUTATE_AST_CONSUMER_H
 #define LIBDREDD_MUTATE_AST_CONSUMER_H
 
-#include <cstddef>
 #include <memory>
 
 #include "clang/AST/ASTConsumer.h"
