@@ -127,7 +127,7 @@ bool MutateVisitor::TraverseBinaryOperator(
   }
 
   std::vector<clang::BinaryOperatorKind> available_operators;
-  if (binary_operator->isLogicalOp()) {
+  if (!binary_operator->isLValue()) {
     available_operators.push_back(clang::BinaryOperatorKind::BO_Mul);
     available_operators.push_back(clang::BinaryOperatorKind::BO_Div);
     available_operators.push_back(clang::BinaryOperatorKind::BO_Rem);
