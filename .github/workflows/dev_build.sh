@@ -90,8 +90,8 @@ done
 ${DREDD_ROOT}/third_party/clang+llvm-13.0.1/bin/dredd -p ${DREDD_ROOT}/SPIRV-Tools/build/compile_commands.json ${FILES}
 pushd SPIRV-Tools/build
   ninja test_val_abcde test_val_capability test_val_fghijklmnop test_val_limits test_val_stuvw
-  ./test/val/test_val_abcde
-  ./test/val/test_val_capability
-  ./test/val/test_val_fghijklmnop
-  ./test/val/test_val_stuvw
+  DREDD_ENABLED_MUTATION=1 ./test/val/test_val_abcde
+  DREDD_ENABLED_MUTATION=2 ./test/val/test_val_capability
+  DREDD_ENABLED_MUTATION=3 ./test/val/test_val_fghijklmnop
+  DREDD_ENABLED_MUTATION=4 ./test/val/test_val_stuvw
 popd
