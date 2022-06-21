@@ -41,7 +41,7 @@ void MutationReplaceBinaryOperator::Apply(
     int mutation_id, clang::Rewriter& rewriter,
     clang::PrintingPolicy& printing_policy) const {
   // The name of the mutation wrapper function to be used for this
-  // replacement. Right now add-to-sub is the only mutation supported.
+  // replacement.
   std::string mutation_function_name("__dredd_replace_binary_operator_" +
                                      std::to_string(mutation_id));
 

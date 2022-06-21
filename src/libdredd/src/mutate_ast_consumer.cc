@@ -41,6 +41,17 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& context) {
 
   clang::PrintingPolicy printing_policy(compiler_instance_.getLangOpts());
 
+  // At present, all possible replacements are made. This should be changed so
+  // that a random subset of replacements are made, of the desired number of
+  // mutations. By construction, replacements are processed in a bottom-up
+  // fashion. This property should be preserved when the specific replacements
+  // are made at random, to avoid attempts to rewrite a child node after its
+  // parent has been rewritten.
+  for (const auto& replacement : visitor_->GetMutations()) {
+    replacement->Apply(mutation_id_, rewriter_, printing_policy);
+    mutation_id_++;
+  }
+
   if (visitor_->GetFirstDeclInSourceFile() != nullptr) {
     std::stringstream dredd_prelude;
     dredd_prelude << "#include <cstdlib>\n";
@@ -60,16 +71,6 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& context) {
     assert(!result && "Rewrite failed.\n");
   }
 
-  // At present, all possible replacements are made. This should be changed so
-  // that a random subset of replacements are made, of the desired number of
-  // mutations. By construction, replacements are processed in a bottom-up
-  // fashion. This property should be preserved when the specific replacements
-  // are made at random, to avoid attempts to rewrite a child node after its
-  // parent has been rewritten.
-  for (const auto& replacement : visitor_->GetMutations()) {
-    replacement->Apply(mutation_id_, rewriter_, printing_policy);
-    mutation_id_++;
-  }
   bool result = rewriter_.overwriteChangedFiles();
   (void)result;  // Keep release mode compilers happy
   assert(!result && "Something went wrong emitting rewritten files.");

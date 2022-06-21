@@ -16,6 +16,7 @@
 #define LIBDREDD_MUTATE_VISITOR_H
 
 #include <memory>
+#include <unordered_set>
 #include <vector>
 
 #include "clang/AST/ASTContext.h"
@@ -37,7 +38,35 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
 
   bool TraverseFunctionDecl(clang::FunctionDecl* function_decl);
 
-  bool TraverseBinaryOperator(clang::BinaryOperator* binary_operator);
+  bool VisitBinaryOperator(clang::BinaryOperator* binary_operator);
+
+  bool VisitCompoundStmt(clang::CompoundStmt* compound_stmt);
+
+  bool VisitReturnStmt(clang::ReturnStmt* return_stmt);
+
+  bool VisitBreakStmt(clang::BreakStmt* break_stmt);
+
+  bool VisitContinueStmt(clang::ContinueStmt* continue_stmt);
+
+  bool VisitGotoStmt(clang::GotoStmt* goto_stmt);
+
+  bool VisitLabelStmt(clang::LabelStmt* label_stmt);
+
+  bool VisitSwitchCase(clang::SwitchCase* switch_case);
+
+  bool VisitIfStmt(clang::IfStmt* if_stmt);
+
+  bool VisitForStmt(clang::ForStmt* for_stmt);
+
+  bool VisitWhileStmt(clang::WhileStmt* while_stmt);
+
+  bool VisitDoStmt(clang::DoStmt* do_stmt);
+
+  bool VisitSwitchStmt(clang::SwitchStmt* switch_stmt);
+
+  bool shouldTraversePostOrder() {
+    return true;
+  }
 
   [[nodiscard]] const std::vector<std::unique_ptr<Mutation>>& GetMutations()
       const {
@@ -65,6 +94,14 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
   // Tracks the function currently being traversed; nullptr if there is no such
   // function.
   const clang::FunctionDecl* enclosing_function_;
+
+  std::unordered_set<clang::Stmt*> contains_return_goto_or_label_;
+
+  std::unordered_set<clang::Stmt*> contains_break_for_enclosing_loop_or_switch_;
+
+  std::unordered_set<clang::Stmt*> contains_continue_for_enclosing_loop_;
+
+  std::unordered_set<clang::Stmt*> contains_case_for_enclosing_switch_;
 
   // Records the mutations that can be applied.
   std::vector<std::unique_ptr<Mutation>> mutations_;
