@@ -83,12 +83,14 @@ bool MutateVisitor::TraverseFunctionDecl(clang::FunctionDecl* function_decl) {
 
 bool MutateVisitor::TraverseBinaryOperator(
     clang::BinaryOperator* binary_operator) {
-  // As a proof of concept, this records opportunities to turn a + node into a
-  // - node.
-
   // In order to ensure that mutation opportunities are presented bottom-up,
   // traverse the AST node before processing it.
   RecursiveASTVisitor<MutateVisitor>::TraverseBinaryOperator(binary_operator);
+
+  if (enclosing_function_ == nullptr) {
+    // Only consider mutating binary expressions that occur inside functions.
+    return true;
+  }
 
   // Check that the binary expression and its arguments have source
   // ranges that are part of the main file. In particular, this avoids
@@ -118,17 +120,33 @@ bool MutateVisitor::TraverseBinaryOperator(
     return true;
   }
 
-  std::vector<clang::BinaryOperatorKind> available_operators = {
-      clang::BinaryOperatorKind::BO_Mul,  clang::BinaryOperatorKind::BO_Div,
-      clang::BinaryOperatorKind::BO_Rem,  clang::BinaryOperatorKind::BO_Add,
-      clang::BinaryOperatorKind::BO_Sub,  clang::BinaryOperatorKind::BO_Shl,
-      clang::BinaryOperatorKind::BO_Shr,  clang::BinaryOperatorKind::BO_LT,
-      clang::BinaryOperatorKind::BO_GT,   clang::BinaryOperatorKind::BO_LE,
-      clang::BinaryOperatorKind::BO_GE,   clang::BinaryOperatorKind::BO_EQ,
-      clang::BinaryOperatorKind::BO_NE,   clang::BinaryOperatorKind::BO_And,
-      clang::BinaryOperatorKind::BO_Xor,  clang::BinaryOperatorKind::BO_Or,
-      clang::BinaryOperatorKind::BO_LAnd, clang::BinaryOperatorKind::BO_LOr};
-  if (binary_operator->getLHS()->isLValue()) {
+  if (binary_operator->isCommaOp()) {
+    // The comma operator is so versatile that it does not make a great deal of
+    // sense to try to rewrite it.
+    return true;
+  }
+
+  std::vector<clang::BinaryOperatorKind> available_operators;
+  if (!binary_operator->isLValue()) {
+    available_operators.push_back(clang::BinaryOperatorKind::BO_Mul);
+    available_operators.push_back(clang::BinaryOperatorKind::BO_Div);
+    available_operators.push_back(clang::BinaryOperatorKind::BO_Rem);
+    available_operators.push_back(clang::BinaryOperatorKind::BO_Add);
+    available_operators.push_back(clang::BinaryOperatorKind::BO_Sub);
+    available_operators.push_back(clang::BinaryOperatorKind::BO_Shl);
+    available_operators.push_back(clang::BinaryOperatorKind::BO_Shr);
+    available_operators.push_back(clang::BinaryOperatorKind::BO_LT);
+    available_operators.push_back(clang::BinaryOperatorKind::BO_GT);
+    available_operators.push_back(clang::BinaryOperatorKind::BO_LE);
+    available_operators.push_back(clang::BinaryOperatorKind::BO_GE);
+    available_operators.push_back(clang::BinaryOperatorKind::BO_EQ);
+    available_operators.push_back(clang::BinaryOperatorKind::BO_NE);
+    available_operators.push_back(clang::BinaryOperatorKind::BO_And);
+    available_operators.push_back(clang::BinaryOperatorKind::BO_Xor);
+    available_operators.push_back(clang::BinaryOperatorKind::BO_Or);
+    available_operators.push_back(clang::BinaryOperatorKind::BO_LAnd);
+    available_operators.push_back(clang::BinaryOperatorKind::BO_LOr);
+  } else {
     available_operators.push_back(clang::BinaryOperatorKind::BO_Assign);
     available_operators.push_back(clang::BinaryOperatorKind::BO_MulAssign);
     available_operators.push_back(clang::BinaryOperatorKind::BO_DivAssign);
@@ -141,9 +159,12 @@ bool MutateVisitor::TraverseBinaryOperator(
     available_operators.push_back(clang::BinaryOperatorKind::BO_XorAssign);
     available_operators.push_back(clang::BinaryOperatorKind::BO_OrAssign);
   }
-  available_operators.erase(std::find(available_operators.begin(),
-                                      available_operators.end(),
-                                      binary_operator->getOpcode()));
+  auto current_operator_iterator =
+      std::find(available_operators.begin(), available_operators.end(),
+                binary_operator->getOpcode());
+  assert(current_operator_iterator != available_operators.end() &&
+         "Unsupported operator.");
+  available_operators.erase(current_operator_iterator);
 
   mutations_.push_back(std::make_unique<MutationReplaceBinaryOperator>(
       *binary_operator, *enclosing_function_,

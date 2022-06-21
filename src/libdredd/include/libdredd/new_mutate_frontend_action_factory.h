@@ -15,7 +15,6 @@
 #ifndef LIBDREDD_NEW_MUTATE_FRONTEND_ACTION_FACTORY_H
 #define LIBDREDD_NEW_MUTATE_FRONTEND_ACTION_FACTORY_H
 
-#include <cstddef>
 #include <memory>
 
 #include "clang/Tooling/Tooling.h"
@@ -24,8 +23,7 @@
 namespace dredd {
 
 std::unique_ptr<clang::tooling::FrontendActionFactory>
-NewMutateFrontendActionFactory(size_t num_mutations, RandomGenerator& generator,
-                               int& mutation_id);
+NewMutateFrontendActionFactory(RandomGenerator& generator, int& mutation_id);
 
 }
 

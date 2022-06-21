@@ -31,7 +31,6 @@ namespace dredd {
 
 void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& context) {
   (void)generator_;
-  (void)num_mutations_;
   if (context.getDiagnostics().hasErrorOccurred()) {
     // There has been an error, so we don't do any processing.
     return;
