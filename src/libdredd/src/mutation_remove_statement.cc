@@ -19,9 +19,9 @@
 #include <string>
 
 #include "clang/AST/Decl.h"
-#include "clang/AST/Stmt.h"
 #include "clang/AST/OperationKinds.h"
 #include "clang/AST/PrettyPrinter.h"
+#include "clang/AST/Stmt.h"
 #include "clang/AST/Type.h"
 #include "clang/Basic/SourceLocation.h"
 #include "clang/Rewrite/Core/Rewriter.h"
@@ -30,15 +30,13 @@
 namespace dredd {
 
 MutationRemoveStatement::MutationRemoveStatement(
-    const clang::Stmt& statement,
-    const clang::FunctionDecl& enclosing_function)
-    : statement_(statement),
-      enclosing_function_(enclosing_function) {}
+    const clang::Stmt& statement, const clang::FunctionDecl& enclosing_function)
+    : statement_(statement), enclosing_function_(enclosing_function) {}
 
 void MutationRemoveStatement::Apply(
     int mutation_id, clang::Rewriter& rewriter,
     clang::PrintingPolicy& printing_policy) const {
-  (void) printing_policy; // Not used.
+  (void)printing_policy;  // Not used.
 
   // The name of the mutation wrapper function to be used for this
   // removal.
@@ -48,12 +46,14 @@ void MutationRemoveStatement::Apply(
   // Generate the wrapper function declaration and insert it before the
   // enclosing function.
   std::stringstream new_function;
-  new_function << "void " << mutation_function_name << "(std::function<void()> statement) {\n"
-  << "  if (__dredd_enabled_mutation() == " << mutation_id << ") {\n"
-  << "    return;\n"
-  << "  }\n"
+  new_function << "void " << mutation_function_name
+               << "(std::function<void()> statement) {\n"
+               << "  if (__dredd_enabled_mutation() == " << mutation_id
+               << ") {\n"
+               << "    return;\n"
+               << "  }\n"
                << "  statement();\n"
-      << "}\n\n";
+               << "}\n\n";
 
   bool result = rewriter.InsertTextBefore(
       enclosing_function_.getSourceRange().getBegin(), new_function.str());
@@ -61,20 +61,19 @@ void MutationRemoveStatement::Apply(
   assert(!result && "Rewrite failed.\n");
 
   bool needs_trailing_semicolon =
-      llvm::dyn_cast<clang::IfStmt>(&statement_) != nullptr
-          || llvm::dyn_cast<clang::ForStmt>(&statement_) != nullptr
-      || llvm::dyn_cast<clang::WhileStmt>(&statement_) != nullptr
-      || llvm::dyn_cast<clang::DoStmt>(&statement_) != nullptr
-      || llvm::dyn_cast<clang::CompoundStmt>(&statement_) != nullptr;
+      llvm::dyn_cast<clang::IfStmt>(&statement_) != nullptr ||
+      llvm::dyn_cast<clang::ForStmt>(&statement_) != nullptr ||
+      llvm::dyn_cast<clang::WhileStmt>(&statement_) != nullptr ||
+      llvm::dyn_cast<clang::DoStmt>(&statement_) != nullptr ||
+      llvm::dyn_cast<clang::CompoundStmt>(&statement_) != nullptr;
 
   result = rewriter.ReplaceText(
       statement_.getSourceRange(),
       mutation_function_name + "([&]() -> void { " +
-          rewriter.getRewrittenText(
-              statement_.getSourceRange()) + "; })" + (needs_trailing_semicolon ? ";" : ""));
+          rewriter.getRewrittenText(statement_.getSourceRange()) + "; })" +
+          (needs_trailing_semicolon ? ";" : ""));
   (void)result;  // Keep release-mode compilers happy.
   assert(!result && "Rewrite failed.\n");
-
 }
 
 }  // namespace dredd

@@ -188,13 +188,13 @@ bool MutateVisitor::VisitCompoundStmt(clang::CompoundStmt* compound_stmt) {
       contains_case_for_enclosing_switch_.insert(compound_stmt);
       must_skip = true;
     }
-    if (must_skip || !StartsAndEndsInMainSourceFile(*stmt) || llvm::dyn_cast<clang::NullStmt>(stmt) != nullptr
-        || llvm::dyn_cast<clang::DeclStmt>(stmt) != nullptr) {
+    if (must_skip || !StartsAndEndsInMainSourceFile(*stmt) ||
+        llvm::dyn_cast<clang::NullStmt>(stmt) != nullptr ||
+        llvm::dyn_cast<clang::DeclStmt>(stmt) != nullptr) {
       continue;
     }
-    mutations_.push_back(std::make_unique<MutationRemoveStatement>(
-        *stmt, *enclosing_function_
-        ));
+    mutations_.push_back(
+        std::make_unique<MutationRemoveStatement>(*stmt, *enclosing_function_));
   }
   return true;
 }

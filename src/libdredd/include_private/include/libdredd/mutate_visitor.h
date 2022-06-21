@@ -64,9 +64,7 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
 
   bool VisitSwitchStmt(clang::SwitchStmt* switch_stmt);
 
-  bool shouldTraversePostOrder() {
-    return true;
-  }
+  bool shouldTraversePostOrder() { return true; }
 
   [[nodiscard]] const std::vector<std::unique_ptr<Mutation>>& GetMutations()
       const {

@@ -16,8 +16,8 @@
 #define LIBDREDD_MUTATION_REMOVE_STATEMENT_H
 
 #include "clang/AST/Decl.h"
-#include "clang/AST/Stmt.h"
 #include "clang/AST/PrettyPrinter.h"
+#include "clang/AST/Stmt.h"
 #include "clang/Rewrite/Core/Rewriter.h"
 #include "libdredd/mutation.h"
 
@@ -26,7 +26,7 @@ namespace dredd {
 class MutationRemoveStatement : public Mutation {
  public:
   MutationRemoveStatement(const clang::Stmt& statement,
-                                const clang::FunctionDecl& enclosing_function);
+                          const clang::FunctionDecl& enclosing_function);
 
   void Apply(int mutation_id, clang::Rewriter& rewriter,
              clang::PrintingPolicy& printing_policy) const override;
