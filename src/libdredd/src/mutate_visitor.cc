@@ -20,18 +20,16 @@
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/Decl.h"
 #include "clang/AST/DeclBase.h"
-#include "clang/AST/DeclTemplate.h"
 #include "clang/AST/Expr.h"
-#include "clang/AST/OpenMPClause.h"
 #include "clang/AST/OperationKinds.h"
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/AST/Stmt.h"
-#include "clang/AST/StmtIterator.h"
+#include "clang/AST/StmtCXX.h"
 #include "clang/AST/Type.h"
 #include "clang/Basic/SourceManager.h"
 #include "libdredd/mutation_remove_statement.h"
 #include "libdredd/mutation_replace_binary_operator.h"
-#include "llvm/ADT/ArrayRef.h"
+#include "llvm/ADT/iterator_range.h"
 #include "llvm/Support/Casting.h"
 
 namespace dredd {
@@ -40,8 +38,7 @@ MutateVisitor::MutateVisitor(const clang::ASTContext& ast_context,
                              RandomGenerator& generator)
     : ast_context_(ast_context),
       generator_(generator),
-      first_decl_in_source_file_(nullptr),
-      enclosing_function_(nullptr) {}
+      first_decl_in_source_file_(nullptr) {}
 
 bool MutateVisitor::TraverseDecl(clang::Decl* decl) {
   if (llvm::dyn_cast<clang::TranslationUnitDecl>(decl) != nullptr) {
@@ -59,32 +56,17 @@ bool MutateVisitor::TraverseDecl(clang::Decl* decl) {
     // before it.
     first_decl_in_source_file_ = decl;
   }
+  enclosing_decls_.push_back(decl);
   // Consider the declaration for mutation.
-  return RecursiveASTVisitor::TraverseDecl(decl);
-}
+  RecursiveASTVisitor::TraverseDecl(decl);
+  enclosing_decls_.pop_back();
 
-bool MutateVisitor::TraverseFunctionDecl(clang::FunctionDecl* function_decl) {
-  // Check whether this function declaration is in the main source file for the
-  // translation unit. If it is not, do not traverse it. If it is, record that
-  // it is the enclosing function while traversing it, so that declarations
-  // arising from mutations inside the function can be inserted directly before
-  // it.
-  if (!StartsAndEndsInMainSourceFile(*function_decl)) {
-    return true;
-  }
-  // Traverse the function, recording that it is the enclosing function during
-  // traversal.
-  assert(enclosing_function_ == nullptr);
-  enclosing_function_ = function_decl;
-  RecursiveASTVisitor::TraverseFunctionDecl(function_decl);
-  assert(enclosing_function_ == function_decl);
-  enclosing_function_ = nullptr;
   return true;
 }
 
 bool MutateVisitor::VisitBinaryOperator(
     clang::BinaryOperator* binary_operator) {
-  if (enclosing_function_ == nullptr) {
+  if (enclosing_decls_.empty()) {
     // Only consider mutating binary expressions that occur inside functions.
     return true;
   }
@@ -164,7 +146,7 @@ bool MutateVisitor::VisitBinaryOperator(
   available_operators.erase(current_operator_iterator);
 
   mutations_.push_back(std::make_unique<MutationReplaceBinaryOperator>(
-      *binary_operator, *enclosing_function_,
+      *binary_operator, *enclosing_decls_[0],
       generator_.GetRandomElement(available_operators)));
   return true;
 }
@@ -193,8 +175,11 @@ bool MutateVisitor::VisitCompoundStmt(clang::CompoundStmt* compound_stmt) {
         llvm::dyn_cast<clang::DeclStmt>(stmt) != nullptr) {
       continue;
     }
+    assert(!enclosing_decls_.empty() &&
+           "Statements can only be removed if they are nested in some "
+           "declaration.");
     mutations_.push_back(
-        std::make_unique<MutationRemoveStatement>(*stmt, *enclosing_function_));
+        std::make_unique<MutationRemoveStatement>(*stmt, *enclosing_decls_[0]));
   }
   return true;
 }
@@ -226,6 +211,17 @@ bool MutateVisitor::VisitLabelStmt(clang::LabelStmt* label_stmt) {
 
 bool MutateVisitor::VisitSwitchCase(clang::SwitchCase* switch_case) {
   contains_case_for_enclosing_switch_.insert(switch_case);
+  if (contains_return_goto_or_label_.contains(switch_case->getSubStmt())) {
+    contains_return_goto_or_label_.insert(switch_case);
+  }
+  if (contains_continue_for_enclosing_loop_.contains(
+          switch_case->getSubStmt())) {
+    contains_continue_for_enclosing_loop_.insert(switch_case);
+  }
+  if (contains_break_for_enclosing_loop_or_switch_.contains(
+          switch_case->getSubStmt())) {
+    contains_break_for_enclosing_loop_or_switch_.insert(switch_case);
+  }
   return true;
 }
 
@@ -278,6 +274,18 @@ bool MutateVisitor::VisitDoStmt(clang::DoStmt* do_stmt) {
   }
   if (contains_case_for_enclosing_switch_.contains(do_stmt->getBody())) {
     contains_case_for_enclosing_switch_.insert(do_stmt);
+  }
+  return true;
+}
+
+bool MutateVisitor::VisitCXXForRangeStmt(
+    clang::CXXForRangeStmt* cxx_for_range_stmt) {
+  if (contains_return_goto_or_label_.contains(cxx_for_range_stmt->getBody())) {
+    contains_return_goto_or_label_.insert(cxx_for_range_stmt);
+  }
+  if (contains_case_for_enclosing_switch_.contains(
+          cxx_for_range_stmt->getBody())) {
+    contains_case_for_enclosing_switch_.insert(cxx_for_range_stmt);
   }
   return true;
 }

@@ -18,7 +18,7 @@
 #include <sstream>
 #include <string>
 
-#include "clang/AST/Decl.h"
+#include "clang/AST/DeclBase.h"
 #include "clang/AST/Expr.h"
 #include "clang/AST/OperationKinds.h"
 #include "clang/AST/PrettyPrinter.h"
@@ -31,10 +31,9 @@ namespace dredd {
 
 MutationReplaceBinaryOperator::MutationReplaceBinaryOperator(
     const clang::BinaryOperator& binary_operator,
-    const clang::FunctionDecl& enclosing_function,
-    clang::BinaryOperatorKind new_operator)
+    const clang::Decl& enclosing_decl, clang::BinaryOperatorKind new_operator)
     : binary_operator_(binary_operator),
-      enclosing_function_(enclosing_function),
+      enclosing_decl_(enclosing_decl),
       new_operator_(new_operator) {}
 
 void MutationReplaceBinaryOperator::Apply(
@@ -129,7 +128,7 @@ void MutationReplaceBinaryOperator::Apply(
       << "}\n\n";
 
   bool result = rewriter.InsertTextBefore(
-      enclosing_function_.getSourceRange().getBegin(), new_function.str());
+      enclosing_decl_.getSourceRange().getBegin(), new_function.str());
   (void)result;  // Keep release-mode compilers happy.
   assert(!result && "Rewrite failed.\n");
 }

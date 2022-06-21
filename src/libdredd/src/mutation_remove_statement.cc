@@ -18,20 +18,19 @@
 #include <sstream>
 #include <string>
 
-#include "clang/AST/Decl.h"
-#include "clang/AST/OperationKinds.h"
+#include "clang/AST/DeclBase.h"
 #include "clang/AST/PrettyPrinter.h"
 #include "clang/AST/Stmt.h"
-#include "clang/AST/Type.h"
+#include "clang/AST/StmtCXX.h"
 #include "clang/Basic/SourceLocation.h"
 #include "clang/Rewrite/Core/Rewriter.h"
-#include "llvm/ADT/StringRef.h"
+#include "llvm/Support/Casting.h"
 
 namespace dredd {
 
 MutationRemoveStatement::MutationRemoveStatement(
-    const clang::Stmt& statement, const clang::FunctionDecl& enclosing_function)
-    : statement_(statement), enclosing_function_(enclosing_function) {}
+    const clang::Stmt& statement, const clang::Decl& enclosing_decl)
+    : statement_(statement), enclosing_decl_(enclosing_decl) {}
 
 void MutationRemoveStatement::Apply(
     int mutation_id, clang::Rewriter& rewriter,
@@ -56,7 +55,7 @@ void MutationRemoveStatement::Apply(
                << "}\n\n";
 
   bool result = rewriter.InsertTextBefore(
-      enclosing_function_.getSourceRange().getBegin(), new_function.str());
+      enclosing_decl_.getSourceRange().getBegin(), new_function.str());
   (void)result;  // Keep release-mode compilers happy.
   assert(!result && "Rewrite failed.\n");
 
@@ -65,6 +64,8 @@ void MutationRemoveStatement::Apply(
       llvm::dyn_cast<clang::ForStmt>(&statement_) != nullptr ||
       llvm::dyn_cast<clang::WhileStmt>(&statement_) != nullptr ||
       llvm::dyn_cast<clang::DoStmt>(&statement_) != nullptr ||
+      llvm::dyn_cast<clang::CXXForRangeStmt>(&statement_) != nullptr ||
+      llvm::dyn_cast<clang::SwitchStmt>(&statement_) != nullptr ||
       llvm::dyn_cast<clang::CompoundStmt>(&statement_) != nullptr;
 
   result = rewriter.ReplaceText(
