@@ -178,8 +178,7 @@ bool MutateVisitor::VisitCompoundStmt(clang::CompoundStmt* compound_stmt) {
     assert(!enclosing_decls_.empty() &&
            "Statements can only be removed if they are nested in some "
            "declaration.");
-    mutations_.push_back(
-        std::make_unique<MutationRemoveStatement>(*stmt, *enclosing_decls_[0]));
+    mutations_.push_back(std::make_unique<MutationRemoveStatement>(*stmt));
   }
   return true;
 }

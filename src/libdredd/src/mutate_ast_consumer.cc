@@ -64,6 +64,15 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& context) {
     dredd_prelude << "  }\n";
     dredd_prelude << "  return atoi(__dredd_environment_variable);\n";
     dredd_prelude << "}\n\n";
+    dredd_prelude
+        << "static void __dredd_remove_statement(std::function<void()> "
+           "statement, int mutation_id) {\n"
+        << "  if (__dredd_enabled_mutation() == mutation_id) {\n"
+        << "    return;\n"
+        << "  }\n"
+        << "  statement();\n"
+        << "}\n\n";
+
     bool result = rewriter_.InsertTextBefore(
         visitor_->GetFirstDeclInSourceFile()->getBeginLoc(),
         dredd_prelude.str());
