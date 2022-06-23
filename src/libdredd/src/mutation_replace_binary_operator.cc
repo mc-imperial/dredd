@@ -99,7 +99,8 @@ void MutationReplaceBinaryOperator::Apply(
   // Generate the wrapper function declaration and insert it before the
   // enclosing function.
   std::stringstream new_function;
-  new_function << result_type << " " << mutation_function_name << "(";
+  new_function << "static " << result_type << " " << mutation_function_name
+               << "(";
 
   std::string arg1_evaluated("arg1");
   if (binary_operator_.isLogicalOp()) {

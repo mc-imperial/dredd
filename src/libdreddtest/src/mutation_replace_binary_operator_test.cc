@@ -39,7 +39,7 @@ namespace {
 TEST(MutationReplaceBinaryOperatorTest, BasicTest) {
   std::string original = "void foo() { 1 + 2; }";
   std::string expected =
-      R"(int __dredd_replace_binary_operator_0(int arg1, int arg2) {
+      R"(static int __dredd_replace_binary_operator_0(int arg1, int arg2) {
   if (__dredd_enabled_mutation() == 0) {
     return arg1 - arg2;
   }
@@ -84,7 +84,7 @@ TEST(MutationReplaceBinaryOperatorTest, AndToShift) {
 }
 )";
   std::string expected =
-      R"(bool __dredd_replace_binary_operator_0(std::function<bool()> arg1, std::function<bool()> arg2) {
+      R"(static bool __dredd_replace_binary_operator_0(std::function<bool()> arg1, std::function<bool()> arg2) {
   if (__dredd_enabled_mutation() == 0) {
     return arg1() >> arg2();
   }
@@ -133,7 +133,7 @@ TEST(MutationReplaceBinaryOperatorTest, AssignToAddAssign) {
 }
 )";
   std::string expected =
-      R"(int& __dredd_replace_binary_operator_0(int& arg1, int arg2) {
+      R"(static int& __dredd_replace_binary_operator_0(int& arg1, int arg2) {
   if (__dredd_enabled_mutation() == 0) {
     return arg1 += arg2;
   }
