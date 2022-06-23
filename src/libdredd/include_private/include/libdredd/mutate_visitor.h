@@ -16,13 +16,15 @@
 #define LIBDREDD_MUTATE_VISITOR_H
 
 #include <memory>
+#include <unordered_set>
 #include <vector>
 
 #include "clang/AST/ASTContext.h"
-#include "clang/AST/Decl.h"
 #include "clang/AST/DeclBase.h"
 #include "clang/AST/Expr.h"
 #include "clang/AST/RecursiveASTVisitor.h"
+#include "clang/AST/Stmt.h"
+#include "clang/AST/StmtCXX.h"
 #include "libdredd/mutation.h"
 #include "libdredd/random_generator.h"
 
@@ -33,11 +35,38 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
   MutateVisitor(const clang::ASTContext& ast_context,
                 RandomGenerator& generator);
 
-  bool TraverseDecl(clang::Decl* function_decl);
+  bool TraverseDecl(clang::Decl* decl);
 
-  bool TraverseFunctionDecl(clang::FunctionDecl* function_decl);
+  bool VisitBinaryOperator(clang::BinaryOperator* binary_operator);
 
-  bool TraverseBinaryOperator(clang::BinaryOperator* binary_operator);
+  bool VisitCompoundStmt(clang::CompoundStmt* compound_stmt);
+
+  bool VisitReturnStmt(clang::ReturnStmt* return_stmt);
+
+  bool VisitBreakStmt(clang::BreakStmt* break_stmt);
+
+  bool VisitContinueStmt(clang::ContinueStmt* continue_stmt);
+
+  bool VisitGotoStmt(clang::GotoStmt* goto_stmt);
+
+  bool VisitLabelStmt(clang::LabelStmt* label_stmt);
+
+  bool VisitSwitchCase(clang::SwitchCase* switch_case);
+
+  bool VisitIfStmt(clang::IfStmt* if_stmt);
+
+  bool VisitForStmt(clang::ForStmt* for_stmt);
+
+  bool VisitWhileStmt(clang::WhileStmt* while_stmt);
+
+  bool VisitDoStmt(clang::DoStmt* do_stmt);
+
+  bool VisitCXXForRangeStmt(clang::CXXForRangeStmt* cxx_for_range_stmt);
+
+  bool VisitSwitchStmt(clang::SwitchStmt* switch_stmt);
+
+  // NOLINTNEXTLINE
+  bool shouldTraversePostOrder() { return true; }
 
   [[nodiscard]] const std::vector<std::unique_ptr<Mutation>>& GetMutations()
       const {
@@ -62,9 +91,19 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
   // directives such as includes can be placed.
   const clang::Decl* first_decl_in_source_file_;
 
-  // Tracks the function currently being traversed; nullptr if there is no such
-  // function.
-  const clang::FunctionDecl* enclosing_function_;
+  // Tracks the nest of declarations currently being traversed. Any new Dredd
+  // functions will be put before the start of the current nest, which avoids
+  // e.g. putting a Dredd function inside a class or function.
+  std::vector<const clang::Decl*> enclosing_decls_;
+
+  // These fields track whether a statement contains some sub-statement that
+  // might cause control to branch outside of the statement. This needs to be
+  // tracked to determine when it is legitimate to move a statement into a
+  // lambda to simulate statement removal.
+  std::unordered_set<clang::Stmt*> contains_return_goto_or_label_;
+  std::unordered_set<clang::Stmt*> contains_break_for_enclosing_loop_or_switch_;
+  std::unordered_set<clang::Stmt*> contains_continue_for_enclosing_loop_;
+  std::unordered_set<clang::Stmt*> contains_case_for_enclosing_switch_;
 
   // Records the mutations that can be applied.
   std::vector<std::unique_ptr<Mutation>> mutations_;

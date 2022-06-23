@@ -12,33 +12,30 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef LIBDREDD_MUTATION_REPLACE_BINARY_OPERATOR_H
-#define LIBDREDD_MUTATION_REPLACE_BINARY_OPERATOR_H
+#ifndef LIBDREDD_MUTATION_REMOVE_STATEMENT_H
+#define LIBDREDD_MUTATION_REMOVE_STATEMENT_H
 
 #include "clang/AST/DeclBase.h"
-#include "clang/AST/Expr.h"
-#include "clang/AST/OperationKinds.h"
 #include "clang/AST/PrettyPrinter.h"
+#include "clang/AST/Stmt.h"
 #include "clang/Rewrite/Core/Rewriter.h"
 #include "libdredd/mutation.h"
 
 namespace dredd {
 
-class MutationReplaceBinaryOperator : public Mutation {
+class MutationRemoveStatement : public Mutation {
  public:
-  MutationReplaceBinaryOperator(const clang::BinaryOperator& binary_operator,
-                                const clang::Decl& enclosing_decl,
-                                clang::BinaryOperatorKind new_operator);
+  MutationRemoveStatement(const clang::Stmt& statement,
+                          const clang::Decl& enclosing_decl);
 
   void Apply(int mutation_id, clang::Rewriter& rewriter,
              clang::PrintingPolicy& printing_policy) const override;
 
  private:
-  const clang::BinaryOperator& binary_operator_;
+  const clang::Stmt& statement_;
   const clang::Decl& enclosing_decl_;
-  clang::BinaryOperatorKind new_operator_;
 };
 
 }  // namespace dredd
 
-#endif  // LIBDREDD_MUTATION_REPLACE_BINARY_OPERATOR_H
+#endif  // LIBDREDD_MUTATION_REMOVE_STATEMENT_H
