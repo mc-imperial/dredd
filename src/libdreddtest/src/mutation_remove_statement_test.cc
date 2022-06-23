@@ -37,7 +37,7 @@ namespace {
 TEST(MutationRemoveStatementTest, BasicTest) {
   std::string original = "void foo() { 1 + 2; }";
   std::string expected =
-      R"(void foo() { __dredd_remove_statement([&]() -> void { 1 + 2; }, 0); })";
+      R"(void foo() { if (__dredd_enabled_mutation() == 0) { 1 + 2; }; })";
   auto ast_unit = clang::tooling::buildASTFromCodeWithArgs(original, {"-w"});
   ASSERT_FALSE(ast_unit->getDiagnostics().hasErrorOccurred());
   auto function_decl = clang::ast_matchers::match(

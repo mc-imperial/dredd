@@ -153,148 +153,20 @@ bool MutateVisitor::VisitBinaryOperator(
 
 bool MutateVisitor::VisitCompoundStmt(clang::CompoundStmt* compound_stmt) {
   for (auto* stmt : compound_stmt->body()) {
-    bool must_skip = false;
-    if (contains_return_goto_or_label_.contains(stmt)) {
-      contains_return_goto_or_label_.insert(compound_stmt);
-      must_skip = true;
-    }
-    if (contains_break_for_enclosing_loop_or_switch_.contains(stmt)) {
-      contains_break_for_enclosing_loop_or_switch_.insert(compound_stmt);
-      must_skip = true;
-    }
-    if (contains_continue_for_enclosing_loop_.contains(stmt)) {
-      contains_continue_for_enclosing_loop_.insert(compound_stmt);
-      must_skip = true;
-    }
-    if (contains_case_for_enclosing_switch_.contains(stmt)) {
-      contains_case_for_enclosing_switch_.insert(compound_stmt);
-      must_skip = true;
-    }
-    if (must_skip || !StartsAndEndsInMainSourceFile(*stmt) ||
+    if (!StartsAndEndsInMainSourceFile(*stmt) ||
         llvm::dyn_cast<clang::NullStmt>(stmt) != nullptr ||
-        llvm::dyn_cast<clang::DeclStmt>(stmt) != nullptr) {
+        llvm::dyn_cast<clang::DeclStmt>(stmt) != nullptr ||
+        llvm::dyn_cast<clang::SwitchCase>(stmt) != nullptr ||
+        llvm::dyn_cast<clang::LabelStmt>(stmt) != nullptr) {
+      // Wrapping switch cases, labels and null statements in conditional code
+      // has no effect. Declarations cannot be wrapped in conditional code
+      // without risking breaking compilation.
       continue;
     }
     assert(!enclosing_decls_.empty() &&
            "Statements can only be removed if they are nested in some "
            "declaration.");
     mutations_.push_back(std::make_unique<MutationRemoveStatement>(*stmt));
-  }
-  return true;
-}
-
-bool MutateVisitor::VisitReturnStmt(clang::ReturnStmt* return_stmt) {
-  contains_return_goto_or_label_.insert(return_stmt);
-  return true;
-}
-
-bool MutateVisitor::VisitBreakStmt(clang::BreakStmt* break_stmt) {
-  contains_break_for_enclosing_loop_or_switch_.insert(break_stmt);
-  return true;
-}
-
-bool MutateVisitor::VisitContinueStmt(clang::ContinueStmt* continue_stmt) {
-  contains_continue_for_enclosing_loop_.insert(continue_stmt);
-  return true;
-}
-
-bool MutateVisitor::VisitGotoStmt(clang::GotoStmt* goto_stmt) {
-  contains_return_goto_or_label_.insert(goto_stmt);
-  return true;
-}
-
-bool MutateVisitor::VisitLabelStmt(clang::LabelStmt* label_stmt) {
-  contains_return_goto_or_label_.insert(label_stmt);
-  return true;
-}
-
-bool MutateVisitor::VisitSwitchCase(clang::SwitchCase* switch_case) {
-  contains_case_for_enclosing_switch_.insert(switch_case);
-  if (contains_return_goto_or_label_.contains(switch_case->getSubStmt())) {
-    contains_return_goto_or_label_.insert(switch_case);
-  }
-  if (contains_continue_for_enclosing_loop_.contains(
-          switch_case->getSubStmt())) {
-    contains_continue_for_enclosing_loop_.insert(switch_case);
-  }
-  if (contains_break_for_enclosing_loop_or_switch_.contains(
-          switch_case->getSubStmt())) {
-    contains_break_for_enclosing_loop_or_switch_.insert(switch_case);
-  }
-  return true;
-}
-
-bool MutateVisitor::VisitIfStmt(clang::IfStmt* if_stmt) {
-  std::vector<clang::Stmt*> body_statements;
-  body_statements.push_back(if_stmt->getThen());
-  if (if_stmt->getElse() != nullptr) {
-    body_statements.push_back(if_stmt->getElse());
-  }
-  for (auto* body_statement : body_statements) {
-    if (contains_return_goto_or_label_.contains(body_statement)) {
-      contains_return_goto_or_label_.insert(if_stmt);
-    }
-    if (contains_case_for_enclosing_switch_.contains(body_statement)) {
-      contains_case_for_enclosing_switch_.insert(if_stmt);
-    }
-    if (contains_break_for_enclosing_loop_or_switch_.contains(body_statement)) {
-      contains_break_for_enclosing_loop_or_switch_.insert(if_stmt);
-    }
-    if (contains_continue_for_enclosing_loop_.contains(body_statement)) {
-      contains_continue_for_enclosing_loop_.insert(if_stmt);
-    }
-  }
-  return true;
-}
-
-bool MutateVisitor::VisitForStmt(clang::ForStmt* for_stmt) {
-  if (contains_return_goto_or_label_.contains(for_stmt->getBody())) {
-    contains_return_goto_or_label_.insert(for_stmt);
-  }
-  if (contains_case_for_enclosing_switch_.contains(for_stmt->getBody())) {
-    contains_case_for_enclosing_switch_.insert(for_stmt);
-  }
-  return true;
-}
-
-bool MutateVisitor::VisitWhileStmt(clang::WhileStmt* while_stmt) {
-  if (contains_return_goto_or_label_.contains(while_stmt->getBody())) {
-    contains_return_goto_or_label_.insert(while_stmt);
-  }
-  if (contains_case_for_enclosing_switch_.contains(while_stmt->getBody())) {
-    contains_case_for_enclosing_switch_.insert(while_stmt);
-  }
-  return true;
-}
-
-bool MutateVisitor::VisitDoStmt(clang::DoStmt* do_stmt) {
-  if (contains_return_goto_or_label_.contains(do_stmt->getBody())) {
-    contains_return_goto_or_label_.insert(do_stmt);
-  }
-  if (contains_case_for_enclosing_switch_.contains(do_stmt->getBody())) {
-    contains_case_for_enclosing_switch_.insert(do_stmt);
-  }
-  return true;
-}
-
-bool MutateVisitor::VisitCXXForRangeStmt(
-    clang::CXXForRangeStmt* cxx_for_range_stmt) {
-  if (contains_return_goto_or_label_.contains(cxx_for_range_stmt->getBody())) {
-    contains_return_goto_or_label_.insert(cxx_for_range_stmt);
-  }
-  if (contains_case_for_enclosing_switch_.contains(
-          cxx_for_range_stmt->getBody())) {
-    contains_case_for_enclosing_switch_.insert(cxx_for_range_stmt);
-  }
-  return true;
-}
-
-bool MutateVisitor::VisitSwitchStmt(clang::SwitchStmt* switch_stmt) {
-  if (contains_return_goto_or_label_.contains(switch_stmt->getBody())) {
-    contains_return_goto_or_label_.insert(switch_stmt);
-  }
-  if (contains_continue_for_enclosing_loop_.contains(switch_stmt->getBody())) {
-    contains_continue_for_enclosing_loop_.insert(switch_stmt);
   }
   return true;
 }

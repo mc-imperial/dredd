@@ -41,30 +41,6 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
 
   bool VisitCompoundStmt(clang::CompoundStmt* compound_stmt);
 
-  bool VisitReturnStmt(clang::ReturnStmt* return_stmt);
-
-  bool VisitBreakStmt(clang::BreakStmt* break_stmt);
-
-  bool VisitContinueStmt(clang::ContinueStmt* continue_stmt);
-
-  bool VisitGotoStmt(clang::GotoStmt* goto_stmt);
-
-  bool VisitLabelStmt(clang::LabelStmt* label_stmt);
-
-  bool VisitSwitchCase(clang::SwitchCase* switch_case);
-
-  bool VisitIfStmt(clang::IfStmt* if_stmt);
-
-  bool VisitForStmt(clang::ForStmt* for_stmt);
-
-  bool VisitWhileStmt(clang::WhileStmt* while_stmt);
-
-  bool VisitDoStmt(clang::DoStmt* do_stmt);
-
-  bool VisitCXXForRangeStmt(clang::CXXForRangeStmt* cxx_for_range_stmt);
-
-  bool VisitSwitchStmt(clang::SwitchStmt* switch_stmt);
-
   // NOLINTNEXTLINE
   bool shouldTraversePostOrder() { return true; }
 

@@ -34,20 +34,13 @@ void MutationRemoveStatement::Apply(
   (void)printing_policy;  // Not used.
 
   bool needs_trailing_semicolon =
-      llvm::dyn_cast<clang::IfStmt>(&statement_) != nullptr ||
-      llvm::dyn_cast<clang::ForStmt>(&statement_) != nullptr ||
-      llvm::dyn_cast<clang::WhileStmt>(&statement_) != nullptr ||
-      llvm::dyn_cast<clang::DoStmt>(&statement_) != nullptr ||
-      llvm::dyn_cast<clang::CXXForRangeStmt>(&statement_) != nullptr ||
-      llvm::dyn_cast<clang::SwitchStmt>(&statement_) != nullptr ||
-      llvm::dyn_cast<clang::CompoundStmt>(&statement_) != nullptr;
+      llvm::dyn_cast<clang::Expr>(&statement_) != nullptr;
 
   bool result = rewriter.ReplaceText(
       statement_.getSourceRange(),
-      "__dredd_remove_statement([&]() -> void { " +
-          rewriter.getRewrittenText(statement_.getSourceRange()) + "; }, " +
-          std::to_string(mutation_id) + ")" +
-          (needs_trailing_semicolon ? ";" : ""));
+      "if (__dredd_enabled_mutation() == " + std::to_string(mutation_id) +
+          ") { " + rewriter.getRewrittenText(statement_.getSourceRange()) +
+          (needs_trailing_semicolon ? ";" : "") + " }");
   (void)result;  // Keep release-mode compilers happy.
   assert(!result && "Rewrite failed.\n");
 }
