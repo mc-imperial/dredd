@@ -94,7 +94,7 @@ TEST(MutationReplaceBinaryOperatorTest, AndToShift) {
 void foo() {
   int x = 1;
   int y = 2;
-  int z = __dredd_replace_binary_operator_0([&]() -> bool { return x; }, [&]() -> bool { return y; });
+  int z = __dredd_replace_binary_operator_0([&]() -> bool { return static_cast<bool>(x); }, [&]() -> bool { return static_cast<bool>(y); });
 }
 )";
   auto ast_unit = clang::tooling::buildASTFromCodeWithArgs(original, {"-w"});

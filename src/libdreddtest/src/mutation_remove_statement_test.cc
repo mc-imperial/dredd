@@ -17,7 +17,6 @@
 #include <memory>
 #include <string>
 
-#include "clang/AST/Decl.h"
 #include "clang/AST/Expr.h"
 #include "clang/AST/PrettyPrinter.h"
 #include "clang/ASTMatchers/ASTMatchFinder.h"
@@ -38,14 +37,7 @@ namespace {
 TEST(MutationRemoveStatementTest, BasicTest) {
   std::string original = "void foo() { 1 + 2; }";
   std::string expected =
-      R"(void __dredd_remove_statement_0(std::function<void()> statement) {
-  if (__dredd_enabled_mutation() == 0) {
-    return;
-  }
-  statement();
-}
-
-void foo() { __dredd_remove_statement_0([&]() -> void { 1 + 2; }); })";
+      R"(void foo() { __dredd_remove_statement([&]() -> void { 1 + 2; }, 0); })";
   auto ast_unit = clang::tooling::buildASTFromCodeWithArgs(original, {"-w"});
   ASSERT_FALSE(ast_unit->getDiagnostics().hasErrorOccurred());
   auto function_decl = clang::ast_matchers::match(
@@ -60,8 +52,7 @@ void foo() { __dredd_remove_statement_0([&]() -> void { 1 + 2; }); })";
   ASSERT_EQ(1, statement.size());
 
   MutationRemoveStatement mutation(
-      *statement[0].getNodeAs<clang::BinaryOperator>("op"),
-      *function_decl[0].getNodeAs<clang::FunctionDecl>("fn"));
+      *statement[0].getNodeAs<clang::BinaryOperator>("op"));
 
   clang::Rewriter rewriter(ast_unit->getSourceManager(),
                            ast_unit->getLangOpts());

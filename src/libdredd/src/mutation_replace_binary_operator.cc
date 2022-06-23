@@ -71,13 +71,15 @@ void MutationReplaceBinaryOperator::Apply(
   if (binary_operator_.isLogicalOp()) {
     bool result = rewriter.ReplaceText(
         binary_operator_.getSourceRange(),
-        mutation_function_name + "([&]() -> " + lhs_type + " { return " +
+        mutation_function_name + "([&]() -> " + lhs_type +
+            " { return static_cast<" + lhs_type + ">(" +
             rewriter.getRewrittenText(
                 binary_operator_.getLHS()->getSourceRange()) +
-            +"; }, [&]() -> " + rhs_type + " { return " +
+            +"); }, [&]() -> " + rhs_type + " { return static_cast<" +
+            rhs_type + ">(" +
             rewriter.getRewrittenText(
                 binary_operator_.getRHS()->getSourceRange()) +
-            "; })");
+            "); })");
     (void)result;  // Keep release-mode compilers happy.
     assert(!result && "Rewrite failed.\n");
   } else {
