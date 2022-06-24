@@ -17,9 +17,9 @@
 #include <cassert>
 #include <string>
 
+#include "clang/AST/Expr.h"
 #include "clang/AST/PrettyPrinter.h"
 #include "clang/AST/Stmt.h"
-#include "clang/AST/StmtCXX.h"
 #include "clang/Rewrite/Core/Rewriter.h"
 #include "llvm/Support/Casting.h"
 
