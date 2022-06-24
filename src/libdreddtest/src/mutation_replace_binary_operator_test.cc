@@ -67,8 +67,7 @@ void foo() { __dredd_replace_binary_operator_0(1, 2); })";
 
   clang::Rewriter rewriter(ast_unit->getSourceManager(),
                            ast_unit->getLangOpts());
-  clang::PrintingPolicy printing_policy(ast_unit->getLangOpts());
-  mutation.Apply(0, rewriter, printing_policy);
+  mutation.Apply(0, ast_unit->getASTContext(), rewriter);
 
   const clang::RewriteBuffer* rewrite_buffer = rewriter.getRewriteBufferFor(
       ast_unit->getSourceManager().getMainFileID());
@@ -118,7 +117,7 @@ void foo() {
   clang::Rewriter rewriter(ast_unit->getSourceManager(),
                            ast_unit->getLangOpts());
   clang::PrintingPolicy printing_policy(ast_unit->getLangOpts());
-  mutation.Apply(0, rewriter, printing_policy);
+  mutation.Apply(0, ast_unit->getASTContext(), rewriter);
 
   const clang::RewriteBuffer* rewrite_buffer = rewriter.getRewriteBufferFor(
       ast_unit->getSourceManager().getMainFileID());
@@ -166,7 +165,7 @@ void foo() {
   clang::Rewriter rewriter(ast_unit->getSourceManager(),
                            ast_unit->getLangOpts());
   clang::PrintingPolicy printing_policy(ast_unit->getLangOpts());
-  mutation.Apply(0, rewriter, printing_policy);
+  mutation.Apply(0, ast_unit->getASTContext(), rewriter);
 
   const clang::RewriteBuffer* rewrite_buffer = rewriter.getRewriteBufferFor(
       ast_unit->getSourceManager().getMainFileID());
