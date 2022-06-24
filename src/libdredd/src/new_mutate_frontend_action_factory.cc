@@ -31,11 +31,8 @@ namespace dredd {
 
 class MutateFrontendAction : public clang::ASTFrontendAction {
  public:
-  MutateFrontendAction(RandomGenerator& generator, int& mutation_id,
-                       std::set<std::string>& processed_files)
-      : generator_(generator),
-        mutation_id_(mutation_id),
-        processed_files_(processed_files) {}
+  MutateFrontendAction(int& mutation_id, std::set<std::string>& processed_files)
+      : mutation_id_(mutation_id), processed_files_(processed_files) {}
 
   std::unique_ptr<clang::ASTConsumer> CreateASTConsumer(
       clang::CompilerInstance& ci, llvm::StringRef file) override;
@@ -55,26 +52,24 @@ class MutateFrontendAction : public clang::ASTFrontendAction {
   }
 
  private:
-  RandomGenerator& generator_;
   int& mutation_id_;
   std::set<std::string>& processed_files_;
 };
 
 std::unique_ptr<clang::tooling::FrontendActionFactory>
-NewMutateFrontendActionFactory(RandomGenerator& generator, int& mutation_id) {
+NewMutateFrontendActionFactory(int& mutation_id) {
   class MutateFrontendActionFactory
       : public clang::tooling::FrontendActionFactory {
    public:
-    MutateFrontendActionFactory(RandomGenerator& generator, int& mutation_id)
-        : generator_(generator), mutation_id_(mutation_id) {}
+    explicit MutateFrontendActionFactory(int& mutation_id)
+        : mutation_id_(mutation_id) {}
 
     std::unique_ptr<clang::FrontendAction> create() override {
-      return std::make_unique<MutateFrontendAction>(generator_, mutation_id_,
+      return std::make_unique<MutateFrontendAction>(mutation_id_,
                                                     processed_files_);
     }
 
    private:
-    RandomGenerator& generator_;
     int& mutation_id_;
 
     // Stores the ids of the files that have been processed so far, to avoid
@@ -82,13 +77,13 @@ NewMutateFrontendActionFactory(RandomGenerator& generator, int& mutation_id) {
     std::set<std::string> processed_files_;
   };
 
-  return std::make_unique<MutateFrontendActionFactory>(generator, mutation_id);
+  return std::make_unique<MutateFrontendActionFactory>(mutation_id);
 }
 
 std::unique_ptr<clang::ASTConsumer> MutateFrontendAction::CreateASTConsumer(
     clang::CompilerInstance& ci, llvm::StringRef file) {
   (void)file;
-  return std::make_unique<MutateAstConsumer>(ci, generator_, mutation_id_);
+  return std::make_unique<MutateAstConsumer>(ci, mutation_id_);
 }
 
 }  // namespace dredd

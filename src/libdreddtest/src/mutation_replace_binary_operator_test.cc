@@ -19,7 +19,6 @@
 
 #include "clang/AST/Decl.h"
 #include "clang/AST/Expr.h"
-#include "clang/AST/OperationKinds.h"
 #include "clang/AST/PrettyPrinter.h"
 #include "clang/ASTMatchers/ASTMatchFinder.h"
 #include "clang/ASTMatchers/ASTMatchers.h"
@@ -36,14 +35,19 @@
 namespace dredd {
 namespace {
 
-TEST(MutationReplaceBinaryOperatorTest, BasicTest) {
+TEST(MutationReplaceBinaryOperatorTest, MutateAdd) {
   std::string original = "void foo() { 1 + 2; }";
   std::string expected =
       R"(static int __dredd_replace_binary_operator_0(int arg1, int arg2) {
-  if (__dredd_enabled_mutation() == 0) {
-    return arg1 - arg2;
+  switch (__dredd_enabled_mutation()) {
+    case 0: return arg1 / arg2;
+    case 1: return arg1 * arg2;
+    case 2: return arg1 % arg2;
+    case 3: return arg1 - arg2;
+    case 4: return arg1;
+    case 5: return arg2;
+    default: return arg1 + arg2;
   }
-  return arg1 + arg2;
 }
 
 void foo() { __dredd_replace_binary_operator_0(1, 2); })";
@@ -62,12 +66,13 @@ void foo() { __dredd_replace_binary_operator_0(1, 2); })";
 
   MutationReplaceBinaryOperator mutation(
       *binary_operator[0].getNodeAs<clang::BinaryOperator>("op"),
-      *function_decl[0].getNodeAs<clang::FunctionDecl>("fn"),
-      clang::BinaryOperatorKind::BO_Sub);
+      *function_decl[0].getNodeAs<clang::FunctionDecl>("fn"));
 
   clang::Rewriter rewriter(ast_unit->getSourceManager(),
                            ast_unit->getLangOpts());
-  mutation.Apply(0, ast_unit->getASTContext(), rewriter);
+  int mutation_id = 0;
+  mutation.Apply(ast_unit->getASTContext(), mutation_id, rewriter);
+  ASSERT_EQ(6, mutation_id);
 
   const clang::RewriteBuffer* rewrite_buffer = rewriter.getRewriteBufferFor(
       ast_unit->getSourceManager().getMainFileID());
@@ -75,7 +80,7 @@ void foo() { __dredd_replace_binary_operator_0(1, 2); })";
   ASSERT_EQ(expected, rewritten_text);
 }
 
-TEST(MutationReplaceBinaryOperatorTest, AndToShift) {
+TEST(MutationReplaceBinaryOperatorTest, MutateAnd) {
   std::string original = R"(void foo() {
   int x = 1;
   int y = 2;
@@ -84,10 +89,14 @@ TEST(MutationReplaceBinaryOperatorTest, AndToShift) {
 )";
   std::string expected =
       R"(static bool __dredd_replace_binary_operator_0(std::function<bool()> arg1, std::function<bool()> arg2) {
-  if (__dredd_enabled_mutation() == 0) {
-    return arg1() >> arg2();
+  switch (__dredd_enabled_mutation()) {
+    case 0: return arg1() || arg2();
+    case 1: return arg1();
+    case 2: return arg2();
+    case 3: return true;
+    case 4: return false;
+    default: return arg1() && arg2();
   }
-  return arg1() && arg2();
 }
 
 void foo() {
@@ -111,13 +120,14 @@ void foo() {
 
   MutationReplaceBinaryOperator mutation(
       *binary_operator[0].getNodeAs<clang::BinaryOperator>("op"),
-      *function_decl[0].getNodeAs<clang::FunctionDecl>("fn"),
-      clang::BinaryOperatorKind::BO_Shr);
+      *function_decl[0].getNodeAs<clang::FunctionDecl>("fn"));
 
   clang::Rewriter rewriter(ast_unit->getSourceManager(),
                            ast_unit->getLangOpts());
   clang::PrintingPolicy printing_policy(ast_unit->getLangOpts());
-  mutation.Apply(0, ast_unit->getASTContext(), rewriter);
+  int mutation_id = 0;
+  mutation.Apply(ast_unit->getASTContext(), mutation_id, rewriter);
+  ASSERT_EQ(5, mutation_id);
 
   const clang::RewriteBuffer* rewrite_buffer = rewriter.getRewriteBufferFor(
       ast_unit->getSourceManager().getMainFileID());
@@ -125,7 +135,7 @@ void foo() {
   ASSERT_EQ(expected, rewritten_text);
 }
 
-TEST(MutationReplaceBinaryOperatorTest, AssignToAddAssign) {
+TEST(MutationReplaceBinaryOperatorTest, MutateAssign) {
   std::string original = R"(void foo() {
   int x;
   x = 1;
@@ -133,10 +143,19 @@ TEST(MutationReplaceBinaryOperatorTest, AssignToAddAssign) {
 )";
   std::string expected =
       R"(static int& __dredd_replace_binary_operator_0(int& arg1, int arg2) {
-  if (__dredd_enabled_mutation() == 0) {
-    return arg1 += arg2;
+  switch (__dredd_enabled_mutation()) {
+    case 0: return arg1 += arg2;
+    case 1: return arg1 &= arg2;
+    case 2: return arg1 /= arg2;
+    case 3: return arg1 *= arg2;
+    case 4: return arg1 |= arg2;
+    case 5: return arg1 %= arg2;
+    case 6: return arg1 <<= arg2;
+    case 7: return arg1 >>= arg2;
+    case 8: return arg1 -= arg2;
+    case 9: return arg1 ^= arg2;
+    default: return arg1 = arg2;
   }
-  return arg1 = arg2;
 }
 
 void foo() {
@@ -159,13 +178,14 @@ void foo() {
 
   MutationReplaceBinaryOperator mutation(
       *binary_operator[0].getNodeAs<clang::BinaryOperator>("op"),
-      *function_decl[0].getNodeAs<clang::FunctionDecl>("fn"),
-      clang::BinaryOperatorKind::BO_AddAssign);
+      *function_decl[0].getNodeAs<clang::FunctionDecl>("fn"));
 
   clang::Rewriter rewriter(ast_unit->getSourceManager(),
                            ast_unit->getLangOpts());
   clang::PrintingPolicy printing_policy(ast_unit->getLangOpts());
-  mutation.Apply(0, ast_unit->getASTContext(), rewriter);
+  int mutation_id = 0;
+  mutation.Apply(ast_unit->getASTContext(), mutation_id, rewriter);
+  ASSERT_EQ(10, mutation_id);
 
   const clang::RewriteBuffer* rewrite_buffer = rewriter.getRewriteBufferFor(
       ast_unit->getSourceManager().getMainFileID());

@@ -35,7 +35,7 @@ class Mutation {
 
   virtual ~Mutation();
 
-  virtual void Apply(int mutation_id, clang::ASTContext& ast_context,
+  virtual void Apply(clang::ASTContext& ast_context, int& mutation_id,
                      clang::Rewriter& rewriter) const = 0;
 };
 

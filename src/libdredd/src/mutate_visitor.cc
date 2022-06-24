@@ -14,14 +14,12 @@
 
 #include "libdredd/mutate_visitor.h"
 
-#include <algorithm>
 #include <cassert>
 
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/Decl.h"
 #include "clang/AST/DeclBase.h"
 #include "clang/AST/Expr.h"
-#include "clang/AST/OperationKinds.h"
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/AST/Stmt.h"
 #include "clang/AST/Type.h"
@@ -33,11 +31,8 @@
 
 namespace dredd {
 
-MutateVisitor::MutateVisitor(const clang::ASTContext& ast_context,
-                             RandomGenerator& generator)
-    : ast_context_(ast_context),
-      generator_(generator),
-      first_decl_in_source_file_(nullptr) {}
+MutateVisitor::MutateVisitor(const clang::ASTContext& ast_context)
+    : ast_context_(ast_context), first_decl_in_source_file_(nullptr) {}
 
 bool MutateVisitor::TraverseDecl(clang::Decl* decl) {
   if (llvm::dyn_cast<clang::TranslationUnitDecl>(decl) != nullptr) {
@@ -104,49 +99,8 @@ bool MutateVisitor::VisitBinaryOperator(
     return true;
   }
 
-  std::vector<clang::BinaryOperatorKind> available_operators;
-  if (!binary_operator->isLValue()) {
-    available_operators.push_back(clang::BinaryOperatorKind::BO_Mul);
-    available_operators.push_back(clang::BinaryOperatorKind::BO_Div);
-    available_operators.push_back(clang::BinaryOperatorKind::BO_Rem);
-    available_operators.push_back(clang::BinaryOperatorKind::BO_Add);
-    available_operators.push_back(clang::BinaryOperatorKind::BO_Sub);
-    available_operators.push_back(clang::BinaryOperatorKind::BO_Shl);
-    available_operators.push_back(clang::BinaryOperatorKind::BO_Shr);
-    available_operators.push_back(clang::BinaryOperatorKind::BO_LT);
-    available_operators.push_back(clang::BinaryOperatorKind::BO_GT);
-    available_operators.push_back(clang::BinaryOperatorKind::BO_LE);
-    available_operators.push_back(clang::BinaryOperatorKind::BO_GE);
-    available_operators.push_back(clang::BinaryOperatorKind::BO_EQ);
-    available_operators.push_back(clang::BinaryOperatorKind::BO_NE);
-    available_operators.push_back(clang::BinaryOperatorKind::BO_And);
-    available_operators.push_back(clang::BinaryOperatorKind::BO_Xor);
-    available_operators.push_back(clang::BinaryOperatorKind::BO_Or);
-    available_operators.push_back(clang::BinaryOperatorKind::BO_LAnd);
-    available_operators.push_back(clang::BinaryOperatorKind::BO_LOr);
-  } else {
-    available_operators.push_back(clang::BinaryOperatorKind::BO_Assign);
-    available_operators.push_back(clang::BinaryOperatorKind::BO_MulAssign);
-    available_operators.push_back(clang::BinaryOperatorKind::BO_DivAssign);
-    available_operators.push_back(clang::BinaryOperatorKind::BO_RemAssign);
-    available_operators.push_back(clang::BinaryOperatorKind::BO_AddAssign);
-    available_operators.push_back(clang::BinaryOperatorKind::BO_SubAssign);
-    available_operators.push_back(clang::BinaryOperatorKind::BO_ShlAssign);
-    available_operators.push_back(clang::BinaryOperatorKind::BO_ShrAssign);
-    available_operators.push_back(clang::BinaryOperatorKind::BO_AndAssign);
-    available_operators.push_back(clang::BinaryOperatorKind::BO_XorAssign);
-    available_operators.push_back(clang::BinaryOperatorKind::BO_OrAssign);
-  }
-  auto current_operator_iterator =
-      std::find(available_operators.begin(), available_operators.end(),
-                binary_operator->getOpcode());
-  assert(current_operator_iterator != available_operators.end() &&
-         "Unsupported operator.");
-  available_operators.erase(current_operator_iterator);
-
   mutations_.push_back(std::make_unique<MutationReplaceBinaryOperator>(
-      *binary_operator, *enclosing_decls_[0],
-      generator_.GetRandomElement(available_operators)));
+      *binary_operator, *enclosing_decls_[0]));
   return true;
 }
 
