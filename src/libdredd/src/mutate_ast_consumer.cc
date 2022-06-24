@@ -54,12 +54,19 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& context) {
     dredd_prelude << "#include <cstdlib>\n";
     dredd_prelude << "#include <functional>\n\n";
     dredd_prelude << "static int __dredd_enabled_mutation() {\n";
-    dredd_prelude << "  const char* __dredd_environment_variable = "
+    dredd_prelude << "  static bool initialized = false;\n";
+    dredd_prelude << "  static int value;\n";
+    dredd_prelude << "  if (!initialized) {\n";
+    dredd_prelude << "    const char* __dredd_environment_variable = "
                      "std::getenv(\"DREDD_ENABLED_MUTATION\");\n";
-    dredd_prelude << "  if (__dredd_environment_variable == nullptr) {\n";
-    dredd_prelude << "    return -1;\n";
+    dredd_prelude << "    if (__dredd_environment_variable == nullptr) {\n";
+    dredd_prelude << "      value = -1;\n";
+    dredd_prelude << "    } else {\n";
+    dredd_prelude << "      value = atoi(__dredd_environment_variable);\n";
+    dredd_prelude << "    }\n";
+    dredd_prelude << "    initialized = true;\n";
     dredd_prelude << "  }\n";
-    dredd_prelude << "  return atoi(__dredd_environment_variable);\n";
+    dredd_prelude << "  return value;\n";
     dredd_prelude << "}\n\n";
 
     bool result = rewriter_.InsertTextBefore(

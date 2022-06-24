@@ -39,7 +39,7 @@ void MutationRemoveStatement::Apply(int mutation_id,
 
   bool result = rewriter.ReplaceText(
       source_range,
-      "if (__dredd_enabled_mutation() == " + std::to_string(mutation_id) +
+      "if (__dredd_enabled_mutation() != " + std::to_string(mutation_id) +
           ") { " + rewriter.getRewrittenText(source_range) + " }");
   (void)result;  // Keep release-mode compilers happy.
   assert(!result && "Rewrite failed.\n");
