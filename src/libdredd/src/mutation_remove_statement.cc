@@ -34,7 +34,10 @@ void MutationRemoveStatement::Apply(
   (void)printing_policy;  // Not used.
 
   bool needs_trailing_semicolon =
-      llvm::dyn_cast<clang::Expr>(&statement_) != nullptr;
+      llvm::dyn_cast<clang::Expr>(&statement_) != nullptr ||
+      llvm::dyn_cast<clang::BreakStmt>(&statement_) != nullptr ||
+      llvm::dyn_cast<clang::ContinueStmt>(&statement_) != nullptr ||
+      llvm::dyn_cast<clang::GotoStmt>(&statement_) != nullptr;
 
   bool result = rewriter.ReplaceText(
       statement_.getSourceRange(),
