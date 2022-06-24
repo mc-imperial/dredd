@@ -37,6 +37,7 @@ void MutationRemoveStatement::Apply(
       llvm::dyn_cast<clang::Expr>(&statement_) != nullptr ||
       llvm::dyn_cast<clang::BreakStmt>(&statement_) != nullptr ||
       llvm::dyn_cast<clang::ContinueStmt>(&statement_) != nullptr ||
+      llvm::dyn_cast<clang::ReturnStmt>(&statement_) != nullptr ||
       llvm::dyn_cast<clang::GotoStmt>(&statement_) != nullptr;
 
   bool result = rewriter.ReplaceText(
