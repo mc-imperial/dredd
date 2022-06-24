@@ -15,7 +15,7 @@
 #ifndef LIBDREDD_MUTATION_REMOVE_STATEMENT_H
 #define LIBDREDD_MUTATION_REMOVE_STATEMENT_H
 
-#include "clang/AST/PrettyPrinter.h"
+#include "clang/AST/ASTContext.h"
 #include "clang/AST/Stmt.h"
 #include "clang/Rewrite/Core/Rewriter.h"
 #include "libdredd/mutation.h"
@@ -26,8 +26,8 @@ class MutationRemoveStatement : public Mutation {
  public:
   explicit MutationRemoveStatement(const clang::Stmt& statement);
 
-  void Apply(int mutation_id, clang::Rewriter& rewriter,
-             clang::PrintingPolicy& printing_policy) const override;
+  void Apply(int mutation_id, clang::ASTContext& ast_context,
+             clang::Rewriter& rewriter) const override;
 
  private:
   const clang::Stmt& statement_;

@@ -17,37 +17,30 @@
 #include <cassert>
 #include <string>
 
-#include "clang/AST/PrettyPrinter.h"
+#include "clang/AST/ASTContext.h"
 #include "clang/AST/Stmt.h"
-#include "clang/AST/StmtCXX.h"
+#include "clang/Basic/SourceLocation.h"
+#include "clang/Basic/TokenKinds.h"
 #include "clang/Rewrite/Core/Rewriter.h"
-#include "llvm/Support/Casting.h"
+#include "clang/Tooling/Transformer/SourceCode.h"
 
 namespace dredd {
 
 MutationRemoveStatement::MutationRemoveStatement(const clang::Stmt& statement)
     : statement_(statement) {}
 
-void MutationRemoveStatement::Apply(
-    int mutation_id, clang::Rewriter& rewriter,
-    clang::PrintingPolicy& printing_policy) const {
-  (void)printing_policy;  // Not used.
-
-  bool needs_trailing_semicolon =
-      llvm::dyn_cast<clang::IfStmt>(&statement_) != nullptr ||
-      llvm::dyn_cast<clang::ForStmt>(&statement_) != nullptr ||
-      llvm::dyn_cast<clang::WhileStmt>(&statement_) != nullptr ||
-      llvm::dyn_cast<clang::DoStmt>(&statement_) != nullptr ||
-      llvm::dyn_cast<clang::CXXForRangeStmt>(&statement_) != nullptr ||
-      llvm::dyn_cast<clang::SwitchStmt>(&statement_) != nullptr ||
-      llvm::dyn_cast<clang::CompoundStmt>(&statement_) != nullptr;
+void MutationRemoveStatement::Apply(int mutation_id,
+                                    clang::ASTContext& ast_context,
+                                    clang::Rewriter& rewriter) const {
+  clang::SourceRange source_range =
+      clang::tooling::getExtendedRange(statement_, clang::tok::TokenKind::semi,
+                                       ast_context)
+          .getAsRange();
 
   bool result = rewriter.ReplaceText(
-      statement_.getSourceRange(),
-      "__dredd_remove_statement([&]() -> void { " +
-          rewriter.getRewrittenText(statement_.getSourceRange()) + "; }, " +
-          std::to_string(mutation_id) + ")" +
-          (needs_trailing_semicolon ? ";" : ""));
+      source_range,
+      "if (__dredd_enabled_mutation() != " + std::to_string(mutation_id) +
+          ") { " + rewriter.getRewrittenText(source_range) + " }");
   (void)result;  // Keep release-mode compilers happy.
   assert(!result && "Rewrite failed.\n");
 }

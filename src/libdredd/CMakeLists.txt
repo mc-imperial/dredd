@@ -38,7 +38,7 @@ target_include_directories(
   PUBLIC include
   PRIVATE include_private/include)
 
-set(CLANG_LIBS clangTooling)
+set(CLANG_LIBS clangTooling clangTransformer)
 
 foreach(clang_target ${CLANG_LIBS})
   if(NOT TARGET ${clang_target})

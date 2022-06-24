@@ -15,7 +15,7 @@
 #ifndef LIBDREDD_MUTATION_H
 #define LIBDREDD_MUTATION_H
 
-#include "clang/AST/PrettyPrinter.h"
+#include "clang/AST/ASTContext.h"
 #include "clang/Rewrite/Core/Rewriter.h"
 
 namespace dredd {
@@ -35,8 +35,8 @@ class Mutation {
 
   virtual ~Mutation();
 
-  virtual void Apply(int mutation_id, clang::Rewriter& rewriter,
-                     clang::PrintingPolicy& printing_policy) const = 0;
+  virtual void Apply(int mutation_id, clang::ASTContext& ast_context,
+                     clang::Rewriter& rewriter) const = 0;
 };
 
 }  // namespace dredd

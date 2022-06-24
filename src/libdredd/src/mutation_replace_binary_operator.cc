@@ -18,10 +18,10 @@
 #include <sstream>
 #include <string>
 
+#include "clang/AST/ASTContext.h"
 #include "clang/AST/DeclBase.h"
 #include "clang/AST/Expr.h"
 #include "clang/AST/OperationKinds.h"
-#include "clang/AST/PrettyPrinter.h"
 #include "clang/AST/Type.h"
 #include "clang/Basic/SourceLocation.h"
 #include "clang/Rewrite/Core/Rewriter.h"
@@ -36,9 +36,9 @@ MutationReplaceBinaryOperator::MutationReplaceBinaryOperator(
       enclosing_decl_(enclosing_decl),
       new_operator_(new_operator) {}
 
-void MutationReplaceBinaryOperator::Apply(
-    int mutation_id, clang::Rewriter& rewriter,
-    clang::PrintingPolicy& printing_policy) const {
+void MutationReplaceBinaryOperator::Apply(int mutation_id,
+                                          clang::ASTContext& ast_context,
+                                          clang::Rewriter& rewriter) const {
   // The name of the mutation wrapper function to be used for this
   // replacement.
   std::string mutation_function_name("__dredd_replace_binary_operator_" +
@@ -46,7 +46,7 @@ void MutationReplaceBinaryOperator::Apply(
 
   std::string result_type = binary_operator_.getType()
                                 ->getAs<clang::BuiltinType>()
-                                ->getName(printing_policy)
+                                ->getName(ast_context.getPrintingPolicy())
                                 .str();
   if (binary_operator_.isAssignmentOp()) {
     result_type += "&";
@@ -55,7 +55,7 @@ void MutationReplaceBinaryOperator::Apply(
   std::string lhs_type = binary_operator_.getLHS()
                              ->getType()
                              ->getAs<clang::BuiltinType>()
-                             ->getName(printing_policy)
+                             ->getName(ast_context.getPrintingPolicy())
                              .str();
   if (binary_operator_.isAssignmentOp()) {
     lhs_type += "&";
@@ -63,7 +63,7 @@ void MutationReplaceBinaryOperator::Apply(
   std::string rhs_type = binary_operator_.getRHS()
                              ->getType()
                              ->getAs<clang::BuiltinType>()
-                             ->getName(printing_policy)
+                             ->getName(ast_context.getPrintingPolicy())
                              .str();
 
   // Replace the binary operator expression with a call to the wrapper

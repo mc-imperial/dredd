@@ -21,7 +21,6 @@
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/Decl.h"
 #include "clang/AST/DeclBase.h"
-#include "clang/AST/PrettyPrinter.h"
 #include "clang/Basic/Diagnostic.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Rewrite/Core/Rewriter.h"
@@ -39,8 +38,6 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& context) {
   rewriter_.setSourceMgr(compiler_instance_.getSourceManager(),
                          compiler_instance_.getLangOpts());
 
-  clang::PrintingPolicy printing_policy(compiler_instance_.getLangOpts());
-
   // At present, all possible replacements are made. This should be changed so
   // that a random subset of replacements are made, of the desired number of
   // mutations. By construction, replacements are processed in a bottom-up
@@ -48,7 +45,7 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& context) {
   // are made at random, to avoid attempts to rewrite a child node after its
   // parent has been rewritten.
   for (const auto& replacement : visitor_->GetMutations()) {
-    replacement->Apply(mutation_id_, rewriter_, printing_policy);
+    replacement->Apply(mutation_id_, context, rewriter_);
     mutation_id_++;
   }
 
@@ -57,21 +54,20 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& context) {
     dredd_prelude << "#include <cstdlib>\n";
     dredd_prelude << "#include <functional>\n\n";
     dredd_prelude << "static int __dredd_enabled_mutation() {\n";
-    dredd_prelude << "  const char* __dredd_environment_variable = "
+    dredd_prelude << "  static bool initialized = false;\n";
+    dredd_prelude << "  static int value;\n";
+    dredd_prelude << "  if (!initialized) {\n";
+    dredd_prelude << "    const char* __dredd_environment_variable = "
                      "std::getenv(\"DREDD_ENABLED_MUTATION\");\n";
-    dredd_prelude << "  if (__dredd_environment_variable == nullptr) {\n";
-    dredd_prelude << "    return -1;\n";
+    dredd_prelude << "    if (__dredd_environment_variable == nullptr) {\n";
+    dredd_prelude << "      value = -1;\n";
+    dredd_prelude << "    } else {\n";
+    dredd_prelude << "      value = atoi(__dredd_environment_variable);\n";
+    dredd_prelude << "    }\n";
+    dredd_prelude << "    initialized = true;\n";
     dredd_prelude << "  }\n";
-    dredd_prelude << "  return atoi(__dredd_environment_variable);\n";
+    dredd_prelude << "  return value;\n";
     dredd_prelude << "}\n\n";
-    dredd_prelude
-        << "static void __dredd_remove_statement(std::function<void()> "
-           "statement, int mutation_id) {\n"
-        << "  if (__dredd_enabled_mutation() == mutation_id) {\n"
-        << "    return;\n"
-        << "  }\n"
-        << "  statement();\n"
-        << "}\n\n";
 
     bool result = rewriter_.InsertTextBefore(
         visitor_->GetFirstDeclInSourceFile()->getBeginLoc(),
