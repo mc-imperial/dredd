@@ -165,7 +165,7 @@ void MutationReplaceBinaryOperator::Apply(clang::ASTContext& ast_context,
   std::vector<clang::BinaryOperatorKind> shift_operators = {
       clang::BinaryOperatorKind::BO_Shl, clang::BinaryOperatorKind::BO_Shr};
 
-  for (auto& operators :
+  for (const auto& operators :
        {arithmetic_operators, assignment_operators, bitwise_operators,
         logical_operators, relational_operators, shift_operators}) {
     if (std::find(operators.begin(), operators.end(),

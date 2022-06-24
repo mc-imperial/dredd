@@ -49,7 +49,7 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& context) {
     assert(mutation_id_ > mutation_id_old &&
            "Every mutation should lead to the mutation id increasing by at "
            "least 1.");
-    (void)mutation_id_;  // Keep release-mode compilers happy.
+    (void)mutation_id_old;  // Keep release-mode compilers happy.
   }
 
   if (visitor_->GetFirstDeclInSourceFile() != nullptr) {
