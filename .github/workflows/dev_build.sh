@@ -79,7 +79,7 @@ pushd SPIRV-Tools
   python3 utils/git-sync-deps
   mkdir build
   pushd build
-    cmake -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DSPIRV_WERROR=OFF ..
+    cmake -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DSPIRV_WERROR=OFF  -DCMAKE_CXX_FLAGS="-w" ..
     # Build something minimal to ensure all header files get generated.
     ninja SPIRV-Tools-static
   popd
@@ -103,7 +103,7 @@ git clone --branch llvmorg-14.0.6 --depth 1 https://github.com/llvm/llvm-project
 pushd llvm-project
   mkdir build
   pushd build
-    cmake -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ../llvm
+    cmake -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_CXX_FLAGS="-w" ../llvm
     # Build something minimal to ensure all header files get generated.
     ninja LLVMCore
   popd
