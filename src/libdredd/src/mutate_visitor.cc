@@ -19,6 +19,7 @@
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/Decl.h"
 #include "clang/AST/DeclBase.h"
+#include "clang/AST/DeclCXX.h"
 #include "clang/AST/Expr.h"
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/AST/Stmt.h"
@@ -49,6 +50,15 @@ bool MutateVisitor::TraverseDecl(clang::Decl* decl) {
     // been encountered: record it so that the dredd prelude can be inserted
     // before it.
     first_decl_in_source_file_ = decl;
+  }
+  if (llvm::dyn_cast<clang::StaticAssertDecl>(decl) != nullptr) {
+    // It does not make sense to mutate static assertions, as (a) this will
+    // very likely lead to compile-time failures due to the assertion not
+    // holding, (b) if compilation succeeds then the assertion is not actually
+    // present at runtime so there is no notion of killing the mutant, and (c)
+    // dynamic instrumentation of the mutation operator will break the rules
+    // associated with static assertions anyway.
+    return true;
   }
   enclosing_decls_.push_back(decl);
   // Consider the declaration for mutation.
