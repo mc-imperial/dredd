@@ -72,6 +72,7 @@ check_all.sh
 DREDD_ROOT=`pwd`
 cp ${DREDD_ROOT}/temp/build-Debug/src/dredd/dredd ${DREDD_ROOT}/third_party/clang+llvm-13.0.1/bin/dredd
 
+# SPIRV-Tools validator: check that the tests pass after mutating the validator
 git clone https://github.com/KhronosGroup/SPIRV-Tools.git
 pushd SPIRV-Tools
   git reset --hard c94501352d545e84c821ce031399e76d1af32d18
@@ -79,7 +80,6 @@ pushd SPIRV-Tools
   mkdir build
   pushd build
     cmake -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DSPIRV_WERROR=OFF ..
-    ninja test_val_abcde test_val_capability test_val_fghijklmnop test_val_limits test_val_stuvw
   popd
 popd
 FILES=""
@@ -94,4 +94,23 @@ pushd SPIRV-Tools/build
   ./test/val/test_val_capability
   ./test/val/test_val_fghijklmnop
   ./test/val/test_val_stuvw
+popd
+
+# LLVM: check that InstCombine builds after mutation
+git clone --branch llvmorg-14.0.6 --depth 1 https://github.com/llvm/llvm-project.git
+pushd llvm-project
+  mkdir build
+  pushd build
+    cmake -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ..
+  popd
+popd
+FILES=""
+for f in `ls llvm-project/llvm/lib/Transforms/InstCombine/*.cpp`
+do
+    FILES="${FILES} ${DREDD_ROOT}/${f}"
+done
+${DREDD_ROOT}/third_party/clang+llvm-13.0.1/bin/dredd -p ${DREDD_ROOT}/llvm-project/build/compile_commands.json ${FILES}
+pushd llvm-project/build
+  ninja LLVMInstCombine
+  # TODO: run some tests
 popd
