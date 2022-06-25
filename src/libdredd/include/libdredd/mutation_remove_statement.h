@@ -26,7 +26,7 @@ class MutationRemoveStatement : public Mutation {
  public:
   explicit MutationRemoveStatement(const clang::Stmt& statement);
 
-  void Apply(int mutation_id, clang::ASTContext& ast_context,
+  void Apply(clang::ASTContext& ast_context, int& mutation_id,
              clang::Rewriter& rewriter) const override;
 
  private:

@@ -25,14 +25,12 @@
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/AST/Stmt.h"
 #include "libdredd/mutation.h"
-#include "libdredd/random_generator.h"
 
 namespace dredd {
 
 class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
  public:
-  MutateVisitor(const clang::ASTContext& ast_context,
-                RandomGenerator& generator);
+  explicit MutateVisitor(const clang::ASTContext& ast_context);
 
   bool TraverseDecl(clang::Decl* decl);
 
@@ -58,9 +56,6 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
       const HasSourceRange& ast_node) const;
 
   const clang::ASTContext& ast_context_;
-
-  // Used to randomize the creation of mutations.
-  RandomGenerator& generator_;
 
   // Records the very first declaration in the source file, before which
   // directives such as includes can be placed.

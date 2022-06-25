@@ -29,7 +29,6 @@
 namespace dredd {
 
 void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& context) {
-  (void)generator_;
   if (context.getDiagnostics().hasErrorOccurred()) {
     // There has been an error, so we don't do any processing.
     return;
@@ -45,8 +44,12 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& context) {
   // are made at random, to avoid attempts to rewrite a child node after its
   // parent has been rewritten.
   for (const auto& replacement : visitor_->GetMutations()) {
-    replacement->Apply(mutation_id_, context, rewriter_);
-    mutation_id_++;
+    int mutation_id_old = mutation_id_;
+    replacement->Apply(context, mutation_id_, rewriter_);
+    assert(mutation_id_ > mutation_id_old &&
+           "Every mutation should lead to the mutation id increasing by at "
+           "least 1.");
+    (void)mutation_id_old;  // Keep release-mode compilers happy.
   }
 
   if (visitor_->GetFirstDeclInSourceFile() != nullptr) {

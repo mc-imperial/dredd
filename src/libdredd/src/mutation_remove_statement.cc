@@ -29,8 +29,8 @@ namespace dredd {
 MutationRemoveStatement::MutationRemoveStatement(const clang::Stmt& statement)
     : statement_(statement) {}
 
-void MutationRemoveStatement::Apply(int mutation_id,
-                                    clang::ASTContext& ast_context,
+void MutationRemoveStatement::Apply(clang::ASTContext& ast_context,
+                                    int& mutation_id,
                                     clang::Rewriter& rewriter) const {
   clang::SourceRange source_range =
       clang::tooling::getExtendedRange(statement_, clang::tok::TokenKind::semi,
@@ -43,6 +43,7 @@ void MutationRemoveStatement::Apply(int mutation_id,
           ") { " + rewriter.getRewrittenText(source_range) + " }");
   (void)result;  // Keep release-mode compilers happy.
   assert(!result && "Rewrite failed.\n");
+  mutation_id++;
 }
 
 }  // namespace dredd

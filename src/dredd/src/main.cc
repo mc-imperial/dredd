@@ -12,15 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <cstddef>
 #include <memory>
-#include <random>
-#include <string>
 #include <type_traits>
 
 #include "clang/Tooling/CommonOptionsParser.h"
 #include "clang/Tooling/Tooling.h"
-#include "libdredd/mersenne_random_generator.h"
 #include "libdredd/new_mutate_frontend_action_factory.h"
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/StringRef.h"
@@ -45,10 +41,6 @@ static llvm::cl::extrahelp common_help(
     clang::tooling::CommonOptionsParser::HelpMessage);
 // NOLINTNEXTLINE
 static llvm::cl::OptionCategory mutate_category("mutate options");
-// NOLINTNEXTLINE
-static llvm::cl::opt<std::string> seed(
-    "seed", llvm::cl::desc("Specify seed for random number generation"),
-    llvm::cl::value_desc("seed"));
 
 #if defined(__clang__)
 #pragma clang diagnostic pop
@@ -72,17 +64,10 @@ int main(int argc, const char** argv) {
   clang::tooling::ClangTool Tool(options.get().getCompilations(),
                                  options.get().getSourcePathList());
 
-  size_t seed_value = seed.empty()
-                          ? static_cast<size_t>(std::random_device()())
-                          : static_cast<size_t>(std::stoi(seed.getValue()));
-
-  std::mt19937 twister(seed_value);
-  dredd::MersenneRandomGenerator generator(twister);
-
   int mutation_id = 0;
 
   std::unique_ptr<clang::tooling::FrontendActionFactory> factory =
-      dredd::NewMutateFrontendActionFactory(generator, mutation_id);
+      dredd::NewMutateFrontendActionFactory(mutation_id);
 
   return Tool.run(factory.get());
 }

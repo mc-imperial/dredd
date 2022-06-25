@@ -31,5 +31,7 @@ cppcheck \
   --inline-suppr \
   --suppress=unusedFunction \
   --suppress=missingIncludeSystem \
+  --suppress=missingInclude \
   --suppress=unmatchedSuppression \
-  --suppress=syntaxError
+  --suppress=syntaxError \
+  --suppress=useStlAlgorithm

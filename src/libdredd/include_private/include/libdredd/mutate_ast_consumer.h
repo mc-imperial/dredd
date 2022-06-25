@@ -22,25 +22,22 @@
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Rewrite/Core/Rewriter.h"
 #include "libdredd/mutate_visitor.h"
-#include "libdredd/random_generator.h"
 
 namespace dredd {
 
 class MutateAstConsumer : public clang::ASTConsumer {
  public:
   MutateAstConsumer(const clang::CompilerInstance& compiler_instance,
-                    RandomGenerator& generator, int& mutation_id)
+                    int& mutation_id)
       : compiler_instance_(compiler_instance),
-        generator_(generator),
-        visitor_(std::make_unique<MutateVisitor>(
-            compiler_instance.getASTContext(), generator)),
+        visitor_(
+            std::make_unique<MutateVisitor>(compiler_instance.getASTContext())),
         mutation_id_(mutation_id) {}
 
   void HandleTranslationUnit(clang::ASTContext& context) override;
 
  private:
   const clang::CompilerInstance& compiler_instance_;
-  RandomGenerator& generator_;
   std::unique_ptr<MutateVisitor> visitor_;
   clang::Rewriter rewriter_;
 

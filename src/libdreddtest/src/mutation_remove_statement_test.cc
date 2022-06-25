@@ -43,8 +43,10 @@ void TestRemoval(const std::string& original, const std::string& expected,
   ASSERT_FALSE(ast_unit->getDiagnostics().hasErrorOccurred());
   clang::Rewriter rewriter(ast_unit->getSourceManager(),
                            ast_unit->getLangOpts());
+  int mutation_id = 0;
   mutation_supplier(ast_unit->getASTContext())
-      .Apply(0, ast_unit->getASTContext(), rewriter);
+      .Apply(ast_unit->getASTContext(), mutation_id, rewriter);
+  ASSERT_EQ(1, mutation_id);
   const clang::RewriteBuffer* rewrite_buffer = rewriter.getRewriteBufferFor(
       ast_unit->getSourceManager().getMainFileID());
   std::string rewritten_text(rewrite_buffer->begin(), rewrite_buffer->end());
