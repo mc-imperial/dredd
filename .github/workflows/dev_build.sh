@@ -80,6 +80,8 @@ pushd SPIRV-Tools
   mkdir build
   pushd build
     cmake -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DSPIRV_WERROR=OFF ..
+    # Build something minimal to ensure all header files get generated.
+    ninja SPIRV-Tools-static
   popd
 popd
 FILES=""
@@ -102,6 +104,8 @@ pushd llvm-project
   mkdir build
   pushd build
     cmake -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ..
+    # Build something minimal to ensure all header files get generated.
+    ninja LLVMCore
   popd
 popd
 FILES=""
