@@ -103,7 +103,7 @@ git clone --branch llvmorg-14.0.6 --depth 1 https://github.com/llvm/llvm-project
 pushd llvm-project
   mkdir build
   pushd build
-    cmake -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ..
+    cmake -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ../llvm
     # Build something minimal to ensure all header files get generated.
     ninja LLVMCore
   popd
