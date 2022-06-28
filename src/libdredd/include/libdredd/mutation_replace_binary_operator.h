@@ -22,6 +22,7 @@
 #include "clang/AST/DeclBase.h"
 #include "clang/AST/Expr.h"
 #include "clang/AST/OperationKinds.h"
+#include "clang/Lex/Preprocessor.h"
 #include "clang/Rewrite/Core/Rewriter.h"
 #include "libdredd/mutation.h"
 
@@ -32,7 +33,8 @@ class MutationReplaceBinaryOperator : public Mutation {
   MutationReplaceBinaryOperator(const clang::BinaryOperator& binary_operator,
                                 const clang::Decl& enclosing_decl);
 
-  void Apply(clang::ASTContext& ast_context, int& mutation_id,
+  void Apply(clang::ASTContext& ast_context,
+             const clang::Preprocessor& preprocessor, int& mutation_id,
              clang::Rewriter& rewriter) const override;
 
  private:

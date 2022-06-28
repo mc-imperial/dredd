@@ -45,7 +45,8 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& context) {
   // parent has been rewritten.
   for (const auto& replacement : visitor_->GetMutations()) {
     int mutation_id_old = mutation_id_;
-    replacement->Apply(context, mutation_id_, rewriter_);
+    replacement->Apply(context, compiler_instance_.getPreprocessor(),
+                       mutation_id_, rewriter_);
     assert(mutation_id_ > mutation_id_old &&
            "Every mutation should lead to the mutation id increasing by at "
            "least 1.");

@@ -19,18 +19,18 @@
 #include <unordered_set>
 #include <vector>
 
-#include "clang/AST/ASTContext.h"
 #include "clang/AST/DeclBase.h"
 #include "clang/AST/Expr.h"
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/AST/Stmt.h"
+#include "clang/Frontend/CompilerInstance.h"
 #include "libdredd/mutation.h"
 
 namespace dredd {
 
 class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
  public:
-  explicit MutateVisitor(const clang::ASTContext& ast_context);
+  explicit MutateVisitor(const clang::CompilerInstance& compiler_instance);
 
   bool TraverseDecl(clang::Decl* decl);
 
@@ -51,11 +51,7 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
   }
 
  private:
-  template <typename HasSourceRange>
-  [[nodiscard]] bool StartsAndEndsInMainSourceFile(
-      const HasSourceRange& ast_node) const;
-
-  const clang::ASTContext& ast_context_;
+  const clang::CompilerInstance& compiler_instance_;
 
   // Records the very first declaration in the source file, before which
   // directives such as includes can be placed.

@@ -17,6 +17,7 @@
 
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/Stmt.h"
+#include "clang/Lex/Preprocessor.h"
 #include "clang/Rewrite/Core/Rewriter.h"
 #include "libdredd/mutation.h"
 
@@ -26,7 +27,8 @@ class MutationRemoveStatement : public Mutation {
  public:
   explicit MutationRemoveStatement(const clang::Stmt& statement);
 
-  void Apply(clang::ASTContext& ast_context, int& mutation_id,
+  void Apply(clang::ASTContext& ast_context,
+             const clang::Preprocessor& preprocessor, int& mutation_id,
              clang::Rewriter& rewriter) const override;
 
  private:

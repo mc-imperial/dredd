@@ -22,6 +22,7 @@ add_library(
   include/libdredd/new_mutate_frontend_action_factory.h
   include_private/include/libdredd/mutate_ast_consumer.h
   include_private/include/libdredd/mutate_visitor.h
+  include_private/include/libdredd/util.h
   src/mutate_ast_consumer.cc
   src/mutate_visitor.cc
   src/mutation.cc

@@ -45,7 +45,8 @@ void TestRemoval(const std::string& original, const std::string& expected,
                            ast_unit->getLangOpts());
   int mutation_id = 0;
   mutation_supplier(ast_unit->getASTContext())
-      .Apply(ast_unit->getASTContext(), mutation_id, rewriter);
+      .Apply(ast_unit->getASTContext(), ast_unit->getPreprocessor(),
+             mutation_id, rewriter);
   ASSERT_EQ(1, mutation_id);
   const clang::RewriteBuffer* rewrite_buffer = rewriter.getRewriteBufferFor(
       ast_unit->getSourceManager().getMainFileID());
@@ -154,6 +155,24 @@ TEST(MutationRemoveStatementTest, RemoveBreakStmt) {
     EXPECT_EQ(1, statement.size());
     return MutationRemoveStatement(
         *statement[0].getNodeAs<clang::BreakStmt>("break"));
+  };
+  TestRemoval(original, expected, mutation_supplier);
+}
+
+TEST(MutationRemoveStatementTest, RemoveMacroStmt) {
+  std::string original =
+      "#define ASSIGN(A, B) A = B\n"
+      "void foo() { int x; ASSIGN(x, 1); }";
+  std::string expected =
+      R"(#define ASSIGN(A, B) A = B
+void foo() { int x; if (__dredd_enabled_mutation() != 0) { ASSIGN(x, 1); } })";
+  std::function<MutationRemoveStatement(clang::ASTContext&)> mutation_supplier =
+      [](clang::ASTContext& ast_context) -> MutationRemoveStatement {
+    auto statement = clang::ast_matchers::match(
+        clang::ast_matchers::binaryOperator().bind("assign"), ast_context);
+    EXPECT_EQ(1, statement.size());
+    return MutationRemoveStatement(
+        *statement[0].getNodeAs<clang::BinaryOperator>("assign"));
   };
   TestRemoval(original, expected, mutation_supplier);
 }

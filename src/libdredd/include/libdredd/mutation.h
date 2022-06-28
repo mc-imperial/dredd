@@ -16,6 +16,7 @@
 #define LIBDREDD_MUTATION_H
 
 #include "clang/AST/ASTContext.h"
+#include "clang/Lex/Preprocessor.h"
 #include "clang/Rewrite/Core/Rewriter.h"
 
 namespace dredd {
@@ -35,7 +36,8 @@ class Mutation {
 
   virtual ~Mutation();
 
-  virtual void Apply(clang::ASTContext& ast_context, int& mutation_id,
+  virtual void Apply(clang::ASTContext& ast_context,
+                     const clang::Preprocessor& preprocessor, int& mutation_id,
                      clang::Rewriter& rewriter) const = 0;
 };
 

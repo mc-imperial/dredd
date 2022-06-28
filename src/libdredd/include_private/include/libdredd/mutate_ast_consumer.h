@@ -30,8 +30,7 @@ class MutateAstConsumer : public clang::ASTConsumer {
   MutateAstConsumer(const clang::CompilerInstance& compiler_instance,
                     int& mutation_id)
       : compiler_instance_(compiler_instance),
-        visitor_(
-            std::make_unique<MutateVisitor>(compiler_instance.getASTContext())),
+        visitor_(std::make_unique<MutateVisitor>(compiler_instance)),
         mutation_id_(mutation_id) {}
 
   void HandleTranslationUnit(clang::ASTContext& context) override;
