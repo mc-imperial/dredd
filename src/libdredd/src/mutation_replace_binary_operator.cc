@@ -27,7 +27,9 @@
 #include "clang/AST/OperationKinds.h"
 #include "clang/AST/Type.h"
 #include "clang/Basic/SourceLocation.h"
+#include "clang/Lex/Preprocessor.h"
 #include "clang/Rewrite/Core/Rewriter.h"
+#include "libdredd/util.h"
 #include "llvm/ADT/StringRef.h"
 
 namespace dredd {
@@ -104,9 +106,9 @@ std::string MutationReplaceBinaryOperator::GenerateMutatorFunction(
   return new_function.str();
 }
 
-void MutationReplaceBinaryOperator::Apply(clang::ASTContext& ast_context,
-                                          int& mutation_id,
-                                          clang::Rewriter& rewriter) const {
+void MutationReplaceBinaryOperator::Apply(
+    clang::ASTContext& ast_context, const clang::Preprocessor& preprocessor,
+    int& mutation_id, clang::Rewriter& rewriter) const {
   // The name of the mutation wrapper function to be used for this
   // replacement.
   std::string mutation_function_name("__dredd_replace_binary_operator_" +
@@ -178,38 +180,43 @@ void MutationReplaceBinaryOperator::Apply(clang::ASTContext& ast_context,
   }
   assert(!new_function.empty() && "Unsupported opcode.");
 
+  clang::SourceRange binary_operator_source_range_in_main_file =
+      GetSourceRangeInMainFile(preprocessor, binary_operator_);
+  assert(binary_operator_source_range_in_main_file.isValid() &&
+         "Invalid source range.");
+  clang::SourceRange lhs_source_range_in_main_file =
+      GetSourceRangeInMainFile(preprocessor, *binary_operator_.getLHS());
+  assert(lhs_source_range_in_main_file.isValid() && "Invalid source range.");
+  clang::SourceRange rhs_source_range_in_main_file =
+      GetSourceRangeInMainFile(preprocessor, *binary_operator_.getRHS());
+  assert(rhs_source_range_in_main_file.isValid() && "Invalid source range.");
+
   // Replace the binary operator expression with a call to the wrapper
   // function.
   if (binary_operator_.isLogicalOp()) {
     bool result = rewriter.ReplaceText(
-        binary_operator_.getSourceRange(),
+        binary_operator_source_range_in_main_file,
         mutation_function_name + "([&]() -> " + lhs_type +
             " { return static_cast<" + lhs_type + ">(" +
-            rewriter.getRewrittenText(
-                binary_operator_.getLHS()->getSourceRange()) +
+            rewriter.getRewrittenText(lhs_source_range_in_main_file) +
             +"); }, [&]() -> " + rhs_type + " { return static_cast<" +
             rhs_type + ">(" +
-            rewriter.getRewrittenText(
-                binary_operator_.getRHS()->getSourceRange()) +
-            "); })");
+            rewriter.getRewrittenText(rhs_source_range_in_main_file) + "); })");
     (void)result;  // Keep release-mode compilers happy.
     assert(!result && "Rewrite failed.\n");
   } else {
     bool result = rewriter.ReplaceText(
-        binary_operator_.getSourceRange(),
+        GetSourceRangeInMainFile(preprocessor, binary_operator_),
         mutation_function_name + "(" +
-            rewriter.getRewrittenText(
-                binary_operator_.getLHS()->getSourceRange()) +
-            +", " +
-            rewriter.getRewrittenText(
-                binary_operator_.getRHS()->getSourceRange()) +
-            ")");
+            rewriter.getRewrittenText(lhs_source_range_in_main_file) + +", " +
+            rewriter.getRewrittenText(rhs_source_range_in_main_file) + ")");
     (void)result;  // Keep release-mode compilers happy.
     assert(!result && "Rewrite failed.\n");
   }
 
   bool result = rewriter.InsertTextBefore(
-      enclosing_decl_.getSourceRange().getBegin(), new_function);
+      GetSourceRangeInMainFile(preprocessor, enclosing_decl_).getBegin(),
+      new_function);
   (void)result;  // Keep release-mode compilers happy.
   assert(!result && "Rewrite failed.\n");
 }

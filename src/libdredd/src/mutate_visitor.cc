@@ -16,7 +16,6 @@
 
 #include <cassert>
 
-#include "clang/AST/ASTContext.h"
 #include "clang/AST/Decl.h"
 #include "clang/AST/DeclBase.h"
 #include "clang/AST/DeclCXX.h"
@@ -24,23 +23,27 @@
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/AST/Stmt.h"
 #include "clang/AST/Type.h"
-#include "clang/Basic/SourceManager.h"
+#include "clang/Basic/SourceLocation.h"
+#include "clang/Frontend/CompilerInstance.h"
 #include "libdredd/mutation_remove_statement.h"
 #include "libdredd/mutation_replace_binary_operator.h"
+#include "libdredd/util.h"
 #include "llvm/ADT/iterator_range.h"
 #include "llvm/Support/Casting.h"
 
 namespace dredd {
 
-MutateVisitor::MutateVisitor(const clang::ASTContext& ast_context)
-    : ast_context_(ast_context), first_decl_in_source_file_(nullptr) {}
+MutateVisitor::MutateVisitor(const clang::CompilerInstance& compiler_instance)
+    : compiler_instance_(compiler_instance),
+      first_decl_in_source_file_(nullptr) {}
 
 bool MutateVisitor::TraverseDecl(clang::Decl* decl) {
   if (llvm::dyn_cast<clang::TranslationUnitDecl>(decl) != nullptr) {
     // This is the top-level translation unit declaration, so descend into it.
     return RecursiveASTVisitor::TraverseDecl(decl);
   }
-  if (!StartsAndEndsInMainSourceFile(*decl)) {
+  if (GetSourceRangeInMainFile(compiler_instance_.getPreprocessor(), *decl)
+          .isInvalid()) {
     // This declaration is not wholly contained in the main file, so do not
     // consider it for mutation.
     return true;
@@ -79,9 +82,15 @@ bool MutateVisitor::VisitBinaryOperator(
   // ranges that are part of the main file. In particular, this avoids
   // mutating expressions that directly involve the use of macros (though it
   // is OK if sub-expressions of arguments use macros).
-  if (!StartsAndEndsInMainSourceFile(*binary_operator) ||
-      !StartsAndEndsInMainSourceFile(*binary_operator->getLHS()) ||
-      !StartsAndEndsInMainSourceFile(*binary_operator->getRHS())) {
+  if (GetSourceRangeInMainFile(compiler_instance_.getPreprocessor(),
+                               *binary_operator)
+          .isInvalid() ||
+      GetSourceRangeInMainFile(compiler_instance_.getPreprocessor(),
+                               *binary_operator->getLHS())
+          .isInvalid() ||
+      GetSourceRangeInMainFile(compiler_instance_.getPreprocessor(),
+                               *binary_operator->getRHS())
+          .isInvalid()) {
     return true;
   }
 
@@ -116,7 +125,8 @@ bool MutateVisitor::VisitBinaryOperator(
 
 bool MutateVisitor::VisitCompoundStmt(clang::CompoundStmt* compound_stmt) {
   for (auto* stmt : compound_stmt->body()) {
-    if (!StartsAndEndsInMainSourceFile(*stmt) ||
+    if (GetSourceRangeInMainFile(compiler_instance_.getPreprocessor(), *stmt)
+            .isInvalid() ||
         llvm::dyn_cast<clang::NullStmt>(stmt) != nullptr ||
         llvm::dyn_cast<clang::DeclStmt>(stmt) != nullptr ||
         llvm::dyn_cast<clang::SwitchCase>(stmt) != nullptr ||
@@ -132,18 +142,6 @@ bool MutateVisitor::VisitCompoundStmt(clang::CompoundStmt* compound_stmt) {
     mutations_.push_back(std::make_unique<MutationRemoveStatement>(*stmt));
   }
   return true;
-}
-
-template <typename HasSourceRange>
-bool MutateVisitor::StartsAndEndsInMainSourceFile(
-    const HasSourceRange& ast_node) const {
-  const clang::SourceManager& source_manager = ast_context_.getSourceManager();
-  auto begin_file_id =
-      source_manager.getFileID(ast_node.getSourceRange().getBegin());
-  auto end_file_id =
-      source_manager.getFileID(ast_node.getSourceRange().getEnd());
-  auto main_file_id = source_manager.getMainFileID();
-  return begin_file_id == main_file_id && end_file_id == main_file_id;
 }
 
 }  // namespace dredd

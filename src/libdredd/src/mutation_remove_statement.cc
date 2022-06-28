@@ -21,8 +21,10 @@
 #include "clang/AST/Stmt.h"
 #include "clang/Basic/SourceLocation.h"
 #include "clang/Basic/TokenKinds.h"
+#include "clang/Lex/Preprocessor.h"
 #include "clang/Rewrite/Core/Rewriter.h"
 #include "clang/Tooling/Transformer/SourceCode.h"
+#include "libdredd/util.h"
 
 namespace dredd {
 
@@ -30,12 +32,13 @@ MutationRemoveStatement::MutationRemoveStatement(const clang::Stmt& statement)
     : statement_(statement) {}
 
 void MutationRemoveStatement::Apply(clang::ASTContext& ast_context,
+                                    const clang::Preprocessor& preprocessor,
                                     int& mutation_id,
                                     clang::Rewriter& rewriter) const {
-  clang::SourceRange source_range =
-      clang::tooling::getExtendedRange(statement_, clang::tok::TokenKind::semi,
-                                       ast_context)
-          .getAsRange();
+  clang::CharSourceRange source_range = clang::tooling::maybeExtendRange(
+      clang::CharSourceRange::getTokenRange(
+          GetSourceRangeInMainFile(preprocessor, statement_)),
+      clang::tok::TokenKind::semi, ast_context);
 
   bool result = rewriter.ReplaceText(
       source_range,
