@@ -22,7 +22,7 @@ static double calculatePi() {
 
     for (int d = 1; d < 1000000; d += 2) {
         numerator *= -1;
-        sum+= numerator / double(d);
+        sum += numerator / double(d);
     }
 
     return sum * 4;
