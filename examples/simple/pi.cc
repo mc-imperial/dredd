@@ -14,20 +14,18 @@
 
 #include <iostream>
 
-using namespace std;
+static double CalculatePi() {
+  double sum = 0.0;
+  int numerator = -1;
 
-static double calculatePi() {
-    double sum = 0.0;
-    int numerator = -1;
+  for (int d = 1; d < 1000000; d += 2) {
+    numerator *= -1;
+    sum += numerator / double(d);
+  }
 
-    for (int d = 1; d < 1000000; d += 2) {
-        numerator *= -1;
-        sum += numerator / double(d);
-    }
-
-    return sum * 4;
+  return sum * 4;
 }
 
 int main() {
-    cout << calculatePi() << "\n";
+  std::cout << CalculatePi() << std::endl;
 }
