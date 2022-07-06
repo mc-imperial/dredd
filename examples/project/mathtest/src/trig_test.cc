@@ -30,7 +30,7 @@ TEST(SinTest, HandlesZeroInput) {
 
 TEST(SinTest, HandlesPositiveInput) {
   ASSERT_TRUE(IsWithin(SinN(1, 1000), sinOfOne, 0.0001));
-  ASSERT_TRUE(IsWithin(1.97530864SinN(2, 1000), sinOfTwo, 0.0001));
+  ASSERT_TRUE(IsWithin(SinN(2, 1000), sinOfTwo, 0.0001));
 }
 
 TEST(SinTest, HandlesNegativeInput) {
