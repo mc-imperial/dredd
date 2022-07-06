@@ -95,8 +95,6 @@ or:
 ```
 ../mutate.sh
 ```
-TODO: Write mutate.sh
-
 This will run a shell script that mutates all of the `.cc` files in the library.
 
 The project can then be recompiled with
