@@ -26,6 +26,4 @@ static double CalculatePi() {
   return sum * 4;
 }
 
-int main() {
-  std::cout << CalculatePi() << std::endl;
-}
+int main() { std::cout << CalculatePi() << std::endl; }
