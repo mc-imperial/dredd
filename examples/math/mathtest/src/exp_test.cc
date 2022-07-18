@@ -20,9 +20,7 @@ namespace math {
 namespace math_test {
 namespace {
 
-TEST(ExpTest, HandlesZeroInput) {
-  EXPECT_EQ(ExpN(0, 100), 1);
-}
+TEST(ExpTest, HandlesZeroInput) { EXPECT_EQ(ExpN(0, 100), 1); }
 
 TEST(ExpTest, HandlesPositiveInput) {
   const double eOne = 2.7182818285;
@@ -43,7 +41,8 @@ TEST(ExpTest, NMustBePositive) {
     ExpN(0, -10);
     FAIL() << "Expected std::out_of_range";
   } catch (std::out_of_range const &e) {
-    EXPECT_EQ(e.what(), std::string("The number of terms must be a positive integer."));
+    EXPECT_EQ(e.what(),
+              std::string("The number of terms must be a positive integer."));
   } catch (...) {
     FAIL() << "Expected std::out_of_range";
   }
@@ -52,7 +51,8 @@ TEST(ExpTest, NMustBePositive) {
     ExpN(0, 0);
     FAIL() << "Expected std::out_of_range";
   } catch (std::out_of_range const &e) {
-    EXPECT_EQ(e.what(), std::string("The number of terms must be a positive integer."));
+    EXPECT_EQ(e.what(),
+              std::string("The number of terms must be a positive integer."));
   } catch (...) {
     FAIL() << "Expected std::out_of_range";
   }
@@ -69,13 +69,13 @@ TEST(PowTest, HandlesZeroExponent) {
 TEST(PowTest, HandlesPositiveExponent) {
   EXPECT_EQ(Pow(9, 1), 9);
   EXPECT_EQ(Pow(5, 3), 125);
-  EXPECT_EQ(Pow(7, 5),16807);
+  EXPECT_EQ(Pow(7, 5), 16807);
   EXPECT_EQ(Pow(15, 6), 11390625);
 }
 
 TEST(PowTest, HandlesNegativeExponent) {
   EXPECT_TRUE(IsWithin(Pow(10, -1), 0.1, 0.0001));
-  EXPECT_TRUE(IsWithin(Pow(5, -3), double(1)/125, 0.0001));
+  EXPECT_TRUE(IsWithin(Pow(5, -3), double(1) / 125, 0.0001));
   EXPECT_TRUE(IsWithin(Pow(15, -4), 0.0000197530864, 0.0001));
 }
 
@@ -90,7 +90,8 @@ TEST(Log2Test, XMustBePositive) {
     Log2(0);
     FAIL() << "Expected std::out_of_range";
   } catch (std::out_of_range const &e) {
-    EXPECT_EQ(e.what(), std::string("Can only calculate the log of positive values."));
+    EXPECT_EQ(e.what(),
+              std::string("Can only calculate the log of positive values."));
   } catch (...) {
     FAIL() << "Expected std::out_of_range";
   }
@@ -99,7 +100,8 @@ TEST(Log2Test, XMustBePositive) {
     Log2(-30);
     FAIL() << "Expected std::out_of_range";
   } catch (std::out_of_range const &e) {
-    EXPECT_EQ(e.what(), std::string("Can only calculate the log of positive values."));
+    EXPECT_EQ(e.what(),
+              std::string("Can only calculate the log of positive values."));
   } catch (...) {
     FAIL() << "Expected std::out_of_range";
   }
@@ -109,7 +111,6 @@ TEST(LogTest, HandlesPositiveInputs) {
   ASSERT_TRUE(IsWithin(Log(5, 3), 1.46497352, 0.0001));
 }
 
-
-} //namespace
+} // namespace
 } // namespace math_test
 } // namespace math

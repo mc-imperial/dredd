@@ -24,7 +24,7 @@ namespace math {
  * @return x if x is an interger, or the ceiling of x if it is a decimal.
  */
 int Ceil(const double &x) {
-  int y = (int) x;
+  int y = (int)x;
   return (x == y) ? y : y + 1;
 }
 
@@ -34,9 +34,7 @@ int Ceil(const double &x) {
  * @param x the value to take the absolute value of.
  * @return x if x is positive or -x if x is negative.
  */
-double Mod(const double &x) {
-  return x < 0 ? -x : x;
-}
+double Mod(const double &x) { return x < 0 ? -x : x; }
 
 /**
  * Calculate the factorial of a number.
@@ -45,7 +43,8 @@ double Mod(const double &x) {
  * @return the factorial of x, equivalent to x!
  */
 long long int Factorial(const int &x) {
-  if (x < 0) throw std::out_of_range("Can only take factorial of non-negative values.");
+  if (x < 0)
+    throw std::out_of_range("Can only take factorial of non-negative values.");
 
   long long int sum = 1;
 
@@ -66,7 +65,8 @@ long long int Factorial(const int &x) {
  * @return the number of ways to choose k items from a sample of n.
  */
 long long int Comb(const int &n, const int &k) {
-  if (n < 0 || k < 0) throw std::out_of_range("n and k must be positive.");
+  if (n < 0 || k < 0)
+    throw std::out_of_range("n and k must be positive.");
   return Factorial(n) / (Factorial(k) * Factorial(n - k));
 }
 

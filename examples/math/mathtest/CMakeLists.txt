@@ -13,13 +13,8 @@
 # limitations under the License.
 
 add_executable(
-        mathtest
-        include_private/include/mathtest/test_funcs.h
-        src/test_funcs.cc
-        src/exp_test.cc
-        src/trig_test.cc
-        src/number_theoretic_test.cc
-)
+  mathtest include_private/include/mathtest/test_funcs.h src/test_funcs.cc
+           src/exp_test.cc src/trig_test.cc src/number_theoretic_test.cc)
 target_link_libraries(mathtest PRIVATE math gtest_main)
 target_include_directories(mathtest PRIVATE include_private/include)
 

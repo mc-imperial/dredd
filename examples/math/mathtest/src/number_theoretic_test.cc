@@ -19,9 +19,7 @@ namespace math {
 namespace math_test {
 namespace {
 
-TEST(CeilTest, HandlesZeroInput) {
-  EXPECT_EQ(Ceil(0), 0);
-}
+TEST(CeilTest, HandlesZeroInput) { EXPECT_EQ(Ceil(0), 0); }
 
 TEST(CeilTest, HandlesIntegerInput) {
   EXPECT_EQ(Ceil(3), 3);
@@ -39,9 +37,7 @@ TEST(CeilTest, HandlesDecimalInput) {
   EXPECT_EQ(Ceil(25.23512), 26);
 }
 
-TEST(ModTest, HandlesZeroInput) {
-  EXPECT_EQ(Mod(0), 0);
-}
+TEST(ModTest, HandlesZeroInput) { EXPECT_EQ(Mod(0), 0); }
 
 TEST(ModTest, HandlesPositiveInput) {
   EXPECT_EQ(Mod(3), 3);
@@ -59,9 +55,7 @@ TEST(ModTest, HandlesNegativeInput) {
   EXPECT_EQ(Mod(-25), 25);
 }
 
-TEST(FactorialTest, HandlesZeroInput) {
-  EXPECT_EQ(Factorial(0), 1);
-}
+TEST(FactorialTest, HandlesZeroInput) { EXPECT_EQ(Factorial(0), 1); }
 
 TEST(FactorialTest, HandlesPositiveInput) {
   EXPECT_EQ(Factorial(1), 1);
@@ -74,15 +68,14 @@ TEST(FactorialTest, HandlesNegativeInput) {
     Factorial(-10);
     FAIL() << "Expected std::out_of_range";
   } catch (std::out_of_range const &e) {
-    EXPECT_EQ(e.what(), std::string("Can only take factorial of non-negative values."));
+    EXPECT_EQ(e.what(),
+              std::string("Can only take factorial of non-negative values."));
   } catch (...) {
     FAIL() << "Expected std::out_of_range";
   }
 }
 
-TEST(CombTest, HandlesZeroInput) {
-  EXPECT_EQ(Comb(0, 0), 1);
-}
+TEST(CombTest, HandlesZeroInput) { EXPECT_EQ(Comb(0, 0), 1); }
 
 TEST(CombTest, HandlesPositiveInput) {
   EXPECT_EQ(Comb(15, 7), 6435);

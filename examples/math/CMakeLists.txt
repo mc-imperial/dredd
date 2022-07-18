@@ -17,8 +17,9 @@ cmake_minimum_required(VERSION 3.13)
 project(math)
 
 set(DREDD_GOOGLETEST_REPO_DIR
-        "${CMAKE_CURRENT_SOURCE_DIR}/../../third_party/googletest/googletest")
+    "${CMAKE_CURRENT_SOURCE_DIR}/../../third_party/googletest/googletest")
 
 add_subdirectory(math)
 add_subdirectory(mathtest)
-add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../../third_party/googletest" "${CMAKE_CURRENT_BINARY_DIR}/third_party/googletest")
+add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../../third_party/googletest"
+                 "${CMAKE_CURRENT_BINARY_DIR}/third_party/googletest")

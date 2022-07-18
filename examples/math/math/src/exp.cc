@@ -14,8 +14,8 @@
 
 #include "math/exp.h"
 #include "math/number_theoretic.h"
-#include <stdexcept>
 #include <iostream>
+#include <stdexcept>
 
 namespace math {
 
@@ -30,7 +30,8 @@ namespace math {
  */
 double ExpN(const double &x, const int &n) {
 
-  if (n <= 0) throw std::out_of_range("The number of terms must be a positive integer.");
+  if (n <= 0)
+    throw std::out_of_range("The number of terms must be a positive integer.");
 
   double sum = 1;
 
@@ -65,7 +66,8 @@ long double Pow(const double &base, const int &exp) {
  * @return The number such that 2^result = x.
  */
 long double Log2(const int &x) {
-  if (x <= 0) throw std::out_of_range("Can only calculate the log of positive values.");
+  if (x <= 0)
+    throw std::out_of_range("Can only calculate the log of positive values.");
 
   int n = x;
   int logValue = -1;
@@ -100,8 +102,6 @@ long double Log2(const int &x) {
  * @param b the base of the logarithm.
  * @return log base b of a.
  */
-long double Log(const int &a, const int &b) {
-  return Log2(a) / Log2(b);
-}
+long double Log(const int &a, const int &b) { return Log2(a) / Log2(b); }
 
 } // namespace math

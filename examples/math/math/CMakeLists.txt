@@ -13,16 +13,8 @@
 # limitations under the License.
 
 add_library(
-        math STATIC
-        include/math/trig.h
-        include/math/exp.h
-        include/math/number_theoretic.h
-        src/exp.cc
-        src/trig.cc
-        src/number_theoretic.cc
-)
+  math STATIC
+  include/math/trig.h include/math/exp.h include/math/number_theoretic.h
+  src/exp.cc src/trig.cc src/number_theoretic.cc)
 
-target_include_directories(
-        math
-        PUBLIC include
-)
+target_include_directories(math PUBLIC include)

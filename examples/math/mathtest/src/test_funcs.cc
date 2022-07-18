@@ -18,13 +18,17 @@
 namespace math {
 namespace math_test {
 
-::testing::AssertionResult IsWithin(double val, double correct, double percentageDifference) {
-  if (val < 0 && correct < 0) val *= -1, correct *= -1;
-  if ((val >= correct * (1 - percentageDifference)) && (val <= correct * (1 + percentageDifference)))
+::testing::AssertionResult IsWithin(double val, double correct,
+                                    double percentageDifference) {
+  if (val < 0 && correct < 0)
+    val *= -1, correct *= -1;
+  if ((val >= correct * (1 - percentageDifference)) &&
+      (val <= correct * (1 + percentageDifference)))
     return ::testing::AssertionSuccess();
   else
     return ::testing::AssertionFailure()
-        << val << " is not within " << percentageDifference * 100 << "% of " << correct;
+           << val << " is not within " << percentageDifference * 100 << "% of "
+           << correct;
 }
 
 } // namespace math_test

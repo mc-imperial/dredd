@@ -20,7 +20,8 @@
 namespace math {
 namespace math_test {
 
-::testing::AssertionResult IsWithin(double val, double correct, double percentageDifference);
+::testing::AssertionResult IsWithin(double val, double correct,
+                                    double percentageDifference);
 
 } // namespace math_test
 } // namespace math
