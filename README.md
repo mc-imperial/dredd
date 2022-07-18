@@ -91,7 +91,7 @@ To apply mutants to a single file in the library, run the following command:
 ```
 path/to/dredd/repo/third_party/clang+llvm-13.0.1/bin/dredd -p compile_commands.js <path-to-file>
 ``` 
-For example, `../../../clang+llvm-13.0.1/bin/dredd ../math/src/exp.cc` will apply
+For example, `../../../third_party/clang+llvm-13.0.1/bin/dredd ../math/src/exp.cc` will apply
 mutants to the file `exp.cc`.
 
 To view the changes that Dredd has made you can do `git status` to see that `exp.cc` has changed, and `git diff` to see
