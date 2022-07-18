@@ -15,6 +15,8 @@
 #include "math/number_theoretic.h"
 #include <stdexcept>
 
+namespace math {
+
 /**
  * Calculate the ceiling of the input.
  *
@@ -67,3 +69,5 @@ long long int Comb(const int &n, const int &k) {
   if (n < 0 || k < 0) throw std::out_of_range("n and k must be positive.");
   return Factorial(n) / (Factorial(k) * Factorial(n - k));
 }
+
+} // namespace math

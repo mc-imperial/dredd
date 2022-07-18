@@ -22,4 +22,3 @@ set(DREDD_GOOGLETEST_REPO_DIR
 add_subdirectory(math)
 add_subdirectory(mathtest)
 add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../../third_party/googletest" "${CMAKE_CURRENT_BINARY_DIR}/third_party/googletest")
-

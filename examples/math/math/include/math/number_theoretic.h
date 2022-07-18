@@ -12,12 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef MATH_EXAMPLES_PROJECT_MATH_INCLUDE_MATH_EXP_H_
-#define MATH_EXAMPLES_PROJECT_MATH_INCLUDE_MATH_EXP_H_
+#ifndef MATH_NUMBERTHEORETIC_H
+#define MATH_NUMBERTHEORETIC_H
 
-double ExpN(const double &x, const int &n);
-long double Pow(const double &base, const int &exp);
-long double Log2(const int &x);
-long double Log(const int &a, const int &b);
+namespace math {
 
-#endif //MATH_EXAMPLES_PROJECT_MATH_INCLUDE_MATH_EXP_H_
+int Ceil(const double &x);
+double Mod(const double &x);
+long long int Factorial(const int &x);
+long long int Comb(const int &n, const int &k);
+
+} // namespace math
+
+#endif // MATH_NUMBERTHEORETIC_H

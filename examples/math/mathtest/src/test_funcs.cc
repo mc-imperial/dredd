@@ -12,11 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License./
 
-#ifndef MATH_EXAMPLES_PROJECT_MATHTEST_INCLUDE_PRIVATE_INCLUDE_MATHTEST_TEST_FUNCS_H_
-#define MATH_EXAMPLES_PROJECT_MATHTEST_INCLUDE_PRIVATE_INCLUDE_MATHTEST_TEST_FUNCS_H_
-
+#include "mathtest/test_funcs.h"
 #include "gtest/gtest.h"
 
-::testing::AssertionResult IsWithin(double val, double correct, double percentageDifference);
+namespace math {
+namespace {
 
-#endif //MATH_EXAMPLES_PROJECT_MATHTEST_INCLUDE_PRIVATE_INCLUDE_MATHTEST_TEST_FUNCS_H_
+::testing::AssertionResult IsWithin(double val, double correct, double percentageDifference) {
+  if (val < 0 && correct < 0) val *= -1, correct *= -1;
+  if ((val >= correct * (1 - percentageDifference)) && (val <= correct * (1 + percentageDifference)))
+    return ::testing::AssertionSuccess();
+  else
+    return ::testing::AssertionFailure()
+        << val << " is not within " << percentageDifference * 100 << "% of " << correct;
+}
+
+} // namespace
+} // namespace math

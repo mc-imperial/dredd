@@ -15,6 +15,9 @@
 #include "math/number_theoretic.h"
 #include "gtest/gtest.h"
 
+namespace math {
+namespace {
+
 TEST(CeilTest, HandlesZeroInput) {
   EXPECT_EQ(Ceil(0), 0);
 }
@@ -114,3 +117,6 @@ TEST(CombTest, HandlesNegativeInput) {
     FAIL() << "Expected std::out_of_range";
   }
 }
+
+} // namespace
+} // namespace math

@@ -16,6 +16,10 @@
 #include "mathtest/test_funcs.h"
 #include "gtest/gtest.h"
 
+namespace math {
+namespace {
+
+
 static const double &sinOfOne = 0.8414709848;
 static const double &sinOfTwo = 0.9092974368;
 static const double &cosOfOne = 0.5403023059;
@@ -125,3 +129,6 @@ TEST(TanTest, NMustBePositive) {
     FAIL() << "Expected std::out_of_range";
   }
 }
+
+} // namespace
+} // namespace math

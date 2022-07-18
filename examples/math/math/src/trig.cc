@@ -15,6 +15,8 @@
 #include "math/trig.h"
 #include <stdexcept>
 
+namespace math {
+
 /**
  * Approximate the value of sin(x)
  *
@@ -118,3 +120,5 @@ double CosecN(const double &x, const int &n) {
 double CotN(const double &x, const int &n) {
   return 1 / TanN(x, n);
 }
+
+} // namespace math

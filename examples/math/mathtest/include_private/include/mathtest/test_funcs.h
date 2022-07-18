@@ -10,16 +10,19 @@
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
-// limitations under the License.
+// limitations under the License./
 
-#ifndef DREDD_EXAMPLES_PROJECT_MATH_TRIG_H_
-#define DREDD_EXAMPLES_PROJECT_MATH_TRIG_H_
+#ifndef MATHTEST_TEST_FUNCS_H
+#define MATHTEST_TEST_FUNCS_H
 
-double SinN(const double &x, const int &n);
-double CosN(const double &x, const int &n);
-double TanN(const double &x, const int &n);
-double SecN(const double &x, const int &n);
-double CosecN(const double &x, const int &n);
-double CotN(const double &x, const int &n);
+#include "gtest/gtest.h"
 
-#endif //DREDD_EXAMPLES_PROJECT_MATH_TRIG_H_
+namespace math {
+namespace {
+
+::testing::AssertionResult IsWithin(double val, double correct, double percentageDifference);
+
+} // namespace
+} // namespace math
+
+#endif // MATHTEST_TEST_FUNCS_H

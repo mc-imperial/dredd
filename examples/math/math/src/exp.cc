@@ -17,6 +17,8 @@
 #include <stdexcept>
 #include <iostream>
 
+namespace math {
+
 /**
  * Approximate the value of e^x
  *
@@ -101,3 +103,5 @@ long double Log2(const int &x) {
 long double Log(const int &a, const int &b) {
   return Log2(a) / Log2(b);
 }
+
+} // namespace math

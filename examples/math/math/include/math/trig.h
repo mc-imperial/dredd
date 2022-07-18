@@ -10,16 +10,20 @@
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
-// limitations under the License./
+// limitations under the License.
 
-#include "mathtest/test_funcs.h"
-#include "gtest/gtest.h"
+#ifndef MATH_TRIG_H
+#define MATH_TRIG_H
 
-::testing::AssertionResult IsWithin(double val, double correct, double percentageDifference) {
-  if (val < 0 && correct < 0) val *= -1, correct *= -1;
-  if ((val >= correct * (1 - percentageDifference)) && (val <= correct * (1 + percentageDifference)))
-    return ::testing::AssertionSuccess();
-  else
-    return ::testing::AssertionFailure()
-        << val << " is not within " << percentageDifference * 100 << "% of " << correct;
-}
+namespace math {
+
+double SinN(const double &x, const int &n);
+double CosN(const double &x, const int &n);
+double TanN(const double &x, const int &n);
+double SecN(const double &x, const int &n);
+double CosecN(const double &x, const int &n);
+double CotN(const double &x, const int &n);
+
+} // namespace math
+
+#endif // MATH_TRIG_H

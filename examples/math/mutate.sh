@@ -14,8 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FILES=""
-DREDD_ROOT="../../.."
 for f in `ls ../math/src/*.cc`
 do
     FILES="${FILES} ${f}"

@@ -16,6 +16,9 @@
 #include "mathtest/test_funcs.h"
 #include "gtest/gtest.h"
 
+namespace math {
+namespace {
+
 TEST(ExpTest, HandlesZeroInput) {
   EXPECT_EQ(ExpN(0, 100), 1);
 }
@@ -104,3 +107,8 @@ TEST(Log2Test, XMustBePositive) {
 TEST(LogTest, HandlesPositiveInputs) {
   ASSERT_TRUE(IsWithin(Log(5, 3), 1.46497352, 0.0001));
 }
+
+
+} // namespace
+} // namespace math
+Would it be possible for y
