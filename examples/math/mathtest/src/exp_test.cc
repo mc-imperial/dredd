@@ -17,6 +17,7 @@
 #include "gtest/gtest.h"
 
 namespace math {
+namespace math_test {
 namespace {
 
 TEST(ExpTest, HandlesZeroInput) {
@@ -109,6 +110,6 @@ TEST(LogTest, HandlesPositiveInputs) {
 }
 
 
-} // namespace
+} //namespace
+} // namespace math_test
 } // namespace math
-Would it be possible for y

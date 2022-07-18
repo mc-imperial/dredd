@@ -16,6 +16,7 @@
 #include "gtest/gtest.h"
 
 namespace math {
+namespace math_test {
 namespace {
 
 TEST(CeilTest, HandlesZeroInput) {
@@ -119,4 +120,5 @@ TEST(CombTest, HandlesNegativeInput) {
 }
 
 } // namespace
+} // namespace math_test
 } // namespace math

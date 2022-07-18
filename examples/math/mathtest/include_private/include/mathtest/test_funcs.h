@@ -18,11 +18,11 @@
 #include "gtest/gtest.h"
 
 namespace math {
-namespace {
+namespace math_test {
 
 ::testing::AssertionResult IsWithin(double val, double correct, double percentageDifference);
 
-} // namespace
+} // namespace math_test
 } // namespace math
 
 #endif // MATHTEST_TEST_FUNCS_H

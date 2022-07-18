@@ -16,7 +16,7 @@
 #include "gtest/gtest.h"
 
 namespace math {
-namespace {
+namespace math_test {
 
 ::testing::AssertionResult IsWithin(double val, double correct, double percentageDifference) {
   if (val < 0 && correct < 0) val *= -1, correct *= -1;
@@ -27,5 +27,5 @@ namespace {
         << val << " is not within " << percentageDifference * 100 << "% of " << correct;
 }
 
-} // namespace
+} // namespace math_test
 } // namespace math

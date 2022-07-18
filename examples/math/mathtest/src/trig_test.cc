@@ -17,8 +17,8 @@
 #include "gtest/gtest.h"
 
 namespace math {
+namespace math_test {
 namespace {
-
 
 static const double &sinOfOne = 0.8414709848;
 static const double &sinOfTwo = 0.9092974368;
@@ -131,4 +131,5 @@ TEST(TanTest, NMustBePositive) {
 }
 
 } // namespace
+} // namespace math_test
 } // namespace math
