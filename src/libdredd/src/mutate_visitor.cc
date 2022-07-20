@@ -73,7 +73,8 @@ bool MutateVisitor::TraverseDecl(clang::Decl* decl) {
 
 bool MutateVisitor::VisitBinaryOperator(
     clang::BinaryOperator* binary_operator) {
-  if (enclosing_decls_.empty()) {
+  if (enclosing_decls_.empty() || (llvm::dyn_cast<clang::FunctionDecl>(
+                                       enclosing_decls_.back()) == nullptr)) {
     // Only consider mutating binary expressions that occur inside functions.
     return true;
   }
