@@ -69,19 +69,19 @@ void TestReplacement(const std::string& original, const std::string& expected,
 TEST(MutationReplaceBinaryOperatorTest, MutateAdd) {
   std::string original = "void foo() { 1 + 2; }";
   std::string expected =
-      R"(static int __dredd_replace_binary_operator_0(int arg1, int arg2) {
+      R"(static int __dredd_replace_binary_operator_0(std::function<int()> arg1, std::function<int()> arg2) {
   switch (__dredd_enabled_mutation()) {
-    case 0: return arg1 / arg2;
-    case 1: return arg1 * arg2;
-    case 2: return arg1 % arg2;
-    case 3: return arg1 - arg2;
-    case 4: return arg1;
-    case 5: return arg2;
-    default: return arg1 + arg2;
+    case 0: return arg1() / arg2();
+    case 1: return arg1() * arg2();
+    case 2: return arg1() % arg2();
+    case 3: return arg1() - arg2();
+    case 4: return arg1();
+    case 5: return arg2();
+    default: return arg1() + arg2();
   }
 }
 
-void foo() { __dredd_replace_binary_operator_0(1, 2); })";
+void foo() { __dredd_replace_binary_operator_0([&]() -> int { return static_cast<int>(1); }, [&]() -> int { return static_cast<int>(2); }); })";
   const int num_replacements = 6;
   TestReplacement(original, expected, num_replacements);
 }
@@ -122,25 +122,25 @@ TEST(MutationReplaceBinaryOperatorTest, MutateAssign) {
 }
 )";
   std::string expected =
-      R"(static int& __dredd_replace_binary_operator_0(int& arg1, int arg2) {
+      R"(static int& __dredd_replace_binary_operator_0(std::function<int&()> arg1, std::function<int()> arg2) {
   switch (__dredd_enabled_mutation()) {
-    case 0: return arg1 += arg2;
-    case 1: return arg1 &= arg2;
-    case 2: return arg1 /= arg2;
-    case 3: return arg1 *= arg2;
-    case 4: return arg1 |= arg2;
-    case 5: return arg1 %= arg2;
-    case 6: return arg1 <<= arg2;
-    case 7: return arg1 >>= arg2;
-    case 8: return arg1 -= arg2;
-    case 9: return arg1 ^= arg2;
-    default: return arg1 = arg2;
+    case 0: return arg1() += arg2();
+    case 1: return arg1() &= arg2();
+    case 2: return arg1() /= arg2();
+    case 3: return arg1() *= arg2();
+    case 4: return arg1() |= arg2();
+    case 5: return arg1() %= arg2();
+    case 6: return arg1() <<= arg2();
+    case 7: return arg1() >>= arg2();
+    case 8: return arg1() -= arg2();
+    case 9: return arg1() ^= arg2();
+    default: return arg1() = arg2();
   }
 }
 
 void foo() {
   int x;
-  __dredd_replace_binary_operator_0(x, 1);
+  __dredd_replace_binary_operator_0([&]() -> int& { return static_cast<int&>(x); }, [&]() -> int { return static_cast<int>(1); });
 }
 )";
   const int num_replacements = 10;
@@ -158,25 +158,25 @@ void foo() {
   std::string expected =
       R"(#define VAR x
 #define BING(X, Y, Z) (X ? Y : Z)
-static int& __dredd_replace_binary_operator_0(int& arg1, int arg2) {
+static int& __dredd_replace_binary_operator_0(std::function<int&()> arg1, std::function<int()> arg2) {
   switch (__dredd_enabled_mutation()) {
-    case 0: return arg1 += arg2;
-    case 1: return arg1 &= arg2;
-    case 2: return arg1 /= arg2;
-    case 3: return arg1 *= arg2;
-    case 4: return arg1 |= arg2;
-    case 5: return arg1 %= arg2;
-    case 6: return arg1 <<= arg2;
-    case 7: return arg1 >>= arg2;
-    case 8: return arg1 -= arg2;
-    case 9: return arg1 ^= arg2;
-    default: return arg1 = arg2;
+    case 0: return arg1() += arg2();
+    case 1: return arg1() &= arg2();
+    case 2: return arg1() /= arg2();
+    case 3: return arg1() *= arg2();
+    case 4: return arg1() |= arg2();
+    case 5: return arg1() %= arg2();
+    case 6: return arg1() <<= arg2();
+    case 7: return arg1() >>= arg2();
+    case 8: return arg1() -= arg2();
+    case 9: return arg1() ^= arg2();
+    default: return arg1() = arg2();
   }
 }
 
 void foo() {
   int x;
-  __dredd_replace_binary_operator_0(VAR, BING(1, 2, 3));
+  __dredd_replace_binary_operator_0([&]() -> int& { return static_cast<int&>(VAR); }, [&]() -> int { return static_cast<int>(BING(1, 2, 3)); });
 }
 )";
   const int num_replacements = 10;

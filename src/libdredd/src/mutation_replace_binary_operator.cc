@@ -48,21 +48,13 @@ std::string MutationReplaceBinaryOperator::GenerateMutatorFunction(
   new_function << "static " << result_type << " " << function_name << "(";
 
   std::string arg1_evaluated("arg1");
-  if (binary_operator_.isLogicalOp()) {
-    new_function << "std::function<" << lhs_type << "()>";
-    arg1_evaluated += "()";
-  } else {
-    new_function << lhs_type;
-  }
+  new_function << "std::function<" << lhs_type << "()>";
+  arg1_evaluated += "()";
   new_function << " arg1, ";
 
   std::string arg2_evaluated("arg2");
-  if (binary_operator_.isLogicalOp()) {
-    new_function << "std::function<" << rhs_type << "()>";
-    arg2_evaluated += "()";
-  } else {
-    new_function << rhs_type;
-  }
+  new_function << "std::function<" << rhs_type << "()>";
+  arg2_evaluated += "()";
   new_function << " arg2) {\n";
   new_function << "  switch (__dredd_enabled_mutation()) {\n";
 
@@ -193,28 +185,18 @@ void MutationReplaceBinaryOperator::Apply(
 
   // Replace the binary operator expression with a call to the wrapper
   // function.
-  if (binary_operator_.isLogicalOp()) {
-    bool result = rewriter.ReplaceText(
-        binary_operator_source_range_in_main_file,
-        mutation_function_name + "([&]() -> " + lhs_type +
-            " { return static_cast<" + lhs_type + ">(" +
-            rewriter.getRewrittenText(lhs_source_range_in_main_file) +
-            +"); }, [&]() -> " + rhs_type + " { return static_cast<" +
-            rhs_type + ">(" +
-            rewriter.getRewrittenText(rhs_source_range_in_main_file) + "); })");
-    (void)result;  // Keep release-mode compilers happy.
-    assert(!result && "Rewrite failed.\n");
-  } else {
-    bool result = rewriter.ReplaceText(
-        GetSourceRangeInMainFile(preprocessor, binary_operator_),
-        mutation_function_name + "(" +
-            rewriter.getRewrittenText(lhs_source_range_in_main_file) + +", " +
-            rewriter.getRewrittenText(rhs_source_range_in_main_file) + ")");
-    (void)result;  // Keep release-mode compilers happy.
-    assert(!result && "Rewrite failed.\n");
-  }
+  bool result = rewriter.ReplaceText(
+      binary_operator_source_range_in_main_file,
+      mutation_function_name + "([&]() -> " + lhs_type +
+          " { return static_cast<" + lhs_type + ">(" +
+          rewriter.getRewrittenText(lhs_source_range_in_main_file) +
+          +"); }, [&]() -> " + rhs_type + " { return static_cast<" + rhs_type +
+          ">(" + rewriter.getRewrittenText(rhs_source_range_in_main_file) +
+          "); })");
+  (void)result;  // Keep release-mode compilers happy.
+  assert(!result && "Rewrite failed.\n");
 
-  bool result = rewriter.InsertTextBefore(
+  result = rewriter.InsertTextBefore(
       GetSourceRangeInMainFile(preprocessor, enclosing_decl_).getBegin(),
       new_function);
   (void)result;  // Keep release-mode compilers happy.
