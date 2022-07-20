@@ -47,15 +47,13 @@ std::string MutationReplaceBinaryOperator::GenerateMutatorFunction(
   std::stringstream new_function;
   new_function << "static " << result_type << " " << function_name << "(";
 
-  std::string arg1_evaluated("arg1");
-  new_function << "std::function<" << lhs_type << "()>";
-  arg1_evaluated += "()";
-  new_function << " arg1, ";
+  std::string arg1_evaluated("arg1()");
+  new_function << "std::function<" << lhs_type << "()>"
+               << " arg1, ";
 
-  std::string arg2_evaluated("arg2");
-  new_function << "std::function<" << rhs_type << "()>";
-  arg2_evaluated += "()";
-  new_function << " arg2) {\n";
+  std::string arg2_evaluated("arg2()");
+  new_function << "std::function<" << rhs_type << "()>"
+               << " arg2) {\n";
   new_function << "  switch (__dredd_enabled_mutation()) {\n";
 
   // Consider every operator apart from the existing operator
