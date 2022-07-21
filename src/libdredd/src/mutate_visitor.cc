@@ -99,17 +99,20 @@ bool MutateVisitor::VisitBinaryOperator(
   // In particular, we do not want to mess with pointer arithmetic.
   const auto* result_type =
       binary_operator->getType()->getAs<clang::BuiltinType>();
-  if (result_type == nullptr || !result_type->isInteger()) {
+  if (result_type == nullptr ||
+      !(result_type->isInteger() || result_type->isFloatingPoint())) {
     return true;
   }
   const auto* lhs_type =
       binary_operator->getLHS()->getType()->getAs<clang::BuiltinType>();
-  if (lhs_type == nullptr || !lhs_type->isInteger()) {
+  if (lhs_type == nullptr ||
+      !(lhs_type->isInteger() || lhs_type->isFloatingPoint())) {
     return true;
   }
   const auto* rhs_type =
       binary_operator->getRHS()->getType()->getAs<clang::BuiltinType>();
-  if (rhs_type == nullptr || !rhs_type->isInteger()) {
+  if (rhs_type == nullptr ||
+      !(rhs_type->isInteger() || rhs_type->isFloatingPoint())) {
     return true;
   }
 
