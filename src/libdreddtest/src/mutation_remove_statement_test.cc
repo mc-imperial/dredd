@@ -44,10 +44,12 @@ void TestRemoval(const std::string& original, const std::string& expected,
   clang::Rewriter rewriter(ast_unit->getSourceManager(),
                            ast_unit->getLangOpts());
   int mutation_id = 0;
+  std::unordered_set<std::string> dredd_declarations;
   mutation_supplier(ast_unit->getASTContext())
       .Apply(ast_unit->getASTContext(), ast_unit->getPreprocessor(),
-             mutation_id, rewriter);
+             mutation_id, rewriter, dredd_declarations);
   ASSERT_EQ(1, mutation_id);
+  ASSERT_EQ(0, dredd_declarations.size());
   const clang::RewriteBuffer* rewrite_buffer = rewriter.getRewriteBufferFor(
       ast_unit->getSourceManager().getMainFileID());
   std::string rewritten_text(rewrite_buffer->begin(), rewrite_buffer->end());

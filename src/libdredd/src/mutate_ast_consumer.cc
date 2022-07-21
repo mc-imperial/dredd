@@ -34,53 +34,72 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& context) {
     return;
   }
   visitor_->TraverseDecl(context.getTranslationUnitDecl());
+
+  if (visitor_->GetMutations().empty()) {
+    // No possibilities for mutation were found; nothing to do.
+    return;
+  }
+
   rewriter_.setSourceMgr(compiler_instance_.getSourceManager(),
                          compiler_instance_.getLangOpts());
 
-  // At present, all possible replacements are made. This should be changed so
-  // that a random subset of replacements are made, of the desired number of
-  // mutations. By construction, replacements are processed in a bottom-up
-  // fashion. This property should be preserved when the specific replacements
-  // are made at random, to avoid attempts to rewrite a child node after its
-  // parent has been rewritten.
+  // This is used to collect the various declarations that are introduced by
+  // mutations in a manner that avoids duplicates, after which they can be added
+  // to the start of the source file.
+  std::unordered_set<std::string> dredd_declarations;
+
+  // By construction, replacements are processed in a bottom-up fashion. This
+  // property should be preserved when the specific replacements are made at
+  // random, to avoid attempts to rewrite a child node after its parent has been
+  // rewritten.
   for (const auto& replacement : visitor_->GetMutations()) {
     int mutation_id_old = mutation_id_;
     replacement->Apply(context, compiler_instance_.getPreprocessor(),
-                       mutation_id_, rewriter_);
+                       mutation_id_, rewriter_, dredd_declarations);
     assert(mutation_id_ > mutation_id_old &&
            "Every mutation should lead to the mutation id increasing by at "
            "least 1.");
     (void)mutation_id_old;  // Keep release-mode compilers happy.
   }
 
-  if (visitor_->GetFirstDeclInSourceFile() != nullptr) {
-    std::stringstream dredd_prelude;
-    dredd_prelude << "#include <cstdlib>\n";
-    dredd_prelude << "#include <functional>\n\n";
-    dredd_prelude << "static int __dredd_enabled_mutation() {\n";
-    dredd_prelude << "  static bool initialized = false;\n";
-    dredd_prelude << "  static int value;\n";
-    dredd_prelude << "  if (!initialized) {\n";
-    dredd_prelude << "    const char* __dredd_environment_variable = "
-                     "std::getenv(\"DREDD_ENABLED_MUTATION\");\n";
-    dredd_prelude << "    if (__dredd_environment_variable == nullptr) {\n";
-    dredd_prelude << "      value = -1;\n";
-    dredd_prelude << "    } else {\n";
-    dredd_prelude << "      value = atoi(__dredd_environment_variable);\n";
-    dredd_prelude << "    }\n";
-    dredd_prelude << "    initialized = true;\n";
-    dredd_prelude << "  }\n";
-    dredd_prelude << "  return value;\n";
-    dredd_prelude << "}\n\n";
+  assert(visitor_->GetFirstDeclInSourceFile() != nullptr &&
+         "There is at least one mutation, therefore there must be at least one "
+         "declaration.");
+  std::stringstream dredd_prelude;
+  dredd_prelude << "#include <cstdlib>\n";
+  dredd_prelude << "#include <functional>\n\n";
+  dredd_prelude << "static int __dredd_enabled_mutation() {\n";
+  dredd_prelude << "  static bool initialized = false;\n";
+  dredd_prelude << "  static int value;\n";
+  dredd_prelude << "  if (!initialized) {\n";
+  dredd_prelude << "    const char* __dredd_environment_variable = "
+                   "std::getenv(\"DREDD_ENABLED_MUTATION\");\n";
+  dredd_prelude << "    if (__dredd_environment_variable == nullptr) {\n";
+  dredd_prelude << "      value = -1;\n";
+  dredd_prelude << "    } else {\n";
+  dredd_prelude << "      value = atoi(__dredd_environment_variable);\n";
+  dredd_prelude << "    }\n";
+  dredd_prelude << "    initialized = true;\n";
+  dredd_prelude << "  }\n";
+  dredd_prelude << "  return value;\n";
+  dredd_prelude << "}\n\n";
 
-    bool result = rewriter_.InsertTextBefore(
-        visitor_->GetFirstDeclInSourceFile()->getBeginLoc(),
-        dredd_prelude.str());
+  bool result = rewriter_.InsertTextBefore(
+      visitor_->GetFirstDeclInSourceFile()->getBeginLoc(), dredd_prelude.str());
+  (void)result;  // Keep release-mode compilers happy.
+  assert(!result && "Rewrite failed.\n");
+
+  std::set<std::string> sorted_dredd_declarations;
+  sorted_dredd_declarations.insert(dredd_declarations.begin(),
+                                   dredd_declarations.end());
+  for (const auto& decl : sorted_dredd_declarations) {
+    result = rewriter_.InsertTextBefore(
+        visitor_->GetFirstDeclInSourceFile()->getBeginLoc(), decl);
     (void)result;  // Keep release-mode compilers happy.
     assert(!result && "Rewrite failed.\n");
   }
 
-  bool result = rewriter_.overwriteChangedFiles();
+  result = rewriter_.overwriteChangedFiles();
   (void)result;  // Keep release mode compilers happy
   assert(!result && "Something went wrong emitting rewritten files.");
 }

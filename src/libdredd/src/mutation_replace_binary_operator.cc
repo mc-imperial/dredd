@@ -19,10 +19,10 @@
 #include <initializer_list>
 #include <sstream>
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 #include "clang/AST/ASTContext.h"
-#include "clang/AST/DeclBase.h"
 #include "clang/AST/Expr.h"
 #include "clang/AST/OperationKinds.h"
 #include "clang/AST/Type.h"
@@ -35,9 +35,8 @@
 namespace dredd {
 
 MutationReplaceBinaryOperator::MutationReplaceBinaryOperator(
-    const clang::BinaryOperator& binary_operator,
-    const clang::Decl& enclosing_decl)
-    : binary_operator_(binary_operator), enclosing_decl_(enclosing_decl) {}
+    const clang::BinaryOperator& binary_operator)
+    : binary_operator_(binary_operator) {}
 
 std::string MutationReplaceBinaryOperator::GenerateMutatorFunction(
     const std::string& function_name, const std::string& result_type,
@@ -98,7 +97,8 @@ std::string MutationReplaceBinaryOperator::GenerateMutatorFunction(
 
 void MutationReplaceBinaryOperator::Apply(
     clang::ASTContext& ast_context, const clang::Preprocessor& preprocessor,
-    int& mutation_id, clang::Rewriter& rewriter) const {
+    int& mutation_id, clang::Rewriter& rewriter,
+    std::unordered_set<std::string>& dredd_declarations) const {
   // The name of the mutation wrapper function to be used for this
   // replacement.
   std::string mutation_function_name("__dredd_replace_binary_operator_" +
@@ -194,11 +194,9 @@ void MutationReplaceBinaryOperator::Apply(
   (void)result;  // Keep release-mode compilers happy.
   assert(!result && "Rewrite failed.\n");
 
-  result = rewriter.InsertTextBefore(
-      GetSourceRangeInMainFile(preprocessor, enclosing_decl_).getBegin(),
-      new_function);
-  (void)result;  // Keep release-mode compilers happy.
-  assert(!result && "Rewrite failed.\n");
+  // Add the mutation function to the set of Dredd declarations - there may
+  // already be a matching function, in which case duplication will be avoided.
+  dredd_declarations.insert(new_function);
 }
 
 }  // namespace dredd
