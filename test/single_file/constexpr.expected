@@ -1,0 +1,4 @@
+// Checks that operator mutations are not applied to constexprs.
+namepsace foo {
+constexpr int a = -2 + ~3;
+};
