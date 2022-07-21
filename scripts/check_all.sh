@@ -23,3 +23,4 @@ check_format.sh
 check_cmakelint.sh
 check_cpplint.sh
 check_clean_build.sh
+check_single_file_tests.sh
