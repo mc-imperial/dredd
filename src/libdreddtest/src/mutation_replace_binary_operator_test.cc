@@ -72,12 +72,14 @@ void TestReplacement(const std::string& original, const std::string& expected,
 TEST(MutationReplaceBinaryOperatorTest, MutateAdd) {
   std::string original = "void foo() { 1 + 2; }";
   std::string expected =
-      "void foo() { __dredd_replace_binary_operator_0([&]() -> int { return "
-      "static_cast<int>(1); }, [&]() -> int { return static_cast<int>(2); }); "
+      "void foo() { __dredd_replace_binary_operator_Add_int_int([&]() -> int { "
+      "return "
+      "static_cast<int>(1); }, [&]() -> int { return static_cast<int>(2); }, "
+      "0); "
       "}";
   std::string expected_dredd_declaration =
-      R"(static int __dredd_replace_binary_operator_0(std::function<int()> arg1, std::function<int()> arg2) {
-  switch (__dredd_enabled_mutation()) {
+      R"(static int __dredd_replace_binary_operator_Add_int_int(std::function<int()> arg1, std::function<int()> arg2, int mutation_id) {
+  switch (__dredd_enabled_mutation() - mutation_id) {
     case 0: return arg1() / arg2();
     case 1: return arg1() * arg2();
     case 2: return arg1() % arg2();
@@ -105,12 +107,12 @@ TEST(MutationReplaceBinaryOperatorTest, MutateAnd) {
       R"(void foo() {
   int x = 1;
   int y = 2;
-  int z = __dredd_replace_binary_operator_0([&]() -> bool { return static_cast<bool>(x); }, [&]() -> bool { return static_cast<bool>(y); });
+  int z = __dredd_replace_binary_operator_LAnd_bool_bool([&]() -> bool { return static_cast<bool>(x); }, [&]() -> bool { return static_cast<bool>(y); }, 0);
 }
 )";
   std::string expected_dredd_declaration =
-      R"(static bool __dredd_replace_binary_operator_0(std::function<bool()> arg1, std::function<bool()> arg2) {
-  switch (__dredd_enabled_mutation()) {
+      R"(static bool __dredd_replace_binary_operator_LAnd_bool_bool(std::function<bool()> arg1, std::function<bool()> arg2, int mutation_id) {
+  switch (__dredd_enabled_mutation() - mutation_id) {
     case 0: return arg1() || arg2();
     case 1: return arg1();
     case 2: return arg2();
@@ -135,12 +137,12 @@ TEST(MutationReplaceBinaryOperatorTest, MutateAssign) {
   std::string expected =
       R"(void foo() {
   int x;
-  __dredd_replace_binary_operator_0([&]() -> int& { return static_cast<int&>(x); }, [&]() -> int { return static_cast<int>(1); });
+  __dredd_replace_binary_operator_Assign_int_int([&]() -> int& { return static_cast<int&>(x); }, [&]() -> int { return static_cast<int>(1); }, 0);
 }
 )";
   std::string expected_dredd_declaration =
-      R"(static int& __dredd_replace_binary_operator_0(std::function<int&()> arg1, std::function<int()> arg2) {
-  switch (__dredd_enabled_mutation()) {
+      R"(static int& __dredd_replace_binary_operator_Assign_int_int(std::function<int&()> arg1, std::function<int()> arg2, int mutation_id) {
+  switch (__dredd_enabled_mutation() - mutation_id) {
     case 0: return arg1() += arg2();
     case 1: return arg1() &= arg2();
     case 2: return arg1() /= arg2();
@@ -174,12 +176,12 @@ void foo() {
 #define BING(X, Y, Z) (X ? Y : Z)
 void foo() {
   int x;
-  __dredd_replace_binary_operator_0([&]() -> int& { return static_cast<int&>(VAR); }, [&]() -> int { return static_cast<int>(BING(1, 2, 3)); });
+  __dredd_replace_binary_operator_Assign_int_int([&]() -> int& { return static_cast<int&>(VAR); }, [&]() -> int { return static_cast<int>(BING(1, 2, 3)); }, 0);
 }
 )";
   std::string expected_dredd_declaration =
-      R"(static int& __dredd_replace_binary_operator_0(std::function<int&()> arg1, std::function<int()> arg2) {
-  switch (__dredd_enabled_mutation()) {
+      R"(static int& __dredd_replace_binary_operator_Assign_int_int(std::function<int&()> arg1, std::function<int()> arg2, int mutation_id) {
+  switch (__dredd_enabled_mutation() - mutation_id) {
     case 0: return arg1() += arg2();
     case 1: return arg1() &= arg2();
     case 2: return arg1() /= arg2();

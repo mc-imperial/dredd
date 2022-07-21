@@ -65,6 +65,17 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& context) {
   assert(visitor_->GetFirstDeclInSourceFile() != nullptr &&
          "There is at least one mutation, therefore there must be at least one "
          "declaration.");
+
+  std::set<std::string> sorted_dredd_declarations;
+  sorted_dredd_declarations.insert(dredd_declarations.begin(),
+                                   dredd_declarations.end());
+  for (const auto& decl : sorted_dredd_declarations) {
+    bool result = rewriter_.InsertTextBefore(
+        visitor_->GetFirstDeclInSourceFile()->getBeginLoc(), decl);
+    (void)result;  // Keep release-mode compilers happy.
+    assert(!result && "Rewrite failed.\n");
+  }
+
   std::stringstream dredd_prelude;
   dredd_prelude << "#include <cstdlib>\n";
   dredd_prelude << "#include <functional>\n\n";
@@ -88,16 +99,6 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& context) {
       visitor_->GetFirstDeclInSourceFile()->getBeginLoc(), dredd_prelude.str());
   (void)result;  // Keep release-mode compilers happy.
   assert(!result && "Rewrite failed.\n");
-
-  std::set<std::string> sorted_dredd_declarations;
-  sorted_dredd_declarations.insert(dredd_declarations.begin(),
-                                   dredd_declarations.end());
-  for (const auto& decl : sorted_dredd_declarations) {
-    result = rewriter_.InsertTextBefore(
-        visitor_->GetFirstDeclInSourceFile()->getBeginLoc(), decl);
-    (void)result;  // Keep release-mode compilers happy.
-    assert(!result && "Rewrite failed.\n");
-  }
 
   result = rewriter_.overwriteChangedFiles();
   (void)result;  // Keep release mode compilers happy
