@@ -48,7 +48,10 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& context) {
 
   // This is used to collect the various declarations that are introduced by
   // mutations in a manner that avoids duplicates, after which they can be added
-  // to the start of the source file.
+  // to the start of the source file. As lots of duplicates are expected, an
+  // unordered set is used to facilitate efficient lookup. Later, this is
+  // converted to an ordered set so that declarations can be added to the source
+  // file in a deterministic order.
   std::unordered_set<std::string> dredd_declarations;
 
   // By construction, replacements are processed in a bottom-up fashion. This
@@ -69,6 +72,8 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& context) {
          "There is at least one mutation, therefore there must be at least one "
          "declaration.");
 
+  // Convert the unordered set Dredd declarations into an ordered set and add
+  // them to the source file before the first declaration.
   std::set<std::string> sorted_dredd_declarations;
   sorted_dredd_declarations.insert(dredd_declarations.begin(),
                                    dredd_declarations.end());

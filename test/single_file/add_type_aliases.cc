@@ -21,5 +21,4 @@ int main() {
   g + g;
   h + h;
   i + i;
-  
 }

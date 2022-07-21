@@ -36,15 +36,11 @@ namespace dredd {
 
 namespace {
 
+// Utility method used to avoid spaces when types, such as 'unsigned int', are
+// used in mutation function names.
 std::string SpaceToUnderscore(const std::string& input) {
-  std::string result;
-  for (auto character : input) {
-    if (character == ' ') {
-      result += "_";
-    } else {
-      result += character;
-    }
-  }
+  std::string result(input);
+  std::replace(result.begin(), result.end(), ' ', '_');
   return result;
 }
 
@@ -123,6 +119,10 @@ void MutationReplaceBinaryOperator::Apply(
     int& mutation_id, clang::Rewriter& rewriter,
     std::unordered_set<std::string>& dredd_declarations) const {
   std::string new_function_name = "__dredd_replace_binary_operator_";
+
+  // A string corresponding to the binary operator forms part of the name of the
+  // mutation function, to differentiate mutation functions for different
+  // operators
   switch (binary_operator_.getOpcode()) {
     case clang::BinaryOperatorKind::BO_Add:
       new_function_name += "Add";
@@ -230,6 +230,10 @@ void MutationReplaceBinaryOperator::Apply(
                              ->getName(ast_context.getPrintingPolicy())
                              .str();
 
+  // To avoid problems of ambiguous function calls, the argument types (ignoring
+  // whether they are references or not) are baked into the mutation function
+  // name. Some type names have space in them (e.g. 'unsigned int'); such spaces
+  // are replaced with underscores.
   new_function_name +=
       "_" + SpaceToUnderscore(lhs_type) + "_" + SpaceToUnderscore(rhs_type);
 
