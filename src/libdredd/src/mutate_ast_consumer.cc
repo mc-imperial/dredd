@@ -15,7 +15,10 @@
 #include "libdredd/mutate_ast_consumer.h"
 
 #include <cassert>
+#include <set>
 #include <sstream>
+#include <string>
+#include <unordered_set>
 #include <vector>
 
 #include "clang/AST/ASTContext.h"

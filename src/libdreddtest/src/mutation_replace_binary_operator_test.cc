@@ -17,7 +17,6 @@
 #include <memory>
 #include <string>
 
-#include "clang/AST/Decl.h"
 #include "clang/AST/Expr.h"
 #include "clang/ASTMatchers/ASTMatchFinder.h"
 #include "clang/ASTMatchers/ASTMatchers.h"

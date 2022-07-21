@@ -40,7 +40,7 @@ class MutationReplaceBinaryOperator : public Mutation {
 
  private:
   std::string GenerateMutatorFunction(
-      const std::string& new_function_name, const std::string& result_type,
+      const std::string& function_name, const std::string& result_type,
       const std::string& lhs_type, const std::string& rhs_type,
       const std::vector<clang::BinaryOperatorKind>& operators,
       int& mutation_id) const;

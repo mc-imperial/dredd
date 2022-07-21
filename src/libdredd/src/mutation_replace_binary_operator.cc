@@ -55,12 +55,12 @@ MutationReplaceBinaryOperator::MutationReplaceBinaryOperator(
     : binary_operator_(binary_operator) {}
 
 std::string MutationReplaceBinaryOperator::GenerateMutatorFunction(
-    const std::string& new_function_name, const std::string& result_type,
+    const std::string& function_name, const std::string& result_type,
     const std::string& lhs_type, const std::string& rhs_type,
     const std::vector<clang::BinaryOperatorKind>& operators,
     int& mutation_id) const {
   std::stringstream new_function;
-  new_function << "static " << result_type << " " << new_function_name;
+  new_function << "static " << result_type << " " << function_name;
   new_function << "(std::function<" << lhs_type << "()>"
                << " arg1, ";
 
