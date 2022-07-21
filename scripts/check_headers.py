@@ -35,6 +35,7 @@ def exclude_dirname(f: str):
             "__pycache__",
             ".pytest_cache",
             ".venv",
+            "single_file"
         ]
     )
 

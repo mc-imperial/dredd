@@ -1,0 +1,22 @@
+// Checks that operator mutations are not applied to constexprs.
+#include <cstdlib>
+#include <functional>
+
+static int __dredd_enabled_mutation() {
+  static bool initialized = false;
+  static int value;
+  if (!initialized) {
+    const char* __dredd_environment_variable = std::getenv("DREDD_ENABLED_MUTATION");
+    if (__dredd_environment_variable == nullptr) {
+      value = -1;
+    } else {
+      value = atoi(__dredd_environment_variable);
+    }
+    initialized = true;
+  }
+  return value;
+}
+
+namespace foo {
+constexpr int a = -2 + ~3;
+};
