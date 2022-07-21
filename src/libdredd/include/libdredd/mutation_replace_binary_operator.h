@@ -16,10 +16,10 @@
 #define LIBDREDD_MUTATION_REPLACE_BINARY_OPERATOR_H
 
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 #include "clang/AST/ASTContext.h"
-#include "clang/AST/DeclBase.h"
 #include "clang/AST/Expr.h"
 #include "clang/AST/OperationKinds.h"
 #include "clang/Lex/Preprocessor.h"
@@ -30,12 +30,13 @@ namespace dredd {
 
 class MutationReplaceBinaryOperator : public Mutation {
  public:
-  MutationReplaceBinaryOperator(const clang::BinaryOperator& binary_operator,
-                                const clang::Decl& enclosing_decl);
+  explicit MutationReplaceBinaryOperator(
+      const clang::BinaryOperator& binary_operator);
 
-  void Apply(clang::ASTContext& ast_context,
-             const clang::Preprocessor& preprocessor, int& mutation_id,
-             clang::Rewriter& rewriter) const override;
+  void Apply(
+      clang::ASTContext& ast_context, const clang::Preprocessor& preprocessor,
+      int& mutation_id, clang::Rewriter& rewriter,
+      std::unordered_set<std::string>& dredd_declarations) const override;
 
  private:
   std::string GenerateMutatorFunction(
@@ -45,7 +46,6 @@ class MutationReplaceBinaryOperator : public Mutation {
       int& mutation_id) const;
 
   const clang::BinaryOperator& binary_operator_;
-  const clang::Decl& enclosing_decl_;
 };
 
 }  // namespace dredd

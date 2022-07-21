@@ -15,6 +15,9 @@
 #ifndef LIBDREDD_MUTATION_REMOVE_STATEMENT_H
 #define LIBDREDD_MUTATION_REMOVE_STATEMENT_H
 
+#include <string>
+#include <unordered_set>
+
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/Stmt.h"
 #include "clang/Lex/Preprocessor.h"
@@ -27,9 +30,10 @@ class MutationRemoveStatement : public Mutation {
  public:
   explicit MutationRemoveStatement(const clang::Stmt& statement);
 
-  void Apply(clang::ASTContext& ast_context,
-             const clang::Preprocessor& preprocessor, int& mutation_id,
-             clang::Rewriter& rewriter) const override;
+  void Apply(
+      clang::ASTContext& ast_context, const clang::Preprocessor& preprocessor,
+      int& mutation_id, clang::Rewriter& rewriter,
+      std::unordered_set<std::string>& dredd_declarations) const override;
 
  private:
   const clang::Stmt& statement_;

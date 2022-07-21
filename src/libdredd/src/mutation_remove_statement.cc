@@ -16,6 +16,7 @@
 
 #include <cassert>
 #include <string>
+#include <unordered_set>
 
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/Stmt.h"
@@ -31,10 +32,11 @@ namespace dredd {
 MutationRemoveStatement::MutationRemoveStatement(const clang::Stmt& statement)
     : statement_(statement) {}
 
-void MutationRemoveStatement::Apply(clang::ASTContext& ast_context,
-                                    const clang::Preprocessor& preprocessor,
-                                    int& mutation_id,
-                                    clang::Rewriter& rewriter) const {
+void MutationRemoveStatement::Apply(
+    clang::ASTContext& ast_context, const clang::Preprocessor& preprocessor,
+    int& mutation_id, clang::Rewriter& rewriter,
+    std::unordered_set<std::string>& dredd_declarations) const {
+  (void)dredd_declarations;  // Unused
   clang::CharSourceRange source_range = clang::tooling::maybeExtendRange(
       clang::CharSourceRange::getTokenRange(
           GetSourceRangeInMainFile(preprocessor, statement_)),

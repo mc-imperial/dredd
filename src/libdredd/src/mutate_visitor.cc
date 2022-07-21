@@ -119,8 +119,8 @@ bool MutateVisitor::VisitBinaryOperator(
     return true;
   }
 
-  mutations_.push_back(std::make_unique<MutationReplaceBinaryOperator>(
-      *binary_operator, *enclosing_decls_[0]));
+  mutations_.push_back(
+      std::make_unique<MutationReplaceBinaryOperator>(*binary_operator));
   return true;
 }
 

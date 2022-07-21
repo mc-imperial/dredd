@@ -15,6 +15,9 @@
 #ifndef LIBDREDD_MUTATION_H
 #define LIBDREDD_MUTATION_H
 
+#include <string>
+#include <unordered_set>
+
 #include "clang/AST/ASTContext.h"
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Rewrite/Core/Rewriter.h"
@@ -36,9 +39,13 @@ class Mutation {
 
   virtual ~Mutation();
 
-  virtual void Apply(clang::ASTContext& ast_context,
-                     const clang::Preprocessor& preprocessor, int& mutation_id,
-                     clang::Rewriter& rewriter) const = 0;
+  // The |dredd_declarations| argument provides a set of declarations that will
+  // be added to the start of the source file being mutated. This allows
+  // avoiding redundant repeat declarations.
+  virtual void Apply(
+      clang::ASTContext& ast_context, const clang::Preprocessor& preprocessor,
+      int& mutation_id, clang::Rewriter& rewriter,
+      std::unordered_set<std::string>& dredd_declarations) const = 0;
 };
 
 }  // namespace dredd
