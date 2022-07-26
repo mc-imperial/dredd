@@ -72,6 +72,22 @@ check_all.sh
 DREDD_ROOT=`pwd`
 cp ${DREDD_ROOT}/temp/build-Debug/src/dredd/dredd ${DREDD_ROOT}/third_party/clang+llvm-13.0.1/bin/dredd
 
+# examples/simple/pi.cc: check that we can build the simple example
+${DREDD_ROOT}/third_party/clang+llvm-13.0.1/bin/dredd examples/simple/pi.cc
+clang++ examples/simple/pi.cc -o examples/simple/pi
+diff <(./examples/simple/pi) <(echo "3.14159")
+
+# examples/math: check that the tests pass after mutating the library
+pushd examples/math
+  mkdir build
+  pushd build
+    cmake -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ..
+    ../mutate.sh
+    cmake --build .
+    ./mathtest/mathtest
+  popd
+popd
+
 # SPIRV-Tools validator: check that the tests pass after mutating the validator
 git clone https://github.com/KhronosGroup/SPIRV-Tools.git
 pushd SPIRV-Tools
