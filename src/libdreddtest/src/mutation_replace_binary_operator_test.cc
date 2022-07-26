@@ -196,5 +196,68 @@ void foo() {
                   expected_dredd_declaration);
 }
 
+TEST(MutationReplaceBinaryOperatorTest, MutateFloatDiv) {
+  std::string original = R"(void foo() {
+  float x = 6.43622;
+  float y = 3.53462;
+  float z = x / y;
+}
+)";
+  std::string expected =
+      R"(void foo() {
+  float x = 6.43622;
+  float y = 3.53462;
+  float z = __dredd_replace_binary_operator_Div_float_float([&]() -> float { return static_cast<float>(x); }, [&]() -> float { return static_cast<float>(y); }, 0);
+}
+)";
+  std::string expected_dredd_declaration =
+      R"(static float __dredd_replace_binary_operator_Div_float_float(std::function<float()> arg1, std::function<float()> arg2, int mutation_id) {
+  switch (__dredd_enabled_mutation() - mutation_id) {
+    case 0: return arg1() + arg2();
+    case 1: return arg1() * arg2();
+    case 2: return arg1() - arg2();
+    case 3: return arg1();
+    case 4: return arg2();
+    default: return arg1() / arg2();
+  }
+}
+
+)";
+  const int num_replacements = 5;
+  TestReplacement(original, expected, num_replacements,
+                  expected_dredd_declaration);
+}
+
+TEST(MutationReplaceBinaryOperatorTest, MutateFloatSubAssign) {
+  std::string original = R"(void foo() {
+  double x = 234.23532;
+  double y = 0.65433;
+  x -= y;
+}
+)";
+  std::string expected =
+      R"(void foo() {
+  double x = 234.23532;
+  double y = 0.65433;
+  __dredd_replace_binary_operator_SubAssign_double_double([&]() -> double& { return static_cast<double&>(x); }, [&]() -> double { return static_cast<double>(y); }, 0);
+}
+)";
+  std::string expected_dredd_declaration =
+      R"(static double& __dredd_replace_binary_operator_SubAssign_double_double(std::function<double&()> arg1, std::function<double()> arg2, int mutation_id) {
+  switch (__dredd_enabled_mutation() - mutation_id) {
+    case 0: return arg1() += arg2();
+    case 1: return arg1() = arg2();
+    case 2: return arg1() /= arg2();
+    case 3: return arg1() *= arg2();
+    default: return arg1() -= arg2();
+  }
+}
+
+)";
+  const int num_replacements = 4;
+  TestReplacement(original, expected, num_replacements,
+                  expected_dredd_declaration);
+}
+
 }  // namespace
 }  // namespace dredd

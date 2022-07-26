@@ -50,6 +50,19 @@ MutationReplaceBinaryOperator::MutationReplaceBinaryOperator(
     const clang::BinaryOperator& binary_operator)
     : binary_operator_(binary_operator) {}
 
+bool MutationReplaceBinaryOperator::IsValidOperator(
+    const std::string& lhs_type, const std::string& rhs_type,
+    clang::BinaryOperatorKind op) {
+  return !((lhs_type.find("float") != std::string::npos ||
+            rhs_type.find("float") != std::string::npos ||
+            lhs_type.find("double") != std::string::npos ||
+            rhs_type.find("double") != std::string::npos) &&
+           (op == clang::BO_Rem || op == clang::BO_AndAssign ||
+            op == clang::BO_OrAssign || op == clang::BO_RemAssign ||
+            op == clang::BO_ShlAssign || op == clang::BO_ShrAssign ||
+            op == clang::BO_XorAssign));
+}
+
 std::string MutationReplaceBinaryOperator::GenerateMutatorFunction(
     const std::string& function_name, const std::string& result_type,
     const std::string& lhs_type, const std::string& rhs_type,
@@ -69,7 +82,8 @@ std::string MutationReplaceBinaryOperator::GenerateMutatorFunction(
   std::string arg1_evaluated("arg1()");
   std::string arg2_evaluated("arg2()");
   for (auto op : operators) {
-    if (op == binary_operator_.getOpcode()) {
+    if (op == binary_operator_.getOpcode() ||
+        !IsValidOperator(lhs_type, rhs_type, op)) {
       continue;
     }
     new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "

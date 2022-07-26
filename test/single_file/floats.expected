@@ -1,0 +1,57 @@
+#include <cstdlib>
+#include <functional>
+
+static int __dredd_enabled_mutation() {
+  static bool initialized = false;
+  static int value;
+  if (!initialized) {
+    const char* __dredd_environment_variable = std::getenv("DREDD_ENABLED_MUTATION");
+    if (__dredd_environment_variable == nullptr) {
+      value = -1;
+    } else {
+      value = atoi(__dredd_environment_variable);
+    }
+    initialized = true;
+  }
+  return value;
+}
+
+static float& __dredd_replace_binary_operator_SubAssign_float_double(std::function<float&()> arg1, std::function<double()> arg2, int mutation_id) {
+  switch (__dredd_enabled_mutation() - mutation_id) {
+    case 0: return arg1() += arg2();
+    case 1: return arg1() = arg2();
+    case 2: return arg1() /= arg2();
+    case 3: return arg1() *= arg2();
+    default: return arg1() -= arg2();
+  }
+}
+
+static double& __dredd_replace_binary_operator_AddAssign_double_double(std::function<double&()> arg1, std::function<double()> arg2, int mutation_id) {
+  switch (__dredd_enabled_mutation() - mutation_id) {
+    case 0: return arg1() = arg2();
+    case 1: return arg1() /= arg2();
+    case 2: return arg1() *= arg2();
+    case 3: return arg1() -= arg2();
+    default: return arg1() += arg2();
+  }
+}
+
+static double __dredd_replace_binary_operator_Add_double_double(std::function<double()> arg1, std::function<double()> arg2, int mutation_id) {
+  switch (__dredd_enabled_mutation() - mutation_id) {
+    case 0: return arg1() / arg2();
+    case 1: return arg1() * arg2();
+    case 2: return arg1() - arg2();
+    case 3: return arg1();
+    case 4: return arg2();
+    default: return arg1() + arg2();
+  }
+}
+
+int main() {
+  double x = 5.32;
+  if (__dredd_enabled_mutation() != 13) { __dredd_replace_binary_operator_AddAssign_double_double([&]() -> double& { return static_cast<double&>(x); }, [&]() -> double { return static_cast<double>(0.5); }, 0); }
+  float y = 64343.7;
+  if (__dredd_enabled_mutation() != 14) { __dredd_replace_binary_operator_SubAssign_float_double([&]() -> float& { return static_cast<float&>(y); }, [&]() -> double { return static_cast<double>(1.2); }, 4); }
+  double z = x * 5.5;
+  if (__dredd_enabled_mutation() != 15) { return __dredd_replace_binary_operator_Add_double_double([&]() -> double { return static_cast<double>(z); }, [&]() -> double { return static_cast<double>(x); }, 8); }
+}

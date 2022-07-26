@@ -1,0 +1,24 @@
+#include <cstdlib>
+#include <functional>
+
+static int __dredd_enabled_mutation() {
+  static bool initialized = false;
+  static int value;
+  if (!initialized) {
+    const char* __dredd_environment_variable = std::getenv("DREDD_ENABLED_MUTATION");
+    if (__dredd_environment_variable == nullptr) {
+      value = -1;
+    } else {
+      value = atoi(__dredd_environment_variable);
+    }
+    initialized = true;
+  }
+  return value;
+}
+
+int main() {
+  float x = 5.235;
+  float y = 754.34623;
+  float z = x + y;
+  if (__dredd_enabled_mutation() != 0) { return z; }
+}
