@@ -240,6 +240,13 @@ void MutationReplaceBinaryOperator::Apply(
   if (binary_operator_.isAssignmentOp()) {
     result_type += "&";
     lhs_type += "&";
+    clang::QualType qualified_lhs_type = binary_operator_.getLHS()->getType();
+    if (qualified_lhs_type.isVolatileQualified()) {
+      assert(binary_operator_.getType().isVolatileQualified() &&
+             "Expected expression to be volatile-qualified since LHS is.");
+      result_type = "volatile " + result_type;
+      lhs_type = "volatile " + lhs_type;
+    }
   }
 
   clang::SourceRange binary_operator_source_range_in_main_file =
