@@ -81,8 +81,8 @@ clang++ examples/simple/pi.cc -o examples/simple/pi
 pushd examples/math
   mkdir build
   pushd build
-    ../mutate.sh
     cmake -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ..
+    ../mutate.sh
     cmake --build .
     ./mathtest/mathtest
   popd
