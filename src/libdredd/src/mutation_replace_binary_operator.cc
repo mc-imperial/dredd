@@ -62,9 +62,8 @@ std::string MutationReplaceBinaryOperator::GenerateMutatorFunction(
 
   new_function << "std::function<" << rhs_type << "()>"
                << " arg2, int mutation_id) {\n";
-  new_function << "  switch (__dredd_enabled_mutation() - mutation_id) {\n";
 
-  int next_switch_case = 0;
+  int mutant_offset = 0;
 
   // Consider every operator apart from the existing operator
   std::string arg1_evaluated("arg1()");
@@ -73,43 +72,44 @@ std::string MutationReplaceBinaryOperator::GenerateMutatorFunction(
     if (op == binary_operator_.getOpcode()) {
       continue;
     }
-    new_function << "    case " << next_switch_case << ": return "
-                 << arg1_evaluated << " "
+    new_function << "  if (__dredd_enabled_mutation(mutation_id + "
+                 << mutant_offset << ")) return " << arg1_evaluated << " "
                  << clang::BinaryOperator::getOpcodeStr(op).str() << " "
                  << arg2_evaluated << ";\n";
-    next_switch_case++;
+    mutant_offset++;
   }
   if (!binary_operator_.isAssignmentOp()) {
     // LHS
-    new_function << "    case " << next_switch_case << ": return "
-                 << arg1_evaluated << ";\n";
-    next_switch_case++;
+    new_function << "  if (__dredd_enabled_mutation(mutation_id + "
+                 << mutant_offset << ")) return " << arg1_evaluated << ";\n";
+    mutant_offset++;
 
     // RHS
-    new_function << "    case " << next_switch_case << ": return "
-                 << arg2_evaluated << ";\n";
-    next_switch_case++;
+    new_function << "  if (__dredd_enabled_mutation(mutation_id + "
+                 << mutant_offset << ")) return " << arg2_evaluated << ";\n";
+    mutant_offset++;
   }
   if (binary_operator_.isLogicalOp()) {
     // true
-    new_function << "    case " << next_switch_case << ": return true;\n";
-    next_switch_case++;
+    new_function << "  if (__dredd_enabled_mutation(mutation_id + "
+                 << mutant_offset << ")) return true;\n";
+    mutant_offset++;
 
     // false
-    new_function << "    case " << next_switch_case << ": return false;\n";
-    next_switch_case++;
+    new_function << "  if (__dredd_enabled_mutation(mutation_id + "
+                 << mutant_offset << ")) return false;\n";
+    mutant_offset++;
   }
 
   new_function
-      << "    default: return " << arg1_evaluated << " "
+      << "  return " << arg1_evaluated << " "
       << clang::BinaryOperator::getOpcodeStr(binary_operator_.getOpcode()).str()
       << " " << arg2_evaluated << ";\n";
-  new_function << "  }\n";
   new_function << "}\n\n";
 
-  // The function captures |next_switch_cases| different mutations, so bump up
+  // The function captures |mutant_offset| different mutations, so bump up
   // the mutation id accordingly.
-  mutation_id += next_switch_case;
+  mutation_id += mutant_offset;
 
   return new_function.str();
 }

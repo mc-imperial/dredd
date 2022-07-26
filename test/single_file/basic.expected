@@ -1,7 +1,7 @@
 #include <cstdlib>
 #include <functional>
 
-static int __dredd_enabled_mutation() {
+static bool __dredd_enabled_mutation(int mutation_id) {
   static bool initialized = false;
   static int value;
   if (!initialized) {
@@ -13,9 +13,9 @@ static int __dredd_enabled_mutation() {
     }
     initialized = true;
   }
-  return value;
+  return value == mutation_id;
 }
 
 int main() {
-  if (__dredd_enabled_mutation() != 0) { return 0; }
+  if (!__dredd_enabled_mutation(0)) { return 0; }
 }
