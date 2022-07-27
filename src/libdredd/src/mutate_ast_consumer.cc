@@ -95,7 +95,15 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& context) {
   // The number of mutations applied to this file is now known.
   const int num_mutations = mutation_id_ - initial_mutation_id;
 
+  // Whether mutants are enabled or not will be tracked using a a bitset,
+  // represented as an array of 64-bit integers. First, work out how large this
+  // array will need to be, as ceiling(num_mutations / 64).
+  const int kWordSize = 64;
+  const int num_64_bit_words_required =
+      (num_mutations + kWordSize - 1) / kWordSize;
+
   std::stringstream dredd_prelude;
+  dredd_prelude << "#include <cinttypes>\n";
   dredd_prelude << "#include <cstdlib>\n";
   dredd_prelude << "#include <functional>\n\n";
   dredd_prelude
@@ -103,9 +111,8 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& context) {
   dredd_prelude << "  static bool initialized = false;\n";
   // Array of booleans, one per mutation in this file, determining whether they
   // are enabled.
-  // TODO(https://github.com/mc-imperial/dredd/issues/55): Use a bitset to make
-  //  this more space-efficient.
-  dredd_prelude << "  static bool enabled[" << num_mutations << "];\n";
+  dredd_prelude << "  static uint64_t enabled_bitset["
+                << num_64_bit_words_required << "];\n";
   dredd_prelude << "  if (!initialized) {\n";
   // TODO(https://github.com/mc-imperial/dredd/issues/55): Support the
   //  environment variable featuring a comma-separated sequence of mutant ids.
@@ -115,14 +122,24 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& context) {
   dredd_prelude << "      int value = atoi(__dredd_environment_variable);\n";
   dredd_prelude << "      int local_value = value - " << initial_mutation_id
                 << ";\n";
+  // Check whether the mutant id actually corresponds to a mutant in this file;
+  // skip it if it does not.
   dredd_prelude << "      if (local_value >= 0 && local_value < "
                 << num_mutations << ") {\n";
-  dredd_prelude << "        enabled[local_value] = true;\n";
+  // `local_value / 64` gives the element in the bitset array corresponding to
+  // this mutant. Then `local_value % 64` determines which bit of that element
+  // needs to be set in order to enable the mutant, and a bitwise operation is
+  // used to set the correct bit.
+  dredd_prelude << "        enabled_bitset[local_value / 64] |= (1 << "
+                   "(local_value % 64));\n";
   dredd_prelude << "      }\n";
   dredd_prelude << "    }\n";
   dredd_prelude << "    initialized = true;\n";
   dredd_prelude << "  }\n";
-  dredd_prelude << "  return enabled[local_mutation_id];\n";
+  // Similar to the above, a combination of division, modulo and bit-shifting
+  // is used to look up whether this mutant is enabled in the bitset.
+  dredd_prelude << "  return (enabled_bitset[local_mutation_id / 64] & (1 << "
+                   "(local_mutation_id % 64))) != 0;\n";
   dredd_prelude << "}\n\n";
 
   bool result = rewriter_.InsertTextBefore(
