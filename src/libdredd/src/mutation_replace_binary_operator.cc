@@ -262,6 +262,10 @@ void MutationReplaceBinaryOperator::Apply(
 
   // Replace the binary operator expression with a call to the wrapper
   // function.
+  //
+  // Subtracting |first_mutation_id_in_file| turns the global mutation id,
+  // |mutation_id|, into a file-local mutation id.
+  const int local_mutation_id = mutation_id - first_mutation_id_in_file;
   bool result = rewriter.ReplaceText(
       binary_operator_source_range_in_main_file,
       new_function_name + "([&]() -> " + lhs_type + " { return static_cast<" +
@@ -269,8 +273,7 @@ void MutationReplaceBinaryOperator::Apply(
           rewriter.getRewrittenText(lhs_source_range_in_main_file) +
           +"); }, [&]() -> " + rhs_type + " { return static_cast<" + rhs_type +
           ">(" + rewriter.getRewrittenText(rhs_source_range_in_main_file) +
-          "); }, " + std::to_string(mutation_id - first_mutation_id_in_file) +
-          ")");
+          "); }, " + std::to_string(local_mutation_id) + ")");
   (void)result;  // Keep release-mode compilers happy.
   assert(!result && "Rewrite failed.\n");
 
