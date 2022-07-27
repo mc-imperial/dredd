@@ -39,12 +39,18 @@ class Mutation {
 
   virtual ~Mutation();
 
+  // The |first_mutation_id_in_file| argument can be subtracted from
+  // |mutation_id| to turn it from a global mutation id (across all files) into
+  // a local mutation id with respect to the particular source file being
+  // mutated.
+  //
   // The |dredd_declarations| argument provides a set of declarations that will
   // be added to the start of the source file being mutated. This allows
   // avoiding redundant repeat declarations.
   virtual void Apply(
       clang::ASTContext& ast_context, const clang::Preprocessor& preprocessor,
-      int& mutation_id, clang::Rewriter& rewriter,
+      int first_mutation_id_in_file, int& mutation_id,
+      clang::Rewriter& rewriter,
       std::unordered_set<std::string>& dredd_declarations) const = 0;
 };
 

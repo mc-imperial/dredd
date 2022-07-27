@@ -34,7 +34,7 @@ MutationRemoveStatement::MutationRemoveStatement(const clang::Stmt& statement)
 
 void MutationRemoveStatement::Apply(
     clang::ASTContext& ast_context, const clang::Preprocessor& preprocessor,
-    int& mutation_id, clang::Rewriter& rewriter,
+    int first_mutation_id_in_file, int& mutation_id, clang::Rewriter& rewriter,
     std::unordered_set<std::string>& dredd_declarations) const {
   (void)dredd_declarations;  // Unused
   clang::CharSourceRange source_range = clang::tooling::maybeExtendRange(
@@ -43,9 +43,10 @@ void MutationRemoveStatement::Apply(
       clang::tok::TokenKind::semi, ast_context);
 
   bool result = rewriter.ReplaceText(
-      source_range, "if (!__dredd_enabled_mutation(" +
-                        std::to_string(mutation_id) + ")) { " +
-                        rewriter.getRewrittenText(source_range) + " }");
+      source_range,
+      "if (!__dredd_enabled_mutation(" +
+          std::to_string(mutation_id - first_mutation_id_in_file) + ")) { " +
+          rewriter.getRewrittenText(source_range) + " }");
   (void)result;  // Keep release-mode compilers happy.
   assert(!result && "Rewrite failed.\n");
   mutation_id++;

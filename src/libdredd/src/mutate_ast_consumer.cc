@@ -46,6 +46,13 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& context) {
   rewriter_.setSourceMgr(compiler_instance_.getSourceManager(),
                          compiler_instance_.getLangOpts());
 
+  // Recording this makes it possible to keep track of how many mutations have
+  // been applied to an individual source file, which allows mutations within
+  // that source file to be tracked using a file-local mutation id that starts
+  // from zero. Adding this value to the file-local id gives the global mutation
+  // id.
+  const int initial_mutation_id = mutation_id_;
+
   // This is used to collect the various declarations that are introduced by
   // mutations in a manner that avoids duplicates, after which they can be added
   // to the start of the source file. As lots of duplicates are expected, an
@@ -54,14 +61,15 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& context) {
   // file in a deterministic order.
   std::unordered_set<std::string> dredd_declarations;
 
-  // By construction, replacements are processed in a bottom-up fashion. This
-  // property should be preserved when the specific replacements are made at
+  // By construction, mutations are processed in a bottom-up fashion. This
+  // property should be preserved when the specific mutations are made at
   // random, to avoid attempts to rewrite a child node after its parent has been
   // rewritten.
-  for (const auto& replacement : visitor_->GetMutations()) {
+  for (const auto& mutation : visitor_->GetMutations()) {
     int mutation_id_old = mutation_id_;
-    replacement->Apply(context, compiler_instance_.getPreprocessor(),
-                       mutation_id_, rewriter_, dredd_declarations);
+    mutation->Apply(context, compiler_instance_.getPreprocessor(),
+                    initial_mutation_id, mutation_id_, rewriter_,
+                    dredd_declarations);
     assert(mutation_id_ > mutation_id_old &&
            "Every mutation should lead to the mutation id increasing by at "
            "least 1.");
@@ -84,23 +92,37 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& context) {
     assert(!result && "Rewrite failed.\n");
   }
 
+  // The number of mutations applied to this file is now known.
+  const int num_mutations = mutation_id_ - initial_mutation_id;
+
   std::stringstream dredd_prelude;
   dredd_prelude << "#include <cstdlib>\n";
   dredd_prelude << "#include <functional>\n\n";
-  dredd_prelude << "static bool __dredd_enabled_mutation(int mutation_id) {\n";
+  dredd_prelude
+      << "static bool __dredd_enabled_mutation(int local_mutation_id) {\n";
   dredd_prelude << "  static bool initialized = false;\n";
-  dredd_prelude << "  static int value;\n";
+  // Array of booleans, one per mutation in this file, determining whether they
+  // are enabled.
+  // TODO(https://github.com/mc-imperial/dredd/issues/55): Use a bitset to make
+  //  this more space-efficient.
+  dredd_prelude << "  static bool enabled[" << num_mutations << "];\n";
   dredd_prelude << "  if (!initialized) {\n";
+  // TODO(https://github.com/mc-imperial/dredd/issues/55): Support the
+  //  environment variable featuring a comma-separated sequence of mutant ids.
   dredd_prelude << "    const char* __dredd_environment_variable = "
                    "std::getenv(\"DREDD_ENABLED_MUTATION\");\n";
-  dredd_prelude << "    if (__dredd_environment_variable == nullptr) {\n";
-  dredd_prelude << "      value = -1;\n";
-  dredd_prelude << "    } else {\n";
-  dredd_prelude << "      value = atoi(__dredd_environment_variable);\n";
+  dredd_prelude << "    if (__dredd_environment_variable != nullptr) {\n";
+  dredd_prelude << "      int value = atoi(__dredd_environment_variable);\n";
+  dredd_prelude << "      int local_value = value - " << initial_mutation_id
+                << ";\n";
+  dredd_prelude << "      if (local_value >= 0 && local_value < "
+                << num_mutations << ") {\n";
+  dredd_prelude << "        enabled[local_value] = true;\n";
+  dredd_prelude << "      }\n";
   dredd_prelude << "    }\n";
   dredd_prelude << "    initialized = true;\n";
   dredd_prelude << "  }\n";
-  dredd_prelude << "  return value == mutation_id;\n";
+  dredd_prelude << "  return enabled[local_mutation_id];\n";
   dredd_prelude << "}\n\n";
 
   bool result = rewriter_.InsertTextBefore(

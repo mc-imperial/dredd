@@ -56,7 +56,7 @@ void TestReplacement(const std::string& original, const std::string& expected,
                            ast_unit->getLangOpts());
   int mutation_id = 0;
   std::unordered_set<std::string> dredd_declarations;
-  mutation.Apply(ast_unit->getASTContext(), ast_unit->getPreprocessor(),
+  mutation.Apply(ast_unit->getASTContext(), ast_unit->getPreprocessor(), 0,
                  mutation_id, rewriter, dredd_declarations);
   ASSERT_EQ(num_replacements, mutation_id);
   ASSERT_EQ(1, dredd_declarations.size());
@@ -77,13 +77,13 @@ TEST(MutationReplaceBinaryOperatorTest, MutateAdd) {
       "0); "
       "}";
   std::string expected_dredd_declaration =
-      R"(static int __dredd_replace_binary_operator_Add_int_int(std::function<int()> arg1, std::function<int()> arg2, int mutation_id) {
-  if (__dredd_enabled_mutation(mutation_id + 0)) return arg1() / arg2();
-  if (__dredd_enabled_mutation(mutation_id + 1)) return arg1() * arg2();
-  if (__dredd_enabled_mutation(mutation_id + 2)) return arg1() % arg2();
-  if (__dredd_enabled_mutation(mutation_id + 3)) return arg1() - arg2();
-  if (__dredd_enabled_mutation(mutation_id + 4)) return arg1();
-  if (__dredd_enabled_mutation(mutation_id + 5)) return arg2();
+      R"(static int __dredd_replace_binary_operator_Add_int_int(std::function<int()> arg1, std::function<int()> arg2, int local_mutation_id) {
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return arg1() / arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg1() * arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 2)) return arg1() % arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 3)) return arg1() - arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 4)) return arg1();
+  if (__dredd_enabled_mutation(local_mutation_id + 5)) return arg2();
   return arg1() + arg2();
 }
 
@@ -108,12 +108,12 @@ TEST(MutationReplaceBinaryOperatorTest, MutateAnd) {
 }
 )";
   std::string expected_dredd_declaration =
-      R"(static bool __dredd_replace_binary_operator_LAnd_bool_bool(std::function<bool()> arg1, std::function<bool()> arg2, int mutation_id) {
-  if (__dredd_enabled_mutation(mutation_id + 0)) return arg1() || arg2();
-  if (__dredd_enabled_mutation(mutation_id + 1)) return arg1();
-  if (__dredd_enabled_mutation(mutation_id + 2)) return arg2();
-  if (__dredd_enabled_mutation(mutation_id + 3)) return true;
-  if (__dredd_enabled_mutation(mutation_id + 4)) return false;
+      R"(static bool __dredd_replace_binary_operator_LAnd_bool_bool(std::function<bool()> arg1, std::function<bool()> arg2, int local_mutation_id) {
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return arg1() || arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg1();
+  if (__dredd_enabled_mutation(local_mutation_id + 2)) return arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 3)) return true;
+  if (__dredd_enabled_mutation(local_mutation_id + 4)) return false;
   return arg1() && arg2();
 }
 
@@ -136,17 +136,17 @@ TEST(MutationReplaceBinaryOperatorTest, MutateAssign) {
 }
 )";
   std::string expected_dredd_declaration =
-      R"(static int& __dredd_replace_binary_operator_Assign_int_int(std::function<int&()> arg1, std::function<int()> arg2, int mutation_id) {
-  if (__dredd_enabled_mutation(mutation_id + 0)) return arg1() += arg2();
-  if (__dredd_enabled_mutation(mutation_id + 1)) return arg1() &= arg2();
-  if (__dredd_enabled_mutation(mutation_id + 2)) return arg1() /= arg2();
-  if (__dredd_enabled_mutation(mutation_id + 3)) return arg1() *= arg2();
-  if (__dredd_enabled_mutation(mutation_id + 4)) return arg1() |= arg2();
-  if (__dredd_enabled_mutation(mutation_id + 5)) return arg1() %= arg2();
-  if (__dredd_enabled_mutation(mutation_id + 6)) return arg1() <<= arg2();
-  if (__dredd_enabled_mutation(mutation_id + 7)) return arg1() >>= arg2();
-  if (__dredd_enabled_mutation(mutation_id + 8)) return arg1() -= arg2();
-  if (__dredd_enabled_mutation(mutation_id + 9)) return arg1() ^= arg2();
+      R"(static int& __dredd_replace_binary_operator_Assign_int_int(std::function<int&()> arg1, std::function<int()> arg2, int local_mutation_id) {
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return arg1() += arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg1() &= arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 2)) return arg1() /= arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 3)) return arg1() *= arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 4)) return arg1() |= arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 5)) return arg1() %= arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 6)) return arg1() <<= arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 7)) return arg1() >>= arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 8)) return arg1() -= arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 9)) return arg1() ^= arg2();
   return arg1() = arg2();
 }
 
@@ -173,17 +173,17 @@ void foo() {
 }
 )";
   std::string expected_dredd_declaration =
-      R"(static int& __dredd_replace_binary_operator_Assign_int_int(std::function<int&()> arg1, std::function<int()> arg2, int mutation_id) {
-  if (__dredd_enabled_mutation(mutation_id + 0)) return arg1() += arg2();
-  if (__dredd_enabled_mutation(mutation_id + 1)) return arg1() &= arg2();
-  if (__dredd_enabled_mutation(mutation_id + 2)) return arg1() /= arg2();
-  if (__dredd_enabled_mutation(mutation_id + 3)) return arg1() *= arg2();
-  if (__dredd_enabled_mutation(mutation_id + 4)) return arg1() |= arg2();
-  if (__dredd_enabled_mutation(mutation_id + 5)) return arg1() %= arg2();
-  if (__dredd_enabled_mutation(mutation_id + 6)) return arg1() <<= arg2();
-  if (__dredd_enabled_mutation(mutation_id + 7)) return arg1() >>= arg2();
-  if (__dredd_enabled_mutation(mutation_id + 8)) return arg1() -= arg2();
-  if (__dredd_enabled_mutation(mutation_id + 9)) return arg1() ^= arg2();
+      R"(static int& __dredd_replace_binary_operator_Assign_int_int(std::function<int&()> arg1, std::function<int()> arg2, int local_mutation_id) {
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return arg1() += arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg1() &= arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 2)) return arg1() /= arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 3)) return arg1() *= arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 4)) return arg1() |= arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 5)) return arg1() %= arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 6)) return arg1() <<= arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 7)) return arg1() >>= arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 8)) return arg1() -= arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 9)) return arg1() ^= arg2();
   return arg1() = arg2();
 }
 
