@@ -37,7 +37,8 @@ MutateVisitor::MutateVisitor(const clang::CompilerInstance& compiler_instance)
     : compiler_instance_(compiler_instance),
       first_decl_in_source_file_(nullptr) {}
 
-bool MutateVisitor::IsTypeSupported(const clang::BuiltinType* type) {
+bool MutateVisitor::IsTypeSupported(const clang::QualType qual_type) {
+  const auto* type = qual_type->getAs<clang::BuiltinType>();
   return type == nullptr || !(type->isInteger() || type->isFloatingPoint());
 }
 
@@ -101,19 +102,14 @@ bool MutateVisitor::VisitBinaryOperator(
 
   // We only want to change operators for binary operations on basic types.
   // In particular, we do not want to mess with pointer arithmetic.
-  const auto* result_type =
-      binary_operator->getType()->getAs<clang::BuiltinType>();
-  if (IsTypeSupported(result_type)) {
+  // Check that the result type is supported
+  if (IsTypeSupported(binary_operator->getType())) {
     return true;
   }
-  const auto* lhs_type =
-      binary_operator->getLHS()->getType()->getAs<clang::BuiltinType>();
-  if (IsTypeSupported(lhs_type)) {
+  if (IsTypeSupported(binary_operator->getLHS()->getType())) {
     return true;
   }
-  const auto* rhs_type =
-      binary_operator->getRHS()->getType()->getAs<clang::BuiltinType>();
-  if (IsTypeSupported(rhs_type)) {
+  if (IsTypeSupported(binary_operator->getRHS()->getType())) {
     return true;
   }
 

@@ -88,8 +88,8 @@ TEST(MutationReplaceBinaryOperatorTest, MutateAdd) {
 }
 
 )";
-  const int num_replacements = 6;
-  TestReplacement(original, expected, num_replacements,
+  const int kNumReplacements = 6;
+  TestReplacement(original, expected, kNumReplacements,
                   expected_dredd_declaration);
 }
 
@@ -119,8 +119,8 @@ TEST(MutationReplaceBinaryOperatorTest, MutateAnd) {
 }
 
 )";
-  const int num_replacements = 5;
-  TestReplacement(original, expected, num_replacements,
+  const int kNumReplacements = 5;
+  TestReplacement(original, expected, kNumReplacements,
                   expected_dredd_declaration);
 }
 
@@ -153,8 +153,8 @@ TEST(MutationReplaceBinaryOperatorTest, MutateAssign) {
 }
 
 )";
-  const int num_replacements = 10;
-  TestReplacement(original, expected, num_replacements,
+  const int kNumReplacements = 10;
+  TestReplacement(original, expected, kNumReplacements,
                   expected_dredd_declaration);
 }
 
@@ -191,8 +191,8 @@ void foo() {
 }
 
 )";
-  const int num_replacements = 10;
-  TestReplacement(original, expected, num_replacements,
+  const int kNumReplacements = 10;
+  TestReplacement(original, expected, kNumReplacements,
                   expected_dredd_declaration);
 }
 
@@ -223,8 +223,8 @@ TEST(MutationReplaceBinaryOperatorTest, MutateFloatDiv) {
 }
 
 )";
-  const int num_replacements = 5;
-  TestReplacement(original, expected, num_replacements,
+  const int kNumReplacements = 5;
+  TestReplacement(original, expected, kNumReplacements,
                   expected_dredd_declaration);
 }
 
@@ -254,8 +254,8 @@ TEST(MutationReplaceBinaryOperatorTest, MutateFloatSubAssign) {
 }
 
 )";
-  const int num_replacements = 4;
-  TestReplacement(original, expected, num_replacements,
+  const int kNumReplacements = 4;
+  TestReplacement(original, expected, kNumReplacements,
                   expected_dredd_declaration);
 }
 

@@ -16,9 +16,31 @@ static int __dredd_enabled_mutation() {
   return value;
 }
 
+static float& __dredd_replace_binary_operator_Assign_float_float(std::function<float&()> arg1, std::function<float()> arg2, int mutation_id) {
+  switch (__dredd_enabled_mutation() - mutation_id) {
+    case 0: return arg1() += arg2();
+    case 1: return arg1() /= arg2();
+    case 2: return arg1() *= arg2();
+    case 3: return arg1() -= arg2();
+    default: return arg1() = arg2();
+  }
+}
+
+static float __dredd_replace_binary_operator_Add_float_float(std::function<float()> arg1, std::function<float()> arg2, int mutation_id) {
+  switch (__dredd_enabled_mutation() - mutation_id) {
+    case 0: return arg1() / arg2();
+    case 1: return arg1() * arg2();
+    case 2: return arg1() - arg2();
+    case 3: return arg1();
+    case 4: return arg2();
+    default: return arg1() + arg2();
+  }
+}
+
 int main() {
   float x = 5.235;
   float y = 754.34623;
-  float z = x + y;
-  if (__dredd_enabled_mutation() != 0) { return z; }
+  float z;
+  if (__dredd_enabled_mutation() != 9) { __dredd_replace_binary_operator_Assign_float_float([&]() -> float& { return static_cast<float&>(z); }, [&]() -> float { return static_cast<float>(__dredd_replace_binary_operator_Add_float_float([&]() -> float { return static_cast<float>(x); }, [&]() -> float { return static_cast<float>(y); }, 0)); }, 5); }
+  if (__dredd_enabled_mutation() != 10) { return 0; }
 }

@@ -39,7 +39,7 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
 
   bool VisitCompoundStmt(clang::CompoundStmt* compound_stmt);
 
-  static bool IsTypeSupported(const clang::BuiltinType* type);
+  static bool IsTypeSupported(clang::QualType qual_type);
 
   // NOLINTNEXTLINE
   bool shouldTraversePostOrder() { return true; }
