@@ -50,6 +50,8 @@ MutationReplaceBinaryOperator::MutationReplaceBinaryOperator(
     const clang::BinaryOperator& binary_operator)
     : binary_operator_(binary_operator) {}
 
+// Certain operators such as % are not compatible with floating point numbers,
+// this function checks which operators can be applied for each type.
 bool MutationReplaceBinaryOperator::IsValidReplacementOperator(
     clang::BinaryOperatorKind op) const {
   const auto* lhs_type =
