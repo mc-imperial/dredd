@@ -37,6 +37,12 @@ MutateVisitor::MutateVisitor(const clang::CompilerInstance& compiler_instance)
     : compiler_instance_(compiler_instance),
       first_decl_in_source_file_(nullptr) {}
 
+bool MutateVisitor::IsTypeSupported(const clang::QualType qual_type) {
+  const auto* builtin_type = qual_type->getAs<clang::BuiltinType>();
+  return builtin_type == nullptr ||
+         !(builtin_type->isInteger() || builtin_type->isFloatingPoint());
+}
+
 bool MutateVisitor::TraverseDecl(clang::Decl* decl) {
   if (llvm::dyn_cast<clang::TranslationUnitDecl>(decl) != nullptr) {
     // This is the top-level translation unit declaration, so descend into it.
@@ -97,19 +103,14 @@ bool MutateVisitor::VisitBinaryOperator(
 
   // We only want to change operators for binary operations on basic types.
   // In particular, we do not want to mess with pointer arithmetic.
-  const auto* result_type =
-      binary_operator->getType()->getAs<clang::BuiltinType>();
-  if (result_type == nullptr || !result_type->isInteger()) {
+  // Check that the result type is supported
+  if (IsTypeSupported(binary_operator->getType())) {
     return true;
   }
-  const auto* lhs_type =
-      binary_operator->getLHS()->getType()->getAs<clang::BuiltinType>();
-  if (lhs_type == nullptr || !lhs_type->isInteger()) {
+  if (IsTypeSupported(binary_operator->getLHS()->getType())) {
     return true;
   }
-  const auto* rhs_type =
-      binary_operator->getRHS()->getType()->getAs<clang::BuiltinType>();
-  if (rhs_type == nullptr || !rhs_type->isInteger()) {
+  if (IsTypeSupported(binary_operator->getRHS()->getType())) {
     return true;
   }
 

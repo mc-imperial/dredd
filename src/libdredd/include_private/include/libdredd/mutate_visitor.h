@@ -23,6 +23,7 @@
 #include "clang/AST/Expr.h"
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/AST/Stmt.h"
+#include "clang/AST/Type.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "libdredd/mutation.h"
 
@@ -37,6 +38,8 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
   bool VisitBinaryOperator(clang::BinaryOperator* binary_operator);
 
   bool VisitCompoundStmt(clang::CompoundStmt* compound_stmt);
+
+  static bool IsTypeSupported(clang::QualType qual_type);
 
   // NOLINTNEXTLINE
   bool shouldTraversePostOrder() { return true; }

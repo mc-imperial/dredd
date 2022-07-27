@@ -50,6 +50,25 @@ MutationReplaceBinaryOperator::MutationReplaceBinaryOperator(
     const clang::BinaryOperator& binary_operator)
     : binary_operator_(binary_operator) {}
 
+// Certain operators such as % are not compatible with floating point numbers,
+// this function checks which operators can be applied for each type.
+bool MutationReplaceBinaryOperator::IsValidReplacementOperator(
+    clang::BinaryOperatorKind op) const {
+  const auto* lhs_type =
+      binary_operator_.getLHS()->getType()->getAs<clang::BuiltinType>();
+  assert((lhs_type->isFloatingPoint() || lhs_type->isInteger()) &&
+         "Expected lhs to be either integer or floating-point.");
+  const auto* rhs_type =
+      binary_operator_.getRHS()->getType()->getAs<clang::BuiltinType>();
+  assert((rhs_type->isFloatingPoint() || rhs_type->isInteger()) &&
+         "Expected rhs to be either integer or floating-point.");
+  return !((lhs_type->isFloatingPoint() || rhs_type->isFloatingPoint()) &&
+           (op == clang::BO_Rem || op == clang::BO_AndAssign ||
+            op == clang::BO_OrAssign || op == clang::BO_RemAssign ||
+            op == clang::BO_ShlAssign || op == clang::BO_ShrAssign ||
+            op == clang::BO_XorAssign));
+}
+
 std::string MutationReplaceBinaryOperator::GenerateMutatorFunction(
     const std::string& function_name, const std::string& result_type,
     const std::string& lhs_type, const std::string& rhs_type,
@@ -69,7 +88,7 @@ std::string MutationReplaceBinaryOperator::GenerateMutatorFunction(
   std::string arg1_evaluated("arg1()");
   std::string arg2_evaluated("arg2()");
   for (auto op : operators) {
-    if (op == binary_operator_.getOpcode()) {
+    if (op == binary_operator_.getOpcode() || !IsValidReplacementOperator(op)) {
       continue;
     }
     new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "

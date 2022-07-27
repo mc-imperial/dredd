@@ -46,6 +46,9 @@ class MutationReplaceBinaryOperator : public Mutation {
       const std::vector<clang::BinaryOperatorKind>& operators,
       int& mutation_id) const;
 
+  [[nodiscard]] bool IsValidReplacementOperator(
+      clang::BinaryOperatorKind op) const;
+
   const clang::BinaryOperator& binary_operator_;
 };
 

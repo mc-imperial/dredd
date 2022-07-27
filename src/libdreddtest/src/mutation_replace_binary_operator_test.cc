@@ -88,8 +88,8 @@ TEST(MutationReplaceBinaryOperatorTest, MutateAdd) {
 }
 
 )";
-  const int num_replacements = 6;
-  TestReplacement(original, expected, num_replacements,
+  const int kNumReplacements = 6;
+  TestReplacement(original, expected, kNumReplacements,
                   expected_dredd_declaration);
 }
 
@@ -118,8 +118,8 @@ TEST(MutationReplaceBinaryOperatorTest, MutateAnd) {
 }
 
 )";
-  const int num_replacements = 5;
-  TestReplacement(original, expected, num_replacements,
+  const int kNumReplacements = 5;
+  TestReplacement(original, expected, kNumReplacements,
                   expected_dredd_declaration);
 }
 
@@ -151,8 +151,8 @@ TEST(MutationReplaceBinaryOperatorTest, MutateAssign) {
 }
 
 )";
-  const int num_replacements = 10;
-  TestReplacement(original, expected, num_replacements,
+  const int kNumReplacements = 10;
+  TestReplacement(original, expected, kNumReplacements,
                   expected_dredd_declaration);
 }
 
@@ -188,8 +188,67 @@ void foo() {
 }
 
 )";
-  const int num_replacements = 10;
-  TestReplacement(original, expected, num_replacements,
+  const int kNumReplacements = 10;
+  TestReplacement(original, expected, kNumReplacements,
+                  expected_dredd_declaration);
+}
+
+TEST(MutationReplaceBinaryOperatorTest, MutateFloatDiv) {
+  std::string original = R"(void foo() {
+  float x = 6.43622;
+  float y = 3.53462;
+  float z = x / y;
+}
+)";
+  std::string expected =
+      R"(void foo() {
+  float x = 6.43622;
+  float y = 3.53462;
+  float z = __dredd_replace_binary_operator_Div_float_float([&]() -> float { return static_cast<float>(x); }, [&]() -> float { return static_cast<float>(y); }, 0);
+}
+)";
+  std::string expected_dredd_declaration =
+      R"(static float __dredd_replace_binary_operator_Div_float_float(std::function<float()> arg1, std::function<float()> arg2, int local_mutation_id) {
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return arg1() + arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg1() * arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 2)) return arg1() - arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 3)) return arg1();
+  if (__dredd_enabled_mutation(local_mutation_id + 4)) return arg2();
+  return arg1() / arg2();
+}
+
+)";
+  const int kNumReplacements = 5;
+  TestReplacement(original, expected, kNumReplacements,
+                  expected_dredd_declaration);
+}
+
+TEST(MutationReplaceBinaryOperatorTest, MutateFloatSubAssign) {
+  std::string original = R"(void foo() {
+  double x = 234.23532;
+  double y = 0.65433;
+  x -= y;
+}
+)";
+  std::string expected =
+      R"(void foo() {
+  double x = 234.23532;
+  double y = 0.65433;
+  __dredd_replace_binary_operator_SubAssign_double_double([&]() -> double& { return static_cast<double&>(x); }, [&]() -> double { return static_cast<double>(y); }, 0);
+}
+)";
+  std::string expected_dredd_declaration =
+      R"(static double& __dredd_replace_binary_operator_SubAssign_double_double(std::function<double&()> arg1, std::function<double()> arg2, int local_mutation_id) {
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return arg1() += arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg1() = arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 2)) return arg1() /= arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 3)) return arg1() *= arg2();
+  return arg1() -= arg2();
+}
+
+)";
+  const int kNumReplacements = 4;
+  TestReplacement(original, expected, kNumReplacements,
                   expected_dredd_declaration);
 }
 
