@@ -54,8 +54,12 @@ bool MutationReplaceBinaryOperator::IsValidReplacementOperator(
     clang::BinaryOperatorKind op) const {
   const auto* lhs_type =
       binary_operator_.getLHS()->getType()->getAs<clang::BuiltinType>();
+  assert((lhs_type->isFloatingPoint() || lhs_type->isInteger()) &&
+         "Expected lhs to be either integer or floating-point.");
   const auto* rhs_type =
       binary_operator_.getRHS()->getType()->getAs<clang::BuiltinType>();
+  assert((rhs_type->isFloatingPoint() || rhs_type->isInteger()) &&
+         "Expected rhs to be either integer or floating-point.");
   return !((lhs_type->isFloatingPoint() || rhs_type->isFloatingPoint()) &&
            (op == clang::BO_Rem || op == clang::BO_AndAssign ||
             op == clang::BO_OrAssign || op == clang::BO_RemAssign ||

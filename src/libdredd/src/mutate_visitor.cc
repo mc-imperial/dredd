@@ -38,8 +38,9 @@ MutateVisitor::MutateVisitor(const clang::CompilerInstance& compiler_instance)
       first_decl_in_source_file_(nullptr) {}
 
 bool MutateVisitor::IsTypeSupported(const clang::QualType qual_type) {
-  const auto* type = qual_type->getAs<clang::BuiltinType>();
-  return type == nullptr || !(type->isInteger() || type->isFloatingPoint());
+  const auto* builtin_type = qual_type->getAs<clang::BuiltinType>();
+  return builtin_type == nullptr ||
+         !(builtin_type->isInteger() || builtin_type->isFloatingPoint());
 }
 
 bool MutateVisitor::TraverseDecl(clang::Decl* decl) {
