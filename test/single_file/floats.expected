@@ -1,21 +1,34 @@
-#include <cstdlib>
+#include <cinttypes>
+#include <cstddef>
 #include <functional>
+#include <string>
 
 static bool __dredd_enabled_mutation(int local_mutation_id) {
   static bool initialized = false;
-  static bool enabled[16];
+  static uint64_t enabled_bitset[1];
   if (!initialized) {
-    const char* __dredd_environment_variable = std::getenv("DREDD_ENABLED_MUTATION");
-    if (__dredd_environment_variable != nullptr) {
-      int value = atoi(__dredd_environment_variable);
-      int local_value = value - 0;
-      if (local_value >= 0 && local_value < 16) {
-        enabled[local_value] = true;
+    const char* dredd_environment_variable = std::getenv("DREDD_ENABLED_MUTATION");
+    if (dredd_environment_variable != nullptr) {
+      std::string contents(dredd_environment_variable);
+      while (true) {
+        size_t pos = contents.find(",");
+        std::string token = (pos == std::string::npos ? contents : contents.substr(0, pos));
+        if (!token.empty()) {
+          int value = std::stoi(token);
+          int local_value = value - 0;
+          if (local_value >= 0 && local_value < 16) {
+            enabled_bitset[local_value / 64] |= (1 << (local_value % 64));
+          }
+        }
+        if (pos == std::string::npos) {
+          break;
+        }
+        contents.erase(0, pos + 1);
       }
     }
     initialized = true;
   }
-  return enabled[local_mutation_id];
+  return (enabled_bitset[local_mutation_id / 64] & (1 << (local_mutation_id % 64))) != 0;
 }
 
 static float& __dredd_replace_binary_operator_SubAssign_float_double(std::function<float&()> arg1, std::function<double()> arg2, int local_mutation_id) {

@@ -104,8 +104,9 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& context) {
 
   std::stringstream dredd_prelude;
   dredd_prelude << "#include <cinttypes>\n";
-  dredd_prelude << "#include <cstdlib>\n";
-  dredd_prelude << "#include <functional>\n\n";
+  dredd_prelude << "#include <cstddef>\n";
+  dredd_prelude << "#include <functional>\n";
+  dredd_prelude << "#include <string>\n\n";
   dredd_prelude
       << "static bool __dredd_enabled_mutation(int local_mutation_id) {\n";
   dredd_prelude << "  static bool initialized = false;\n";
@@ -114,24 +115,46 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& context) {
   dredd_prelude << "  static uint64_t enabled_bitset["
                 << num_64_bit_words_required << "];\n";
   dredd_prelude << "  if (!initialized) {\n";
-  // TODO(https://github.com/mc-imperial/dredd/issues/55): Support the
-  //  environment variable featuring a comma-separated sequence of mutant ids.
-  dredd_prelude << "    const char* __dredd_environment_variable = "
+  dredd_prelude << "    const char* dredd_environment_variable = "
                    "std::getenv(\"DREDD_ENABLED_MUTATION\");\n";
-  dredd_prelude << "    if (__dredd_environment_variable != nullptr) {\n";
-  dredd_prelude << "      int value = atoi(__dredd_environment_variable);\n";
-  dredd_prelude << "      int local_value = value - " << initial_mutation_id
+  dredd_prelude << "    if (dredd_environment_variable != nullptr) {\n";
+  // The environment variable for mutations is set, so process the contents of
+  // this environment variable as a comma-seprated list of strings.
+  dredd_prelude << "      std::string contents(dredd_environment_variable);\n";
+  dredd_prelude << "      while (true) {\n";
+  // Find the position of the next comma.
+  dredd_prelude << "        size_t pos = contents.find(\",\");\n";
+  // The next token is either the prefix before the next comma (if there is a
+  // comma) or the whole string (if there is no comma).
+  dredd_prelude << "        std::string token = (pos == std::string::npos ? "
+                   "contents : contents.substr(0, pos));\n";
+  // Ignore an empty token: this allows for a trailing comma at the end of the
+  // string.
+  dredd_prelude << "        if (!token.empty()) {\n";
+  // Parse the token as an integer. This will throw an exception if parsing
+  // fails, which is OK: it is expected that the user has set the environment
+  // variable to a legitimate value.
+  dredd_prelude << "          int value = std::stoi(token);\n";
+  dredd_prelude << "          int local_value = value - " << initial_mutation_id
                 << ";\n";
   // Check whether the mutant id actually corresponds to a mutant in this file;
   // skip it if it does not.
-  dredd_prelude << "      if (local_value >= 0 && local_value < "
+  dredd_prelude << "          if (local_value >= 0 && local_value < "
                 << num_mutations << ") {\n";
   // `local_value / 64` gives the element in the bitset array corresponding to
   // this mutant. Then `local_value % 64` determines which bit of that element
   // needs to be set in order to enable the mutant, and a bitwise operation is
   // used to set the correct bit.
-  dredd_prelude << "        enabled_bitset[local_value / 64] |= (1 << "
+  dredd_prelude << "            enabled_bitset[local_value / 64] |= (1 << "
                    "(local_value % 64));\n";
+  dredd_prelude << "          }\n";
+  dredd_prelude << "        }\n";
+  // If the end of the string has been reached, exit the parsing loop.
+  dredd_prelude << "        if (pos == std::string::npos) {\n";
+  dredd_prelude << "          break;\n";
+  dredd_prelude << "        }\n";
+  // Move past the first comma so that the rest of the string can be processed.
+  dredd_prelude << "        contents.erase(0, pos + 1);\n";
   dredd_prelude << "      }\n";
   dredd_prelude << "    }\n";
   dredd_prelude << "    initialized = true;\n";
