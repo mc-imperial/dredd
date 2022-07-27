@@ -46,7 +46,7 @@ void TestRemoval(const std::string& original, const std::string& expected,
   int mutation_id = 0;
   std::unordered_set<std::string> dredd_declarations;
   mutation_supplier(ast_unit->getASTContext())
-      .Apply(ast_unit->getASTContext(), ast_unit->getPreprocessor(),
+      .Apply(ast_unit->getASTContext(), ast_unit->getPreprocessor(), 0,
              mutation_id, rewriter, dredd_declarations);
   ASSERT_EQ(1, mutation_id);
   ASSERT_EQ(0, dredd_declarations.size());

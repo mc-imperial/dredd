@@ -61,7 +61,7 @@ std::string MutationReplaceBinaryOperator::GenerateMutatorFunction(
                << " arg1, ";
 
   new_function << "std::function<" << rhs_type << "()>"
-               << " arg2, int mutation_id) {\n";
+               << " arg2, int local_mutation_id) {\n";
 
   int mutant_offset = 0;
 
@@ -72,7 +72,7 @@ std::string MutationReplaceBinaryOperator::GenerateMutatorFunction(
     if (op == binary_operator_.getOpcode()) {
       continue;
     }
-    new_function << "  if (__dredd_enabled_mutation(mutation_id + "
+    new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
                  << mutant_offset << ")) return " << arg1_evaluated << " "
                  << clang::BinaryOperator::getOpcodeStr(op).str() << " "
                  << arg2_evaluated << ";\n";
@@ -80,23 +80,23 @@ std::string MutationReplaceBinaryOperator::GenerateMutatorFunction(
   }
   if (!binary_operator_.isAssignmentOp()) {
     // LHS
-    new_function << "  if (__dredd_enabled_mutation(mutation_id + "
+    new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
                  << mutant_offset << ")) return " << arg1_evaluated << ";\n";
     mutant_offset++;
 
     // RHS
-    new_function << "  if (__dredd_enabled_mutation(mutation_id + "
+    new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
                  << mutant_offset << ")) return " << arg2_evaluated << ";\n";
     mutant_offset++;
   }
   if (binary_operator_.isLogicalOp()) {
     // true
-    new_function << "  if (__dredd_enabled_mutation(mutation_id + "
+    new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
                  << mutant_offset << ")) return true;\n";
     mutant_offset++;
 
     // false
-    new_function << "  if (__dredd_enabled_mutation(mutation_id + "
+    new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
                  << mutant_offset << ")) return false;\n";
     mutant_offset++;
   }
@@ -116,7 +116,7 @@ std::string MutationReplaceBinaryOperator::GenerateMutatorFunction(
 
 void MutationReplaceBinaryOperator::Apply(
     clang::ASTContext& ast_context, const clang::Preprocessor& preprocessor,
-    int& mutation_id, clang::Rewriter& rewriter,
+    int first_mutation_id_in_file, int& mutation_id, clang::Rewriter& rewriter,
     std::unordered_set<std::string>& dredd_declarations) const {
   std::string new_function_name = "__dredd_replace_binary_operator_";
 
@@ -262,6 +262,10 @@ void MutationReplaceBinaryOperator::Apply(
 
   // Replace the binary operator expression with a call to the wrapper
   // function.
+  //
+  // Subtracting |first_mutation_id_in_file| turns the global mutation id,
+  // |mutation_id|, into a file-local mutation id.
+  const int local_mutation_id = mutation_id - first_mutation_id_in_file;
   bool result = rewriter.ReplaceText(
       binary_operator_source_range_in_main_file,
       new_function_name + "([&]() -> " + lhs_type + " { return static_cast<" +
@@ -269,7 +273,7 @@ void MutationReplaceBinaryOperator::Apply(
           rewriter.getRewrittenText(lhs_source_range_in_main_file) +
           +"); }, [&]() -> " + rhs_type + " { return static_cast<" + rhs_type +
           ">(" + rewriter.getRewrittenText(rhs_source_range_in_main_file) +
-          "); }, " + std::to_string(mutation_id) + ")");
+          "); }, " + std::to_string(local_mutation_id) + ")");
   (void)result;  // Keep release-mode compilers happy.
   assert(!result && "Rewrite failed.\n");
 

@@ -32,7 +32,8 @@ class MutationRemoveStatement : public Mutation {
 
   void Apply(
       clang::ASTContext& ast_context, const clang::Preprocessor& preprocessor,
-      int& mutation_id, clang::Rewriter& rewriter,
+      int first_mutation_id_in_file, int& mutation_id,
+      clang::Rewriter& rewriter,
       std::unordered_set<std::string>& dredd_declarations) const override;
 
  private:
