@@ -87,7 +87,7 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& context) {
   std::stringstream dredd_prelude;
   dredd_prelude << "#include <cstdlib>\n";
   dredd_prelude << "#include <functional>\n\n";
-  dredd_prelude << "static int __dredd_enabled_mutation() {\n";
+  dredd_prelude << "static bool __dredd_enabled_mutation(int mutation_id) {\n";
   dredd_prelude << "  static bool initialized = false;\n";
   dredd_prelude << "  static int value;\n";
   dredd_prelude << "  if (!initialized) {\n";
@@ -100,7 +100,7 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& context) {
   dredd_prelude << "    }\n";
   dredd_prelude << "    initialized = true;\n";
   dredd_prelude << "  }\n";
-  dredd_prelude << "  return value;\n";
+  dredd_prelude << "  return value == mutation_id;\n";
   dredd_prelude << "}\n\n";
 
   bool result = rewriter_.InsertTextBefore(

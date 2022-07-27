@@ -78,15 +78,13 @@ TEST(MutationReplaceBinaryOperatorTest, MutateAdd) {
       "}";
   std::string expected_dredd_declaration =
       R"(static int __dredd_replace_binary_operator_Add_int_int(std::function<int()> arg1, std::function<int()> arg2, int mutation_id) {
-  switch (__dredd_enabled_mutation() - mutation_id) {
-    case 0: return arg1() / arg2();
-    case 1: return arg1() * arg2();
-    case 2: return arg1() % arg2();
-    case 3: return arg1() - arg2();
-    case 4: return arg1();
-    case 5: return arg2();
-    default: return arg1() + arg2();
-  }
+  if (__dredd_enabled_mutation(mutation_id + 0)) return arg1() / arg2();
+  if (__dredd_enabled_mutation(mutation_id + 1)) return arg1() * arg2();
+  if (__dredd_enabled_mutation(mutation_id + 2)) return arg1() % arg2();
+  if (__dredd_enabled_mutation(mutation_id + 3)) return arg1() - arg2();
+  if (__dredd_enabled_mutation(mutation_id + 4)) return arg1();
+  if (__dredd_enabled_mutation(mutation_id + 5)) return arg2();
+  return arg1() + arg2();
 }
 
 )";
@@ -111,14 +109,12 @@ TEST(MutationReplaceBinaryOperatorTest, MutateAnd) {
 )";
   std::string expected_dredd_declaration =
       R"(static bool __dredd_replace_binary_operator_LAnd_bool_bool(std::function<bool()> arg1, std::function<bool()> arg2, int mutation_id) {
-  switch (__dredd_enabled_mutation() - mutation_id) {
-    case 0: return arg1() || arg2();
-    case 1: return arg1();
-    case 2: return arg2();
-    case 3: return true;
-    case 4: return false;
-    default: return arg1() && arg2();
-  }
+  if (__dredd_enabled_mutation(mutation_id + 0)) return arg1() || arg2();
+  if (__dredd_enabled_mutation(mutation_id + 1)) return arg1();
+  if (__dredd_enabled_mutation(mutation_id + 2)) return arg2();
+  if (__dredd_enabled_mutation(mutation_id + 3)) return true;
+  if (__dredd_enabled_mutation(mutation_id + 4)) return false;
+  return arg1() && arg2();
 }
 
 )";
@@ -141,19 +137,17 @@ TEST(MutationReplaceBinaryOperatorTest, MutateAssign) {
 )";
   std::string expected_dredd_declaration =
       R"(static int& __dredd_replace_binary_operator_Assign_int_int(std::function<int&()> arg1, std::function<int()> arg2, int mutation_id) {
-  switch (__dredd_enabled_mutation() - mutation_id) {
-    case 0: return arg1() += arg2();
-    case 1: return arg1() &= arg2();
-    case 2: return arg1() /= arg2();
-    case 3: return arg1() *= arg2();
-    case 4: return arg1() |= arg2();
-    case 5: return arg1() %= arg2();
-    case 6: return arg1() <<= arg2();
-    case 7: return arg1() >>= arg2();
-    case 8: return arg1() -= arg2();
-    case 9: return arg1() ^= arg2();
-    default: return arg1() = arg2();
-  }
+  if (__dredd_enabled_mutation(mutation_id + 0)) return arg1() += arg2();
+  if (__dredd_enabled_mutation(mutation_id + 1)) return arg1() &= arg2();
+  if (__dredd_enabled_mutation(mutation_id + 2)) return arg1() /= arg2();
+  if (__dredd_enabled_mutation(mutation_id + 3)) return arg1() *= arg2();
+  if (__dredd_enabled_mutation(mutation_id + 4)) return arg1() |= arg2();
+  if (__dredd_enabled_mutation(mutation_id + 5)) return arg1() %= arg2();
+  if (__dredd_enabled_mutation(mutation_id + 6)) return arg1() <<= arg2();
+  if (__dredd_enabled_mutation(mutation_id + 7)) return arg1() >>= arg2();
+  if (__dredd_enabled_mutation(mutation_id + 8)) return arg1() -= arg2();
+  if (__dredd_enabled_mutation(mutation_id + 9)) return arg1() ^= arg2();
+  return arg1() = arg2();
 }
 
 )";
@@ -180,19 +174,17 @@ void foo() {
 )";
   std::string expected_dredd_declaration =
       R"(static int& __dredd_replace_binary_operator_Assign_int_int(std::function<int&()> arg1, std::function<int()> arg2, int mutation_id) {
-  switch (__dredd_enabled_mutation() - mutation_id) {
-    case 0: return arg1() += arg2();
-    case 1: return arg1() &= arg2();
-    case 2: return arg1() /= arg2();
-    case 3: return arg1() *= arg2();
-    case 4: return arg1() |= arg2();
-    case 5: return arg1() %= arg2();
-    case 6: return arg1() <<= arg2();
-    case 7: return arg1() >>= arg2();
-    case 8: return arg1() -= arg2();
-    case 9: return arg1() ^= arg2();
-    default: return arg1() = arg2();
-  }
+  if (__dredd_enabled_mutation(mutation_id + 0)) return arg1() += arg2();
+  if (__dredd_enabled_mutation(mutation_id + 1)) return arg1() &= arg2();
+  if (__dredd_enabled_mutation(mutation_id + 2)) return arg1() /= arg2();
+  if (__dredd_enabled_mutation(mutation_id + 3)) return arg1() *= arg2();
+  if (__dredd_enabled_mutation(mutation_id + 4)) return arg1() |= arg2();
+  if (__dredd_enabled_mutation(mutation_id + 5)) return arg1() %= arg2();
+  if (__dredd_enabled_mutation(mutation_id + 6)) return arg1() <<= arg2();
+  if (__dredd_enabled_mutation(mutation_id + 7)) return arg1() >>= arg2();
+  if (__dredd_enabled_mutation(mutation_id + 8)) return arg1() -= arg2();
+  if (__dredd_enabled_mutation(mutation_id + 9)) return arg1() ^= arg2();
+  return arg1() = arg2();
 }
 
 )";
