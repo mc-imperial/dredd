@@ -1,21 +1,22 @@
+#include <cinttypes>
 #include <cstdlib>
 #include <functional>
 
 static bool __dredd_enabled_mutation(int local_mutation_id) {
   static bool initialized = false;
-  static bool enabled[11];
+  static uint64_t enabled_bitset[1];
   if (!initialized) {
     const char* __dredd_environment_variable = std::getenv("DREDD_ENABLED_MUTATION");
     if (__dredd_environment_variable != nullptr) {
       int value = atoi(__dredd_environment_variable);
       int local_value = value - 0;
       if (local_value >= 0 && local_value < 11) {
-        enabled[local_value] = true;
+        enabled_bitset[local_value / 64] |= (1 << (local_value % 64));
       }
     }
     initialized = true;
   }
-  return enabled[local_mutation_id];
+  return (enabled_bitset[local_mutation_id / 64] & (1 << (local_mutation_id % 64))) != 0;
 }
 
 static volatile int& __dredd_replace_binary_operator_AddAssign_int_int(std::function<volatile int&()> arg1, std::function<int()> arg2, int local_mutation_id) {
