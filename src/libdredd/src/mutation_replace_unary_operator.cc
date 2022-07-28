@@ -53,7 +53,11 @@ std::string MutationReplaceUnaryOperator::GenerateMutatorFunction(
   int mutant_offset = 0;
 
   for (const auto op : operators) {
-    if (op == unary_operator_.getOpcode()) {
+    if (op == unary_operator_.getOpcode() ||
+        (op == clang::UO_Not && unary_operator_.getSubExpr()
+                                    ->getType()
+                                    ->getAs<clang::BuiltinType>()
+                                    ->isFloatingPoint())) {
       continue;
     }
     new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
@@ -84,7 +88,7 @@ std::string MutationReplaceUnaryOperator::GenerateMutatorFunction(
   }
 
   new_function << "  return ";
-  if (!unary_operator_.isPrefix()) {
+  if (IsPrefix(unary_operator_.getOpcode())) {
     new_function
         << clang::UnaryOperator::getOpcodeStr(unary_operator_.getOpcode()).str()
         << "arg();\n";
