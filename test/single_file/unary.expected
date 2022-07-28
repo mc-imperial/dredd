@@ -1,0 +1,83 @@
+#include <cstdlib>
+#include <functional>
+
+static bool __dredd_enabled_mutation(int local_mutation_id) {
+  static bool initialized = false;
+  static bool enabled[40];
+  if (!initialized) {
+    const char* __dredd_environment_variable = std::getenv("DREDD_ENABLED_MUTATION");
+    if (__dredd_environment_variable != nullptr) {
+      int value = atoi(__dredd_environment_variable);
+      int local_value = value - 0;
+      if (local_value >= 0 && local_value < 40) {
+        enabled[local_value] = true;
+      }
+    }
+    initialized = true;
+  }
+  return enabled[local_mutation_id];
+}
+
+static int __dredd_replace_unary_operator_PreInc_int(std::function<int&()> arg, int local_mutation_id) {
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return arg()++;
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return --arg();
+  if (__dredd_enabled_mutation(local_mutation_id + 2)) return arg()--;
+  if (__dredd_enabled_mutation(local_mutation_id + 3)) return ~arg();
+  if (__dredd_enabled_mutation(local_mutation_id + 4)) return +arg();
+  if (__dredd_enabled_mutation(local_mutation_id + 5)) return -arg();
+  if (__dredd_enabled_mutation(local_mutation_id + 6)) return arg();
+  return arg()++;
+}
+
+static int __dredd_replace_unary_operator_PreDec_int(std::function<int&()> arg, int local_mutation_id) {
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return ++arg();
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg()++;
+  if (__dredd_enabled_mutation(local_mutation_id + 2)) return arg()--;
+  if (__dredd_enabled_mutation(local_mutation_id + 3)) return ~arg();
+  if (__dredd_enabled_mutation(local_mutation_id + 4)) return +arg();
+  if (__dredd_enabled_mutation(local_mutation_id + 5)) return -arg();
+  if (__dredd_enabled_mutation(local_mutation_id + 6)) return arg();
+  return arg()--;
+}
+
+static int __dredd_replace_unary_operator_PostInc_int(std::function<int&()> arg, int local_mutation_id) {
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return ++arg();
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return --arg();
+  if (__dredd_enabled_mutation(local_mutation_id + 2)) return arg()--;
+  if (__dredd_enabled_mutation(local_mutation_id + 3)) return ~arg();
+  if (__dredd_enabled_mutation(local_mutation_id + 4)) return +arg();
+  if (__dredd_enabled_mutation(local_mutation_id + 5)) return -arg();
+  if (__dredd_enabled_mutation(local_mutation_id + 6)) return arg();
+  return ++arg();
+}
+
+static int __dredd_replace_unary_operator_PostDec_int(std::function<int&()> arg, int local_mutation_id) {
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return ++arg();
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg()++;
+  if (__dredd_enabled_mutation(local_mutation_id + 2)) return --arg();
+  if (__dredd_enabled_mutation(local_mutation_id + 3)) return ~arg();
+  if (__dredd_enabled_mutation(local_mutation_id + 4)) return +arg();
+  if (__dredd_enabled_mutation(local_mutation_id + 5)) return -arg();
+  if (__dredd_enabled_mutation(local_mutation_id + 6)) return arg();
+  return --arg();
+}
+
+static int __dredd_replace_unary_operator_Minus_int(std::function<int&()> arg, int local_mutation_id) {
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return ++arg();
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg()++;
+  if (__dredd_enabled_mutation(local_mutation_id + 2)) return --arg();
+  if (__dredd_enabled_mutation(local_mutation_id + 3)) return arg()--;
+  if (__dredd_enabled_mutation(local_mutation_id + 4)) return ~arg();
+  if (__dredd_enabled_mutation(local_mutation_id + 5)) return +arg();
+  if (__dredd_enabled_mutation(local_mutation_id + 6)) return arg();
+  return -arg();
+}
+
+int main() {
+  int x = 3;
+  if (!__dredd_enabled_mutation(35)) { __dredd_replace_unary_operator_PostInc_int([&]() -> int& { return static_cast<int&>(x); }, 0); }
+  if (!__dredd_enabled_mutation(36)) { __dredd_replace_unary_operator_PreInc_int([&]() -> int& { return static_cast<int&>(x); }, 7); }
+  if (!__dredd_enabled_mutation(37)) { __dredd_replace_unary_operator_PreDec_int([&]() -> int& { return static_cast<int&>(x); }, 14); }
+  if (!__dredd_enabled_mutation(38)) { __dredd_replace_unary_operator_PostDec_int([&]() -> int& { return static_cast<int&>(x); }, 21); }
+  if (!__dredd_enabled_mutation(39)) { return __dredd_replace_unary_operator_Minus_int([&]() -> int& { return static_cast<int&>(x); }, 28); }
+}

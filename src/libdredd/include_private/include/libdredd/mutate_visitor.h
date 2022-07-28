@@ -35,6 +35,8 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
 
   bool TraverseDecl(clang::Decl* decl);
 
+  bool VisitUnaryOperator(clang::UnaryOperator* unary_operator);
+
   bool VisitBinaryOperator(clang::BinaryOperator* binary_operator);
 
   bool VisitCompoundStmt(clang::CompoundStmt* compound_stmt);
@@ -76,6 +78,8 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
 
   // Records the mutations that can be applied.
   std::vector<std::unique_ptr<Mutation>> mutations_;
+
+  bool NotInFunction();
 };
 
 }  // namespace dredd
