@@ -124,8 +124,8 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& context) {
   dredd_prelude << "      while (true) {\n";
   // Find the position of the next comma.
   dredd_prelude << "        size_t pos = contents.find(\",\");\n";
-  // The next token is either the prefix before the next comma (if there is a
-  // comma) or the whole string (if there is no comma).
+  // The next token is either the whole string (if there is no comma) or the
+  // prefix before the next comma (if there is a comma).
   dredd_prelude << "        std::string token = (pos == std::string::npos ? "
                    "contents : contents.substr(0, pos));\n";
   // Ignore an empty token: this allows for a trailing comma at the end of the
