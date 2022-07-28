@@ -15,9 +15,15 @@
 #ifndef LIBDREDD_UTIL_H
 #define LIBDREDD_UTIL_H
 
+#include <string>
+
+#include "clang/Basic/SourceLocation.h"
+#include "clang/Basic/SourceManager.h"
 #include "clang/Lex/Preprocessor.h"
 
 namespace dredd {
+
+std::string SpaceToUnderscore(const std::string& input);
 
 template <typename HasSourceRange>
 [[nodiscard]] clang::SourceRange GetSourceRangeInMainFile(
@@ -63,14 +69,6 @@ template <typename HasSourceRange>
     }
   }
   return {begin_loc_in_main_file, end_loc_in_main_file};
-}
-
-// Utility method used to avoid spaces when types, such as 'unsigned int', are
-// used in mutation function names.
-std::string SpaceToUnderscore(const std::string& input) {
-  std::string result(input);
-  std::replace(result.begin(), result.end(), ' ', '_');
-  return result;
 }
 
 }  // namespace dredd
