@@ -15,9 +15,15 @@
 #ifndef LIBDREDD_UTIL_H
 #define LIBDREDD_UTIL_H
 
+#include <string>
+
+#include "clang/Basic/SourceLocation.h"
+#include "clang/Basic/SourceManager.h"
 #include "clang/Lex/Preprocessor.h"
 
 namespace dredd {
+
+std::string SpaceToUnderscore(const std::string& input);
 
 template <typename HasSourceRange>
 [[nodiscard]] clang::SourceRange GetSourceRangeInMainFile(
