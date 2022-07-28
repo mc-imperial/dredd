@@ -65,6 +65,14 @@ template <typename HasSourceRange>
   return {begin_loc_in_main_file, end_loc_in_main_file};
 }
 
+// Utility method used to avoid spaces when types, such as 'unsigned int', are
+// used in mutation function names.
+std::string SpaceToUnderscore(const std::string& input) {
+  std::string result(input);
+  std::replace(result.begin(), result.end(), ' ', '_');
+  return result;
+}
+
 }  // namespace dredd
 
 #endif  // LIBDREDD_UTIL_H
