@@ -29,8 +29,8 @@ add_library(
   src/mutation.cc
   src/mutation_remove_statement.cc
   src/mutation_replace_binary_operator.cc
-  src/new_mutate_frontend_action_factory.cc
   src/mutation_replace_unary_operator.cc
+  src/new_mutate_frontend_action_factory.cc
   src/util.cc)
 
 target_include_directories(

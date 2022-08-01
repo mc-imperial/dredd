@@ -32,13 +32,26 @@
 
 namespace dredd {
 
-bool MutationReplaceUnaryOperator::IsPrefix(clang::UnaryOperatorKind op) {
-  return op != clang::UO_PostInc && op != clang::UO_PostDec;
-}
-
 MutationReplaceUnaryOperator::MutationReplaceUnaryOperator(
     const clang::UnaryOperator& unary_operator)
     : unary_operator_(unary_operator) {}
+
+bool MutationReplaceUnaryOperator::IsPrefix(clang::UnaryOperatorKind op) {
+  return op != clang::UO_PostInc && op != clang::UO_PostDec;
+}
+bool MutationReplaceUnaryOperator::IsInvalidReplacementOperator(
+    clang::UnaryOperatorKind op) const {
+  bool result = (!unary_operator_.getSubExpr()->isLValue() &&
+                 (op == clang::UO_PreInc || op == clang::UO_PreDec ||
+                  op == clang::UO_PostInc || op == clang::UO_PostDec)) ||
+                (unary_operator_.isLValue() &&
+                 !(op == clang::UO_PreInc || op == clang::UO_PreDec)) ||
+                (op == clang::UO_Not && unary_operator_.getSubExpr()
+                                            ->getType()
+                                            ->getAs<clang::BuiltinType>()
+                                            ->isFloatingPoint());
+  return result;
+}
 
 std::string MutationReplaceUnaryOperator::GenerateMutatorFunction(
     const std::string& function_name, const std::string& result_type,
@@ -53,11 +66,7 @@ std::string MutationReplaceUnaryOperator::GenerateMutatorFunction(
   int mutant_offset = 0;
 
   for (const auto op : operators) {
-    if (op == unary_operator_.getOpcode() ||
-        (op == clang::UO_Not && unary_operator_.getSubExpr()
-                                    ->getType()
-                                    ->getAs<clang::BuiltinType>()
-                                    ->isFloatingPoint())) {
+    if (op == unary_operator_.getOpcode() || IsInvalidReplacementOperator(op)) {
       continue;
     }
     new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
@@ -105,6 +114,20 @@ std::string MutationReplaceUnaryOperator::GenerateMutatorFunction(
   mutation_id += mutant_offset;
 
   return new_function.str();
+}
+
+void MutationReplaceUnaryOperator::ApplyTypeModifiers(const clang::Expr* expr,
+                                                      std::string& type) {
+  if (expr->isLValue()) {
+    type += "&";
+    clang::QualType qualified_type = expr->getType();
+    if (qualified_type.isVolatileQualified()) {
+      assert(expr->getType().isVolatileQualified() &&
+             "Expected expression to be volatile-qualified since subexpression "
+             "is.");
+      type = "volatile " + type;
+    }
+  }
 }
 
 void MutationReplaceUnaryOperator::Apply(
@@ -159,20 +182,15 @@ void MutationReplaceUnaryOperator::Apply(
   // whether they are references or not) are baked into the mutation function
   // name. Some type names have space in them (e.g. 'unsigned int'); such spaces
   // are replaced with underscores.
-  new_function_name += "_" + SpaceToUnderscore(input_type);
 
-  if (unary_operator_.isArithmeticOp() ||
-      unary_operator_.isIncrementDecrementOp()) {
-    input_type += "&";
-    clang::QualType qualified_lhs_type =
-        unary_operator_.getSubExpr()->getType();
-    if (qualified_lhs_type.isVolatileQualified()) {
-      assert(unary_operator_.getType().isVolatileQualified() &&
-             "Expected expression to be volatile-qualified since LHS is.");
-      result_type = "volatile " + result_type;
-      input_type = "volatile " + input_type;
-    }
-  }
+  ApplyTypeModifiers(unary_operator_.getSubExpr(), input_type);
+  ApplyTypeModifiers(&unary_operator_, result_type);
+
+  std::string input_print_type(input_type);
+  input_print_type.erase(
+      std::remove(input_print_type.begin(), input_print_type.end(), '&'),
+      input_print_type.end());
+  new_function_name += "_" + SpaceToUnderscore(input_print_type);
 
   clang::SourceRange unary_operator_source_range_in_main_file =
       GetSourceRangeInMainFile(preprocessor, unary_operator_);

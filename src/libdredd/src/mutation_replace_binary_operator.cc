@@ -283,6 +283,18 @@ void MutationReplaceBinaryOperator::Apply(
     }
   }
 
+  std::string lhs_print_type(lhs_type);
+  std::string rhs_print_type(rhs_type);
+  lhs_print_type.erase(
+      std::remove(lhs_print_type.begin(), lhs_print_type.end(), '&'),
+      lhs_print_type.end());
+  rhs_print_type.erase(
+      std::remove(rhs_print_type.begin(), rhs_print_type.end(), '&'),
+      rhs_print_type.end());
+
+  new_function_name += "_" + SpaceToUnderscore(lhs_print_type) + "_" +
+                       SpaceToUnderscore(rhs_print_type);
+
   clang::SourceRange binary_operator_source_range_in_main_file =
       GetSourceRangeInMainFile(preprocessor, binary_operator_);
   assert(binary_operator_source_range_in_main_file.isValid() &&

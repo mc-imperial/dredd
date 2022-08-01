@@ -31,7 +31,7 @@ static bool __dredd_enabled_mutation(int local_mutation_id) {
   return (enabled_bitset[local_mutation_id / 64] & (1 << (local_mutation_id % 64))) != 0;
 }
 
-static bool __dredd_replace_unary_operator_LNot_bool(std::function<bool&()> arg, int local_mutation_id) {
+static bool __dredd_replace_unary_operator_LNot_bool(std::function<bool()> arg, int local_mutation_id) {
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return arg();
   if (__dredd_enabled_mutation(local_mutation_id + 1)) return true;
   if (__dredd_enabled_mutation(local_mutation_id + 2)) return false;
@@ -40,5 +40,5 @@ static bool __dredd_replace_unary_operator_LNot_bool(std::function<bool&()> arg,
 
 int main() {
   bool y = true;
-  if (!__dredd_enabled_mutation(3)) { return __dredd_replace_unary_operator_LNot_bool([&]() -> bool& { return static_cast<bool&>(y); }, 0); }
+  if (!__dredd_enabled_mutation(3)) { return __dredd_replace_unary_operator_LNot_bool([&]() -> bool { return static_cast<bool>(y); }, 0); }
 }

@@ -102,8 +102,6 @@ bool MutateVisitor::VisitUnaryOperator(clang::UnaryOperator* unary_operator) {
     return true;
   }
 
-  // We only want to change operators for unary operations on basic types.
-  // In particular, we do not want to mess with pointer arithmetic.
   // Check that the result type is supported
   if (IsTypeSupported(unary_operator->getType())) {
     return true;
