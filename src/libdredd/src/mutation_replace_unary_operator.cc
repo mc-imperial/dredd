@@ -208,10 +208,14 @@ void MutationReplaceUnaryOperator::Apply(
   const int local_mutation_id = mutation_id - first_mutation_id_in_file;
   bool result = rewriter.ReplaceText(
       unary_operator_source_range_in_main_file,
-      new_function_name + "([&]() -> " + input_type + " { return static_cast<" +
-          input_type + ">(" +
-          rewriter.getRewrittenText(input_source_range_in_main_file) +
-          "); }, " + std::to_string(local_mutation_id) + ")");
+      new_function_name + "(" +
+          (unary_operator_.getSubExpr()->isCXX11ConstantExpr(ast_context)
+               ? rewriter.getRewrittenText(input_source_range_in_main_file)
+               : ("[&]() -> " + input_type + " { return static_cast<" +
+                  input_type + ">(" +
+                  rewriter.getRewrittenText(input_source_range_in_main_file) +
+                  "); }")) +
+          ", " + std::to_string(local_mutation_id) + ")");
   (void)result;  // Keep release-mode compilers happy.
   assert(!result && "Rewrite failed.\n");
 
