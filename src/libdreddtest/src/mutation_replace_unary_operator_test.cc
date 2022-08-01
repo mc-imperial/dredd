@@ -71,7 +71,8 @@ void TestReplacement(const std::string& original, const std::string& expected,
 TEST(MutationReplaceUnaryOperatorTest, MutateMinus) {
   std::string original = "void foo() { -2; }";
   std::string expected =
-      "void foo() { __dredd_replace_unary_operator_Minus_int(2, 0); }";
+      "void foo() { __dredd_replace_unary_operator_Minus_int([&]() -> int { "
+      "return 2; }, 0); }";
   std::string expected_dredd_declaration =
       R"(static int __dredd_replace_unary_operator_Minus_int(std::function<int()> arg, int local_mutation_id) {
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return ~arg();
@@ -89,7 +90,8 @@ TEST(MutationReplaceUnaryOperatorTest, MutateMinus) {
 TEST(MutationReplaceUnaryOperatorTest, MutatePlus) {
   std::string original = "void foo() { +5; }";
   std::string expected =
-      "void foo() { __dredd_replace_unary_operator_Plus_int(5, 0); }";
+      "void foo() { __dredd_replace_unary_operator_Plus_int([&]() -> int { "
+      "return 5; }, 0); }";
   std::string expected_dredd_declaration =
       R"(static int __dredd_replace_unary_operator_Plus_int(std::function<int()> arg, int local_mutation_id) {
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return ~arg();
