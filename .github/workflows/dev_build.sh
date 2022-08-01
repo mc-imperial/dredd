@@ -132,5 +132,5 @@ done
 ${DREDD_ROOT}/third_party/clang+llvm-13.0.1/bin/dredd -p ${DREDD_ROOT}/llvm-project/build/compile_commands.json ${FILES}
 pushd llvm-project/build
   ninja LLVMInstCombine
-  # TODO: run some tests
+  llvm-lit ${DREDD_ROOT}/llvm-project/llvm/test/Transforms/InstCombine
 popd
