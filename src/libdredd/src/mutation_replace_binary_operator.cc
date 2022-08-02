@@ -69,6 +69,134 @@ bool MutationReplaceBinaryOperator::IsValidReplacementOperator(
             op == clang::BO_XorAssign));
 }
 
+std::string MutationReplaceBinaryOperator::GetFunctionName(
+    clang::ASTContext& ast_context) const {
+  std::string lhs_type = binary_operator_.getLHS()
+                             ->getType()
+                             ->getAs<clang::BuiltinType>()
+                             ->getName(ast_context.getPrintingPolicy())
+                             .str();
+  std::string rhs_type = binary_operator_.getRHS()
+                             ->getType()
+                             ->getAs<clang::BuiltinType>()
+                             ->getName(ast_context.getPrintingPolicy())
+                             .str();
+
+  if (binary_operator_.isAssignmentOp()) {
+    clang::QualType qualified_lhs_type = binary_operator_.getLHS()->getType();
+    if (qualified_lhs_type.isVolatileQualified()) {
+      assert(binary_operator_.getType().isVolatileQualified() &&
+             "Expected expression to be volatile-qualified since LHS is.");
+      lhs_type = "volatile " + lhs_type;
+    }
+  }
+  std::string function_name = "__dredd_replace_binary_operator_";
+
+  // A string corresponding to the binary operator forms part of the name of the
+  // mutation function, to differentiate mutation functions for different
+  // operators
+  switch (binary_operator_.getOpcode()) {
+    case clang::BinaryOperatorKind::BO_Add:
+      function_name += "Add";
+      break;
+    case clang::BinaryOperatorKind::BO_Div:
+      function_name += "Div";
+      break;
+    case clang::BinaryOperatorKind::BO_Mul:
+      function_name += "Mul";
+      break;
+    case clang::BinaryOperatorKind::BO_Rem:
+      function_name += "Rem";
+      break;
+    case clang::BinaryOperatorKind::BO_Sub:
+      function_name += "Sub";
+      break;
+    case clang::BinaryOperatorKind::BO_AddAssign:
+      function_name += "AddAssign";
+      break;
+    case clang::BinaryOperatorKind::BO_AndAssign:
+      function_name += "AndAssign";
+      break;
+    case clang::BinaryOperatorKind::BO_Assign:
+      function_name += "Assign";
+      break;
+    case clang::BinaryOperatorKind::BO_DivAssign:
+      function_name += "DivAssign";
+      break;
+    case clang::BinaryOperatorKind::BO_MulAssign:
+      function_name += "MulAssign";
+      break;
+    case clang::BinaryOperatorKind::BO_OrAssign:
+      function_name += "OrAssign";
+      break;
+    case clang::BinaryOperatorKind::BO_RemAssign:
+      function_name += "RemAssign";
+      break;
+    case clang::BinaryOperatorKind::BO_ShlAssign:
+      function_name += "ShlAssign";
+      break;
+    case clang::BinaryOperatorKind::BO_ShrAssign:
+      function_name += "ShrAssign";
+      break;
+    case clang::BinaryOperatorKind::BO_SubAssign:
+      function_name += "SubAssign";
+      break;
+    case clang::BinaryOperatorKind::BO_XorAssign:
+      function_name += "XorAssign";
+      break;
+    case clang::BinaryOperatorKind::BO_And:
+      function_name += "And";
+      break;
+    case clang::BinaryOperatorKind::BO_Or:
+      function_name += "Or";
+      break;
+    case clang::BinaryOperatorKind::BO_Xor:
+      function_name += "Xor";
+      break;
+    case clang::BinaryOperatorKind::BO_LAnd:
+      function_name += "LAnd";
+      break;
+    case clang::BinaryOperatorKind::BO_LOr:
+      function_name += "LOr";
+      break;
+    case clang::BinaryOperatorKind::BO_EQ:
+      function_name += "EQ";
+      break;
+    case clang::BinaryOperatorKind::BO_GE:
+      function_name += "GE";
+      break;
+    case clang::BinaryOperatorKind::BO_GT:
+      function_name += "GT";
+      break;
+    case clang::BinaryOperatorKind::BO_LE:
+      function_name += "LE";
+      break;
+    case clang::BinaryOperatorKind::BO_LT:
+      function_name += "LT";
+      break;
+    case clang::BinaryOperatorKind::BO_NE:
+      function_name += "NE";
+      break;
+    case clang::BinaryOperatorKind::BO_Shl:
+      function_name += "Shl";
+      break;
+    case clang::BinaryOperatorKind::BO_Shr:
+      function_name += "Shr";
+      break;
+    default:
+      assert(false && "Unsupported opcode");
+  }
+
+  // To avoid problems of ambiguous function calls, the argument types (ignoring
+  // whether they are references or not) are baked into the mutation function
+  // name. Some type names have space in them (e.g. 'unsigned int'); such spaces
+  // are replaced with underscores.
+  function_name +=
+      "_" + SpaceToUnderscore(lhs_type) + "_" + SpaceToUnderscore(rhs_type);
+
+  return function_name;
+}
+
 std::string MutationReplaceBinaryOperator::GenerateMutatorFunction(
     const std::string& function_name, const std::string& result_type,
     const std::string& lhs_type, const std::string& rhs_type,
@@ -137,103 +265,7 @@ void MutationReplaceBinaryOperator::Apply(
     clang::ASTContext& ast_context, const clang::Preprocessor& preprocessor,
     int first_mutation_id_in_file, int& mutation_id, clang::Rewriter& rewriter,
     std::unordered_set<std::string>& dredd_declarations) const {
-  std::string new_function_name = "__dredd_replace_binary_operator_";
-
-  // A string corresponding to the binary operator forms part of the name of the
-  // mutation function, to differentiate mutation functions for different
-  // operators
-  switch (binary_operator_.getOpcode()) {
-    case clang::BinaryOperatorKind::BO_Add:
-      new_function_name += "Add";
-      break;
-    case clang::BinaryOperatorKind::BO_Div:
-      new_function_name += "Div";
-      break;
-    case clang::BinaryOperatorKind::BO_Mul:
-      new_function_name += "Mul";
-      break;
-    case clang::BinaryOperatorKind::BO_Rem:
-      new_function_name += "Rem";
-      break;
-    case clang::BinaryOperatorKind::BO_Sub:
-      new_function_name += "Sub";
-      break;
-    case clang::BinaryOperatorKind::BO_AddAssign:
-      new_function_name += "AddAssign";
-      break;
-    case clang::BinaryOperatorKind::BO_AndAssign:
-      new_function_name += "AndAssign";
-      break;
-    case clang::BinaryOperatorKind::BO_Assign:
-      new_function_name += "Assign";
-      break;
-    case clang::BinaryOperatorKind::BO_DivAssign:
-      new_function_name += "DivAssign";
-      break;
-    case clang::BinaryOperatorKind::BO_MulAssign:
-      new_function_name += "MulAssign";
-      break;
-    case clang::BinaryOperatorKind::BO_OrAssign:
-      new_function_name += "OrAssign";
-      break;
-    case clang::BinaryOperatorKind::BO_RemAssign:
-      new_function_name += "RemAssign";
-      break;
-    case clang::BinaryOperatorKind::BO_ShlAssign:
-      new_function_name += "ShlAssign";
-      break;
-    case clang::BinaryOperatorKind::BO_ShrAssign:
-      new_function_name += "ShrAssign";
-      break;
-    case clang::BinaryOperatorKind::BO_SubAssign:
-      new_function_name += "SubAssign";
-      break;
-    case clang::BinaryOperatorKind::BO_XorAssign:
-      new_function_name += "XorAssign";
-      break;
-    case clang::BinaryOperatorKind::BO_And:
-      new_function_name += "And";
-      break;
-    case clang::BinaryOperatorKind::BO_Or:
-      new_function_name += "Or";
-      break;
-    case clang::BinaryOperatorKind::BO_Xor:
-      new_function_name += "Xor";
-      break;
-    case clang::BinaryOperatorKind::BO_LAnd:
-      new_function_name += "LAnd";
-      break;
-    case clang::BinaryOperatorKind::BO_LOr:
-      new_function_name += "LOr";
-      break;
-    case clang::BinaryOperatorKind::BO_EQ:
-      new_function_name += "EQ";
-      break;
-    case clang::BinaryOperatorKind::BO_GE:
-      new_function_name += "GE";
-      break;
-    case clang::BinaryOperatorKind::BO_GT:
-      new_function_name += "GT";
-      break;
-    case clang::BinaryOperatorKind::BO_LE:
-      new_function_name += "LE";
-      break;
-    case clang::BinaryOperatorKind::BO_LT:
-      new_function_name += "LT";
-      break;
-    case clang::BinaryOperatorKind::BO_NE:
-      new_function_name += "NE";
-      break;
-    case clang::BinaryOperatorKind::BO_Shl:
-      new_function_name += "Shl";
-      break;
-    case clang::BinaryOperatorKind::BO_Shr:
-      new_function_name += "Shr";
-      break;
-    default:
-      assert(false && "Unsupported opcode");
-  }
-
+  std::string new_function_name = GetFunctionName(ast_context);
   std::string result_type = binary_operator_.getType()
                                 ->getAs<clang::BuiltinType>()
                                 ->getName(ast_context.getPrintingPolicy())
@@ -248,13 +280,6 @@ void MutationReplaceBinaryOperator::Apply(
                              ->getAs<clang::BuiltinType>()
                              ->getName(ast_context.getPrintingPolicy())
                              .str();
-
-  // To avoid problems of ambiguous function calls, the argument types (ignoring
-  // whether they are references or not) are baked into the mutation function
-  // name. Some type names have space in them (e.g. 'unsigned int'); such spaces
-  // are replaced with underscores.
-  new_function_name +=
-      "_" + SpaceToUnderscore(lhs_type) + "_" + SpaceToUnderscore(rhs_type);
 
   if (binary_operator_.isAssignmentOp()) {
     result_type += "&";

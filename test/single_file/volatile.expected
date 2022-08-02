@@ -31,7 +31,7 @@ static bool __dredd_enabled_mutation(int local_mutation_id) {
   return (enabled_bitset[local_mutation_id / 64] & (1 << (local_mutation_id % 64))) != 0;
 }
 
-static volatile int& __dredd_replace_binary_operator_AddAssign_int_int(std::function<volatile int&()> arg1, std::function<int()> arg2, int local_mutation_id) {
+static volatile int& __dredd_replace_binary_operator_AddAssign_volatile_int_int(std::function<volatile int&()> arg1, std::function<int()> arg2, int local_mutation_id) {
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return arg1() &= arg2();
   if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg1() = arg2();
   if (__dredd_enabled_mutation(local_mutation_id + 2)) return arg1() /= arg2();
@@ -47,5 +47,5 @@ static volatile int& __dredd_replace_binary_operator_AddAssign_int_int(std::func
 
 void foo() {
   volatile int a;
-  if (!__dredd_enabled_mutation(10)) { __dredd_replace_binary_operator_AddAssign_int_int([&]() -> volatile int& { return static_cast<volatile int&>(a); }, [&]() -> int { return static_cast<int>(2); }, 0); }
+  if (!__dredd_enabled_mutation(10)) { __dredd_replace_binary_operator_AddAssign_volatile_int_int([&]() -> volatile int& { return static_cast<volatile int&>(a); }, [&]() -> int { return static_cast<int>(2); }, 0); }
 }
