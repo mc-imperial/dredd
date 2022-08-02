@@ -71,130 +71,132 @@ bool MutationReplaceBinaryOperator::IsValidReplacementOperator(
 
 std::string MutationReplaceBinaryOperator::GetFunctionName(
     clang::ASTContext& ast_context) const {
-  std::string lhs_type = binary_operator_.getLHS()
-                             ->getType()
-                             ->getAs<clang::BuiltinType>()
-                             ->getName(ast_context.getPrintingPolicy())
-                             .str();
-  std::string rhs_type = binary_operator_.getRHS()
-                             ->getType()
-                             ->getAs<clang::BuiltinType>()
-                             ->getName(ast_context.getPrintingPolicy())
-                             .str();
-
-  if (binary_operator_.isAssignmentOp()) {
-    clang::QualType qualified_lhs_type = binary_operator_.getLHS()->getType();
-    if (qualified_lhs_type.isVolatileQualified()) {
-      assert(binary_operator_.getType().isVolatileQualified() &&
-             "Expected expression to be volatile-qualified since LHS is.");
-      lhs_type = "volatile " + lhs_type;
-    }
-  }
-  std::string function_name = "__dredd_replace_binary_operator_";
+  std::string result = "__dredd_replace_binary_operator_";
 
   // A string corresponding to the binary operator forms part of the name of the
   // mutation function, to differentiate mutation functions for different
   // operators
   switch (binary_operator_.getOpcode()) {
     case clang::BinaryOperatorKind::BO_Add:
-      function_name += "Add";
+      result += "Add";
       break;
     case clang::BinaryOperatorKind::BO_Div:
-      function_name += "Div";
+      result += "Div";
       break;
     case clang::BinaryOperatorKind::BO_Mul:
-      function_name += "Mul";
+      result += "Mul";
       break;
     case clang::BinaryOperatorKind::BO_Rem:
-      function_name += "Rem";
+      result += "Rem";
       break;
     case clang::BinaryOperatorKind::BO_Sub:
-      function_name += "Sub";
+      result += "Sub";
       break;
     case clang::BinaryOperatorKind::BO_AddAssign:
-      function_name += "AddAssign";
+      result += "AddAssign";
       break;
     case clang::BinaryOperatorKind::BO_AndAssign:
-      function_name += "AndAssign";
+      result += "AndAssign";
       break;
     case clang::BinaryOperatorKind::BO_Assign:
-      function_name += "Assign";
+      result += "Assign";
       break;
     case clang::BinaryOperatorKind::BO_DivAssign:
-      function_name += "DivAssign";
+      result += "DivAssign";
       break;
     case clang::BinaryOperatorKind::BO_MulAssign:
-      function_name += "MulAssign";
+      result += "MulAssign";
       break;
     case clang::BinaryOperatorKind::BO_OrAssign:
-      function_name += "OrAssign";
+      result += "OrAssign";
       break;
     case clang::BinaryOperatorKind::BO_RemAssign:
-      function_name += "RemAssign";
+      result += "RemAssign";
       break;
     case clang::BinaryOperatorKind::BO_ShlAssign:
-      function_name += "ShlAssign";
+      result += "ShlAssign";
       break;
     case clang::BinaryOperatorKind::BO_ShrAssign:
-      function_name += "ShrAssign";
+      result += "ShrAssign";
       break;
     case clang::BinaryOperatorKind::BO_SubAssign:
-      function_name += "SubAssign";
+      result += "SubAssign";
       break;
     case clang::BinaryOperatorKind::BO_XorAssign:
-      function_name += "XorAssign";
+      result += "XorAssign";
       break;
     case clang::BinaryOperatorKind::BO_And:
-      function_name += "And";
+      result += "And";
       break;
     case clang::BinaryOperatorKind::BO_Or:
-      function_name += "Or";
+      result += "Or";
       break;
     case clang::BinaryOperatorKind::BO_Xor:
-      function_name += "Xor";
+      result += "Xor";
       break;
     case clang::BinaryOperatorKind::BO_LAnd:
-      function_name += "LAnd";
+      result += "LAnd";
       break;
     case clang::BinaryOperatorKind::BO_LOr:
-      function_name += "LOr";
+      result += "LOr";
       break;
     case clang::BinaryOperatorKind::BO_EQ:
-      function_name += "EQ";
+      result += "EQ";
       break;
     case clang::BinaryOperatorKind::BO_GE:
-      function_name += "GE";
+      result += "GE";
       break;
     case clang::BinaryOperatorKind::BO_GT:
-      function_name += "GT";
+      result += "GT";
       break;
     case clang::BinaryOperatorKind::BO_LE:
-      function_name += "LE";
+      result += "LE";
       break;
     case clang::BinaryOperatorKind::BO_LT:
-      function_name += "LT";
+      result += "LT";
       break;
     case clang::BinaryOperatorKind::BO_NE:
-      function_name += "NE";
+      result += "NE";
       break;
     case clang::BinaryOperatorKind::BO_Shl:
-      function_name += "Shl";
+      result += "Shl";
       break;
     case clang::BinaryOperatorKind::BO_Shr:
-      function_name += "Shr";
+      result += "Shr";
       break;
     default:
       assert(false && "Unsupported opcode");
   }
 
+  std::string lhs_qualifier;
+
+  if (binary_operator_.isAssignmentOp()) {
+    clang::QualType qualified_lhs_type = binary_operator_.getLHS()->getType();
+    if (qualified_lhs_type.isVolatileQualified()) {
+      assert(binary_operator_.getType().isVolatileQualified() &&
+             "Expected expression to be volatile-qualified since LHS is.");
+      lhs_qualifier = "volatile ";
+    }
+  }
   // To avoid problems of ambiguous function calls, the argument types (ignoring
   // whether they are references or not) are baked into the mutation function
   // name. Some type names have space in them (e.g. 'unsigned int'); such spaces
   // are replaced with underscores.
-  function_name +=
-      "_" + SpaceToUnderscore(lhs_type) + "_" + SpaceToUnderscore(rhs_type);
+  result +=
+      "_" + SpaceToUnderscore(lhs_qualifier +
+                              binary_operator_.getLHS()
+                                  ->getType()
+                                  ->getAs<clang::BuiltinType>()
+                                  ->getName(ast_context.getPrintingPolicy())
+                                  .str());
+  result +=
+      "_" + SpaceToUnderscore(binary_operator_.getRHS()
+                                  ->getType()
+                                  ->getAs<clang::BuiltinType>()
+                                  ->getName(ast_context.getPrintingPolicy())
+                                  .str());
 
-  return function_name;
+  return result;
 }
 
 std::string MutationReplaceBinaryOperator::GenerateMutatorFunction(
