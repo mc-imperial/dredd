@@ -17,7 +17,6 @@
 
 #include <string>
 #include <unordered_set>
-#include <vector>
 
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/ASTFwd.h"
@@ -40,11 +39,10 @@ class MutationReplaceUnaryOperator : public Mutation {
       std::unordered_set<std::string>& dredd_declarations) const override;
 
  private:
-  std::string GenerateMutatorFunction(
-      const std::string& function_name, const std::string& result_type,
-      const std::string& input_type,
-      const std::vector<clang::UnaryOperatorKind>& operators,
-      int& mutation_id) const;
+  std::string GenerateMutatorFunction(const std::string& function_name,
+                                      const std::string& result_type,
+                                      const std::string& input_type,
+                                      int& mutation_id) const;
 
   static void ApplyTypeModifiers(const clang::Expr* expr, std::string& type);
 

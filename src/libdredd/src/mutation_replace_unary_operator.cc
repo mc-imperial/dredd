@@ -46,6 +46,12 @@ bool MutationReplaceUnaryOperator::IsValidReplacementOperator(
     return false;
   }
 
+  if ((unary_operator_.getOpcode() == clang::UO_PostDec ||
+       unary_operator_.getOpcode() == clang::UO_PostInc) &&
+      (op == clang::UO_PreDec || op == clang::UO_PreInc)) {
+    return false;
+  }
+
   if (unary_operator_.isLValue() &&
       !(op == clang::UO_PreInc || op == clang::UO_PreDec)) {
     return false;
@@ -97,20 +103,22 @@ std::string MutationReplaceUnaryOperator::GetFunctionName(
       assert(false && "Unsupported opcode");
   }
 
-  std::string input_qualifier;
   if (unary_operator_.getSubExpr()->isLValue()) {
     clang::QualType qualified_type = unary_operator_.getSubExpr()->getType();
     if (qualified_type.isVolatileQualified()) {
       assert(unary_operator_.getSubExpr()->getType().isVolatileQualified() &&
              "Expected expression to be volatile-qualified since subexpression "
              "is.");
-      input_qualifier = "volatile ";
+      result += "_volatile";
     }
   }
 
+  // To avoid problems of ambiguous function calls, the argument types (ignoring
+  // whether they are references or not) are baked into the mutation function
+  // name. Some type names have space in them (e.g. 'unsigned int'); such spaces
+  // are replaced with underscores.
   result +=
-      "_" + SpaceToUnderscore(input_qualifier +
-                              unary_operator_.getSubExpr()
+      "_" + SpaceToUnderscore(unary_operator_.getSubExpr()
                                   ->getType()
                                   ->getAs<clang::BuiltinType>()
                                   ->getName(ast_context.getPrintingPolicy())
@@ -121,15 +129,18 @@ std::string MutationReplaceUnaryOperator::GetFunctionName(
 
 std::string MutationReplaceUnaryOperator::GenerateMutatorFunction(
     const std::string& function_name, const std::string& result_type,
-    const std::string& input_type,
-    const std::vector<clang::UnaryOperatorKind>& operators,
-    int& mutation_id) const {
+    const std::string& input_type, int& mutation_id) const {
   std::stringstream new_function;
   new_function << "static " << result_type << " " << function_name;
   new_function << "(std::function<" << input_type << "()> arg, ";
   new_function << "int local_mutation_id) {\n";
 
   int mutant_offset = 0;
+  std::vector<clang::UnaryOperatorKind> operators = {
+      clang::UnaryOperatorKind::UO_PreInc, clang::UnaryOperatorKind::UO_PostInc,
+      clang::UnaryOperatorKind::UO_PreDec, clang::UnaryOperatorKind::UO_PostDec,
+      clang::UnaryOperatorKind::UO_Not,    clang::UnaryOperatorKind::UO_Minus,
+      clang::UnaryOperatorKind::UO_LNot};
 
   for (const auto op : operators) {
     if (op == unary_operator_.getOpcode() || !IsValidReplacementOperator(op)) {
@@ -211,11 +222,6 @@ void MutationReplaceUnaryOperator::Apply(
                                ->getName(ast_context.getPrintingPolicy())
                                .str();
 
-  // To avoid problems of ambiguous function calls, the argument types (ignoring
-  // whether they are references or not) are baked into the mutation function
-  // name. Some type names have space in them (e.g. 'unsigned int'); such spaces
-  // are replaced with underscores.
-
   ApplyTypeModifiers(unary_operator_.getSubExpr(), input_type);
   ApplyTypeModifiers(&unary_operator_, result_type);
 
@@ -246,15 +252,9 @@ void MutationReplaceUnaryOperator::Apply(
   (void)result;  // Keep release-mode compilers happy.
   assert(!result && "Rewrite failed.\n");
 
-  std::vector<clang::UnaryOperatorKind> operators = {
-      clang::UnaryOperatorKind::UO_PreInc, clang::UnaryOperatorKind::UO_PostInc,
-      clang::UnaryOperatorKind::UO_PreDec, clang::UnaryOperatorKind::UO_PostDec,
-      clang::UnaryOperatorKind::UO_Not,    clang::UnaryOperatorKind::UO_Minus,
-      clang::UnaryOperatorKind::UO_LNot};
-
   std::string new_function;
   new_function = GenerateMutatorFunction(new_function_name, result_type,
-                                         input_type, operators, mutation_id);
+                                         input_type, mutation_id);
   assert(!new_function.empty() && "Unsupported opcode.");
 
   dredd_declarations.insert(new_function);

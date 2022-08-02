@@ -154,18 +154,16 @@ TEST(MutationReplaceUnaryOperatorTest, MutateDecrement) {
 )";
   std::string expected_dredd_declaration =
       R"(static int __dredd_replace_unary_operator_PostDec_int(std::function<int&()> arg, int local_mutation_id) {
-  if (__dredd_enabled_mutation(local_mutation_id + 0)) return ++arg();
-  if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg()++;
-  if (__dredd_enabled_mutation(local_mutation_id + 2)) return --arg();
-  if (__dredd_enabled_mutation(local_mutation_id + 3)) return ~arg();
-  if (__dredd_enabled_mutation(local_mutation_id + 4)) return -arg();
-  if (__dredd_enabled_mutation(local_mutation_id + 5)) return !arg();
-  if (__dredd_enabled_mutation(local_mutation_id + 6)) return arg();
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return arg()++;
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return ~arg();
+  if (__dredd_enabled_mutation(local_mutation_id + 2)) return -arg();
+  if (__dredd_enabled_mutation(local_mutation_id + 3)) return !arg();
+  if (__dredd_enabled_mutation(local_mutation_id + 4)) return arg();
   return arg()--;
 }
 
 )";
-  const int kNumReplacements = 7;
+  const int kNumReplacements = 5;
   TestReplacement(original, expected, kNumReplacements,
                   expected_dredd_declaration);
 }
