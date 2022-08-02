@@ -20,6 +20,7 @@
 #include "clang/AST/DeclBase.h"
 #include "clang/AST/DeclCXX.h"
 #include "clang/AST/Expr.h"
+#include "clang/AST/OperationKinds.h"
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/AST/Stmt.h"
 #include "clang/AST/Type.h"
@@ -99,6 +100,11 @@ bool MutateVisitor::VisitUnaryOperator(clang::UnaryOperator* unary_operator) {
       GetSourceRangeInMainFile(compiler_instance_.getPreprocessor(),
                                *unary_operator->getSubExpr())
           .isInvalid()) {
+    return true;
+  }
+
+  // Don't mutate unary plus
+  if (unary_operator->getOpcode() == clang::UnaryOperatorKind::UO_Plus) {
     return true;
   }
 

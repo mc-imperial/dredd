@@ -14,9 +14,7 @@
 
 #include "libdredd/mutation_replace_unary_operator.h"
 
-#include <algorithm>
 #include <cassert>
-#include <initializer_list>
 #include <sstream>
 #include <vector>
 
@@ -39,17 +37,85 @@ MutationReplaceUnaryOperator::MutationReplaceUnaryOperator(
 bool MutationReplaceUnaryOperator::IsPrefix(clang::UnaryOperatorKind op) {
   return op != clang::UO_PostInc && op != clang::UO_PostDec;
 }
-bool MutationReplaceUnaryOperator::IsInvalidReplacementOperator(
+
+bool MutationReplaceUnaryOperator::IsValidReplacementOperator(
     clang::UnaryOperatorKind op) const {
-  bool result = (!unary_operator_.getSubExpr()->isLValue() &&
-                 (op == clang::UO_PreInc || op == clang::UO_PreDec ||
-                  op == clang::UO_PostInc || op == clang::UO_PostDec)) ||
-                (unary_operator_.isLValue() &&
-                 !(op == clang::UO_PreInc || op == clang::UO_PreDec)) ||
-                (op == clang::UO_Not && unary_operator_.getSubExpr()
-                                            ->getType()
-                                            ->getAs<clang::BuiltinType>()
-                                            ->isFloatingPoint());
+  if (!unary_operator_.getSubExpr()->isLValue() &&
+      (op == clang::UO_PreInc || op == clang::UO_PreDec ||
+       op == clang::UO_PostInc || op == clang::UO_PostDec)) {
+    return false;
+  }
+
+  if (unary_operator_.isLValue() &&
+      !(op == clang::UO_PreInc || op == clang::UO_PreDec)) {
+    return false;
+  }
+
+  if (op == clang::UO_Not && unary_operator_.getSubExpr()
+                                 ->getType()
+                                 ->getAs<clang::BuiltinType>()
+                                 ->isFloatingPoint()) {
+    return false;
+  }
+
+  return true;
+}
+
+std::string MutationReplaceUnaryOperator::GetFunctionName(
+    clang::ASTContext& ast_context) const {
+  std::string result = "__dredd_replace_unary_operator_";
+
+  // A string corresponding to the unary operator forms part of the name of the
+  // mutation function, to differentiate mutation functions for different
+  // operators
+  switch (unary_operator_.getOpcode()) {
+    case clang::UnaryOperatorKind::UO_Plus:
+      result += "Plus";
+      break;
+    case clang::UnaryOperatorKind::UO_Minus:
+      result += "Minus";
+      break;
+    case clang::UnaryOperatorKind::UO_Not:
+      result += "Not";
+      break;
+    case clang::UnaryOperatorKind::UO_PreDec:
+      result += "PreDec";
+      break;
+    case clang::UnaryOperatorKind::UO_PostDec:
+      result += "PostDec";
+      break;
+    case clang::UnaryOperatorKind::UO_PreInc:
+      result += "PreInc";
+      break;
+    case clang::UnaryOperatorKind::UO_PostInc:
+      result += "PostInc";
+      break;
+    case clang::UnaryOperatorKind::UO_LNot:
+      result += "LNot";
+      break;
+    default:
+      assert(false && "Unsupported opcode");
+  }
+
+  std::string input_qualifier;
+  if (unary_operator_.getSubExpr()->isLValue()) {
+    clang::QualType qualified_type = unary_operator_.getSubExpr()->getType();
+    if (qualified_type.isVolatileQualified()) {
+      assert(unary_operator_.getSubExpr()->getType().isVolatileQualified() &&
+             "Expected expression to be volatile-qualified since subexpression "
+             "is.");
+      input_qualifier = "volatile ";
+    }
+  }
+
+  result +=
+      "_" + SpaceToUnderscore(input_qualifier +
+                              unary_operator_.getSubExpr()
+                                  ->getType()
+                                  ->getAs<clang::BuiltinType>()
+                                  ->getName(ast_context.getPrintingPolicy())
+                                  .str());
+
   return result;
 }
 
@@ -66,7 +132,7 @@ std::string MutationReplaceUnaryOperator::GenerateMutatorFunction(
   int mutant_offset = 0;
 
   for (const auto op : operators) {
-    if (op == unary_operator_.getOpcode() || IsInvalidReplacementOperator(op)) {
+    if (op == unary_operator_.getOpcode() || !IsValidReplacementOperator(op)) {
       continue;
     }
     new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
@@ -134,40 +200,7 @@ void MutationReplaceUnaryOperator::Apply(
     clang::ASTContext& ast_context, const clang::Preprocessor& preprocessor,
     int first_mutation_id_in_file, int& mutation_id, clang::Rewriter& rewriter,
     std::unordered_set<std::string>& dredd_declarations) const {
-  std::string new_function_name = "__dredd_replace_unary_operator_";
-
-  // A string corresponding to the unary operator forms part of the name of the
-  // mutation function, to differentiate mutation functions for different
-  // operators
-  switch (unary_operator_.getOpcode()) {
-    case clang::UnaryOperatorKind::UO_Plus:
-      new_function_name += "Plus";
-      break;
-    case clang::UnaryOperatorKind::UO_Minus:
-      new_function_name += "Minus";
-      break;
-    case clang::UnaryOperatorKind::UO_Not:
-      new_function_name += "Not";
-      break;
-    case clang::UnaryOperatorKind::UO_PreDec:
-      new_function_name += "PreDec";
-      break;
-    case clang::UnaryOperatorKind::UO_PostDec:
-      new_function_name += "PostDec";
-      break;
-    case clang::UnaryOperatorKind::UO_PreInc:
-      new_function_name += "PreInc";
-      break;
-    case clang::UnaryOperatorKind::UO_PostInc:
-      new_function_name += "PostInc";
-      break;
-    case clang::UnaryOperatorKind::UO_LNot:
-      new_function_name += "LNot";
-      break;
-    default:
-      assert(false && "Unsupported opcode");
-  }
-
+  std::string new_function_name = GetFunctionName(ast_context);
   std::string result_type = unary_operator_.getType()
                                 ->getAs<clang::BuiltinType>()
                                 ->getName(ast_context.getPrintingPolicy())
@@ -186,12 +219,6 @@ void MutationReplaceUnaryOperator::Apply(
   ApplyTypeModifiers(unary_operator_.getSubExpr(), input_type);
   ApplyTypeModifiers(&unary_operator_, result_type);
 
-  std::string input_print_type(input_type);
-  input_print_type.erase(
-      std::remove(input_print_type.begin(), input_print_type.end(), '&'),
-      input_print_type.end());
-  new_function_name += "_" + SpaceToUnderscore(input_print_type);
-
   clang::SourceRange unary_operator_source_range_in_main_file =
       GetSourceRangeInMainFile(preprocessor, unary_operator_);
   assert(unary_operator_source_range_in_main_file.isValid() &&
@@ -209,6 +236,7 @@ void MutationReplaceUnaryOperator::Apply(
   bool result = rewriter.ReplaceText(
       unary_operator_source_range_in_main_file,
       new_function_name + "([&]() -> " + input_type + " { return " +
+          // We don't need to static cast constant expressions
           (unary_operator_.getSubExpr()->isCXX11ConstantExpr(ast_context)
                ? rewriter.getRewrittenText(input_source_range_in_main_file)
                : ("static_cast<" + input_type + ">(" +
@@ -218,24 +246,15 @@ void MutationReplaceUnaryOperator::Apply(
   (void)result;  // Keep release-mode compilers happy.
   assert(!result && "Rewrite failed.\n");
 
-  std::vector<clang::UnaryOperatorKind> arithmetic_operators = {
+  std::vector<clang::UnaryOperatorKind> operators = {
       clang::UnaryOperatorKind::UO_PreInc, clang::UnaryOperatorKind::UO_PostInc,
       clang::UnaryOperatorKind::UO_PreDec, clang::UnaryOperatorKind::UO_PostDec,
-      clang::UnaryOperatorKind::UO_Not,    clang::UnaryOperatorKind::UO_Plus,
-      clang::UnaryOperatorKind::UO_Minus};
-
-  std::vector<clang::UnaryOperatorKind> logical_operators = {
+      clang::UnaryOperatorKind::UO_Not,    clang::UnaryOperatorKind::UO_Minus,
       clang::UnaryOperatorKind::UO_LNot};
 
   std::string new_function;
-  for (const auto& operators : {arithmetic_operators, logical_operators}) {
-    if (std::find(operators.begin(), operators.end(),
-                  unary_operator_.getOpcode()) != operators.end()) {
-      new_function = GenerateMutatorFunction(
-          new_function_name, result_type, input_type, operators, mutation_id);
-      break;
-    }
-  }
+  new_function = GenerateMutatorFunction(new_function_name, result_type,
+                                         input_type, operators, mutation_id);
   assert(!new_function.empty() && "Unsupported opcode.");
 
   dredd_declarations.insert(new_function);

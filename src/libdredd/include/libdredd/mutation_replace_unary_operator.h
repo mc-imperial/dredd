@@ -50,8 +50,10 @@ class MutationReplaceUnaryOperator : public Mutation {
 
   [[nodiscard]] static bool IsPrefix(clang::UnaryOperatorKind op);
 
-  [[nodiscard]] bool IsInvalidReplacementOperator(
+  [[nodiscard]] bool IsValidReplacementOperator(
       clang::UnaryOperatorKind op) const;
+
+  std::string GetFunctionName(clang::ASTContext& ast_context) const;
 
   const clang::UnaryOperator& unary_operator_;
 };

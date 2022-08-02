@@ -76,28 +76,9 @@ TEST(MutationReplaceUnaryOperatorTest, MutateMinus) {
   std::string expected_dredd_declaration =
       R"(static int __dredd_replace_unary_operator_Minus_int(std::function<int()> arg, int local_mutation_id) {
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return ~arg();
-  if (__dredd_enabled_mutation(local_mutation_id + 1)) return +arg();
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return !arg();
   if (__dredd_enabled_mutation(local_mutation_id + 2)) return arg();
   return -arg();
-}
-
-)";
-  const int kNumReplacements = 3;
-  TestReplacement(original, expected, kNumReplacements,
-                  expected_dredd_declaration);
-}
-
-TEST(MutationReplaceUnaryOperatorTest, MutatePlus) {
-  std::string original = "void foo() { +5; }";
-  std::string expected =
-      "void foo() { __dredd_replace_unary_operator_Plus_int([&]() -> int { "
-      "return 5; }, 0); }";
-  std::string expected_dredd_declaration =
-      R"(static int __dredd_replace_unary_operator_Plus_int(std::function<int()> arg, int local_mutation_id) {
-  if (__dredd_enabled_mutation(local_mutation_id + 0)) return ~arg();
-  if (__dredd_enabled_mutation(local_mutation_id + 1)) return -arg();
-  if (__dredd_enabled_mutation(local_mutation_id + 2)) return arg();
-  return +arg();
 }
 
 )";
@@ -120,14 +101,16 @@ TEST(MutationReplaceUnaryOperatorTest, MutateNot) {
 )";
   std::string expected_dredd_declaration =
       R"(static bool __dredd_replace_unary_operator_LNot_bool(std::function<bool()> arg, int local_mutation_id) {
-  if (__dredd_enabled_mutation(local_mutation_id + 0)) return arg();
-  if (__dredd_enabled_mutation(local_mutation_id + 1)) return true;
-  if (__dredd_enabled_mutation(local_mutation_id + 2)) return false;
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return ~arg();
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return -arg();
+  if (__dredd_enabled_mutation(local_mutation_id + 2)) return arg();
+  if (__dredd_enabled_mutation(local_mutation_id + 3)) return true;
+  if (__dredd_enabled_mutation(local_mutation_id + 4)) return false;
   return !arg();
 }
 
 )";
-  const int kNumReplacements = 3;
+  const int kNumReplacements = 5;
   TestReplacement(original, expected, kNumReplacements,
                   expected_dredd_declaration);
 }
@@ -175,8 +158,8 @@ TEST(MutationReplaceUnaryOperatorTest, MutateDecrement) {
   if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg()++;
   if (__dredd_enabled_mutation(local_mutation_id + 2)) return --arg();
   if (__dredd_enabled_mutation(local_mutation_id + 3)) return ~arg();
-  if (__dredd_enabled_mutation(local_mutation_id + 4)) return +arg();
-  if (__dredd_enabled_mutation(local_mutation_id + 5)) return -arg();
+  if (__dredd_enabled_mutation(local_mutation_id + 4)) return -arg();
+  if (__dredd_enabled_mutation(local_mutation_id + 5)) return !arg();
   if (__dredd_enabled_mutation(local_mutation_id + 6)) return arg();
   return arg()--;
 }
