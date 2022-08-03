@@ -34,18 +34,6 @@
 
 namespace dredd {
 
-namespace {
-
-// Utility method used to avoid spaces when types, such as 'unsigned int', are
-// used in mutation function names.
-std::string SpaceToUnderscore(const std::string& input) {
-  std::string result(input);
-  std::replace(result.begin(), result.end(), ' ', '_');
-  return result;
-}
-
-}  // namespace
-
 MutationReplaceBinaryOperator::MutationReplaceBinaryOperator(
     const clang::BinaryOperator& binary_operator)
     : binary_operator_(binary_operator) {}

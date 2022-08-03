@@ -20,6 +20,7 @@
 #include "clang/AST/DeclBase.h"
 #include "clang/AST/DeclCXX.h"
 #include "clang/AST/Expr.h"
+#include "clang/AST/OperationKinds.h"
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/AST/Stmt.h"
 #include "clang/AST/Type.h"
@@ -27,6 +28,7 @@
 #include "clang/Frontend/CompilerInstance.h"
 #include "libdredd/mutation_remove_statement.h"
 #include "libdredd/mutation_replace_binary_operator.h"
+#include "libdredd/mutation_replace_unary_operator.h"
 #include "libdredd/util.h"
 #include "llvm/ADT/iterator_range.h"
 #include "llvm/Support/Casting.h"
@@ -41,6 +43,11 @@ bool MutateVisitor::IsTypeSupported(const clang::QualType qual_type) {
   const auto* builtin_type = qual_type->getAs<clang::BuiltinType>();
   return builtin_type == nullptr ||
          !(builtin_type->isInteger() || builtin_type->isFloatingPoint());
+}
+
+bool MutateVisitor::NotInFunction() {
+  return enclosing_decls_.empty() || (llvm::dyn_cast<clang::FunctionDecl>(
+                                          enclosing_decls_.back()) == nullptr);
 }
 
 bool MutateVisitor::TraverseDecl(clang::Decl* decl) {
@@ -77,10 +84,47 @@ bool MutateVisitor::TraverseDecl(clang::Decl* decl) {
   return true;
 }
 
+bool MutateVisitor::VisitUnaryOperator(clang::UnaryOperator* unary_operator) {
+  if (NotInFunction()) {
+    // Only consider mutating unary expressions that occur inside functions.
+    return true;
+  }
+
+  // Check that the unary expression and its arguments have source
+  // ranges that are part of the main file. In particular, this avoids
+  // mutating expressions that directly involve the use of macros (though it
+  // is OK if sub-expressions of arguments use macros).
+  if (GetSourceRangeInMainFile(compiler_instance_.getPreprocessor(),
+                               *unary_operator)
+          .isInvalid() ||
+      GetSourceRangeInMainFile(compiler_instance_.getPreprocessor(),
+                               *unary_operator->getSubExpr())
+          .isInvalid()) {
+    return true;
+  }
+
+  // Don't mutate unary plus as this is unlikely to lead to a mutation that
+  // differs from inserting a unary operator
+  if (unary_operator->getOpcode() == clang::UnaryOperatorKind::UO_Plus) {
+    return true;
+  }
+
+  // Check that the result type is supported
+  if (IsTypeSupported(unary_operator->getType())) {
+    return true;
+  }
+  if (IsTypeSupported(unary_operator->getSubExpr()->getType())) {
+    return true;
+  }
+
+  mutations_.push_back(
+      std::make_unique<MutationReplaceUnaryOperator>(*unary_operator));
+  return true;
+}
+
 bool MutateVisitor::VisitBinaryOperator(
     clang::BinaryOperator* binary_operator) {
-  if (enclosing_decls_.empty() || (llvm::dyn_cast<clang::FunctionDecl>(
-                                       enclosing_decls_.back()) == nullptr)) {
+  if (NotInFunction()) {
     // Only consider mutating binary expressions that occur inside functions.
     return true;
   }
