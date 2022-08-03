@@ -103,7 +103,8 @@ bool MutateVisitor::VisitUnaryOperator(clang::UnaryOperator* unary_operator) {
     return true;
   }
 
-  // Don't mutate unary plus as this is unlikely to lead to a mutation that differs from inserting a unary operator
+  // Don't mutate unary plus as this is unlikely to lead to a mutation that
+  // differs from inserting a unary operator
   if (unary_operator->getOpcode() == clang::UnaryOperatorKind::UO_Plus) {
     return true;
   }
