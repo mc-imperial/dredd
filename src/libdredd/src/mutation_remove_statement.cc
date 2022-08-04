@@ -37,18 +37,59 @@ void MutationRemoveStatement::Apply(
     int first_mutation_id_in_file, int& mutation_id, clang::Rewriter& rewriter,
     std::unordered_set<std::string>& dredd_declarations) const {
   (void)dredd_declarations;  // Unused
-  clang::CharSourceRange source_range = clang::tooling::maybeExtendRange(
-      clang::CharSourceRange::getTokenRange(
-          GetSourceRangeInMainFile(preprocessor, statement_)),
-      clang::tok::TokenKind::semi, ast_context);
+  clang::CharSourceRange source_range = clang::CharSourceRange::getTokenRange(
+      GetSourceRangeInMainFile(preprocessor, statement_));
+
+  // If the statement is followed immediately by a semi-colon, possibly with
+  // intervening comments, that semi-colon should be part of the code that is
+  // wrapped in an 'if'.
+
+  // First, skip over any intervening comments. It doesn't matter whether or not
+  // they end up getting wrapped in the 'if'.
+  bool is_extended_with_comment = false;
+  while (true) {
+    // Extend the source range in the case that the next token is a comment.
+    clang::CharSourceRange source_range_extended_with_comment =
+        clang::tooling::maybeExtendRange(
+            source_range, clang::tok::TokenKind::comment, ast_context);
+    if (source_range.getAsRange() ==
+        source_range_extended_with_comment.getAsRange()) {
+      // The source range wasn't extended, so there aren't any more comments
+      // before the next non-comment token.
+      break;
+    }
+    // Update the source range to its extended form and note that a comment was
+    // skipped.
+    is_extended_with_comment = true;
+    source_range = source_range_extended_with_comment;
+  }
+
+  // Now try to extend the source range further to include the next token, if it
+  // is a semi-colon.
+  clang::CharSourceRange source_range_extended_with_semi =
+      clang::tooling::maybeExtendRange(
+          source_range, clang::tok::TokenKind::semi, ast_context);
+  bool is_extended_with_semi =
+      source_range.getAsRange() != source_range_extended_with_semi.getAsRange();
+  if (is_extended_with_semi) {
+    source_range = source_range_extended_with_semi;
+  }
 
   // Subtracting |first_mutation_id_in_file| turns the global mutation id,
   // |mutation_id|, into a file-local mutation id.
   const int local_mutation_id = mutation_id - first_mutation_id_in_file;
   bool result = rewriter.ReplaceText(
-      source_range, "if (!__dredd_enabled_mutation(" +
-                        std::to_string(local_mutation_id) + ")) { " +
-                        rewriter.getRewrittenText(source_range) + " }");
+      source_range,
+      "if (!__dredd_enabled_mutation(" + std::to_string(local_mutation_id) +
+          ")) { " + rewriter.getRewrittenText(source_range) +
+          // If the source range was extended with a comment but not with a
+          // semi-colon, it is possible that the end of the source range is on
+          // the same line as a single-line comment, in which case it's
+          // important to take a new line (otherwise the closing brace will form
+          // part of the comment). It would be possible to always take a new
+          // line, but this would make mutated files harder to read.
+          ((is_extended_with_comment && !is_extended_with_semi) ? "\n" : " ") +
+          "}");
   (void)result;  // Keep release-mode compilers happy.
   assert(!result && "Rewrite failed.\n");
   mutation_id++;
