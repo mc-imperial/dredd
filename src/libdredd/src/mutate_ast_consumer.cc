@@ -28,7 +28,6 @@
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Rewrite/Core/Rewriter.h"
 #include "libdredd/mutation.h"
-#include "libdredd/util.h"
 
 namespace dredd {
 
@@ -77,14 +76,11 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& context) {
     (void)mutation_id_old;  // Keep release-mode compilers happy.
   }
 
-  assert(visitor_->GetFirstDeclInSourceFile() != nullptr &&
+  clang::SourceLocation start_location_of_first_decl_in_source_file =
+      visitor_->GetStartLocationOfFirstDeclInSourceFile();
+  assert(start_location_of_first_decl_in_source_file.isValid() &&
          "There is at least one mutation, therefore there must be at least one "
          "declaration.");
-
-  auto first_decl_in_main_file =
-      GetSourceRangeInMainFile(compiler_instance_.getPreprocessor(),
-                               *visitor_->GetFirstDeclInSourceFile())
-          .getBegin();
 
   // Convert the unordered set Dredd declarations into an ordered set and add
   // them to the source file before the first declaration.
@@ -92,7 +88,8 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& context) {
   sorted_dredd_declarations.insert(dredd_declarations.begin(),
                                    dredd_declarations.end());
   for (const auto& decl : sorted_dredd_declarations) {
-    bool result = rewriter_.InsertTextBefore(first_decl_in_main_file, decl);
+    bool result = rewriter_.InsertTextBefore(
+        start_location_of_first_decl_in_source_file, decl);
     (void)result;  // Keep release-mode compilers happy.
     assert(!result && "Rewrite failed.\n");
   }
@@ -170,8 +167,8 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& context) {
                    "(local_mutation_id % 64))) != 0;\n";
   dredd_prelude << "}\n\n";
 
-  bool result =
-      rewriter_.InsertTextBefore(first_decl_in_main_file, dredd_prelude.str());
+  bool result = rewriter_.InsertTextBefore(
+      start_location_of_first_decl_in_source_file, dredd_prelude.str());
   (void)result;  // Keep release-mode compilers happy.
   assert(!result && "Rewrite failed.\n");
 
