@@ -75,7 +75,7 @@ bool MutateVisitor::TraverseDecl(clang::Decl* decl) {
     // match the order they are visited in the AST (for example, a typedef
     // declaration is visited after the associated type declaration, even though
     // the 'typedef' keyword occurs first in the AST), thus this location is
-    // updated each a declaration that appears earlier is encountered.
+    // updated each time a declaration that appears earlier is encountered.
     start_location_of_first_decl_in_source_file_ =
         source_range_in_main_file.getBegin();
   }
