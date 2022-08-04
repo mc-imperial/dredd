@@ -84,6 +84,13 @@ bool MutateVisitor::TraverseDecl(clang::Decl* decl) {
   return true;
 }
 
+bool MutateVisitor::TraverseCaseStmt(clang::CaseStmt* case_stmt) {
+  // Do not traverse the expression associated with this switch case: switch
+  // case expressions need to be constant, which rules out the kinds of
+  // mutations that Dredd performs.
+  return TraverseStmt(case_stmt->getSubStmt());
+}
+
 bool MutateVisitor::VisitUnaryOperator(clang::UnaryOperator* unary_operator) {
   if (NotInFunction()) {
     // Only consider mutating unary expressions that occur inside functions.
