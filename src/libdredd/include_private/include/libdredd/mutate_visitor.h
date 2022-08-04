@@ -35,6 +35,10 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
 
   bool TraverseDecl(clang::Decl* decl);
 
+  // Overridden in order to avoid visiting the expressions associated with case
+  // statements.
+  bool TraverseCaseStmt(clang::CaseStmt* case_stmt);
+
   bool VisitUnaryOperator(clang::UnaryOperator* unary_operator);
 
   bool VisitBinaryOperator(clang::BinaryOperator* binary_operator);
