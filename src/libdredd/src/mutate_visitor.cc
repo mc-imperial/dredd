@@ -25,6 +25,7 @@
 #include "clang/AST/Stmt.h"
 #include "clang/AST/Type.h"
 #include "clang/Basic/SourceLocation.h"
+#include "clang/Basic/SourceManager.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "libdredd/mutation_remove_statement.h"
 #include "libdredd/mutation_replace_binary_operator.h"
@@ -36,8 +37,7 @@
 namespace dredd {
 
 MutateVisitor::MutateVisitor(const clang::CompilerInstance& compiler_instance)
-    : compiler_instance_(compiler_instance),
-      first_decl_in_source_file_(nullptr) {}
+    : compiler_instance_(compiler_instance) {}
 
 bool MutateVisitor::IsTypeSupported(const clang::QualType qual_type) {
   const auto* builtin_type = qual_type->getAs<clang::BuiltinType>();
@@ -55,17 +55,29 @@ bool MutateVisitor::TraverseDecl(clang::Decl* decl) {
     // This is the top-level translation unit declaration, so descend into it.
     return RecursiveASTVisitor::TraverseDecl(decl);
   }
-  if (GetSourceRangeInMainFile(compiler_instance_.getPreprocessor(), *decl)
-          .isInvalid()) {
+  auto source_range_in_main_file =
+      GetSourceRangeInMainFile(compiler_instance_.getPreprocessor(), *decl);
+  if (source_range_in_main_file.isInvalid()) {
     // This declaration is not wholly contained in the main file, so do not
     // consider it for mutation.
     return true;
   }
-  if (first_decl_in_source_file_ == nullptr) {
+  clang::BeforeThanCompare<clang::SourceLocation> comparator(
+      compiler_instance_.getSourceManager());
+  if (start_location_of_first_decl_in_source_file_.isInvalid() ||
+      comparator(source_range_in_main_file.getBegin(),
+                 start_location_of_first_decl_in_source_file_)) {
     // This is the first declaration wholly contained in the main file that has
-    // been encountered: record it so that the dredd prelude can be inserted
-    // before it.
-    first_decl_in_source_file_ = decl;
+    // been encountered so far: record it so that the dredd prelude can be
+    // inserted before it.
+    //
+    // The order in which declarations appear in the source file may not exactly
+    // match the order they are visited in the AST (for example, a typedef
+    // declaration is visited after the associated type declaration, even though
+    // the 'typedef' keyword occurs first in the AST), thus this location is
+    // updated each a declaration that appears earlier is encountered.
+    start_location_of_first_decl_in_source_file_ =
+        source_range_in_main_file.getBegin();
   }
   if (llvm::dyn_cast<clang::StaticAssertDecl>(decl) != nullptr) {
     // It does not make sense to mutate static assertions, as (a) this will
