@@ -136,6 +136,12 @@ bool MutateVisitor::VisitUnaryOperator(clang::UnaryOperator* unary_operator) {
     return true;
   }
 
+  // As it is not possible to pass bit-fields by reference, mutation of
+  // bit-field l-values is not supported.
+  if (unary_operator->getSubExpr()->refersToBitField()) {
+    return true;
+  }
+
   mutations_.push_back(
       std::make_unique<MutationReplaceUnaryOperator>(*unary_operator));
   return true;
@@ -174,6 +180,12 @@ bool MutateVisitor::VisitBinaryOperator(
     return true;
   }
   if (IsTypeSupported(binary_operator->getRHS()->getType())) {
+    return true;
+  }
+
+  // As it is not possible to pass bit-fields by reference, mutation of
+  // bit-field l-values is not supported.
+  if (binary_operator->getLHS()->refersToBitField()) {
     return true;
   }
 
