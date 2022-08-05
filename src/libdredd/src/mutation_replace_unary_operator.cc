@@ -44,17 +44,29 @@ bool MutationReplaceUnaryOperator::IsValidReplacementOperator(
   if (!unary_operator_.getSubExpr()->isLValue() &&
       (op == clang::UO_PreInc || op == clang::UO_PreDec ||
        op == clang::UO_PostInc || op == clang::UO_PostDec)) {
+    // The increment and decrement operators require an l-value.
     return false;
   }
 
   if ((unary_operator_.getOpcode() == clang::UO_PostDec ||
        unary_operator_.getOpcode() == clang::UO_PostInc) &&
       (op == clang::UO_PreDec || op == clang::UO_PreInc)) {
+    // Do not replace a post-increment/decrement with a pre-increment/decrement;
+    // it's unlikely to be interesting.
+    return false;
+  }
+
+  if ((unary_operator_.getOpcode() == clang::UO_PreDec ||
+       unary_operator_.getOpcode() == clang::UO_PreInc) &&
+      (op == clang::UO_PostDec || op == clang::UO_PostInc)) {
+    // Do not replace a pre-increment/decrement with a pre-increment/decrement;
+    // it's unlikely to be interesting.
     return false;
   }
 
   if (unary_operator_.isLValue() &&
       !(op == clang::UO_PreInc || op == clang::UO_PreDec)) {
+    // In C++, only pre-increment/decrement operations yield an l-value.
     return false;
   }
 
