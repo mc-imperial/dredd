@@ -39,12 +39,15 @@ class MutationReplaceUnaryOperator : public Mutation {
       std::unordered_set<std::string>& dredd_declarations) const override;
 
  private:
-  std::string GenerateMutatorFunction(const std::string& function_name,
+  std::string GenerateMutatorFunction(clang::ASTContext& ast_context,
+                                      const std::string& function_name,
                                       const std::string& result_type,
                                       const std::string& input_type,
                                       int& mutation_id) const;
 
-  static void ApplyTypeModifiers(const clang::Expr* expr, std::string& type);
+  static void ApplyCppTypeModifiers(const clang::Expr* expr, std::string& type);
+
+  static void ApplyCTypeModifiers(const clang::Expr* expr, std::string& type);
 
   [[nodiscard]] static bool IsPrefix(clang::UnaryOperatorKind op);
 

@@ -26,6 +26,7 @@
 #include "clang/AST/Expr.h"
 #include "clang/AST/OperationKinds.h"
 #include "clang/AST/Type.h"
+#include "clang/Basic/LangOptions.h"
 #include "clang/Basic/SourceLocation.h"
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Rewrite/Core/Rewriter.h"
@@ -161,8 +162,6 @@ std::string MutationReplaceBinaryOperator::GetFunctionName(
   if (binary_operator_.isAssignmentOp()) {
     clang::QualType qualified_lhs_type = binary_operator_.getLHS()->getType();
     if (qualified_lhs_type.isVolatileQualified()) {
-      assert(binary_operator_.getType().isVolatileQualified() &&
-             "Expected expression to be volatile-qualified since LHS is.");
       lhs_qualifier = "volatile ";
     }
   }
@@ -188,23 +187,43 @@ std::string MutationReplaceBinaryOperator::GetFunctionName(
 }
 
 std::string MutationReplaceBinaryOperator::GenerateMutatorFunction(
-    const std::string& function_name, const std::string& result_type,
-    const std::string& lhs_type, const std::string& rhs_type,
+    clang::ASTContext& ast_context, const std::string& function_name,
+    const std::string& result_type, const std::string& lhs_type,
+    const std::string& rhs_type,
     const std::vector<clang::BinaryOperatorKind>& operators,
     int& mutation_id) const {
   std::stringstream new_function;
-  new_function << "static " << result_type << " " << function_name;
-  new_function << "(std::function<" << lhs_type << "()>"
-               << " arg1, ";
+  new_function << "static " << result_type << " " << function_name << "(";
 
-  new_function << "std::function<" << rhs_type << "()>"
-               << " arg2, int local_mutation_id) {\n";
+  if (ast_context.getLangOpts().CPlusPlus) {
+    new_function << "std::function<" << lhs_type << "()>";
+  } else {
+    new_function << lhs_type;
+  }
+  new_function << " arg1, ";
+
+  if (ast_context.getLangOpts().CPlusPlus) {
+    new_function << "std::function<" << rhs_type << "()>";
+  } else {
+    new_function << rhs_type;
+  }
+
+  new_function << " arg2, int local_mutation_id) {\n";
 
   int mutant_offset = 0;
 
   // Consider every operator apart from the existing operator
-  std::string arg1_evaluated("arg1()");
-  std::string arg2_evaluated("arg2()");
+  std::string arg1_evaluated("arg1");
+  std::string arg2_evaluated("arg2");
+  if (ast_context.getLangOpts().CPlusPlus) {
+    arg1_evaluated += "()";
+    arg2_evaluated += "()";
+  } else {
+    if (binary_operator_.isAssignmentOp()) {
+      arg1_evaluated = "(*" + arg1_evaluated + ")";
+    }
+  }
+
   for (auto op : operators) {
     if (op == binary_operator_.getOpcode() || !IsValidReplacementOperator(op)) {
       continue;
@@ -229,12 +248,16 @@ std::string MutationReplaceBinaryOperator::GenerateMutatorFunction(
   if (binary_operator_.isLogicalOp()) {
     // true
     new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
-                 << mutant_offset << ")) return true;\n";
+                 << mutant_offset << ")) return "
+                 << (ast_context.getLangOpts().CPlusPlus ? "true" : "1")
+                 << ";\n";
     mutant_offset++;
 
     // false
     new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
-                 << mutant_offset << ")) return false;\n";
+                 << mutant_offset << ")) return "
+                 << (ast_context.getLangOpts().CPlusPlus ? "false" : "0")
+                 << ";\n";
     mutant_offset++;
   }
 
@@ -272,44 +295,26 @@ void MutationReplaceBinaryOperator::Apply(
                              .str();
 
   if (binary_operator_.isAssignmentOp()) {
-    result_type += "&";
-    lhs_type += "&";
+    if (ast_context.getLangOpts().CPlusPlus) {
+      result_type += "&";
+      lhs_type += "&";
+    } else {
+      lhs_type += "*";
+    }
     clang::QualType qualified_lhs_type = binary_operator_.getLHS()->getType();
     if (qualified_lhs_type.isVolatileQualified()) {
-      assert(binary_operator_.getType().isVolatileQualified() &&
-             "Expected expression to be volatile-qualified since LHS is.");
-      result_type = "volatile " + result_type;
       lhs_type = "volatile " + lhs_type;
+      if (ast_context.getLangOpts().CPlusPlus) {
+        assert(binary_operator_.getType().isVolatileQualified() &&
+               "Expected expression to be volatile-qualified since LHS is.");
+        result_type = "volatile " + result_type;
+      }
     }
   }
 
-  clang::SourceRange binary_operator_source_range_in_main_file =
-      GetSourceRangeInMainFile(preprocessor, binary_operator_);
-  assert(binary_operator_source_range_in_main_file.isValid() &&
-         "Invalid source range.");
-  clang::SourceRange lhs_source_range_in_main_file =
-      GetSourceRangeInMainFile(preprocessor, *binary_operator_.getLHS());
-  assert(lhs_source_range_in_main_file.isValid() && "Invalid source range.");
-  clang::SourceRange rhs_source_range_in_main_file =
-      GetSourceRangeInMainFile(preprocessor, *binary_operator_.getRHS());
-  assert(rhs_source_range_in_main_file.isValid() && "Invalid source range.");
-
-  // Replace the binary operator expression with a call to the wrapper
-  // function.
-  //
-  // Subtracting |first_mutation_id_in_file| turns the global mutation id,
-  // |mutation_id|, into a file-local mutation id.
-  const int local_mutation_id = mutation_id - first_mutation_id_in_file;
-  bool result = rewriter.ReplaceText(
-      binary_operator_source_range_in_main_file,
-      new_function_name + "([&]() -> " + lhs_type + " { return static_cast<" +
-          lhs_type + ">(" +
-          rewriter.getRewrittenText(lhs_source_range_in_main_file) +
-          +"); }, [&]() -> " + rhs_type + " { return static_cast<" + rhs_type +
-          ">(" + rewriter.getRewrittenText(rhs_source_range_in_main_file) +
-          "); }, " + std::to_string(local_mutation_id) + ")");
-  (void)result;  // Keep release-mode compilers happy.
-  assert(!result && "Rewrite failed.\n");
+  ReplaceOperator(lhs_type, rhs_type, new_function_name, ast_context,
+                  preprocessor, first_mutation_id_in_file, mutation_id,
+                  rewriter);
 
   std::vector<clang::BinaryOperatorKind> arithmetic_operators = {
       clang::BinaryOperatorKind::BO_Add, clang::BinaryOperatorKind::BO_Div,
@@ -351,8 +356,8 @@ void MutationReplaceBinaryOperator::Apply(
     if (std::find(operators.begin(), operators.end(),
                   binary_operator_.getOpcode()) != operators.end()) {
       new_function =
-          GenerateMutatorFunction(new_function_name, result_type, lhs_type,
-                                  rhs_type, operators, mutation_id);
+          GenerateMutatorFunction(ast_context, new_function_name, result_type,
+                                  lhs_type, rhs_type, operators, mutation_id);
       break;
     }
   }
@@ -361,6 +366,56 @@ void MutationReplaceBinaryOperator::Apply(
   // Add the mutation function to the set of Dredd declarations - there may
   // already be a matching function, in which case duplication will be avoided.
   dredd_declarations.insert(new_function);
+}
+
+void MutationReplaceBinaryOperator::ReplaceOperator(
+    const std::string& lhs_type, const std::string& rhs_type,
+    const std::string& new_function_name, clang::ASTContext& ast_context,
+    const clang::Preprocessor& preprocessor, int first_mutation_id_in_file,
+    int& mutation_id, clang::Rewriter& rewriter) const {
+  clang::SourceRange binary_operator_source_range_in_main_file =
+      GetSourceRangeInMainFile(preprocessor, binary_operator_);
+  assert(binary_operator_source_range_in_main_file.isValid() &&
+         "Invalid source range.");
+  clang::SourceRange lhs_source_range_in_main_file =
+      GetSourceRangeInMainFile(preprocessor, *binary_operator_.getLHS());
+  assert(lhs_source_range_in_main_file.isValid() && "Invalid source range.");
+  clang::SourceRange rhs_source_range_in_main_file =
+      GetSourceRangeInMainFile(preprocessor, *binary_operator_.getRHS());
+  assert(rhs_source_range_in_main_file.isValid() && "Invalid source range.");
+
+  // Replace the binary operator expression with a call to the wrapper
+  // function.
+  //
+  // Subtracting |first_mutation_id_in_file| turns the global mutation id,
+  // |mutation_id|, into a file-local mutation id.
+  const int local_mutation_id = mutation_id - first_mutation_id_in_file;
+  if (ast_context.getLangOpts().CPlusPlus) {
+    bool result = rewriter.ReplaceText(
+        binary_operator_source_range_in_main_file,
+        new_function_name + "([&]() -> " + lhs_type + " { return static_cast<" +
+            lhs_type + ">(" +
+            rewriter.getRewrittenText(lhs_source_range_in_main_file) +
+            +"); }, [&]() -> " + rhs_type + " { return static_cast<" +
+            rhs_type + ">(" +
+            rewriter.getRewrittenText(rhs_source_range_in_main_file) +
+            "); }, " + std::to_string(local_mutation_id) + ")");
+    (void)result;  // Keep release-mode compilers happy.
+    assert(!result && "Rewrite failed.\n");
+  } else {
+    std::string lhs_arg =
+        rewriter.getRewrittenText(lhs_source_range_in_main_file);
+    if (binary_operator_.isAssignmentOp()) {
+      lhs_arg = "&(" + lhs_arg + ")";
+    }
+    bool result = rewriter.ReplaceText(
+        binary_operator_source_range_in_main_file,
+        new_function_name + "(" + lhs_arg + ", " +
+            rewriter.getRewrittenText(rhs_source_range_in_main_file) + ", " +
+            std::to_string(local_mutation_id) + ")");
+    (void)result;  // Keep release-mode compilers happy.
+    assert(!result && "Rewrite failed.\n");
+  }
 }
 
 }  // namespace dredd

@@ -41,10 +41,18 @@ class MutationReplaceBinaryOperator : public Mutation {
 
  private:
   std::string GenerateMutatorFunction(
-      const std::string& function_name, const std::string& result_type,
-      const std::string& lhs_type, const std::string& rhs_type,
+      clang::ASTContext& ast_context, const std::string& function_name,
+      const std::string& result_type, const std::string& lhs_type,
+      const std::string& rhs_type,
       const std::vector<clang::BinaryOperatorKind>& operators,
       int& mutation_id) const;
+
+  void ReplaceOperator(const std::string& lhs_type, const std::string& rhs_type,
+                       const std::string& new_function_name,
+                       clang::ASTContext& ast_context,
+                       const clang::Preprocessor& preprocessor,
+                       int first_mutation_id_in_file, int& mutation_id,
+                       clang::Rewriter& rewriter) const;
 
   std::string GetFunctionName(clang::ASTContext& ast_context) const;
 

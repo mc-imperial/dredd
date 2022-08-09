@@ -24,6 +24,7 @@
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/AST/Stmt.h"
 #include "clang/AST/Type.h"
+#include "clang/Basic/LangOptions.h"
 #include "clang/Basic/SourceLocation.h"
 #include "clang/Basic/SourceManager.h"
 #include "clang/Frontend/CompilerInstance.h"
@@ -193,6 +194,14 @@ bool MutateVisitor::VisitBinaryOperator(
     // The comma operator is so versatile that it does not make a great deal of
     // sense to try to rewrite it.
     return true;
+  }
+
+  if (!compiler_instance_.getLangOpts().CPlusPlus) {
+    if (binary_operator->isLogicalOp()) {
+      // Due to problems with short-circuit evaluation, logical operators are
+      // not mutated when handling C.
+      return true;
+    }
   }
 
   mutations_.push_back(

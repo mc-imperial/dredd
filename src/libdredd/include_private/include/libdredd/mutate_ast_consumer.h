@@ -16,6 +16,7 @@
 #define LIBDREDD_MUTATE_AST_CONSUMER_H
 
 #include <memory>
+#include <string>
 
 #include "clang/AST/ASTConsumer.h"
 #include "clang/AST/ASTContext.h"
@@ -36,6 +37,10 @@ class MutateAstConsumer : public clang::ASTConsumer {
   void HandleTranslationUnit(clang::ASTContext& context) override;
 
  private:
+  [[nodiscard]] std::string GetDreddPreludeCpp(int initial_mutation_id) const;
+
+  [[nodiscard]] std::string GetDreddPreludeC(int initial_mutation_id) const;
+
   const clang::CompilerInstance& compiler_instance_;
   std::unique_ptr<MutateVisitor> visitor_;
   clang::Rewriter rewriter_;

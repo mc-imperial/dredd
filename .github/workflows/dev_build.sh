@@ -88,6 +88,57 @@ pushd examples/math
   popd
 popd
 
+# Curl
+git clone https://github.com/curl/curl.git
+pushd curl
+  git reset --hard curl-7_84_0
+  mkdir build
+  pushd build
+    cmake -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ..
+  popd
+  FILES=""
+  for f in `find src -name "*.c"`
+  do
+      FILES="${FILES} ${f}"
+  done
+  ${DREDD_ROOT}/third_party/clang+llvm-13.0.1/bin/dredd -p ${DREDD_ROOT}/curl/build/compile_commands.json ${FILES}
+  pushd build
+    ninja
+    # TODO: run some tests
+  popd
+popd
+
+# zstd
+git clone https://github.com/facebook/zstd.git
+pushd zstd
+  git reset --hard v1.4.10
+  mkdir temp
+  pushd temp
+    # Generate a compilation database
+    cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ../build/cmake
+  popd
+  # Build non-mutated zstd
+  make zstd-release
+  # Use the compiled zstd binary as a target for compression, and compress it.
+  cp ./programs/zstd tocompress
+  ./zstd tocompress -o normal
+  # Mutate all the source files in the lib directory of zstd
+  FILES=""
+  for f in `find lib -name "*.c"`
+  do
+    FILES="${FILES} ${f}"
+  done
+  ${DREDD_ROOT}/third_party/clang+llvm-13.0.1/bin/dredd -p ${DREDD_ROOT}/zstd/temp/compile_commands.json ${FILES}
+  # Build mutated zstd
+  make clean
+  make zstd-release
+  # Use it to compress the original (non-mutated) zstd binary
+  ./zstd tocompress -o mutated
+  # The results obtained using the original and mutated versions of zstd should
+  # be identical, since no mutations were enabled.
+  diff normal mutated
+popd
+
 # SPIRV-Tools validator: check that the tests pass after mutating the validator
 git clone https://github.com/KhronosGroup/SPIRV-Tools.git
 pushd SPIRV-Tools

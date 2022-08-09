@@ -24,6 +24,7 @@
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/Decl.h"
 #include "clang/Basic/Diagnostic.h"
+#include "clang/Basic/LangOptions.h"
 #include "clang/Basic/SourceLocation.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Rewrite/Core/Rewriter.h"
@@ -94,7 +95,23 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& context) {
     assert(!result && "Rewrite failed.\n");
   }
 
-  // The number of mutations applied to this file is now known.
+  std::string dredd_prelude = compiler_instance_.getLangOpts().CPlusPlus
+                                  ? GetDreddPreludeCpp(initial_mutation_id)
+                                  : GetDreddPreludeC(initial_mutation_id);
+
+  bool result = rewriter_.InsertTextBefore(
+      visitor_->GetStartLocationOfFirstDeclInSourceFile(), dredd_prelude);
+  (void)result;  // Keep release-mode compilers happy.
+  assert(!result && "Rewrite failed.\n");
+
+  result = rewriter_.overwriteChangedFiles();
+  (void)result;  // Keep release mode compilers happy
+  assert(!result && "Something went wrong emitting rewritten files.");
+}
+
+std::string MutateAstConsumer::GetDreddPreludeCpp(
+    int initial_mutation_id) const {
+  // The number of mutations applied to this file is known.
   const int num_mutations = mutation_id_ - initial_mutation_id;
 
   // Whether mutants are enabled or not will be tracked using a a bitset,
@@ -104,77 +121,114 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& context) {
   const int num_64_bit_words_required =
       (num_mutations + kWordSize - 1) / kWordSize;
 
-  std::stringstream dredd_prelude;
-  dredd_prelude << "#include <cinttypes>\n";
-  dredd_prelude << "#include <cstddef>\n";
-  dredd_prelude << "#include <functional>\n";
-  dredd_prelude << "#include <string>\n\n";
-  dredd_prelude
-      << "static bool __dredd_enabled_mutation(int local_mutation_id) {\n";
-  dredd_prelude << "  static bool initialized = false;\n";
+  std::stringstream result;
+  result << "#include <cinttypes>\n";
+  result << "#include <cstddef>\n";
+  result << "#include <functional>\n";
+  result << "#include <string>\n\n";
+  result << "static bool __dredd_enabled_mutation(int local_mutation_id) {\n";
+  result << "  static bool initialized = false;\n";
   // Array of booleans, one per mutation in this file, determining whether they
   // are enabled.
-  dredd_prelude << "  static uint64_t enabled_bitset["
-                << num_64_bit_words_required << "];\n";
-  dredd_prelude << "  if (!initialized) {\n";
-  dredd_prelude << "    const char* dredd_environment_variable = "
-                   "std::getenv(\"DREDD_ENABLED_MUTATION\");\n";
-  dredd_prelude << "    if (dredd_environment_variable != nullptr) {\n";
+  result << "  static uint64_t enabled_bitset[" << num_64_bit_words_required
+         << "];\n";
+  result << "  if (!initialized) {\n";
+  result << "    const char* dredd_environment_variable = "
+            "std::getenv(\"DREDD_ENABLED_MUTATION\");\n";
+  result << "    if (dredd_environment_variable != nullptr) {\n";
   // The environment variable for mutations is set, so process the contents of
   // this environment variable as a comma-seprated list of strings.
-  dredd_prelude << "      std::string contents(dredd_environment_variable);\n";
-  dredd_prelude << "      while (true) {\n";
+  result << "      std::string contents(dredd_environment_variable);\n";
+  result << "      while (true) {\n";
   // Find the position of the next comma.
-  dredd_prelude << "        size_t pos = contents.find(\",\");\n";
+  result << "        size_t pos = contents.find(\",\");\n";
   // The next token is either the whole string (if there is no comma) or the
   // prefix before the next comma (if there is a comma).
-  dredd_prelude << "        std::string token = (pos == std::string::npos ? "
-                   "contents : contents.substr(0, pos));\n";
+  result << "        std::string token = (pos == std::string::npos ? "
+            "contents : contents.substr(0, pos));\n";
   // Ignore an empty token: this allows for a trailing comma at the end of the
   // string.
-  dredd_prelude << "        if (!token.empty()) {\n";
+  result << "        if (!token.empty()) {\n";
   // Parse the token as an integer. This will throw an exception if parsing
   // fails, which is OK: it is expected that the user has set the environment
   // variable to a legitimate value.
-  dredd_prelude << "          int value = std::stoi(token);\n";
-  dredd_prelude << "          int local_value = value - " << initial_mutation_id
-                << ";\n";
+  result << "          int value = std::stoi(token);\n";
+  result << "          int local_value = value - " << initial_mutation_id
+         << ";\n";
   // Check whether the mutant id actually corresponds to a mutant in this file;
   // skip it if it does not.
-  dredd_prelude << "          if (local_value >= 0 && local_value < "
-                << num_mutations << ") {\n";
+  result << "          if (local_value >= 0 && local_value < " << num_mutations
+         << ") {\n";
   // `local_value / 64` gives the element in the bitset array corresponding to
   // this mutant. Then `local_value % 64` determines which bit of that element
   // needs to be set in order to enable the mutant, and a bitwise operation is
   // used to set the correct bit.
-  dredd_prelude << "            enabled_bitset[local_value / 64] |= (1 << "
-                   "(local_value % 64));\n";
-  dredd_prelude << "          }\n";
-  dredd_prelude << "        }\n";
+  result << "            enabled_bitset[local_value / 64] |= (1 << "
+            "(local_value % 64));\n";
+  result << "          }\n";
+  result << "        }\n";
   // If the end of the string has been reached, exit the parsing loop.
-  dredd_prelude << "        if (pos == std::string::npos) {\n";
-  dredd_prelude << "          break;\n";
-  dredd_prelude << "        }\n";
+  result << "        if (pos == std::string::npos) {\n";
+  result << "          break;\n";
+  result << "        }\n";
   // Move past the first comma so that the rest of the string can be processed.
-  dredd_prelude << "        contents.erase(0, pos + 1);\n";
-  dredd_prelude << "      }\n";
-  dredd_prelude << "    }\n";
-  dredd_prelude << "    initialized = true;\n";
-  dredd_prelude << "  }\n";
+  result << "        contents.erase(0, pos + 1);\n";
+  result << "      }\n";
+  result << "    }\n";
+  result << "    initialized = true;\n";
+  result << "  }\n";
   // Similar to the above, a combination of division, modulo and bit-shifting
   // is used to look up whether this mutant is enabled in the bitset.
-  dredd_prelude << "  return (enabled_bitset[local_mutation_id / 64] & (1 << "
-                   "(local_mutation_id % 64))) != 0;\n";
-  dredd_prelude << "}\n\n";
+  result << "  return (enabled_bitset[local_mutation_id / 64] & (1 << "
+            "(local_mutation_id % 64))) != 0;\n";
+  result << "}\n\n";
+  return result.str();
+}
 
-  bool result = rewriter_.InsertTextBefore(
-      start_location_of_first_decl_in_source_file, dredd_prelude.str());
-  (void)result;  // Keep release-mode compilers happy.
-  assert(!result && "Rewrite failed.\n");
+std::string MutateAstConsumer::GetDreddPreludeC(int initial_mutation_id) const {
+  // See comments in GetDreddPreludeCpp - this C version is a straightforward
+  // port.
+  const int num_mutations = mutation_id_ - initial_mutation_id;
+  const int kWordSize = 64;
+  const int num_64_bit_words_required =
+      (num_mutations + kWordSize - 1) / kWordSize;
 
-  result = rewriter_.overwriteChangedFiles();
-  (void)result;  // Keep release mode compilers happy
-  assert(!result && "Something went wrong emitting rewritten files.");
+  std::stringstream result;
+  result << "#include <inttypes.h>\n";
+  result << "#include <stdlib.h>\n";
+  result << "#include <string.h>\n";
+  result << "static int __dredd_enabled_mutation(int local_mutation_id) {\n";
+  result << "  static int initialized = 0;\n";
+  result << "  static uint64_t enabled_bitset[" << num_64_bit_words_required
+         << "];\n";
+  result << "  if (!initialized) {\n";
+  result << "    const char* dredd_environment_variable = "
+            "getenv(\"DREDD_ENABLED_MUTATION\");\n";
+  result << "    if (dredd_environment_variable) {\n";
+  result
+      << "      char* temp = malloc(strlen(dredd_environment_variable) + 1);\n";
+  result << "      strcpy(temp, dredd_environment_variable);\n";
+  result << "      char* token;\n";
+  result << "      token = strtok(temp, \",\");\n";
+  result << "      while(token) {\n";
+  result << "        int value = atoi(token);\n";
+  result << "        int local_value = value - " << initial_mutation_id
+         << ";\n";
+  result << "        if (local_value >= 0 && local_value < " << num_mutations
+         << ") {\n";
+  result << "          enabled_bitset[local_value / 64] |= (1 << "
+            "(local_value % 64));\n";
+  result << "        }\n";
+  result << "        token = strtok(NULL, \",\");\n";
+  result << "      }\n";
+  result << "      free(temp);\n";
+  result << "    }\n";
+  result << "    initialized = 1;\n";
+  result << "  }\n";
+  result << "  return enabled_bitset[local_mutation_id / 64] & (1 << "
+            "(local_mutation_id % 64));\n";
+  result << "}\n\n";
+  return result.str();
 }
 
 }  // namespace dredd

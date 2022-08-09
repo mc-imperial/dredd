@@ -1,0 +1,39 @@
+#include <inttypes.h>
+#include <stdlib.h>
+#include <string.h>
+static int __dredd_enabled_mutation(int local_mutation_id) {
+  static int initialized = 0;
+  static uint64_t enabled_bitset[1];
+  if (!initialized) {
+    const char* dredd_environment_variable = getenv("DREDD_ENABLED_MUTATION");
+    if (dredd_environment_variable) {
+      char* temp = malloc(strlen(dredd_environment_variable) + 1);
+      strcpy(temp, dredd_environment_variable);
+      char* token;
+      token = strtok(temp, ",");
+      while(token) {
+        int value = atoi(token);
+        int local_value = value - 0;
+        if (local_value >= 0 && local_value < 3) {
+          enabled_bitset[local_value / 64] |= (1 << (local_value % 64));
+        }
+        token = strtok(NULL, ",");
+      }
+      free(temp);
+    }
+    initialized = 1;
+  }
+  return enabled_bitset[local_mutation_id / 64] & (1 << (local_mutation_id % 64));
+}
+
+struct S {
+  int a : 3;
+  int b : 3;
+};
+
+void foo() {
+  struct S myS;
+  if (!__dredd_enabled_mutation(0)) { myS.a = myS.b; }
+  if (!__dredd_enabled_mutation(1)) { myS.a++; }
+  if (!__dredd_enabled_mutation(2)) { --myS.b; }
+}

@@ -28,7 +28,7 @@ then
   # debug build being available
   cp build-Debug/src/dredd/dredd ${DREDD_INSTALLED_EXECUTABLE}
   # Consider each single-file test case
-  for f in `ls ${DREDD_REPO_ROOT}/test/single_file/*.cc`
+  for f in `ls ${DREDD_REPO_ROOT}/test/single_file/*.cc ${DREDD_REPO_ROOT}/test/single_file/*.c`
   do
     # Copy the single-file test case to the temporary directory so
     # that it can be mutated without affecting the original
@@ -37,9 +37,14 @@ then
     # Mutate the test case using Dredd
     ${DREDD_INSTALLED_EXECUTABLE} ${copy_of_f} --
     # Check that the mutated file compiles
-    ${CXX} -c ${copy_of_f}
+    if [[ $f == *.cc ]]
+    then
+      ${CXX} -c ${copy_of_f}
+    else
+      ${CC} -c ${copy_of_f}
+    fi
     # Copy the mutated file so that it becomes the new test expectation
-    cp ${copy_of_f} ${f%.*}.expected
+    cp ${copy_of_f} $f.expected
     # Clean up
     rm ${copy_of_f}
     rm ${copy_of_f%.*}.o
