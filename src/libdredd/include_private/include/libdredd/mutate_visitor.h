@@ -85,7 +85,29 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
   // Records the mutations that can be applied.
   std::vector<std::unique_ptr<Mutation>> mutations_;
 
-  bool NotInFunction();
+  // Determines whether the AST node being visited is directly inside a
+  // function, allowing for the visitation point to be inside a variable
+  // declaration as long as that declaration is itself directly inside a
+  // function. This should return true in cases such as:
+  //
+  // void foo() {
+  //   (*)
+  // }
+  //
+  // and cases such as:
+  //
+  // void foo() {
+  //   int x = (*);
+  // }
+  //
+  // but should return false in cases such as:
+  //
+  // void foo() {
+  //   class A {
+  //     static int x = (*);
+  //   };
+  // }
+  bool IsInFunction();
 };
 
 }  // namespace dredd
