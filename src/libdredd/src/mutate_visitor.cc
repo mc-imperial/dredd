@@ -140,6 +140,9 @@ bool MutateVisitor::TraverseCaseStmt(clang::CaseStmt* case_stmt) {
 
 bool MutateVisitor::TraverseConstantArrayTypeLoc(
     clang::ConstantArrayTypeLoc constant_array_type_loc) {
+  // Prevent compilers complaining that this method could be made static, and
+  // that it ignores its parameter.
+  (void)this;
   (void)constant_array_type_loc;
   // Changing a constant-sized array to a non-constant-sized array is
   // problematic in C if the array has an initializer, and in C++ lambdas cannot
