@@ -24,6 +24,7 @@
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/AST/Stmt.h"
 #include "clang/AST/Type.h"
+#include "clang/AST/TypeLoc.h"
 #include "clang/Basic/SourceLocation.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "libdredd/mutation.h"
@@ -39,6 +40,15 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
   // Overridden in order to avoid visiting the expressions associated with case
   // statements.
   bool TraverseCaseStmt(clang::CaseStmt* case_stmt);
+
+  // Overridden to avoid mutating constant array size expressions.
+  bool TraverseConstantArrayTypeLoc(
+      clang::ConstantArrayTypeLoc constant_array_type_loc);
+
+  // Overridden to avoid mutating variable array size expressions in C++
+  // (because lambdas cannot appear in such expressions).
+  bool TraverseVariableArrayTypeLoc(
+      clang::VariableArrayTypeLoc variable_array_type_loc);
 
   bool VisitUnaryOperator(clang::UnaryOperator* unary_operator);
 

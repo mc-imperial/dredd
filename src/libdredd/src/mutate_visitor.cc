@@ -25,6 +25,7 @@
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/AST/Stmt.h"
 #include "clang/AST/Type.h"
+#include "clang/AST/TypeLoc.h"
 #include "clang/Basic/LangOptions.h"
 #include "clang/Basic/SourceLocation.h"
 #include "clang/Basic/SourceManager.h"
@@ -135,6 +136,26 @@ bool MutateVisitor::TraverseCaseStmt(clang::CaseStmt* case_stmt) {
   // case expressions need to be constant, which rules out the kinds of
   // mutations that Dredd performs.
   return TraverseStmt(case_stmt->getSubStmt());
+}
+
+bool MutateVisitor::TraverseConstantArrayTypeLoc(
+    clang::ConstantArrayTypeLoc constant_array_type_loc) {
+  (void)constant_array_type_loc;
+  // Changing a constant-sized array to a non-constant-sized array is
+  // problematic in C if the array has an initializer, and in C++ lambdas cannot
+  // be used in array size expressions. For simplicity, don't try to mutate
+  // constant array sizes.
+  return true;
+}
+
+bool MutateVisitor::TraverseVariableArrayTypeLoc(
+    clang::VariableArrayTypeLoc variable_array_type_loc) {
+  if (compiler_instance_.getLangOpts().CPlusPlus) {
+    // In C++, lambdas cannot appear in array sizes, so avoid mutating here.
+    return true;
+  }
+  return RecursiveASTVisitor::TraverseVariableArrayTypeLoc(
+      variable_array_type_loc);
 }
 
 bool MutateVisitor::VisitUnaryOperator(clang::UnaryOperator* unary_operator) {
