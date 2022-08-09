@@ -24,6 +24,7 @@
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/AST/Stmt.h"
 #include "clang/AST/Type.h"
+#include "clang/AST/TypeLoc.h"
 #include "clang/Basic/SourceLocation.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "libdredd/mutation.h"
@@ -39,6 +40,15 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
   // Overridden in order to avoid visiting the expressions associated with case
   // statements.
   bool TraverseCaseStmt(clang::CaseStmt* case_stmt);
+
+  // Overridden to avoid mutating constant array size expressions.
+  bool TraverseConstantArrayTypeLoc(
+      clang::ConstantArrayTypeLoc constant_array_type_loc);
+
+  // Overridden to avoid mutating variable array size expressions in C++
+  // (because lambdas cannot appear in such expressions).
+  bool TraverseVariableArrayTypeLoc(
+      clang::VariableArrayTypeLoc variable_array_type_loc);
 
   bool VisitUnaryOperator(clang::UnaryOperator* unary_operator);
 
@@ -85,7 +95,29 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
   // Records the mutations that can be applied.
   std::vector<std::unique_ptr<Mutation>> mutations_;
 
-  bool NotInFunction();
+  // Determines whether the AST node being visited is directly inside a
+  // function, allowing for the visitation point to be inside a variable
+  // declaration as long as that declaration is itself directly inside a
+  // function. This should return true in cases such as:
+  //
+  // void foo() {
+  //   (*)
+  // }
+  //
+  // and cases such as:
+  //
+  // void foo() {
+  //   int x = (*);
+  // }
+  //
+  // but should return false in cases such as:
+  //
+  // void foo() {
+  //   class A {
+  //     static int x = (*);
+  //   };
+  // }
+  bool IsInFunction();
 };
 
 }  // namespace dredd

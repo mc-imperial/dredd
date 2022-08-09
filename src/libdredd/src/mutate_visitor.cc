@@ -15,6 +15,7 @@
 #include "libdredd/mutate_visitor.h"
 
 #include <cassert>
+#include <cstddef>
 
 #include "clang/AST/Decl.h"
 #include "clang/AST/DeclBase.h"
@@ -24,6 +25,7 @@
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/AST/Stmt.h"
 #include "clang/AST/Type.h"
+#include "clang/AST/TypeLoc.h"
 #include "clang/Basic/LangOptions.h"
 #include "clang/Basic/SourceLocation.h"
 #include "clang/Basic/SourceManager.h"
@@ -46,9 +48,27 @@ bool MutateVisitor::IsTypeSupported(const clang::QualType qual_type) {
          !(builtin_type->isInteger() || builtin_type->isFloatingPoint());
 }
 
-bool MutateVisitor::NotInFunction() {
-  return enclosing_decls_.empty() || (llvm::dyn_cast<clang::FunctionDecl>(
-                                          enclosing_decls_.back()) == nullptr);
+bool MutateVisitor::IsInFunction() {
+  // Walk up the next of enclosing declarations
+  for (int index = static_cast<int>(enclosing_decls_.size()) - 1; index >= 0;
+       index--) {
+    const auto* decl = enclosing_decls_[static_cast<size_t>(index)];
+    if (llvm::dyn_cast<clang::FunctionDecl>(decl) != nullptr) {
+      // A function declaration has been found, either directly or only by going
+      // via variable declarations. Thus the point of visitation is in a
+      // function without any other intervening constructs.
+      return true;
+    }
+    // It is OK if the visitation point is inside a variable declaration, as
+    // long as that declaration turns out to be inside a function.
+    if (llvm::dyn_cast<clang::VarDecl>(decl) == nullptr) {
+      // The visitation point is inside some other declaration (e.g. a class).
+      return false;
+    }
+  }
+  // Global scope was reached without hitting a function, so the declaration is
+  // not in a function.
+  return false;
 }
 
 bool MutateVisitor::TraverseDecl(clang::Decl* decl) {
@@ -89,6 +109,20 @@ bool MutateVisitor::TraverseDecl(clang::Decl* decl) {
     // associated with static assertions anyway.
     return true;
   }
+  if (const auto* var_decl = llvm::dyn_cast<clang::VarDecl>(decl)) {
+    if (var_decl->isConstexpr()) {
+      // Because Dredd's mutations occur dynamically, they cannot be applied to
+      // C++ constexprs, which require compile-time evaluation.
+      return true;
+    }
+    if (!compiler_instance_.getLangOpts().CPlusPlus &&
+        var_decl->isStaticLocal()) {
+      // In C, static local variables can only be initialized using constant
+      // expressions, which require compile-time evaluation.
+      return true;
+    }
+  }
+
   enclosing_decls_.push_back(decl);
   // Consider the declaration for mutation.
   RecursiveASTVisitor::TraverseDecl(decl);
@@ -104,8 +138,31 @@ bool MutateVisitor::TraverseCaseStmt(clang::CaseStmt* case_stmt) {
   return TraverseStmt(case_stmt->getSubStmt());
 }
 
+bool MutateVisitor::TraverseConstantArrayTypeLoc(
+    clang::ConstantArrayTypeLoc constant_array_type_loc) {
+  // Prevent compilers complaining that this method could be made static, and
+  // that it ignores its parameter.
+  (void)this;
+  (void)constant_array_type_loc;
+  // Changing a constant-sized array to a non-constant-sized array is
+  // problematic in C if the array has an initializer, and in C++ lambdas cannot
+  // be used in array size expressions. For simplicity, don't try to mutate
+  // constant array sizes.
+  return true;
+}
+
+bool MutateVisitor::TraverseVariableArrayTypeLoc(
+    clang::VariableArrayTypeLoc variable_array_type_loc) {
+  if (compiler_instance_.getLangOpts().CPlusPlus) {
+    // In C++, lambdas cannot appear in array sizes, so avoid mutating here.
+    return true;
+  }
+  return RecursiveASTVisitor::TraverseVariableArrayTypeLoc(
+      variable_array_type_loc);
+}
+
 bool MutateVisitor::VisitUnaryOperator(clang::UnaryOperator* unary_operator) {
-  if (NotInFunction()) {
+  if (!IsInFunction()) {
     // Only consider mutating unary expressions that occur inside functions.
     return true;
   }
@@ -150,7 +207,7 @@ bool MutateVisitor::VisitUnaryOperator(clang::UnaryOperator* unary_operator) {
 
 bool MutateVisitor::VisitBinaryOperator(
     clang::BinaryOperator* binary_operator) {
-  if (NotInFunction()) {
+  if (!IsInFunction()) {
     // Only consider mutating binary expressions that occur inside functions.
     return true;
   }
