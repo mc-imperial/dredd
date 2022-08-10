@@ -23,6 +23,7 @@
 #include "clang/AST/Expr.h"
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/AST/Stmt.h"
+#include "clang/AST/TemplateBase.h"
 #include "clang/AST/Type.h"
 #include "clang/AST/TypeLoc.h"
 #include "clang/Basic/SourceLocation.h"
@@ -49,6 +50,11 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
   // (because lambdas cannot appear in such expressions).
   bool TraverseVariableArrayTypeLoc(
       clang::VariableArrayTypeLoc variable_array_type_loc);
+
+  // Overridden to avoid mutating template argument expressions, which typically
+  // (and perhaps always) need to be compile-time constants.
+  bool TraverseTemplateArgumentLoc(
+      clang::TemplateArgumentLoc template_argument_loc);
 
   bool VisitUnaryOperator(clang::UnaryOperator* unary_operator);
 

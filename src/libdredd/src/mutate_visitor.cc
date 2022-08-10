@@ -24,6 +24,7 @@
 #include "clang/AST/OperationKinds.h"
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/AST/Stmt.h"
+#include "clang/AST/TemplateBase.h"
 #include "clang/AST/Type.h"
 #include "clang/AST/TypeLoc.h"
 #include "clang/Basic/LangOptions.h"
@@ -159,6 +160,17 @@ bool MutateVisitor::TraverseVariableArrayTypeLoc(
   }
   return RecursiveASTVisitor::TraverseVariableArrayTypeLoc(
       variable_array_type_loc);
+}
+
+bool MutateVisitor::TraverseTemplateArgumentLoc(
+    clang::TemplateArgumentLoc template_argument_loc) {
+  // Prevent compilers complaining that this method could be made static, and
+  // that it ignores its parameter.
+  (void)this;
+  (void)template_argument_loc;
+  // C++ template arguments typically need to be compile-time constants, and so
+  // should not be mutated.
+  return true;
 }
 
 bool MutateVisitor::VisitUnaryOperator(clang::UnaryOperator* unary_operator) {
