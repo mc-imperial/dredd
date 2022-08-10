@@ -126,6 +126,11 @@ std::string MutateAstConsumer::GetDreddPreludeCpp(
   result << "#include <cstddef>\n";
   result << "#include <functional>\n";
   result << "#include <string>\n\n";
+  // This allows for fast checking that at least *some* mutation in the file is
+  // enabled. It is set to true initially so that __dredd_enabled_mutation gets
+  // invoked the first time enabledness is queried. At that point it will get
+  // set to false if no mutations are actually enabled.
+  result << "static bool __dredd_some_mutation_enabled = true;\n";
   result << "static bool __dredd_enabled_mutation(int local_mutation_id) {\n";
   result << "  static bool initialized = false;\n";
   // Array of booleans, one per mutation in this file, determining whether they
@@ -133,6 +138,8 @@ std::string MutateAstConsumer::GetDreddPreludeCpp(
   result << "  static uint64_t enabled_bitset[" << num_64_bit_words_required
          << "];\n";
   result << "  if (!initialized) {\n";
+  // Record locally whether some mutation is enabled.
+  result << "    bool some_mutation_enabled = false;\n";
   result << "    const char* dredd_environment_variable = "
             "std::getenv(\"DREDD_ENABLED_MUTATION\");\n";
   result << "    if (dredd_environment_variable != nullptr) {\n";
@@ -165,6 +172,8 @@ std::string MutateAstConsumer::GetDreddPreludeCpp(
   // used to set the correct bit.
   result << "            enabled_bitset[local_value / 64] |= (1 << "
             "(local_value % 64));\n";
+  // Note that at least one enabled mutation has been encountered.
+  result << "            some_mutation_enabled = true;\n";
   result << "          }\n";
   result << "        }\n";
   // If the end of the string has been reached, exit the parsing loop.
@@ -175,7 +184,10 @@ std::string MutateAstConsumer::GetDreddPreludeCpp(
   result << "        contents.erase(0, pos + 1);\n";
   result << "      }\n";
   result << "    }\n";
+  // Initialisation is now complete, and whether at least one mutation is
+  // enabled is known.
   result << "    initialized = true;\n";
+  result << "    __dredd_some_mutation_enabled = some_mutation_enabled;\n";
   result << "  }\n";
   // Similar to the above, a combination of division, modulo and bit-shifting
   // is used to look up whether this mutant is enabled in the bitset.
@@ -197,11 +209,13 @@ std::string MutateAstConsumer::GetDreddPreludeC(int initial_mutation_id) const {
   result << "#include <inttypes.h>\n";
   result << "#include <stdlib.h>\n";
   result << "#include <string.h>\n";
+  result << "static int __dredd_some_mutation_enabled = 1;\n";
   result << "static int __dredd_enabled_mutation(int local_mutation_id) {\n";
   result << "  static int initialized = 0;\n";
   result << "  static uint64_t enabled_bitset[" << num_64_bit_words_required
          << "];\n";
   result << "  if (!initialized) {\n";
+  result << "    int some_mutation_enabled = 0;\n";
   result << "    const char* dredd_environment_variable = "
             "getenv(\"DREDD_ENABLED_MUTATION\");\n";
   result << "    if (dredd_environment_variable) {\n";
@@ -218,12 +232,14 @@ std::string MutateAstConsumer::GetDreddPreludeC(int initial_mutation_id) const {
          << ") {\n";
   result << "          enabled_bitset[local_value / 64] |= (1 << "
             "(local_value % 64));\n";
+  result << "          some_mutation_enabled = 1;\n";
   result << "        }\n";
   result << "        token = strtok(NULL, \",\");\n";
   result << "      }\n";
   result << "      free(temp);\n";
   result << "    }\n";
   result << "    initialized = 1;\n";
+  result << "    __dredd_some_mutation_enabled = some_mutation_enabled;\n";
   result << "  }\n";
   result << "  return enabled_bitset[local_mutation_id / 64] & (1 << "
             "(local_mutation_id % 64));\n";

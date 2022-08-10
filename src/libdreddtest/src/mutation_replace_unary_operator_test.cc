@@ -75,6 +75,7 @@ TEST(MutationReplaceUnaryOperatorTest, MutateMinus) {
       "return 2; }, 0); }";
   std::string expected_dredd_declaration =
       R"(static int __dredd_replace_unary_operator_Minus_int(std::function<int()> arg, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return -arg();
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return ~arg();
   if (__dredd_enabled_mutation(local_mutation_id + 1)) return !arg();
   if (__dredd_enabled_mutation(local_mutation_id + 2)) return arg();
@@ -101,6 +102,7 @@ TEST(MutationReplaceUnaryOperatorTest, MutateNot) {
 )";
   std::string expected_dredd_declaration =
       R"(static bool __dredd_replace_unary_operator_LNot_bool(std::function<bool()> arg, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return !arg();
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return ~arg();
   if (__dredd_enabled_mutation(local_mutation_id + 1)) return -arg();
   if (__dredd_enabled_mutation(local_mutation_id + 2)) return arg();
@@ -129,6 +131,7 @@ TEST(MutationReplaceUnaryOperatorTest, MutateIncrement) {
 )";
   std::string expected_dredd_declaration =
       R"(static double& __dredd_replace_unary_operator_PreInc_double(std::function<double&()> arg, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return ++arg();
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return --arg();
   if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg();
   return ++arg();
@@ -154,6 +157,7 @@ TEST(MutationReplaceUnaryOperatorTest, MutateDecrement) {
 )";
   std::string expected_dredd_declaration =
       R"(static int __dredd_replace_unary_operator_PostDec_int(std::function<int&()> arg, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return arg()--;
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return arg()++;
   if (__dredd_enabled_mutation(local_mutation_id + 1)) return ~arg();
   if (__dredd_enabled_mutation(local_mutation_id + 2)) return -arg();
@@ -182,6 +186,7 @@ TEST(MutationReplaceUnaryOperatorTest, MutateDecrementAssign) {
 )";
   std::string expected_dredd_declaration =
       R"(static int& __dredd_replace_unary_operator_PreDec_int(std::function<int&()> arg, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return --arg();
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return ++arg();
   if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg();
   return --arg();

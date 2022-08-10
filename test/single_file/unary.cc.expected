@@ -3,10 +3,12 @@
 #include <functional>
 #include <string>
 
+static bool __dredd_some_mutation_enabled = true;
 static bool __dredd_enabled_mutation(int local_mutation_id) {
   static bool initialized = false;
   static uint64_t enabled_bitset[1];
   if (!initialized) {
+    bool some_mutation_enabled = false;
     const char* dredd_environment_variable = std::getenv("DREDD_ENABLED_MUTATION");
     if (dredd_environment_variable != nullptr) {
       std::string contents(dredd_environment_variable);
@@ -18,6 +20,7 @@ static bool __dredd_enabled_mutation(int local_mutation_id) {
           int local_value = value - 0;
           if (local_value >= 0 && local_value < 38) {
             enabled_bitset[local_value / 64] |= (1 << (local_value % 64));
+            some_mutation_enabled = true;
           }
         }
         if (pos == std::string::npos) {
@@ -27,23 +30,27 @@ static bool __dredd_enabled_mutation(int local_mutation_id) {
       }
     }
     initialized = true;
+    __dredd_some_mutation_enabled = some_mutation_enabled;
   }
   return (enabled_bitset[local_mutation_id / 64] & (1 << (local_mutation_id % 64))) != 0;
 }
 
 static int& __dredd_replace_unary_operator_PreInc_int(std::function<int&()> arg, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return ++arg();
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return --arg();
   if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg();
   return ++arg();
 }
 
 static int& __dredd_replace_unary_operator_PreDec_int(std::function<int&()> arg, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return --arg();
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return ++arg();
   if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg();
   return --arg();
 }
 
 static int __dredd_replace_unary_operator_PostInc_int(std::function<int&()> arg, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return arg()++;
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return arg()--;
   if (__dredd_enabled_mutation(local_mutation_id + 1)) return ~arg();
   if (__dredd_enabled_mutation(local_mutation_id + 2)) return -arg();
@@ -53,6 +60,7 @@ static int __dredd_replace_unary_operator_PostInc_int(std::function<int&()> arg,
 }
 
 static int __dredd_replace_unary_operator_PostDec_int(std::function<int&()> arg, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return arg()--;
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return arg()++;
   if (__dredd_enabled_mutation(local_mutation_id + 1)) return ~arg();
   if (__dredd_enabled_mutation(local_mutation_id + 2)) return -arg();
@@ -62,6 +70,7 @@ static int __dredd_replace_unary_operator_PostDec_int(std::function<int&()> arg,
 }
 
 static int __dredd_replace_unary_operator_Minus_int(std::function<int()> arg, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return -arg();
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return ~arg();
   if (__dredd_enabled_mutation(local_mutation_id + 1)) return !arg();
   if (__dredd_enabled_mutation(local_mutation_id + 2)) return arg();
@@ -69,18 +78,21 @@ static int __dredd_replace_unary_operator_Minus_int(std::function<int()> arg, in
 }
 
 static float& __dredd_replace_unary_operator_PreInc_float(std::function<float&()> arg, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return ++arg();
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return --arg();
   if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg();
   return ++arg();
 }
 
 static float& __dredd_replace_unary_operator_PreDec_float(std::function<float&()> arg, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return --arg();
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return ++arg();
   if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg();
   return --arg();
 }
 
 static float __dredd_replace_unary_operator_PostInc_float(std::function<float&()> arg, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return arg()++;
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return arg()--;
   if (__dredd_enabled_mutation(local_mutation_id + 1)) return -arg();
   if (__dredd_enabled_mutation(local_mutation_id + 2)) return !arg();
@@ -89,6 +101,7 @@ static float __dredd_replace_unary_operator_PostInc_float(std::function<float&()
 }
 
 static float __dredd_replace_unary_operator_PostDec_float(std::function<float&()> arg, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return arg()--;
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return arg()++;
   if (__dredd_enabled_mutation(local_mutation_id + 1)) return -arg();
   if (__dredd_enabled_mutation(local_mutation_id + 2)) return !arg();

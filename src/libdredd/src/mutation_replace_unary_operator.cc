@@ -162,6 +162,20 @@ std::string MutationReplaceUnaryOperator::GenerateMutatorFunction(
     }
   }
 
+  // Quickly apply the original operator if no mutant is enabled (which will be
+  // the common case).
+  new_function << "  if (!__dredd_some_mutation_enabled) return ";
+  if (IsPrefix(unary_operator_.getOpcode())) {
+    new_function
+        << clang::UnaryOperator::getOpcodeStr(unary_operator_.getOpcode()).str()
+        << arg_evaluated + ";\n";
+  } else {
+    new_function
+        << arg_evaluated
+        << clang::UnaryOperator::getOpcodeStr(unary_operator_.getOpcode()).str()
+        << ";\n";
+  }
+
   int mutant_offset = 0;
   std::vector<clang::UnaryOperatorKind> operators = {
       clang::UnaryOperatorKind::UO_PreInc, clang::UnaryOperatorKind::UO_PostInc,

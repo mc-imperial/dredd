@@ -1,10 +1,12 @@
 #include <inttypes.h>
 #include <stdlib.h>
 #include <string.h>
+static int __dredd_some_mutation_enabled = 1;
 static int __dredd_enabled_mutation(int local_mutation_id) {
   static int initialized = 0;
   static uint64_t enabled_bitset[1];
   if (!initialized) {
+    int some_mutation_enabled = 0;
     const char* dredd_environment_variable = getenv("DREDD_ENABLED_MUTATION");
     if (dredd_environment_variable) {
       char* temp = malloc(strlen(dredd_environment_variable) + 1);
@@ -16,17 +18,20 @@ static int __dredd_enabled_mutation(int local_mutation_id) {
         int local_value = value - 0;
         if (local_value >= 0 && local_value < 48) {
           enabled_bitset[local_value / 64] |= (1 << (local_value % 64));
+          some_mutation_enabled = 1;
         }
         token = strtok(NULL, ",");
       }
       free(temp);
     }
     initialized = 1;
+    __dredd_some_mutation_enabled = some_mutation_enabled;
   }
   return enabled_bitset[local_mutation_id / 64] & (1 << (local_mutation_id % 64));
 }
 
 static int __dredd_replace_unary_operator_PreInc_int(int* arg, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return ++(*arg);
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return --(*arg);
   if (__dredd_enabled_mutation(local_mutation_id + 1)) return ~(*arg);
   if (__dredd_enabled_mutation(local_mutation_id + 2)) return -(*arg);
@@ -36,6 +41,7 @@ static int __dredd_replace_unary_operator_PreInc_int(int* arg, int local_mutatio
 }
 
 static int __dredd_replace_unary_operator_PreDec_int(int* arg, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return --(*arg);
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return ++(*arg);
   if (__dredd_enabled_mutation(local_mutation_id + 1)) return ~(*arg);
   if (__dredd_enabled_mutation(local_mutation_id + 2)) return -(*arg);
@@ -45,6 +51,7 @@ static int __dredd_replace_unary_operator_PreDec_int(int* arg, int local_mutatio
 }
 
 static int __dredd_replace_unary_operator_PostInc_int(int* arg, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return (*arg)++;
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return (*arg)--;
   if (__dredd_enabled_mutation(local_mutation_id + 1)) return ~(*arg);
   if (__dredd_enabled_mutation(local_mutation_id + 2)) return -(*arg);
@@ -54,6 +61,7 @@ static int __dredd_replace_unary_operator_PostInc_int(int* arg, int local_mutati
 }
 
 static int __dredd_replace_unary_operator_PostDec_int(int* arg, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return (*arg)--;
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return (*arg)++;
   if (__dredd_enabled_mutation(local_mutation_id + 1)) return ~(*arg);
   if (__dredd_enabled_mutation(local_mutation_id + 2)) return -(*arg);
@@ -63,6 +71,7 @@ static int __dredd_replace_unary_operator_PostDec_int(int* arg, int local_mutati
 }
 
 static int __dredd_replace_unary_operator_Minus_int(int arg, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return -arg;
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return ~arg;
   if (__dredd_enabled_mutation(local_mutation_id + 1)) return !arg;
   if (__dredd_enabled_mutation(local_mutation_id + 2)) return arg;
@@ -70,6 +79,7 @@ static int __dredd_replace_unary_operator_Minus_int(int arg, int local_mutation_
 }
 
 static float __dredd_replace_unary_operator_PreInc_float(float* arg, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return ++(*arg);
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return --(*arg);
   if (__dredd_enabled_mutation(local_mutation_id + 1)) return -(*arg);
   if (__dredd_enabled_mutation(local_mutation_id + 2)) return !(*arg);
@@ -78,6 +88,7 @@ static float __dredd_replace_unary_operator_PreInc_float(float* arg, int local_m
 }
 
 static float __dredd_replace_unary_operator_PreDec_float(float* arg, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return --(*arg);
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return ++(*arg);
   if (__dredd_enabled_mutation(local_mutation_id + 1)) return -(*arg);
   if (__dredd_enabled_mutation(local_mutation_id + 2)) return !(*arg);
@@ -86,6 +97,7 @@ static float __dredd_replace_unary_operator_PreDec_float(float* arg, int local_m
 }
 
 static float __dredd_replace_unary_operator_PostInc_float(float* arg, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return (*arg)++;
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return (*arg)--;
   if (__dredd_enabled_mutation(local_mutation_id + 1)) return -(*arg);
   if (__dredd_enabled_mutation(local_mutation_id + 2)) return !(*arg);
@@ -94,6 +106,7 @@ static float __dredd_replace_unary_operator_PostInc_float(float* arg, int local_
 }
 
 static float __dredd_replace_unary_operator_PostDec_float(float* arg, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return (*arg)--;
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return (*arg)++;
   if (__dredd_enabled_mutation(local_mutation_id + 1)) return -(*arg);
   if (__dredd_enabled_mutation(local_mutation_id + 2)) return !(*arg);

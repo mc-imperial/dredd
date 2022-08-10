@@ -224,6 +224,14 @@ std::string MutationReplaceBinaryOperator::GenerateMutatorFunction(
     }
   }
 
+  // Quickly apply the original operator if no mutant is enabled (which will be
+  // the common case).
+  new_function
+      << "  if (!__dredd_some_mutation_enabled) return " << arg1_evaluated
+      << " "
+      << clang::BinaryOperator::getOpcodeStr(binary_operator_.getOpcode()).str()
+      << " " << arg2_evaluated << ";\n";
+
   for (auto op : operators) {
     if (op == binary_operator_.getOpcode() || !IsValidReplacementOperator(op)) {
       continue;
