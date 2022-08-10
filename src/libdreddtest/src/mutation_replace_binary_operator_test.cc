@@ -78,6 +78,7 @@ TEST(MutationReplaceBinaryOperatorTest, MutateAdd) {
       "}";
   std::string expected_dredd_declaration =
       R"(static int __dredd_replace_binary_operator_Add_int_int(std::function<int()> arg1, std::function<int()> arg2, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return arg1() + arg2();
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return arg1() / arg2();
   if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg1() * arg2();
   if (__dredd_enabled_mutation(local_mutation_id + 2)) return arg1() % arg2();
@@ -109,6 +110,7 @@ TEST(MutationReplaceBinaryOperatorTest, MutateAnd) {
 )";
   std::string expected_dredd_declaration =
       R"(static bool __dredd_replace_binary_operator_LAnd_bool_bool(std::function<bool()> arg1, std::function<bool()> arg2, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return arg1() && arg2();
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return arg1() || arg2();
   if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg1();
   if (__dredd_enabled_mutation(local_mutation_id + 2)) return arg2();
@@ -137,6 +139,7 @@ TEST(MutationReplaceBinaryOperatorTest, MutateAssign) {
 )";
   std::string expected_dredd_declaration =
       R"(static int& __dredd_replace_binary_operator_Assign_int_int(std::function<int&()> arg1, std::function<int()> arg2, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return arg1() = arg2();
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return arg1() += arg2();
   if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg1() &= arg2();
   if (__dredd_enabled_mutation(local_mutation_id + 2)) return arg1() /= arg2();
@@ -174,6 +177,7 @@ void foo() {
 )";
   std::string expected_dredd_declaration =
       R"(static int& __dredd_replace_binary_operator_Assign_int_int(std::function<int&()> arg1, std::function<int()> arg2, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return arg1() = arg2();
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return arg1() += arg2();
   if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg1() &= arg2();
   if (__dredd_enabled_mutation(local_mutation_id + 2)) return arg1() /= arg2();
@@ -209,6 +213,7 @@ TEST(MutationReplaceBinaryOperatorTest, MutateFloatDiv) {
 )";
   std::string expected_dredd_declaration =
       R"(static float __dredd_replace_binary_operator_Div_float_float(std::function<float()> arg1, std::function<float()> arg2, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return arg1() / arg2();
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return arg1() + arg2();
   if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg1() * arg2();
   if (__dredd_enabled_mutation(local_mutation_id + 2)) return arg1() - arg2();
@@ -239,6 +244,7 @@ TEST(MutationReplaceBinaryOperatorTest, MutateFloatSubAssign) {
 )";
   std::string expected_dredd_declaration =
       R"(static double& __dredd_replace_binary_operator_SubAssign_double_double(std::function<double&()> arg1, std::function<double()> arg2, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return arg1() -= arg2();
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return arg1() += arg2();
   if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg1() = arg2();
   if (__dredd_enabled_mutation(local_mutation_id + 2)) return arg1() /= arg2();
