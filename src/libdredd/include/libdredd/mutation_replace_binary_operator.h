@@ -59,6 +59,8 @@ class MutationReplaceBinaryOperator : public Mutation {
   [[nodiscard]] bool IsValidReplacementOperator(
       clang::BinaryOperatorKind op) const;
 
+  std::string getExpr(clang::ASTContext& ast_context) const;
+
   const clang::BinaryOperator& binary_operator_;
 };
 

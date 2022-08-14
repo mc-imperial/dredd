@@ -41,7 +41,6 @@ bool MutationReplaceUnaryOperator::IsPrefix(clang::UnaryOperatorKind op) {
 
 std::string MutationReplaceUnaryOperator::getExpr(
     clang::ASTContext& ast_context) const {
-  std::string result;
   std::string arg_evaluated = "arg";
 
   if (ast_context.getLangOpts().CPlusPlus) {
@@ -52,6 +51,7 @@ std::string MutationReplaceUnaryOperator::getExpr(
     }
   }
 
+  std::string result;
   if (IsPrefix(unary_operator_.getOpcode())) {
     result =
         clang::UnaryOperator::getOpcodeStr(unary_operator_.getOpcode()).str() +
@@ -284,7 +284,7 @@ std::string MutationReplaceUnaryOperator::GenerateMutatorFunction(
 
       // Replace floating point expression with 1.0
       new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
-                   << mutant_offset << ")) return 0.0;\n";
+                   << mutant_offset << ")) return 1.0;\n";
       mutant_offset++;
 
       // Replace floating point expression with -1.0

@@ -39,6 +39,25 @@ MutationReplaceBinaryOperator::MutationReplaceBinaryOperator(
     const clang::BinaryOperator& binary_operator)
     : binary_operator_(binary_operator) {}
 
+std::string MutationReplaceBinaryOperator::getExpr(
+    clang::ASTContext& ast_context) const {
+  std::string arg1_evaluated("arg1");
+  std::string arg2_evaluated("arg2");
+  if (ast_context.getLangOpts().CPlusPlus) {
+    arg1_evaluated += "()";
+    arg2_evaluated += "()";
+  } else {
+    if (binary_operator_.isAssignmentOp()) {
+      arg1_evaluated = "(*" + arg1_evaluated + ")";
+    }
+  }
+  std::string result =
+      arg1_evaluated + " " +
+      clang::BinaryOperator::getOpcodeStr(binary_operator_.getOpcode()).str() +
+      " " + arg2_evaluated;
+  return result;
+}
+
 // Certain operators such as % are not compatible with floating point numbers,
 // this function checks which operators can be applied for each type.
 bool MutationReplaceBinaryOperator::IsValidReplacementOperator(
@@ -269,10 +288,56 @@ std::string MutationReplaceBinaryOperator::GenerateMutatorFunction(
     mutant_offset++;
   }
 
-  new_function
-      << "  return " << arg1_evaluated << " "
-      << clang::BinaryOperator::getOpcodeStr(binary_operator_.getOpcode()).str()
-      << " " << arg2_evaluated << ";\n";
+  const clang::BuiltinType* exprType =
+      binary_operator_.getType()->getAs<clang::BuiltinType>();
+  if (exprType->isBooleanType() ||
+      (exprType->isInteger() && !exprType->isBooleanType() &&
+       !binary_operator_.isLValue())) {
+    new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
+                 << mutant_offset << ")) return !(" << getExpr(ast_context)
+                 << ");\n";
+    mutant_offset++;
+  }
+
+  if (!binary_operator_.isLValue()) {
+    if (exprType->isInteger() && !exprType->isBooleanType()) {
+      // Replace expression with 0
+      new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
+                   << mutant_offset << ")) return 0;\n";
+      mutant_offset++;
+
+      // Replace expression with 1
+      new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
+                   << mutant_offset << ")) return 1;\n";
+      mutant_offset++;
+    }
+
+    if (exprType->isSignedInteger()) {
+      // Replace signed integer expression with -1
+      new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
+                   << mutant_offset << ")) return -1;\n";
+      mutant_offset++;
+    }
+
+    if (exprType->isFloatingPoint()) {
+      // Replace floating point expression with 0.0
+      new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
+                   << mutant_offset << ")) return 0.0;\n";
+      mutant_offset++;
+
+      // Replace floating point expression with 1.0
+      new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
+                   << mutant_offset << ")) return 1.0;\n";
+      mutant_offset++;
+
+      // Replace floating point expression with -1.0
+      new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
+                   << mutant_offset << ")) return -1.0;\n";
+      mutant_offset++;
+    }
+  }
+
+  new_function << "  return " << getExpr(ast_context) << ";\n";
   new_function << "}\n\n";
 
   // The function captures |mutant_offset| different mutations, so bump up
