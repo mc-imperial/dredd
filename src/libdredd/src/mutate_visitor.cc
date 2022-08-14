@@ -278,6 +278,18 @@ bool MutateVisitor::VisitBinaryOperator(
   return true;
 }
 
+bool MutateVisitor::VisitExpr(clang::Expr* expr) {
+  // For unary and binary operators, unary operator insertion and
+  // statement replacement are handled in these classes.
+  if (llvm::dyn_cast<clang::BinaryOperator>(expr) != nullptr ||
+      llvm::dyn_cast<clang::UnaryOperator>(expr) != nullptr) {
+    return true;
+  }
+
+  // mutations_.push_back(std::make_unique<MutationReplaceExpr>(*expr));
+  return true;
+}
+
 bool MutateVisitor::VisitCompoundStmt(clang::CompoundStmt* compound_stmt) {
   for (auto* stmt : compound_stmt->body()) {
     if (GetSourceRangeInMainFile(compiler_instance_.getPreprocessor(), *stmt)

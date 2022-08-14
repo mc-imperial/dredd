@@ -39,6 +39,31 @@ bool MutationReplaceUnaryOperator::IsPrefix(clang::UnaryOperatorKind op) {
   return op != clang::UO_PostInc && op != clang::UO_PostDec;
 }
 
+std::string MutationReplaceUnaryOperator::getExpr(
+    clang::ASTContext& ast_context) const {
+  std::string result;
+  std::string arg_evaluated = "arg";
+
+  if (ast_context.getLangOpts().CPlusPlus) {
+    arg_evaluated += "()";
+  } else {
+    if (unary_operator_.isIncrementDecrementOp()) {
+      arg_evaluated = "(*" + arg_evaluated + ")";
+    }
+  }
+
+  if (IsPrefix(unary_operator_.getOpcode())) {
+    result =
+        clang::UnaryOperator::getOpcodeStr(unary_operator_.getOpcode()).str() +
+        arg_evaluated;
+  } else {
+    result =
+        arg_evaluated +
+        clang::UnaryOperator::getOpcodeStr(unary_operator_.getOpcode()).str();
+  }
+  return result;
+}
+
 bool MutationReplaceUnaryOperator::IsValidReplacementOperator(
     clang::UnaryOperatorKind op) const {
   if (!unary_operator_.getSubExpr()->isLValue() &&
@@ -218,17 +243,58 @@ std::string MutationReplaceUnaryOperator::GenerateMutatorFunction(
     mutant_offset++;
   }
 
-  new_function << "  return ";
-  if (IsPrefix(unary_operator_.getOpcode())) {
-    new_function
-        << clang::UnaryOperator::getOpcodeStr(unary_operator_.getOpcode()).str()
-        << arg_evaluated + ";\n";
-  } else {
-    new_function
-        << arg_evaluated
-        << clang::UnaryOperator::getOpcodeStr(unary_operator_.getOpcode()).str()
-        << ";\n";
+  const clang::BuiltinType* exprType =
+      unary_operator_.getType()->getAs<clang::BuiltinType>();
+  if ((exprType->isBooleanType() &&
+       unary_operator_.getOpcode() != clang::UnaryOperatorKind::UO_LNot) ||
+      (exprType->isInteger() && !exprType->isBooleanType() &&
+       !unary_operator_.isLValue())) {
+    new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
+                 << mutant_offset << ")) return !(" << getExpr(ast_context)
+                 << ");\n";
+    mutant_offset++;
   }
+
+  // Insert constants for integer expressions
+  if (!unary_operator_.isLValue()) {
+    if (exprType->isInteger() && !exprType->isBooleanType()) {
+      // Replace expression with 0
+      new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
+                   << mutant_offset << ")) return 0;\n";
+      mutant_offset++;
+
+      // Replace expression with 1
+      new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
+                   << mutant_offset << ")) return 1;\n";
+      mutant_offset++;
+    }
+
+    if (exprType->isSignedInteger()) {
+      // Replace signed integer expression with -1
+      new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
+                   << mutant_offset << ")) return -1;\n";
+      mutant_offset++;
+    }
+
+    if (exprType->isFloatingPoint()) {
+      // Replace floating point expression with 0.0
+      new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
+                   << mutant_offset << ")) return 0.0;\n";
+      mutant_offset++;
+
+      // Replace floating point expression with 1.0
+      new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
+                   << mutant_offset << ")) return 0.0;\n";
+      mutant_offset++;
+
+      // Replace floating point expression with -1.0
+      new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
+                   << mutant_offset << ")) return -1.0;\n";
+      mutant_offset++;
+    }
+  }
+
+  new_function << "  return " << getExpr(ast_context) + ";\n";
   new_function << "}\n\n";
 
   // The function captures |mutant_offset| different mutations, so bump up

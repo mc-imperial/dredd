@@ -60,6 +60,8 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
 
   bool VisitBinaryOperator(clang::BinaryOperator* binary_operator);
 
+  bool VisitExpr(clang::Expr* expr);
+
   bool VisitCompoundStmt(clang::CompoundStmt* compound_stmt);
 
   static bool IsTypeSupported(clang::QualType qual_type);
