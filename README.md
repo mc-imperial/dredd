@@ -211,7 +211,36 @@ cp src/dredd/dredd ../third_party/clang+llvm-13.0.1/bin
 
 ## Guide for developers
 
-TODO(https://github.com/mc-imperial/dredd/issues/31)
+This project uses the [Google C++ style guide](https://google.github.io/styleguide/cppguide.html). 
+
+The `scripts` directory contains a number of commands that are useful for developers. To make use of these commands,
+you must first run `./dev_shell.sh.template` from the root of the Dredd repo. This will ensure that the necessary
+environment variables are set as well as building tools that are used in other check commands.
+
+The `scripts` directory contains:
+- `check_all.sh` : This runs a combination of the commands below to ensure that Dredd is formatted and functioning as expected.
+- `check_build.sh` : This checks that dredd can be build and that the unit tests included in the `test` directory still pass
+- `check_clang_tidy.sh` : This runs `clang-tidy` on Dredd's source files.
+- `check_clean_build.sh` : This checks that Dredd can be build from scratch by deleting any previous builds first and running
+the provided unit tests.
+- `check_cmakelint.sh` : This runs cmake-lint on Dredd's cmake files. 
+- `check_cppcheck.sh` : This runs a static check to detect bugs and undefined behaviour.
+- `check_cpplint.sh` : Runs a static check to ensure the code style is correct.
+- `check_format.sh` : This uses `clang-format` and `cmake-format` to ensure that all source files and cmake files `src`
+and `examples` are formatted correctly.
+- `check_headers.py` : This checks that the necessary files contain a copyright header.
+- `check_iwyu.sh` : This runs include what you use to check that all the necessary header files are included.
+- `fix_format.sh` : This command formats all the Dredd source files and example files using `clang-format` and formats
+  the Dredd cmake files and example cmake files using `cmake-format`.
+- `check_one_single_file_test.sh` :This will run Dredd on a specific `.c` or `.cc` file in the `tests/single_file` directory
+  and ensure the output is the same as the respective `.expected` file.
+- `check_single_file_tests.sh` : This acts the same as the above commands, but will compare the output from Dredd for all
+`.c` and `.cc` files in the `test/single_file` directory.
+- `regenerate_one_single_file_expectation.sh` : This takes in a `.c` or `.cc` file from the `test/single_file` directory and
+regenerates its respective `.expected` file. You should only do this if you are certain the changes you have made to Dredd are correct.
+- `regenerate_single_file_expectations` : This acts the same as the above command but will regenerate all the `.expected`
+files for the `.c` and `.cc` files in the `test/single_file` file directory.
+
 
 ## Planned features
 
