@@ -33,6 +33,11 @@ class MutationReplaceExpr : public Mutation {
       std::unordered_set<std::string>& dredd_declarations) const override;
 
  private:
+  std::string GenerateMutatorFunction(clang::ASTContext& ast_context,
+                                      const std::string& function_name,
+                                      const std::string& result_type,
+                                      int& mutation_id) const;
+
   const clang::Expr& expr_;
 };
 

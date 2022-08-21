@@ -33,6 +33,7 @@
 #include "clang/Frontend/CompilerInstance.h"
 #include "libdredd/mutation_remove_statement.h"
 #include "libdredd/mutation_replace_binary_operator.h"
+#include "libdredd/mutation_replace_expr.h"
 #include "libdredd/mutation_replace_unary_operator.h"
 #include "libdredd/util.h"
 #include "llvm/ADT/iterator_range.h"
@@ -279,6 +280,11 @@ bool MutateVisitor::VisitBinaryOperator(
 }
 
 bool MutateVisitor::VisitExpr(clang::Expr* expr) {
+  if (!IsInFunction()) {
+    // Only consider mutating expressions that occur inside functions.
+    return true;
+  }
+
   // For unary and binary operators, unary operator insertion and
   // statement replacement are handled in these classes.
   if (llvm::dyn_cast<clang::BinaryOperator>(expr) != nullptr ||
@@ -286,7 +292,12 @@ bool MutateVisitor::VisitExpr(clang::Expr* expr) {
     return true;
   }
 
-  // mutations_.push_back(std::make_unique<MutationReplaceExpr>(*expr));
+  if (!(expr->getType()->isBooleanType() || expr->getType()->isIntegerType() ||
+        expr->getType()->isFixedPointType())) {
+    return true;
+  }
+
+  mutations_.push_back(std::make_unique<MutationReplaceExpr>(*expr));
   return true;
 }
 

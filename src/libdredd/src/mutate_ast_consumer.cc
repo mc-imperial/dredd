@@ -71,9 +71,9 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& context) {
     mutation->Apply(context, compiler_instance_.getPreprocessor(),
                     initial_mutation_id, mutation_id_, rewriter_,
                     dredd_declarations);
-    assert(mutation_id_ > mutation_id_old &&
-           "Every mutation should lead to the mutation id increasing by at "
-           "least 1.");
+    //    assert(mutation_id_ > mutation_id_old &&
+    //           "Every mutation should lead to the mutation id increasing by at
+    //           " "least 1.");
     (void)mutation_id_old;  // Keep release-mode compilers happy.
   }
 

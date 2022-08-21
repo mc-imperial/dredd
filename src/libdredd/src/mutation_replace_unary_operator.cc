@@ -294,7 +294,7 @@ std::string MutationReplaceUnaryOperator::GenerateMutatorFunction(
     }
   }
 
-  new_function << "  return " << getExpr(ast_context) + ";\n";
+  new_function << "  return " << getExpr(ast_context) << ";\n";
   new_function << "}\n\n";
 
   // The function captures |mutant_offset| different mutations, so bump up
@@ -406,9 +406,8 @@ void MutationReplaceUnaryOperator::Apply(
   assert(!result && "Rewrite failed.\n");
   (void)result;  // Keep release-mode compilers happy.
 
-  std::string new_function;
-  new_function = GenerateMutatorFunction(ast_context, new_function_name,
-                                         result_type, input_type, mutation_id);
+  std::string new_function = GenerateMutatorFunction(
+      ast_context, new_function_name, result_type, input_type, mutation_id);
   assert(!new_function.empty() && "Unsupported opcode.");
 
   dredd_declarations.insert(new_function);
