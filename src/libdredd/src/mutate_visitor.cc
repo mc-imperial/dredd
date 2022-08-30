@@ -17,11 +17,13 @@
 #include <cassert>
 #include <cstddef>
 
+#include "clang/AST/ASTContext.h"
 #include "clang/AST/Decl.h"
 #include "clang/AST/DeclBase.h"
 #include "clang/AST/DeclCXX.h"
 #include "clang/AST/Expr.h"
 #include "clang/AST/OperationKinds.h"
+#include "clang/AST/ParentMapContext.h"
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/AST/Stmt.h"
 #include "clang/AST/TemplateBase.h"
@@ -285,16 +287,20 @@ bool MutateVisitor::VisitExpr(clang::Expr* expr) {
     return true;
   }
 
+  clang::ASTContext& ast_context = compiler_instance_.getASTContext();
+  auto iter = ast_context.getParents(*expr).begin();
+
   // For unary and binary operators, unary operator insertion and
   // statement replacement are handled in these classes.
   if (llvm::dyn_cast<clang::BinaryOperator>(expr) != nullptr ||
-      llvm::dyn_cast<clang::UnaryOperator>(expr) != nullptr) {
+      llvm::dyn_cast<clang::UnaryOperator>(expr) != nullptr ||
+      iter->get<clang::BinaryOperator>() || iter->get<clang::UnaryOperator>()) {
     return true;
   }
 
   if (expr->isLValue() ||
       !(expr->getType()->isBooleanType() || expr->getType()->isIntegerType() ||
-        expr->getType()->isFixedPointType())) {
+        expr->getType()->isFloatingType())) {
     return true;
   }
 
