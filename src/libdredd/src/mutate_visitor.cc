@@ -292,7 +292,8 @@ bool MutateVisitor::VisitExpr(clang::Expr* expr) {
     return true;
   }
 
-  if (!(expr->getType()->isBooleanType() || expr->getType()->isIntegerType() ||
+  if (expr->isLValue() ||
+      !(expr->getType()->isBooleanType() || expr->getType()->isIntegerType() ||
         expr->getType()->isFixedPointType())) {
     return true;
   }

@@ -18,6 +18,9 @@
 #include <string>
 #include <unordered_set>
 
+#include "clang/AST/ASTContext.h"
+#include "clang/Lex/Preprocessor.h"
+#include "clang/Rewrite/Core/Rewriter.h"
 #include "libdredd/mutation.h"
 
 namespace dredd {
@@ -37,6 +40,8 @@ class MutationReplaceExpr : public Mutation {
                                       const std::string& function_name,
                                       const std::string& result_type,
                                       int& mutation_id) const;
+
+  std::string GetFunctionName() const;
 
   const clang::Expr& expr_;
 };

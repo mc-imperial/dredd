@@ -14,12 +14,42 @@
 
 #include "libdredd/mutation_replace_expr.h"
 
+#include <assert.h>
+
+#include <sstream>
+
+#include "clang/AST/ASTContext.h"
 #include "clang/AST/Expr.h"
+#include "clang/AST/Type.h"
+#include "clang/Basic/LangOptions.h"
+#include "clang/Basic/SourceLocation.h"
+#include "clang/Lex/Preprocessor.h"
+#include "clang/Rewrite/Core/Rewriter.h"
 #include "libdredd/util.h"
+#include "llvm/ADT/StringRef.h"
 
 namespace dredd {
 dredd::MutationReplaceExpr::MutationReplaceExpr(const clang::Expr& expr)
     : expr_(expr) {}
+
+std::string MutationReplaceExpr::GetFunctionName() const {
+  std::string result = "__dredd_replace_expr_";
+
+  // A string corresponding to the expression forms part of the name of the
+  // mutation function, to differentiate mutation functions for different
+  // types
+  if (expr_.getType()->isBooleanType()) {
+    result += "Bool";
+  } else if (expr_.getType()->isIntegerType()) {
+    result += "Int";
+  } else if (expr_.getType()->isFloatingType()) {
+    result += "Float";
+  } else {
+    assert(false && "Unsupported opcode");
+  }
+
+  return result;
+}
 
 std::string MutationReplaceExpr::GenerateMutatorFunction(
     clang::ASTContext& ast_context, const std::string& function_name,
@@ -47,9 +77,8 @@ std::string MutationReplaceExpr::GenerateMutatorFunction(
 
   const clang::BuiltinType* exprType =
       expr_.getType()->getAs<clang::BuiltinType>();
-  if (exprType->isBooleanType() ||
-      (exprType->isInteger() && !exprType->isBooleanType() &&
-       !expr_.isLValue())) {
+  if (!expr_.isLValue() &&
+      (exprType->isBooleanType() || exprType->isInteger())) {
     new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
                  << mutant_offset << ")) return !(" << arg_evaluated << ");\n";
     mutant_offset++;
@@ -106,7 +135,7 @@ void MutationReplaceExpr::Apply(
     clang::ASTContext& ast_context, const clang::Preprocessor& preprocessor,
     int first_mutation_id_in_file, int& mutation_id, clang::Rewriter& rewriter,
     std::unordered_set<std::string>& dredd_declarations) const {
-  std::string new_function_name = "test";
+  std::string new_function_name = GetFunctionName();
   std::string result_type = expr_.getType()
                                 ->getAs<clang::BuiltinType>()
                                 ->getName(ast_context.getPrintingPolicy())
