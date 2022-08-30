@@ -15,6 +15,7 @@
 #ifndef LIBDREDD_MUTATION_REPLACE_BINARY_OPERATOR_H
 #define LIBDREDD_MUTATION_REPLACE_BINARY_OPERATOR_H
 
+#include <sstream>
 #include <string>
 #include <unordered_set>
 #include <vector>
@@ -22,6 +23,7 @@
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/Expr.h"
 #include "clang/AST/OperationKinds.h"
+#include "clang/AST/Type.h"
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Rewrite/Core/Rewriter.h"
 #include "libdredd/mutation.h"
@@ -60,6 +62,10 @@ class MutationReplaceBinaryOperator : public Mutation {
       clang::BinaryOperatorKind op) const;
 
   std::string getExpr(clang::ASTContext& ast_context) const;
+
+  void GenerateConstantInsertion(std::stringstream& new_function,
+                                 const clang::BuiltinType* exprType,
+                                 int& mutant_offset) const;
 
   const clang::BinaryOperator& binary_operator_;
 };

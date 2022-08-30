@@ -15,12 +15,14 @@
 #ifndef LIBDREDD_MUTATION_REPLACE_UNARY_OPERATOR_H
 #define LIBDREDD_MUTATION_REPLACE_UNARY_OPERATOR_H
 
+#include <sstream>
 #include <string>
 #include <unordered_set>
 
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/ASTFwd.h"
 #include "clang/AST/OperationKinds.h"
+#include "clang/AST/Type.h"
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Rewrite/Core/Rewriter.h"
 #include "libdredd/mutation.h"
@@ -57,6 +59,10 @@ class MutationReplaceUnaryOperator : public Mutation {
   std::string getExpr(clang::ASTContext& ast_context) const;
 
   std::string GetFunctionName(clang::ASTContext& ast_context) const;
+
+  void GenerateConstantInsertion(std::stringstream& new_function,
+                                 const clang::BuiltinType* exprType,
+                                 int& mutant_offset) const;
 
   const clang::UnaryOperator& unary_operator_;
 };

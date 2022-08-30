@@ -14,8 +14,7 @@
 
 #include "libdredd/mutation_replace_expr.h"
 
-#include <assert.h>
-
+#include <cassert>
 #include <sstream>
 
 #include "clang/AST/ASTContext.h"

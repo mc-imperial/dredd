@@ -18,6 +18,7 @@
 #include <cstddef>
 
 #include "clang/AST/ASTContext.h"
+#include "clang/AST/ASTTypeTraits.h"
 #include "clang/AST/Decl.h"
 #include "clang/AST/DeclBase.h"
 #include "clang/AST/DeclCXX.h"
@@ -288,13 +289,14 @@ bool MutateVisitor::VisitExpr(clang::Expr* expr) {
   }
 
   clang::ASTContext& ast_context = compiler_instance_.getASTContext();
-  auto iter = ast_context.getParents(*expr).begin();
+  const auto* parent = ast_context.getParents(*expr).begin();
 
   // For unary and binary operators, unary operator insertion and
   // statement replacement are handled in these classes.
   if (llvm::dyn_cast<clang::BinaryOperator>(expr) != nullptr ||
       llvm::dyn_cast<clang::UnaryOperator>(expr) != nullptr ||
-      iter->get<clang::BinaryOperator>() || iter->get<clang::UnaryOperator>()) {
+      parent->get<clang::BinaryOperator>() != nullptr ||
+      parent->get<clang::UnaryOperator>() != nullptr) {
     return true;
   }
 

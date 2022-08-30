@@ -41,7 +41,7 @@ class MutationReplaceExpr : public Mutation {
                                       const std::string& result_type,
                                       int& mutation_id) const;
 
-  std::string GetFunctionName() const;
+  [[nodiscard]] std::string GetFunctionName() const;
 
   const clang::Expr& expr_;
 };
