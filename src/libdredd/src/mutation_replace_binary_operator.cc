@@ -381,10 +381,6 @@ void MutationReplaceBinaryOperator::ReplaceOperator(
     const std::string& new_function_name, clang::ASTContext& ast_context,
     const clang::Preprocessor& preprocessor, int first_mutation_id_in_file,
     int& mutation_id, clang::Rewriter& rewriter) const {
-  clang::SourceRange binary_operator_source_range_in_main_file =
-      GetSourceRangeInMainFile(preprocessor, binary_operator_);
-  assert(binary_operator_source_range_in_main_file.isValid() &&
-         "Invalid source range.");
   clang::SourceRange lhs_source_range_in_main_file =
       GetSourceRangeInMainFile(preprocessor, *binary_operator_.getLHS());
   assert(lhs_source_range_in_main_file.isValid() && "Invalid source range.");

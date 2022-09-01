@@ -286,9 +286,6 @@ void MutationReplaceUnaryOperator::Apply(
       GetSourceRangeInMainFile(preprocessor, unary_operator_);
   assert(unary_operator_source_range_in_main_file.isValid() &&
          "Invalid source range.");
-  clang::SourceRange input_source_range_in_main_file =
-      GetSourceRangeInMainFile(preprocessor, *unary_operator_.getSubExpr());
-  assert(input_source_range_in_main_file.isValid() && "Invalid source range.");
 
   // Replace the unary operator expression with a call to the wrapper
   // function.
