@@ -57,5 +57,5 @@ T foo(T a) {
 
 void foo() {
   int x;
-  if (!__dredd_enabled_mutation(11)) { __dredd_replace_binary_operator_Assign_int_int([&]() -> int& { return static_cast<int&>(x); }, [&]() -> int { return static_cast<int>(foo(3)); }, 1); }
+  if (!__dredd_enabled_mutation(11)) { __dredd_replace_binary_operator_Assign_int_int([&]() -> int& { return static_cast<int&>(x); } , [&]() -> int { return static_cast<int>(foo(3)); }, 1); }
 }

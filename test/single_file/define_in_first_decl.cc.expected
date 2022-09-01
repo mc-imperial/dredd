@@ -49,5 +49,5 @@ static int __dredd_replace_binary_operator_Add_int_int(std::function<int()> arg1
 }
 
 TYPE foo() {
-  if (!__dredd_enabled_mutation(6)) { return __dredd_replace_binary_operator_Add_int_int([&]() -> int { return static_cast<int>(1); }, [&]() -> int { return static_cast<int>(2); }, 0); }
+  if (!__dredd_enabled_mutation(6)) { return __dredd_replace_binary_operator_Add_int_int([&]() -> int { return static_cast<int>(1); } , [&]() -> int { return static_cast<int>(2); }, 0); }
 }

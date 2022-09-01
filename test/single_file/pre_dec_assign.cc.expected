@@ -81,8 +81,8 @@ static int& __dredd_replace_binary_operator_Assign_int_int(std::function<int&()>
 
 int main() {
   int x = 5;
-  if (!__dredd_enabled_mutation(24)) { __dredd_replace_binary_operator_Assign_int_int([&]() -> int& { return static_cast<int&>(__dredd_replace_unary_operator_PreDec_int([&]() -> int& { return static_cast<int&>(x); }, 0)); }, [&]() -> int { return static_cast<int>(2); }, 2); }
+  if (!__dredd_enabled_mutation(24)) { __dredd_replace_binary_operator_Assign_int_int([&]() -> int& { return static_cast<int&>(__dredd_replace_unary_operator_PreDec_int([&]() -> int& { return static_cast<int&>(x); }, 0)); } , [&]() -> int { return static_cast<int>(2); }, 2); }
   volatile int y = 8;
-  if (!__dredd_enabled_mutation(25)) { __dredd_replace_binary_operator_Assign_volatile_int_int([&]() -> volatile int& { return static_cast<volatile int&>(__dredd_replace_unary_operator_PreDec_volatile_int([&]() -> volatile int& { return static_cast<volatile int&>(y); }, 12)); }, [&]() -> int { return static_cast<int>(6); }, 14); }
+  if (!__dredd_enabled_mutation(25)) { __dredd_replace_binary_operator_Assign_volatile_int_int([&]() -> volatile int& { return static_cast<volatile int&>(__dredd_replace_unary_operator_PreDec_volatile_int([&]() -> volatile int& { return static_cast<volatile int&>(y); }, 12)); } , [&]() -> int { return static_cast<int>(6); }, 14); }
   if (!__dredd_enabled_mutation(26)) { return x; }
 }

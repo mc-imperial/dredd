@@ -47,5 +47,5 @@ static int __dredd_replace_binary_operator_AddAssign_volatile_int_int(volatile i
 
 void foo() {
   volatile int a;
-  if (!__dredd_enabled_mutation(10)) { __dredd_replace_binary_operator_AddAssign_volatile_int_int(&(a), 2, 0); }
+  if (!__dredd_enabled_mutation(10)) { __dredd_replace_binary_operator_AddAssign_volatile_int_int(&(a) , 2, 0); }
 }

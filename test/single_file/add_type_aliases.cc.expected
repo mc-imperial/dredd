@@ -93,13 +93,13 @@ int main() {
   int64_t h;
   uint64_t i;
 
-  if (!__dredd_enabled_mutation(54)) { __dredd_replace_binary_operator_Add_unsigned_int_unsigned_int([&]() -> unsigned int { return static_cast<unsigned int>(a); }, [&]() -> unsigned int { return static_cast<unsigned int>(a); }, 0); }
-  if (!__dredd_enabled_mutation(55)) { __dredd_replace_binary_operator_Add_unsigned_int_unsigned_int([&]() -> unsigned int { return static_cast<unsigned int>(b); }, [&]() -> unsigned int { return static_cast<unsigned int>(b); }, 6); }
-  if (!__dredd_enabled_mutation(56)) { __dredd_replace_binary_operator_Add_int_int([&]() -> int { return static_cast<int>(c); }, [&]() -> int { return static_cast<int>(c); }, 12); }
-  if (!__dredd_enabled_mutation(57)) { __dredd_replace_binary_operator_Add_int_int([&]() -> int { return static_cast<int>(d); }, [&]() -> int { return static_cast<int>(d); }, 18); }
-  if (!__dredd_enabled_mutation(58)) { __dredd_replace_binary_operator_Add_unsigned_long_unsigned_long([&]() -> unsigned long { return static_cast<unsigned long>(e); }, [&]() -> unsigned long { return static_cast<unsigned long>(e); }, 24); }
-  if (!__dredd_enabled_mutation(59)) { __dredd_replace_binary_operator_Add_unsigned_long_unsigned_long([&]() -> unsigned long { return static_cast<unsigned long>(f); }, [&]() -> unsigned long { return static_cast<unsigned long>(f); }, 30); }
-  if (!__dredd_enabled_mutation(60)) { __dredd_replace_binary_operator_Add_long_long([&]() -> long { return static_cast<long>(g); }, [&]() -> long { return static_cast<long>(g); }, 36); }
-  if (!__dredd_enabled_mutation(61)) { __dredd_replace_binary_operator_Add_long_long([&]() -> long { return static_cast<long>(h); }, [&]() -> long { return static_cast<long>(h); }, 42); }
-  if (!__dredd_enabled_mutation(62)) { __dredd_replace_binary_operator_Add_unsigned_long_unsigned_long([&]() -> unsigned long { return static_cast<unsigned long>(i); }, [&]() -> unsigned long { return static_cast<unsigned long>(i); }, 48); }
+  if (!__dredd_enabled_mutation(54)) { __dredd_replace_binary_operator_Add_unsigned_int_unsigned_int([&]() -> unsigned int { return static_cast<unsigned int>(a); } , [&]() -> unsigned int { return static_cast<unsigned int>(a); }, 0); }
+  if (!__dredd_enabled_mutation(55)) { __dredd_replace_binary_operator_Add_unsigned_int_unsigned_int([&]() -> unsigned int { return static_cast<unsigned int>(b); } , [&]() -> unsigned int { return static_cast<unsigned int>(b); }, 6); }
+  if (!__dredd_enabled_mutation(56)) { __dredd_replace_binary_operator_Add_int_int([&]() -> int { return static_cast<int>(c); } , [&]() -> int { return static_cast<int>(c); }, 12); }
+  if (!__dredd_enabled_mutation(57)) { __dredd_replace_binary_operator_Add_int_int([&]() -> int { return static_cast<int>(d); } , [&]() -> int { return static_cast<int>(d); }, 18); }
+  if (!__dredd_enabled_mutation(58)) { __dredd_replace_binary_operator_Add_unsigned_long_unsigned_long([&]() -> unsigned long { return static_cast<unsigned long>(e); } , [&]() -> unsigned long { return static_cast<unsigned long>(e); }, 24); }
+  if (!__dredd_enabled_mutation(59)) { __dredd_replace_binary_operator_Add_unsigned_long_unsigned_long([&]() -> unsigned long { return static_cast<unsigned long>(f); } , [&]() -> unsigned long { return static_cast<unsigned long>(f); }, 30); }
+  if (!__dredd_enabled_mutation(60)) { __dredd_replace_binary_operator_Add_long_long([&]() -> long { return static_cast<long>(g); } , [&]() -> long { return static_cast<long>(g); }, 36); }
+  if (!__dredd_enabled_mutation(61)) { __dredd_replace_binary_operator_Add_long_long([&]() -> long { return static_cast<long>(h); } , [&]() -> long { return static_cast<long>(h); }, 42); }
+  if (!__dredd_enabled_mutation(62)) { __dredd_replace_binary_operator_Add_unsigned_long_unsigned_long([&]() -> unsigned long { return static_cast<unsigned long>(i); } , [&]() -> unsigned long { return static_cast<unsigned long>(i); }, 48); }
 }

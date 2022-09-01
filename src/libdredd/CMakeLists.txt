@@ -19,8 +19,8 @@ add_library(
   include/libdredd/mutation.h
   include/libdredd/mutation_remove_statement.h
   include/libdredd/mutation_replace_binary_operator.h
-  include/libdredd/new_mutate_frontend_action_factory.h
   include/libdredd/mutation_replace_unary_operator.h
+  include/libdredd/new_mutate_frontend_action_factory.h
   include_private/include/libdredd/mutate_ast_consumer.h
   include_private/include/libdredd/mutate_visitor.h
   include_private/include/libdredd/util.h

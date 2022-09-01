@@ -68,6 +68,6 @@ static int& __dredd_replace_binary_operator_Assign_int_int(std::function<int&()>
 int main() {
   int x;
   volatile int y;
-  if (!__dredd_enabled_mutation(20)) { __dredd_replace_binary_operator_Assign_int_int([&]() -> int& { return static_cast<int&>(x); }, [&]() -> int { return static_cast<int>(2); }, 0); }
-  if (!__dredd_enabled_mutation(21)) { __dredd_replace_binary_operator_Assign_volatile_int_int([&]() -> volatile int& { return static_cast<volatile int&>(y); }, [&]() -> int { return static_cast<int>(4); }, 10); }
+  if (!__dredd_enabled_mutation(20)) { __dredd_replace_binary_operator_Assign_int_int([&]() -> int& { return static_cast<int&>(x); } , [&]() -> int { return static_cast<int>(2); }, 0); }
+  if (!__dredd_enabled_mutation(21)) { __dredd_replace_binary_operator_Assign_volatile_int_int([&]() -> volatile int& { return static_cast<volatile int&>(y); } , [&]() -> int { return static_cast<int>(4); }, 10); }
 }
