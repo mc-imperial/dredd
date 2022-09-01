@@ -150,29 +150,36 @@ void MutationReplaceExpr::Apply(
   // Subtracting |first_mutation_id_in_file| turns the global mutation id,
   // |mutation_id|, into a file-local mutation id.
   const int local_mutation_id = mutation_id - first_mutation_id_in_file;
+
+  // Replacement of an expression with a function call is simulated by
+  // Inserting suitable text before and after the expression.
+  // This is preferable over the (otherwise more intuitive) approach of directly
+  // replacing the text for the unary operator node, because the Clang rewriter
+  // does not support nested replacements.
+
+  // These record the text that should be inserted before and after the operand.
+  std::string prefix;
+  std::string suffix;
   if (ast_context.getLangOpts().CPlusPlus) {
-    bool result = rewriter.ReplaceText(
-        expr_source_range_in_main_file,
-        new_function_name + "([&]() -> " + result_type + " { return " +
-            // We don't need to static cast constant expressions
-            (expr_.isCXX11ConstantExpr(ast_context)
-                 ? rewriter.getRewrittenText(expr_source_range_in_main_file)
-                 : ("static_cast<" + result_type + ">(" +
-                    rewriter.getRewrittenText(expr_source_range_in_main_file) +
-                    ")")) +
-            "; }" + ", " + std::to_string(local_mutation_id) + ")");
-    (void)result;  // Keep release-mode compilers happy.
-    assert(!result && "Rewrite failed.\n");
+    prefix = new_function_name + "([&]() -> " + result_type + " { return " +
+             // We don't need to static cast constant expressions
+             (expr_.isCXX11ConstantExpr(ast_context)
+                  ? ""
+                  : "static_cast<" + result_type + ">(");
+    suffix = (expr_.isCXX11ConstantExpr(ast_context) ? "" : ")");
+    suffix.append("; }, " + std::to_string(local_mutation_id) + ")");
   } else {
-    std::string input_arg =
-        rewriter.getRewrittenText(expr_source_range_in_main_file);
-    bool result =
-        rewriter.ReplaceText(expr_source_range_in_main_file,
-                             new_function_name + "(" + input_arg + ", " +
-                                 std::to_string(local_mutation_id) + ")");
-    (void)result;  // Keep release-mode compilers happy.
-    assert(!result && "Rewrite failed.\n");
+    prefix = new_function_name + "(";
+    suffix = ", " + std::to_string(local_mutation_id) + ")";
   }
+
+  bool result = rewriter.InsertTextBefore(
+      expr_source_range_in_main_file.getBegin(), prefix);
+  assert(!result && "Rewrite failed.\n");
+  result = rewriter.InsertTextAfterToken(
+      expr_source_range_in_main_file.getEnd(), suffix);
+  assert(!result && "Rewrite failed.\n");
+  (void)result;
 
   std::string new_function = GenerateMutatorFunction(
       ast_context, new_function_name, result_type, mutation_id);
