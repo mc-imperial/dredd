@@ -73,7 +73,7 @@ TEST(MutationReplaceBinaryOperatorTest, MutateAdd) {
   std::string expected =
       "void foo() { __dredd_replace_binary_operator_Add_int_int([&]() -> int { "
       "return "
-      "static_cast<int>(1); }, [&]() -> int { return static_cast<int>(2); }, "
+      "static_cast<int>(1); } , [&]() -> int { return static_cast<int>(2); }, "
       "0); "
       "}";
   std::string expected_dredd_declaration =
@@ -105,7 +105,7 @@ TEST(MutationReplaceBinaryOperatorTest, MutateAnd) {
       R"(void foo() {
   int x = 1;
   int y = 2;
-  int z = __dredd_replace_binary_operator_LAnd_bool_bool([&]() -> bool { return static_cast<bool>(x); }, [&]() -> bool { return static_cast<bool>(y); }, 0);
+  int z = __dredd_replace_binary_operator_LAnd_bool_bool([&]() -> bool { return static_cast<bool>(x); } , [&]() -> bool { return static_cast<bool>(y); }, 0);
 }
 )";
   std::string expected_dredd_declaration =
@@ -134,7 +134,7 @@ TEST(MutationReplaceBinaryOperatorTest, MutateAssign) {
   std::string expected =
       R"(void foo() {
   int x;
-  __dredd_replace_binary_operator_Assign_int_int([&]() -> int& { return static_cast<int&>(x); }, [&]() -> int { return static_cast<int>(1); }, 0);
+  __dredd_replace_binary_operator_Assign_int_int([&]() -> int& { return static_cast<int&>(x); } , [&]() -> int { return static_cast<int>(1); }, 0);
 }
 )";
   std::string expected_dredd_declaration =
@@ -172,7 +172,7 @@ void foo() {
 #define BING(X, Y, Z) (X ? Y : Z)
 void foo() {
   int x;
-  __dredd_replace_binary_operator_Assign_int_int([&]() -> int& { return static_cast<int&>(VAR); }, [&]() -> int { return static_cast<int>(BING(1, 2, 3)); }, 0);
+  __dredd_replace_binary_operator_Assign_int_int([&]() -> int& { return static_cast<int&>(VAR); } , [&]() -> int { return static_cast<int>(BING(1, 2, 3)); }, 0);
 }
 )";
   std::string expected_dredd_declaration =
@@ -208,7 +208,7 @@ TEST(MutationReplaceBinaryOperatorTest, MutateFloatDiv) {
       R"(void foo() {
   float x = 6.43622;
   float y = 3.53462;
-  float z = __dredd_replace_binary_operator_Div_float_float([&]() -> float { return static_cast<float>(x); }, [&]() -> float { return static_cast<float>(y); }, 0);
+  float z = __dredd_replace_binary_operator_Div_float_float([&]() -> float { return static_cast<float>(x); } , [&]() -> float { return static_cast<float>(y); }, 0);
 }
 )";
   std::string expected_dredd_declaration =
@@ -239,7 +239,7 @@ TEST(MutationReplaceBinaryOperatorTest, MutateFloatSubAssign) {
       R"(void foo() {
   double x = 234.23532;
   double y = 0.65433;
-  __dredd_replace_binary_operator_SubAssign_double_double([&]() -> double& { return static_cast<double&>(x); }, [&]() -> double { return static_cast<double>(y); }, 0);
+  __dredd_replace_binary_operator_SubAssign_double_double([&]() -> double& { return static_cast<double&>(x); } , [&]() -> double { return static_cast<double>(y); }, 0);
 }
 )";
   std::string expected_dredd_declaration =

@@ -381,10 +381,6 @@ void MutationReplaceBinaryOperator::ReplaceOperator(
     const std::string& new_function_name, clang::ASTContext& ast_context,
     const clang::Preprocessor& preprocessor, int first_mutation_id_in_file,
     int& mutation_id, clang::Rewriter& rewriter) const {
-  clang::SourceRange binary_operator_source_range_in_main_file =
-      GetSourceRangeInMainFile(preprocessor, binary_operator_);
-  assert(binary_operator_source_range_in_main_file.isValid() &&
-         "Invalid source range.");
   clang::SourceRange lhs_source_range_in_main_file =
       GetSourceRangeInMainFile(preprocessor, *binary_operator_.getLHS());
   assert(lhs_source_range_in_main_file.isValid() && "Invalid source range.");
@@ -398,32 +394,60 @@ void MutationReplaceBinaryOperator::ReplaceOperator(
   // Subtracting |first_mutation_id_in_file| turns the global mutation id,
   // |mutation_id|, into a file-local mutation id.
   const int local_mutation_id = mutation_id - first_mutation_id_in_file;
+
+  // Replacement of a binary operator with a function call is simulated by:
+  // - Replacing the binary operator symbol with a comma (to separate the
+  //   arguments of the function call).
+  // - Inserting suitable text before and after each argument to the binary
+  //   operator.
+  // This is preferable over the (otherwise more intuitive) approach of directly
+  // replacing the text for the binary operator node, because the Clang rewriter
+  // does not support nested replacements.
+
+  // Replace the operator symbol with ","
+  rewriter.ReplaceText(
+      binary_operator_.getOperatorLoc(),
+      static_cast<unsigned int>(
+          clang::BinaryOperator::getOpcodeStr(binary_operator_.getOpcode())
+              .size()),
+      ",");
+
+  // These record the text that should be inserted before and after the LHS and
+  // RHS operands.
+  std::string lhs_prefix;
+  std::string lhs_suffix;
+  std::string rhs_prefix;
+  std::string rhs_suffix;
+
   if (ast_context.getLangOpts().CPlusPlus) {
-    bool result = rewriter.ReplaceText(
-        binary_operator_source_range_in_main_file,
-        new_function_name + "([&]() -> " + lhs_type + " { return static_cast<" +
-            lhs_type + ">(" +
-            rewriter.getRewrittenText(lhs_source_range_in_main_file) +
-            +"); }, [&]() -> " + rhs_type + " { return static_cast<" +
-            rhs_type + ">(" +
-            rewriter.getRewrittenText(rhs_source_range_in_main_file) +
-            "); }, " + std::to_string(local_mutation_id) + ")");
-    (void)result;  // Keep release-mode compilers happy.
-    assert(!result && "Rewrite failed.\n");
+    lhs_prefix = new_function_name + "([&]() -> " + lhs_type +
+                 " { return static_cast<" + lhs_type + ">(";
+    lhs_suffix = "); }";
+    rhs_prefix =
+        "[&]() -> " + rhs_type + " { return static_cast<" + rhs_type + ">(";
+    rhs_suffix = "); }, " + std::to_string(local_mutation_id) + ")";
   } else {
-    std::string lhs_arg =
-        rewriter.getRewrittenText(lhs_source_range_in_main_file);
+    lhs_prefix = new_function_name + "(";
     if (binary_operator_.isAssignmentOp()) {
-      lhs_arg = "&(" + lhs_arg + ")";
+      lhs_prefix.append("&(");
+      lhs_suffix.append(")");
     }
-    bool result = rewriter.ReplaceText(
-        binary_operator_source_range_in_main_file,
-        new_function_name + "(" + lhs_arg + ", " +
-            rewriter.getRewrittenText(rhs_source_range_in_main_file) + ", " +
-            std::to_string(local_mutation_id) + ")");
-    (void)result;  // Keep release-mode compilers happy.
-    assert(!result && "Rewrite failed.\n");
+    rhs_suffix = ", " + std::to_string(local_mutation_id) + ")";
   }
+  // The prefixes and suffixes are ready, so make the relevant insertions.
+  bool result = rewriter.InsertTextBefore(
+      lhs_source_range_in_main_file.getBegin(), lhs_prefix);
+  assert(!result && "Rewrite failed.\n");
+  result = rewriter.InsertTextAfterToken(lhs_source_range_in_main_file.getEnd(),
+                                         lhs_suffix);
+  assert(!result && "Rewrite failed.\n");
+  result = rewriter.InsertTextBefore(rhs_source_range_in_main_file.getBegin(),
+                                     rhs_prefix);
+  assert(!result && "Rewrite failed.\n");
+  result = rewriter.InsertTextAfterToken(rhs_source_range_in_main_file.getEnd(),
+                                         rhs_suffix);
+  assert(!result && "Rewrite failed.\n");
+  (void)result;  // Keep release-mode compilers happy.
 }
 
 }  // namespace dredd

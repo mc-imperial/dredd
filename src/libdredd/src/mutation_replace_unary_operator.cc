@@ -286,9 +286,6 @@ void MutationReplaceUnaryOperator::Apply(
       GetSourceRangeInMainFile(preprocessor, unary_operator_);
   assert(unary_operator_source_range_in_main_file.isValid() &&
          "Invalid source range.");
-  clang::SourceRange input_source_range_in_main_file =
-      GetSourceRangeInMainFile(preprocessor, *unary_operator_.getSubExpr());
-  assert(input_source_range_in_main_file.isValid() && "Invalid source range.");
 
   // Replace the unary operator expression with a call to the wrapper
   // function.
@@ -296,32 +293,52 @@ void MutationReplaceUnaryOperator::Apply(
   // Subtracting |first_mutation_id_in_file| turns the global mutation id,
   // |mutation_id|, into a file-local mutation id.
   const int local_mutation_id = mutation_id - first_mutation_id_in_file;
+
+  // Replacement of a unary operator with a function call is simulated by:
+  // - Removing the text associated with the unary operator symbol.
+  // - Inserting suitable text before and after the argument to the unary
+  //   operator.
+  // This is preferable over the (otherwise more intuitive) approach of directly
+  // replacing the text for the unary operator node, because the Clang rewriter
+  // does not support nested replacements.
+
+  // Remove the operator symbol.
+  rewriter.ReplaceText(
+      unary_operator_.getOperatorLoc(),
+      static_cast<unsigned int>(
+          clang::UnaryOperator::getOpcodeStr(unary_operator_.getOpcode())
+              .size()),
+      "");
+
+  // These record the text that should be inserted before and after the operand.
+  std::string prefix;
+  std::string suffix;
   if (ast_context.getLangOpts().CPlusPlus) {
-    bool result = rewriter.ReplaceText(
-        unary_operator_source_range_in_main_file,
-        new_function_name + "([&]() -> " + input_type + " { return " +
-            // We don't need to static cast constant expressions
-            (unary_operator_.getSubExpr()->isCXX11ConstantExpr(ast_context)
-                 ? rewriter.getRewrittenText(input_source_range_in_main_file)
-                 : ("static_cast<" + input_type + ">(" +
-                    rewriter.getRewrittenText(input_source_range_in_main_file) +
-                    ")")) +
-            "; }" + ", " + std::to_string(local_mutation_id) + ")");
-    (void)result;  // Keep release-mode compilers happy.
-    assert(!result && "Rewrite failed.\n");
+    prefix = new_function_name + "([&]() -> " + input_type + " { return " +
+             // We don't need to static cast constant expressions
+             (unary_operator_.getSubExpr()->isCXX11ConstantExpr(ast_context)
+                  ? ""
+                  : "static_cast<" + input_type + ">(");
+    suffix =
+        (unary_operator_.getSubExpr()->isCXX11ConstantExpr(ast_context) ? ""
+                                                                        : ")");
+    suffix.append("; }, " + std::to_string(local_mutation_id) + ")");
   } else {
-    std::string input_arg =
-        rewriter.getRewrittenText(input_source_range_in_main_file);
+    prefix = new_function_name + "(";
     if (unary_operator_.isIncrementDecrementOp()) {
-      input_arg = "&(" + input_arg + ")";
+      prefix.append("&(");
+      suffix.append(")");
     }
-    bool result =
-        rewriter.ReplaceText(unary_operator_source_range_in_main_file,
-                             new_function_name + "(" + input_arg + ", " +
-                                 std::to_string(local_mutation_id) + ")");
-    (void)result;  // Keep release-mode compilers happy.
-    assert(!result && "Rewrite failed.\n");
+    suffix.append(", " + std::to_string(local_mutation_id) + ")");
   }
+  // The prefix and suffix are ready, so make the relevant insertions.
+  bool result = rewriter.InsertTextBefore(
+      unary_operator_source_range_in_main_file.getBegin(), prefix);
+  assert(!result && "Rewrite failed.\n");
+  result = rewriter.InsertTextAfterToken(
+      unary_operator_source_range_in_main_file.getEnd(), suffix);
+  assert(!result && "Rewrite failed.\n");
+  (void)result;  // Keep release-mode compilers happy.
 
   std::string new_function;
   new_function = GenerateMutatorFunction(ast_context, new_function_name,

@@ -75,9 +75,9 @@ static double __dredd_replace_binary_operator_Add_double_double(std::function<do
 
 int main() {
   double x = 5.32;
-  if (!__dredd_enabled_mutation(18)) { __dredd_replace_binary_operator_AddAssign_double_double([&]() -> double& { return static_cast<double&>(x); }, [&]() -> double { return static_cast<double>(0.5); }, 0); }
+  if (!__dredd_enabled_mutation(18)) { __dredd_replace_binary_operator_AddAssign_double_double([&]() -> double& { return static_cast<double&>(x); } , [&]() -> double { return static_cast<double>(0.5); }, 0); }
   float y = 64343.7;
-  if (!__dredd_enabled_mutation(19)) { __dredd_replace_binary_operator_SubAssign_float_double([&]() -> float& { return static_cast<float&>(y); }, [&]() -> double { return static_cast<double>(1.2); }, 4); }
-  double z = __dredd_replace_binary_operator_Mul_double_double([&]() -> double { return static_cast<double>(x); }, [&]() -> double { return static_cast<double>(5.5); }, 8);
-  if (!__dredd_enabled_mutation(20)) { return __dredd_replace_binary_operator_Add_double_double([&]() -> double { return static_cast<double>(z); }, [&]() -> double { return static_cast<double>(x); }, 13); }
+  if (!__dredd_enabled_mutation(19)) { __dredd_replace_binary_operator_SubAssign_float_double([&]() -> float& { return static_cast<float&>(y); } , [&]() -> double { return static_cast<double>(1.2); }, 4); }
+  double z = __dredd_replace_binary_operator_Mul_double_double([&]() -> double { return static_cast<double>(x); } , [&]() -> double { return static_cast<double>(5.5); }, 8);
+  if (!__dredd_enabled_mutation(20)) { return __dredd_replace_binary_operator_Add_double_double([&]() -> double { return static_cast<double>(z); } , [&]() -> double { return static_cast<double>(x); }, 13); }
 }

@@ -78,20 +78,23 @@ void MutationRemoveStatement::Apply(
   // Subtracting |first_mutation_id_in_file| turns the global mutation id,
   // |mutation_id|, into a file-local mutation id.
   const int local_mutation_id = mutation_id - first_mutation_id_in_file;
-  bool result = rewriter.ReplaceText(
-      source_range,
-      "if (!__dredd_enabled_mutation(" + std::to_string(local_mutation_id) +
-          ")) { " + rewriter.getRewrittenText(source_range) +
-          // If the source range was extended with a comment but not with a
-          // semi-colon, it is possible that the end of the source range is on
-          // the same line as a single-line comment, in which case it's
-          // important to take a new line (otherwise the closing brace will form
-          // part of the comment). It would be possible to always take a new
-          // line, but this would make mutated files harder to read.
-          ((is_extended_with_comment && !is_extended_with_semi) ? "\n" : " ") +
-          "}");
-  (void)result;  // Keep release-mode compilers happy.
+  bool result = rewriter.InsertTextBefore(
+      source_range.getBegin(), "if (!__dredd_enabled_mutation(" +
+                                   std::to_string(local_mutation_id) + ")) { ");
   assert(!result && "Rewrite failed.\n");
+  result = rewriter.InsertTextAfterToken(
+      source_range.getEnd(),
+      // If the source range was extended with a comment but not with a
+      // semi-colon, it is possible that the end of the source range is on
+      // the same line as a single-line comment, in which case it's
+      // important to take a new line (otherwise the closing brace will form
+      // part of the comment). It would be possible to always take a new
+      // line, but this would make mutated files harder to read.
+      std::string(
+          ((is_extended_with_comment && !is_extended_with_semi) ? "\n" : " ")) +
+          "}");
+  assert(!result && "Rewrite failed.\n");
+  (void)result;  // Keep release-mode compilers happy.
   mutation_id++;
 }
 
