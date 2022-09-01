@@ -288,15 +288,10 @@ bool MutateVisitor::VisitExpr(clang::Expr* expr) {
     return true;
   }
 
-  clang::ASTContext& ast_context = compiler_instance_.getASTContext();
-  const auto* parent = ast_context.getParents(*expr).begin();
-
   // For unary and binary operators, unary operator insertion and
   // statement replacement are handled in these classes.
   if (llvm::dyn_cast<clang::BinaryOperator>(expr) != nullptr ||
-      llvm::dyn_cast<clang::UnaryOperator>(expr) != nullptr ||
-      parent->get<clang::BinaryOperator>() != nullptr ||
-      parent->get<clang::UnaryOperator>() != nullptr) {
+      llvm::dyn_cast<clang::UnaryOperator>(expr) != nullptr) {
     return true;
   }
 
