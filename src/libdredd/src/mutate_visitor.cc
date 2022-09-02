@@ -17,7 +17,6 @@
 #include <cassert>
 #include <cstddef>
 
-#include "clang/AST/ASTContext.h"
 #include "clang/AST/Decl.h"
 #include "clang/AST/DeclBase.h"
 #include "clang/AST/DeclCXX.h"
@@ -294,12 +293,6 @@ bool MutateVisitor::VisitExpr(clang::Expr* expr) {
 
   // There is no useful way to mutate L-Value boolean expressions.
   if (expr->isLValue() && expr->getType()->isBooleanType()) {
-    return true;
-  }
-
-  // We only want to mutate L-Values in C++ mode.
-  if (expr->isLValue() &&
-      !compiler_instance_.getASTContext().getLangOpts().CPlusPlus) {
     return true;
   }
 

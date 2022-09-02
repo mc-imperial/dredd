@@ -18,11 +18,11 @@
 #include <sstream>
 #include <string>
 #include <unordered_set>
+#include <vector>
 
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/ASTFwd.h"
 #include "clang/AST/OperationKinds.h"
-#include "clang/AST/Type.h"
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Rewrite/Core/Rewriter.h"
 #include "libdredd/mutation.h"
@@ -56,13 +56,16 @@ class MutationReplaceUnaryOperator : public Mutation {
   [[nodiscard]] bool IsValidReplacementOperator(
       clang::UnaryOperatorKind op) const;
 
+  // This returns a string corresponding to the non-mutated expression.
   std::string GetExpr(clang::ASTContext& ast_context) const;
 
   std::string GetFunctionName(clang::ASTContext& ast_context) const;
 
-  void GenerateConstantInsertion(std::stringstream& new_function,
-                                 const clang::BuiltinType* exprType,
-                                 int& mutant_offset) const;
+  // Replaces unary operators with other valid unary operators.
+  void GenerateUnaryOperatorReplacement(
+      const std::string& arg_evaluated,
+      const std::vector<clang::UnaryOperatorKind>& operators,
+      std::stringstream& new_function, int& mutant_offset) const;
 
   const clang::UnaryOperator& unary_operator_;
 };

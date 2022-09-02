@@ -26,6 +26,7 @@
 #include "clang/Basic/SourceLocation.h"
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Rewrite/Core/Rewriter.h"
+#include "libdredd/mutation_replace_expr.h"
 #include "libdredd/util.h"
 #include "llvm/ADT/StringRef.h"
 
@@ -165,48 +166,6 @@ std::string MutationReplaceUnaryOperator::GetFunctionName(
   return result;
 }
 
-void MutationReplaceUnaryOperator::GenerateConstantInsertion(
-    std::stringstream& new_function, const clang::BuiltinType* exprType,
-    int& mutant_offset) const {
-  if (!unary_operator_.isLValue()) {
-    if (exprType->isInteger() && !exprType->isBooleanType()) {
-      // Replace expression with 0
-      new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
-                   << mutant_offset << ")) return 0;\n";
-      mutant_offset++;
-
-      // Replace expression with 1
-      new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
-                   << mutant_offset << ")) return 1;\n";
-      mutant_offset++;
-    }
-
-    if (exprType->isSignedInteger()) {
-      // Replace signed integer expression with -1
-      new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
-                   << mutant_offset << ")) return -1;\n";
-      mutant_offset++;
-    }
-
-    if (exprType->isFloatingPoint()) {
-      // Replace floating point expression with 0.0
-      new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
-                   << mutant_offset << ")) return 0.0;\n";
-      mutant_offset++;
-
-      // Replace floating point expression with 1.0
-      new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
-                   << mutant_offset << ")) return 1.0;\n";
-      mutant_offset++;
-
-      // Replace floating point expression with -1.0
-      new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
-                   << mutant_offset << ")) return -1.0;\n";
-      mutant_offset++;
-    }
-  }
-}
-
 std::string MutationReplaceUnaryOperator::GenerateMutatorFunction(
     clang::ASTContext& ast_context, const std::string& function_name,
     const std::string& result_type, const std::string& input_type,
@@ -250,6 +209,31 @@ std::string MutationReplaceUnaryOperator::GenerateMutatorFunction(
       clang::UnaryOperatorKind::UO_Not,    clang::UnaryOperatorKind::UO_Minus,
       clang::UnaryOperatorKind::UO_LNot};
 
+  GenerateUnaryOperatorReplacement(arg_evaluated, operators, new_function,
+                                   mutant_offset);
+
+  const clang::BuiltinType* exprType =
+      unary_operator_.getType()->getAs<clang::BuiltinType>();
+
+  MutationReplaceExpr::GenerateUnaryOperatorInsertion(
+      GetExpr(ast_context), unary_operator_, *exprType, new_function,
+      mutant_offset);
+  MutationReplaceExpr::GenerateConstantReplacement(
+      unary_operator_, *exprType, ast_context, new_function, mutant_offset);
+
+  new_function << "  return " << GetExpr(ast_context) << ";\n";
+  new_function << "}\n\n";
+
+  // The function captures |mutant_offset| different mutations, so bump up
+  // the mutation id accordingly.
+  mutation_id += mutant_offset;
+
+  return new_function.str();
+}
+void MutationReplaceUnaryOperator::GenerateUnaryOperatorReplacement(
+    const std::string& arg_evaluated,
+    const std::vector<clang::UnaryOperatorKind>& operators,
+    std::stringstream& new_function, int& mutant_offset) const {
   for (const auto op : operators) {
     if (op == unary_operator_.getOpcode() || !IsValidReplacementOperator(op)) {
       continue;
@@ -268,46 +252,6 @@ std::string MutationReplaceUnaryOperator::GenerateMutatorFunction(
   new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
                << mutant_offset << ")) return " + arg_evaluated + ";\n";
   mutant_offset++;
-
-  if (unary_operator_.getOpcode() == clang::UnaryOperatorKind::UO_LNot) {
-    // true
-    new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
-                 << mutant_offset << ")) return "
-                 << (ast_context.getLangOpts().CPlusPlus ? "true" : "1")
-                 << ";\n";
-    mutant_offset++;
-
-    // false
-    new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
-                 << mutant_offset << ")) return "
-                 << (ast_context.getLangOpts().CPlusPlus ? "false" : "0")
-                 << ";\n";
-    mutant_offset++;
-  }
-
-  const clang::BuiltinType* exprType =
-      unary_operator_.getType()->getAs<clang::BuiltinType>();
-  if ((exprType->isBooleanType() &&
-       unary_operator_.getOpcode() != clang::UnaryOperatorKind::UO_LNot) ||
-      (exprType->isInteger() && !exprType->isBooleanType() &&
-       !unary_operator_.isLValue())) {
-    new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
-                 << mutant_offset << ")) return !(" << GetExpr(ast_context)
-                 << ");\n";
-    mutant_offset++;
-  }
-
-  // Insert constants for integer expressions
-  GenerateConstantInsertion(new_function, exprType, mutant_offset);
-
-  new_function << "  return " << GetExpr(ast_context) << ";\n";
-  new_function << "}\n\n";
-
-  // The function captures |mutant_offset| different mutations, so bump up
-  // the mutation id accordingly.
-  mutation_id += mutant_offset;
-
-  return new_function.str();
 }
 
 void MutationReplaceUnaryOperator::ApplyCppTypeModifiers(

@@ -15,10 +15,12 @@
 #ifndef LIBDREDD_MUTATION_REPLACE_EXPR_H_
 #define LIBDREDD_MUTATION_REPLACE_EXPR_H_
 
+#include <sstream>
 #include <string>
 #include <unordered_set>
 
 #include "clang/AST/ASTContext.h"
+#include "clang/AST/Type.h"
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Rewrite/Core/Rewriter.h"
 #include "libdredd/mutation.h"
@@ -34,6 +36,20 @@ class MutationReplaceExpr : public Mutation {
       int first_mutation_id_in_file, int& mutation_id,
       clang::Rewriter& rewriter,
       std::unordered_set<std::string>& dredd_declarations) const override;
+
+  // Replace expressions with constants.
+  static void GenerateConstantReplacement(const clang::Expr& expr_,
+                                          const clang::BuiltinType& exprType,
+                                          clang::ASTContext& ast_context,
+                                          std::stringstream& new_function,
+                                          int& mutant_offset);
+
+  // Insert valid unary operators such as !, ~, ++ and --.
+  static void GenerateUnaryOperatorInsertion(const std::string& arg_evaluated,
+                                             const clang::Expr& expr_,
+                                             const clang::BuiltinType& exprType,
+                                             std::stringstream& new_function,
+                                             int& mutant_offset);
 
  private:
   std::string GenerateMutatorFunction(clang::ASTContext& ast_context,
