@@ -61,6 +61,7 @@ class MutationReplaceBinaryOperator : public Mutation {
   [[nodiscard]] bool IsValidReplacementOperator(
       clang::BinaryOperatorKind op) const;
 
+  // This returns a string corresponding to the non-mutated expression.
   std::string getExpr(clang::ASTContext& ast_context) const;
 
   void GenerateConstantInsertion(std::stringstream& new_function,

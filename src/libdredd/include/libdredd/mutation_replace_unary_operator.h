@@ -56,7 +56,7 @@ class MutationReplaceUnaryOperator : public Mutation {
   [[nodiscard]] bool IsValidReplacementOperator(
       clang::UnaryOperatorKind op) const;
 
-  std::string getExpr(clang::ASTContext& ast_context) const;
+  std::string GetExpr(clang::ASTContext& ast_context) const;
 
   std::string GetFunctionName(clang::ASTContext& ast_context) const;
 

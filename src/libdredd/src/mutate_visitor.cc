@@ -17,6 +17,7 @@
 #include <cassert>
 #include <cstddef>
 
+#include "clang/AST/ASTContext.h"
 #include "clang/AST/Decl.h"
 #include "clang/AST/DeclBase.h"
 #include "clang/AST/DeclCXX.h"
@@ -285,15 +286,24 @@ bool MutateVisitor::VisitExpr(clang::Expr* expr) {
     return true;
   }
 
-  // For unary and binary operators, unary operator insertion and
-  // statement replacement are handled in these classes.
+  // Unary and binary operators are intercepted separately.
   if (llvm::dyn_cast<clang::BinaryOperator>(expr) != nullptr ||
       llvm::dyn_cast<clang::UnaryOperator>(expr) != nullptr) {
     return true;
   }
 
-  if (expr->isLValue() ||
-      !(expr->getType()->isBooleanType() || expr->getType()->isIntegerType() ||
+  // There is no useful way to mutate L-Value boolean expressions.
+  if (expr->isLValue() && expr->getType()->isBooleanType()) {
+    return true;
+  }
+
+  // We only want to mutate L-Values in C++ mode.
+  if (expr->isLValue() &&
+      !compiler_instance_.getASTContext().getLangOpts().CPlusPlus) {
+    return true;
+  }
+
+  if (!(expr->getType()->isBooleanType() || expr->getType()->isIntegerType() ||
         expr->getType()->isFloatingType())) {
     return true;
   }

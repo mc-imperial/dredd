@@ -47,6 +47,10 @@ std::string MutationReplaceExpr::GetFunctionName() const {
     assert(false && "Unsupported opcode");
   }
 
+  if (expr_.isLValue()) {
+    result += "_lvalue";
+  }
+
   return result;
 }
 
@@ -73,18 +77,44 @@ std::string MutationReplaceExpr::GenerateMutatorFunction(
                << arg_evaluated << ";\n";
 
   int mutant_offset = 0;
-
   const clang::BuiltinType* exprType =
       expr_.getType()->getAs<clang::BuiltinType>();
+
+  if (expr_.isLValue() && ast_context.getLangOpts().CPlusPlus) {
+    new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
+                 << mutant_offset << ")) return ++" << arg_evaluated << ";\n";
+    mutant_offset++;
+
+    new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
+                 << mutant_offset << ")) return --" << arg_evaluated << ";\n";
+    mutant_offset++;
+  }
+
   if (!expr_.isLValue() &&
       (exprType->isBooleanType() || exprType->isInteger())) {
     new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
                  << mutant_offset << ")) return !(" << arg_evaluated << ");\n";
     mutant_offset++;
+
+    new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
+                 << mutant_offset << ")) return ~(" << arg_evaluated << ");\n";
+    mutant_offset++;
   }
 
   // Insert constants for integer expressions
   if (!expr_.isLValue()) {
+    if (exprType->isBooleanType()) {
+      // Replace expression with true
+      new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
+                   << mutant_offset << ")) return true;\n";
+      mutant_offset++;
+
+      // Replace expression with false
+      new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
+                   << mutant_offset << ")) return false;\n";
+      mutant_offset++;
+    }
+
     if (exprType->isInteger() && !exprType->isBooleanType()) {
       // Replace expression with 0
       new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "

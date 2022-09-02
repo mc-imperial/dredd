@@ -39,7 +39,7 @@ bool MutationReplaceUnaryOperator::IsPrefix(clang::UnaryOperatorKind op) {
   return op != clang::UO_PostInc && op != clang::UO_PostDec;
 }
 
-std::string MutationReplaceUnaryOperator::getExpr(
+std::string MutationReplaceUnaryOperator::GetExpr(
     clang::ASTContext& ast_context) const {
   std::string arg_evaluated = "arg";
 
@@ -292,7 +292,7 @@ std::string MutationReplaceUnaryOperator::GenerateMutatorFunction(
       (exprType->isInteger() && !exprType->isBooleanType() &&
        !unary_operator_.isLValue())) {
     new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
-                 << mutant_offset << ")) return !(" << getExpr(ast_context)
+                 << mutant_offset << ")) return !(" << GetExpr(ast_context)
                  << ");\n";
     mutant_offset++;
   }
@@ -300,7 +300,7 @@ std::string MutationReplaceUnaryOperator::GenerateMutatorFunction(
   // Insert constants for integer expressions
   GenerateConstantInsertion(new_function, exprType, mutant_offset);
 
-  new_function << "  return " << getExpr(ast_context) << ";\n";
+  new_function << "  return " << GetExpr(ast_context) << ";\n";
   new_function << "}\n\n";
 
   // The function captures |mutant_offset| different mutations, so bump up
