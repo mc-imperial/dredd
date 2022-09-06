@@ -53,7 +53,8 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
 
   // Overridden to avoid mutating variable array size expressions in C++
   // (because lambdas cannot appear in such expressions).
-  bool TraverseDependentSizedArrayTypeLoc(clang::DependentSizedArrayTypeLoc dependent_sized_array_type_loc);
+  bool TraverseDependentSizedArrayTypeLoc(
+      clang::DependentSizedArrayTypeLoc dependent_sized_array_type_loc);
 
   // Overridden to avoid mutating template argument expressions, which typically
   // (and perhaps always) need to be compile-time constants.

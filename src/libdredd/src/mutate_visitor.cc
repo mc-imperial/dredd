@@ -163,16 +163,16 @@ bool MutateVisitor::TraverseVariableArrayTypeLoc(
       variable_array_type_loc);
 }
 
-bool MutateVisitor::TraverseDependentSizedArrayTypeLoc(clang::DependentSizedArrayTypeLoc dependent_sized_array_type_loc) {
+bool MutateVisitor::TraverseDependentSizedArrayTypeLoc(
+    clang::DependentSizedArrayTypeLoc dependent_sized_array_type_loc) {
   // Prevent compilers complaining that this method could be made static, and
   // that it ignores its parameter.
   (void)this;
-  // TODO
   (void)dependent_sized_array_type_loc;
-  // Changing a constant-sized array to a non-constant-sized array is
-  // problematic in C if the array has an initializer, and in C++ lambdas cannot
-  // be used in array size expressions. For simplicity, don't try to mutate
-  // constant array sizes.
+  // Changing a value-dependent array to a non-constant-sized array is
+  // problematic in C, and in C++ lambdas cannot be used in array size
+  // expressions. For simplicity, don't try to mutate value-dependent array
+  // sizes.
   return true;
 }
 
@@ -298,9 +298,8 @@ bool MutateVisitor::VisitExpr(clang::Expr* expr) {
     return true;
   }
 
-  if (GetSourceRangeInMainFile(compiler_instance_.getPreprocessor(),
-                               *expr)
-      .isInvalid()) {
+  if (GetSourceRangeInMainFile(compiler_instance_.getPreprocessor(), *expr)
+          .isInvalid()) {
     return true;
   }
 
@@ -310,9 +309,10 @@ bool MutateVisitor::VisitExpr(clang::Expr* expr) {
     return true;
   }
 
-  // TODO
-  // There is no useful way to mutate L-Value boolean expressions.
-  if (expr->isLValue() && (expr->getType()->isBooleanType() || !compiler_instance_.getLangOpts().CPlusPlus)) {
+  // There is no useful way to mutate L-Value boolean expressions in C++ or
+  // general L-Values in C.
+  if (expr->isLValue() && (expr->getType()->isBooleanType() ||
+                           !compiler_instance_.getLangOpts().CPlusPlus)) {
     return true;
   }
 

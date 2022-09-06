@@ -31,15 +31,16 @@ namespace dredd {
 dredd::MutationReplaceExpr::MutationReplaceExpr(const clang::Expr& expr)
     : expr_(expr) {}
 
-std::string MutationReplaceExpr::GetFunctionName(clang::ASTContext& ast_context) const {
+std::string MutationReplaceExpr::GetFunctionName(
+    clang::ASTContext& ast_context) const {
   std::string result = "__dredd_replace_expr_";
 
   if (expr_.isLValue()) {
     clang::QualType qualified_type = expr_.getType();
     if (qualified_type.isVolatileQualified()) {
       assert(expr_.getType().isVolatileQualified() &&
-          "Expected expression to be volatile-qualified since subexpression "
-          "is.");
+             "Expected expression to be volatile-qualified since subexpression "
+             "is.");
       result += "volatile_";
     }
   }
@@ -47,11 +48,10 @@ std::string MutationReplaceExpr::GetFunctionName(clang::ASTContext& ast_context)
   // A string corresponding to the expression forms part of the name of the
   // mutation function, to differentiate mutation functions for different
   // types
-  result +=
-      SpaceToUnderscore(expr_.getType()
-              ->getAs<clang::BuiltinType>()
-              ->getName(ast_context.getPrintingPolicy())
-              .str());
+  result += SpaceToUnderscore(expr_.getType()
+                                  ->getAs<clang::BuiltinType>()
+                                  ->getName(ast_context.getPrintingPolicy())
+                                  .str());
 
   if (expr_.isLValue()) {
     result += "_lvalue";
@@ -65,11 +65,12 @@ void MutationReplaceExpr::GenerateUnaryOperatorInsertion(
     const clang::BuiltinType& exprType, std::stringstream& new_function,
     int& mutant_offset) {
   if (expr_.isLValue()) {
-    // In the boolean case, ++ is redundant since -- is sufficient for flipping the
-    // booleans value.
+    // In the boolean case, ++ is redundant since -- is sufficient for flipping
+    // the booleans value.
     if (!exprType.isBooleanType()) {
       new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
-                   << mutant_offset << ")) return ++(" << arg_evaluated << ");\n";
+                   << mutant_offset << ")) return ++(" << arg_evaluated
+                   << ");\n";
       mutant_offset++;
     }
 
@@ -150,7 +151,8 @@ void MutationReplaceExpr::GenerateConstantReplacement(
 
 std::string MutationReplaceExpr::GenerateMutatorFunction(
     clang::ASTContext& ast_context, const std::string& function_name,
-    const std::string& result_type, const std::string& input_type, int& mutation_id) const {
+    const std::string& result_type, const std::string& input_type,
+    int& mutation_id) const {
   std::stringstream new_function;
   new_function << "static " << result_type << " " << function_name << "(";
   if (ast_context.getLangOpts().CPlusPlus) {
@@ -165,7 +167,7 @@ std::string MutationReplaceExpr::GenerateMutatorFunction(
     arg_evaluated += "()";
   } else {
     if (expr_.isLValue()) {
-//      arg_evaluated = "(*" + arg_evaluated + ")";
+      //      arg_evaluated = "(*" + arg_evaluated + ")";
     }
   }
 
@@ -191,8 +193,8 @@ std::string MutationReplaceExpr::GenerateMutatorFunction(
   return new_function.str();
 }
 
-void MutationReplaceExpr::ApplyCppTypeModifiers(
-    const clang::Expr* expr, std::string& type) {
+void MutationReplaceExpr::ApplyCppTypeModifiers(const clang::Expr* expr,
+                                                std::string& type) {
   if (expr->isLValue()) {
     type += "&";
     clang::QualType qualified_type = expr->getType();
@@ -203,7 +205,7 @@ void MutationReplaceExpr::ApplyCppTypeModifiers(
 }
 
 void MutationReplaceExpr::ApplyCTypeModifiers(const clang::Expr* expr,
-                                                       std::string& type) {
+                                              std::string& type) {
   if (expr->isLValue()) {
     type += "*";
     clang::QualType qualified_type = expr->getType();

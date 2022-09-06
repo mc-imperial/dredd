@@ -1,3 +1,5 @@
+// Copyright 2022 The Dredd Project Authors
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -10,11 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "libdredd/mutation_replace_expr.h"
-
+#include <cstdint>
 #include <memory>
 #include <string>
-#include <cstdint>
 #include <unordered_set>
 
 #include "clang/AST/Expr.h"
@@ -27,6 +27,7 @@
 #include "clang/Rewrite/Core/RewriteBuffer.h"
 #include "clang/Rewrite/Core/Rewriter.h"
 #include "clang/Tooling/Tooling.h"
+#include "libdredd/mutation_replace_expr.h"
 #include "libdreddtest/gtest.h"
 #include "llvm/ADT/SmallVector.h"
 
@@ -46,8 +47,7 @@ void TestReplacement(const std::string& original, const std::string& expected,
   ASSERT_EQ(1, function_decl.size());
 
   auto expression = clang::ast_matchers::match(
-      clang::ast_matchers::expr().bind("expr"),
-      ast_unit->getASTContext());
+      clang::ast_matchers::expr().bind("expr"), ast_unit->getASTContext());
   ASSERT_GT(expression.size(), 0);
 
   ASSERT_LT(expression_to_replace, expression.size());
@@ -95,7 +95,8 @@ TEST(MutationReplaceExpressionTest, MutateSignedConstants) {
 TEST(MutationReplaceExpressionTest, MutateUnsignedConstants) {
   std::string original = "void foo() { unsigned int x = 2; }";
   std::string expected =
-      "void foo() { unsigned int x = __dredd_replace_expr_unsigned_int([&]() -> unsigned int { "
+      "void foo() { unsigned int x = __dredd_replace_expr_unsigned_int([&]() "
+      "-> unsigned int { "
       "return 2; }, 0); }";
   std::string expected_dredd_declaration =
       R"(static unsigned int __dredd_replace_expr_unsigned_int(std::function<unsigned int()> arg, int local_mutation_id) {
@@ -230,5 +231,5 @@ int neg(int x) {
                   expected_dredd_declaration, 2);
 }
 
-} // namespace
-} // namespace dredd
+}  // namespace
+}  // namespace dredd
