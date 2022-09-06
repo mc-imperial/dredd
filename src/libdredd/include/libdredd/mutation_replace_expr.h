@@ -55,9 +55,13 @@ class MutationReplaceExpr : public Mutation {
   std::string GenerateMutatorFunction(clang::ASTContext& ast_context,
                                       const std::string& function_name,
                                       const std::string& result_type,
+                                      const std::string& input_type,
                                       int& mutation_id) const;
 
-  [[nodiscard]] std::string GetFunctionName() const;
+  static void ApplyCppTypeModifiers(const clang::Expr *expr, std::string &type);
+  static void ApplyCTypeModifiers(const clang::Expr *expr, std::string &type);
+
+  [[nodiscard]] std::string GetFunctionName(clang::ASTContext& ast_context) const;
 
   const clang::Expr& expr_;
 };

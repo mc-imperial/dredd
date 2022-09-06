@@ -163,6 +163,19 @@ bool MutateVisitor::TraverseVariableArrayTypeLoc(
       variable_array_type_loc);
 }
 
+bool MutateVisitor::TraverseDependentSizedArrayTypeLoc(clang::DependentSizedArrayTypeLoc dependent_sized_array_type_loc) {
+  // Prevent compilers complaining that this method could be made static, and
+  // that it ignores its parameter.
+  (void)this;
+  // TODO
+  (void)dependent_sized_array_type_loc;
+  // Changing a constant-sized array to a non-constant-sized array is
+  // problematic in C if the array has an initializer, and in C++ lambdas cannot
+  // be used in array size expressions. For simplicity, don't try to mutate
+  // constant array sizes.
+  return true;
+}
+
 bool MutateVisitor::TraverseTemplateArgumentLoc(
     clang::TemplateArgumentLoc template_argument_loc) {
   // Prevent compilers complaining that this method could be made static, and
@@ -285,19 +298,32 @@ bool MutateVisitor::VisitExpr(clang::Expr* expr) {
     return true;
   }
 
+  if (GetSourceRangeInMainFile(compiler_instance_.getPreprocessor(),
+                               *expr)
+      .isInvalid()) {
+    return true;
+  }
+
   // Unary and binary operators are intercepted separately.
   if (llvm::dyn_cast<clang::BinaryOperator>(expr) != nullptr ||
       llvm::dyn_cast<clang::UnaryOperator>(expr) != nullptr) {
     return true;
   }
 
+  // TODO
   // There is no useful way to mutate L-Value boolean expressions.
-  if (expr->isLValue() && expr->getType()->isBooleanType()) {
+  if (expr->isLValue() && (expr->getType()->isBooleanType() || !compiler_instance_.getLangOpts().CPlusPlus)) {
     return true;
   }
 
   if (!(expr->getType()->isBooleanType() || expr->getType()->isIntegerType() ||
         expr->getType()->isFloatingType())) {
+    return true;
+  }
+
+  // As it is not possible to pass bit-fields by reference, mutation of
+  // bit-field l-values is not supported.
+  if (expr->refersToBitField()) {
     return true;
   }
 

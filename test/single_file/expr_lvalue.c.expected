@@ -16,7 +16,7 @@ static int __dredd_enabled_mutation(int local_mutation_id) {
       while(token) {
         int value = atoi(token);
         int local_value = value - 0;
-        if (local_value >= 0 && local_value < 21) {
+        if (local_value >= 0 && local_value < 31) {
           enabled_bitset[local_value / 64] |= (1 << (local_value % 64));
           some_mutation_enabled = 1;
         }
@@ -40,10 +40,10 @@ static int __dredd_replace_expr_int(int arg, int local_mutation_id) {
   return arg;
 }
 
-static int __dredd_replace_binary_operator_AddAssign_volatile_int_int(volatile int* arg1, int arg2, int local_mutation_id) {
-  if (!__dredd_some_mutation_enabled) return (*arg1) += arg2;
-  if (__dredd_enabled_mutation(local_mutation_id + 0)) return (*arg1) &= arg2;
-  if (__dredd_enabled_mutation(local_mutation_id + 1)) return (*arg1) = arg2;
+static int __dredd_replace_binary_operator_Assign_int_int(int* arg1, int arg2, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return (*arg1) = arg2;
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return (*arg1) += arg2;
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return (*arg1) &= arg2;
   if (__dredd_enabled_mutation(local_mutation_id + 2)) return (*arg1) /= arg2;
   if (__dredd_enabled_mutation(local_mutation_id + 3)) return (*arg1) *= arg2;
   if (__dredd_enabled_mutation(local_mutation_id + 4)) return (*arg1) |= arg2;
@@ -52,15 +52,17 @@ static int __dredd_replace_binary_operator_AddAssign_volatile_int_int(volatile i
   if (__dredd_enabled_mutation(local_mutation_id + 7)) return (*arg1) >>= arg2;
   if (__dredd_enabled_mutation(local_mutation_id + 8)) return (*arg1) -= arg2;
   if (__dredd_enabled_mutation(local_mutation_id + 9)) return (*arg1) ^= arg2;
-  if (__dredd_enabled_mutation(local_mutation_id + 10)) return !((*arg1) += arg2);
-  if (__dredd_enabled_mutation(local_mutation_id + 11)) return ~((*arg1) += arg2);
+  if (__dredd_enabled_mutation(local_mutation_id + 10)) return !((*arg1) = arg2);
+  if (__dredd_enabled_mutation(local_mutation_id + 11)) return ~((*arg1) = arg2);
   if (__dredd_enabled_mutation(local_mutation_id + 12)) return 0;
   if (__dredd_enabled_mutation(local_mutation_id + 13)) return 1;
   if (__dredd_enabled_mutation(local_mutation_id + 14)) return -1;
-  return (*arg1) += arg2;
+  return (*arg1) = arg2;
 }
 
-void foo() {
-  volatile int a;
-  if (!__dredd_enabled_mutation(20)) { __dredd_replace_binary_operator_AddAssign_volatile_int_int(&(a) , __dredd_replace_expr_int(2, 0), 5); }
+int main() {
+  int x = __dredd_replace_expr_int(5, 0);
+  int y = __dredd_replace_expr_int(x, 5);
+  int z;
+  if (!__dredd_enabled_mutation(30)) { __dredd_replace_binary_operator_Assign_int_int(&(z) , __dredd_replace_expr_int(6, 10), 15); }
 }

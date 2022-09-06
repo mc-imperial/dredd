@@ -31,21 +31,27 @@ namespace dredd {
 dredd::MutationReplaceExpr::MutationReplaceExpr(const clang::Expr& expr)
     : expr_(expr) {}
 
-std::string MutationReplaceExpr::GetFunctionName() const {
+std::string MutationReplaceExpr::GetFunctionName(clang::ASTContext& ast_context) const {
   std::string result = "__dredd_replace_expr_";
+
+  if (expr_.isLValue()) {
+    clang::QualType qualified_type = expr_.getType();
+    if (qualified_type.isVolatileQualified()) {
+      assert(expr_.getType().isVolatileQualified() &&
+          "Expected expression to be volatile-qualified since subexpression "
+          "is.");
+      result += "volatile_";
+    }
+  }
 
   // A string corresponding to the expression forms part of the name of the
   // mutation function, to differentiate mutation functions for different
   // types
-  if (expr_.getType()->isBooleanType()) {
-    result += "Bool";
-  } else if (expr_.getType()->isIntegerType()) {
-    result += "Int";
-  } else if (expr_.getType()->isFloatingType()) {
-    result += "Float";
-  } else {
-    assert(false && "Unsupported opcode");
-  }
+  result +=
+      SpaceToUnderscore(expr_.getType()
+              ->getAs<clang::BuiltinType>()
+              ->getName(ast_context.getPrintingPolicy())
+              .str());
 
   if (expr_.isLValue()) {
     result += "_lvalue";
@@ -59,9 +65,13 @@ void MutationReplaceExpr::GenerateUnaryOperatorInsertion(
     const clang::BuiltinType& exprType, std::stringstream& new_function,
     int& mutant_offset) {
   if (expr_.isLValue()) {
-    new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
-                 << mutant_offset << ")) return ++(" << arg_evaluated << ");\n";
-    mutant_offset++;
+    // In the boolean case, ++ is redundant since -- is sufficient for flipping the
+    // booleans value.
+    if (!exprType.isBooleanType()) {
+      new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
+                   << mutant_offset << ")) return ++(" << arg_evaluated << ");\n";
+      mutant_offset++;
+    }
 
     new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
                  << mutant_offset << ")) return --(" << arg_evaluated << ");\n";
@@ -140,19 +150,23 @@ void MutationReplaceExpr::GenerateConstantReplacement(
 
 std::string MutationReplaceExpr::GenerateMutatorFunction(
     clang::ASTContext& ast_context, const std::string& function_name,
-    const std::string& result_type, int& mutation_id) const {
+    const std::string& result_type, const std::string& input_type, int& mutation_id) const {
   std::stringstream new_function;
   new_function << "static " << result_type << " " << function_name << "(";
   if (ast_context.getLangOpts().CPlusPlus) {
-    new_function << "std::function<" << result_type << "()>";
+    new_function << "std::function<" << input_type << "()>";
   } else {
-    new_function << result_type;
+    new_function << input_type;
   }
   new_function << " arg, int local_mutation_id) {\n";
 
   std::string arg_evaluated = "arg";
   if (ast_context.getLangOpts().CPlusPlus) {
     arg_evaluated += "()";
+  } else {
+    if (expr_.isLValue()) {
+//      arg_evaluated = "(*" + arg_evaluated + ")";
+    }
   }
 
   // Quickly apply the original operator if no mutant is enabled (which will be
@@ -177,15 +191,46 @@ std::string MutationReplaceExpr::GenerateMutatorFunction(
   return new_function.str();
 }
 
+void MutationReplaceExpr::ApplyCppTypeModifiers(
+    const clang::Expr* expr, std::string& type) {
+  if (expr->isLValue()) {
+    type += "&";
+    clang::QualType qualified_type = expr->getType();
+    if (qualified_type.isVolatileQualified()) {
+      type = "volatile " + type;
+    }
+  }
+}
+
+void MutationReplaceExpr::ApplyCTypeModifiers(const clang::Expr* expr,
+                                                       std::string& type) {
+  if (expr->isLValue()) {
+    type += "*";
+    clang::QualType qualified_type = expr->getType();
+    if (qualified_type.isVolatileQualified()) {
+      type = "volatile " + type;
+    }
+  }
+}
+
 void MutationReplaceExpr::Apply(
     clang::ASTContext& ast_context, const clang::Preprocessor& preprocessor,
     int first_mutation_id_in_file, int& mutation_id, clang::Rewriter& rewriter,
     std::unordered_set<std::string>& dredd_declarations) const {
-  std::string new_function_name = GetFunctionName();
+  std::string new_function_name = GetFunctionName(ast_context);
   std::string result_type = expr_.getType()
                                 ->getAs<clang::BuiltinType>()
                                 ->getName(ast_context.getPrintingPolicy())
                                 .str();
+
+  std::string input_type = result_type;
+  if (ast_context.getLangOpts().CPlusPlus) {
+    ApplyCppTypeModifiers(&expr_, input_type);
+    ApplyCppTypeModifiers(&expr_, result_type);
+  } else {
+    ApplyCTypeModifiers(&expr_, input_type);
+    ApplyCTypeModifiers(&expr_, result_type);
+  }
 
   clang::SourceRange expr_source_range_in_main_file =
       GetSourceRangeInMainFile(preprocessor, expr_);
@@ -217,7 +262,11 @@ void MutationReplaceExpr::Apply(
     suffix.append("; }, " + std::to_string(local_mutation_id) + ")");
   } else {
     prefix = new_function_name + "(";
-    suffix = ", " + std::to_string(local_mutation_id) + ")";
+    if (expr_.isLValue() && input_type.ends_with('*')) {
+      prefix.append("&(");
+      suffix.append(")");
+    }
+    suffix.append(", " + std::to_string(local_mutation_id) + ")");
   }
 
   bool result = rewriter.InsertTextBefore(
@@ -229,7 +278,7 @@ void MutationReplaceExpr::Apply(
   (void)result;
 
   std::string new_function = GenerateMutatorFunction(
-      ast_context, new_function_name, result_type, mutation_id);
+      ast_context, new_function_name, result_type, input_type, mutation_id);
   assert(!new_function.empty() && "Unsupported expression.");
 
   dredd_declarations.insert(new_function);
