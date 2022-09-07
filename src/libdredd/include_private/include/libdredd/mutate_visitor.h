@@ -69,8 +69,6 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
 
   bool VisitCompoundStmt(clang::CompoundStmt* compound_stmt);
 
-  static bool IsTypeSupported(clang::QualType qual_type);
-
   // NOLINTNEXTLINE
   bool shouldTraversePostOrder() { return true; }
 
@@ -85,28 +83,7 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
   }
 
  private:
-  const clang::CompilerInstance& compiler_instance_;
-
-  // Records the start locat of the very first declaration in the source file,
-  // before which Dredd's prelude can be placed.
-  clang::SourceLocation start_location_of_first_decl_in_source_file_;
-
-  // Tracks the nest of declarations currently being traversed. Any new Dredd
-  // functions will be put before the start of the current nest, which avoids
-  // e.g. putting a Dredd function inside a class or function.
-  std::vector<const clang::Decl*> enclosing_decls_;
-
-  // These fields track whether a statement contains some sub-statement that
-  // might cause control to branch outside of the statement. This needs to be
-  // tracked to determine when it is legitimate to move a statement into a
-  // lambda to simulate statement removal.
-  std::unordered_set<clang::Stmt*> contains_return_goto_or_label_;
-  std::unordered_set<clang::Stmt*> contains_break_for_enclosing_loop_or_switch_;
-  std::unordered_set<clang::Stmt*> contains_continue_for_enclosing_loop_;
-  std::unordered_set<clang::Stmt*> contains_case_for_enclosing_switch_;
-
-  // Records the mutations that can be applied.
-  std::vector<std::unique_ptr<Mutation>> mutations_;
+  static bool IsTypeSupported(clang::QualType qual_type);
 
   // Determines whether the AST node being visited is directly inside a
   // function, allowing for the visitation point to be inside a variable
@@ -131,6 +108,29 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
   //   };
   // }
   bool IsInFunction();
+
+  const clang::CompilerInstance& compiler_instance_;
+
+  // Records the start locat of the very first declaration in the source file,
+  // before which Dredd's prelude can be placed.
+  clang::SourceLocation start_location_of_first_decl_in_source_file_;
+
+  // Tracks the nest of declarations currently being traversed. Any new Dredd
+  // functions will be put before the start of the current nest, which avoids
+  // e.g. putting a Dredd function inside a class or function.
+  std::vector<const clang::Decl*> enclosing_decls_;
+
+  // These fields track whether a statement contains some sub-statement that
+  // might cause control to branch outside of the statement. This needs to be
+  // tracked to determine when it is legitimate to move a statement into a
+  // lambda to simulate statement removal.
+  std::unordered_set<clang::Stmt*> contains_return_goto_or_label_;
+  std::unordered_set<clang::Stmt*> contains_break_for_enclosing_loop_or_switch_;
+  std::unordered_set<clang::Stmt*> contains_continue_for_enclosing_loop_;
+  std::unordered_set<clang::Stmt*> contains_case_for_enclosing_switch_;
+
+  // Records the mutations that can be applied.
+  std::vector<std::unique_ptr<Mutation>> mutations_;
 };
 
 }  // namespace dredd
