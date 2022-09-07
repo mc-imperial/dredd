@@ -311,8 +311,9 @@ bool MutateVisitor::VisitExpr(clang::Expr* expr) {
 
   // There is no useful way to mutate L-Value boolean expressions in C++ or
   // general L-Values in C.
-  if (expr->isLValue() && (expr->getType()->isBooleanType() ||
-                           !compiler_instance_.getLangOpts().CPlusPlus)) {
+  if (expr->isLValue() &&
+      (expr->getType().isConstQualified() || expr->getType()->isBooleanType() ||
+       !compiler_instance_.getLangOpts().CPlusPlus)) {
     return true;
   }
 

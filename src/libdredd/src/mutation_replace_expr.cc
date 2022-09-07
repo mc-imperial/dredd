@@ -64,7 +64,7 @@ void MutationReplaceExpr::GenerateUnaryOperatorInsertion(
     const std::string& arg_evaluated, const clang::Expr& expr_,
     const clang::BuiltinType& exprType, std::stringstream& new_function,
     int& mutant_offset) {
-  if (expr_.isLValue()) {
+  if (expr_.isLValue() && !expr_.getType().isConstQualified()) {
     // In the boolean case, ++ is redundant since -- is sufficient for flipping
     // the booleans value.
     if (!exprType.isBooleanType()) {
@@ -165,10 +165,6 @@ std::string MutationReplaceExpr::GenerateMutatorFunction(
   std::string arg_evaluated = "arg";
   if (ast_context.getLangOpts().CPlusPlus) {
     arg_evaluated += "()";
-  } else {
-    if (expr_.isLValue()) {
-      //      arg_evaluated = "(*" + arg_evaluated + ")";
-    }
   }
 
   // Quickly apply the original operator if no mutant is enabled (which will be
@@ -200,6 +196,8 @@ void MutationReplaceExpr::ApplyCppTypeModifiers(const clang::Expr* expr,
     clang::QualType qualified_type = expr->getType();
     if (qualified_type.isVolatileQualified()) {
       type = "volatile " + type;
+    } else if (qualified_type.isConstQualified()) {
+      type = "const " + type;
     }
   }
 }
@@ -211,6 +209,8 @@ void MutationReplaceExpr::ApplyCTypeModifiers(const clang::Expr* expr,
     clang::QualType qualified_type = expr->getType();
     if (qualified_type.isVolatileQualified()) {
       type = "volatile " + type;
+    } else if (qualified_type.isConstQualified()) {
+      type += "const " + type;
     }
   }
 }
