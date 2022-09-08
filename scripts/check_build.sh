@@ -35,7 +35,7 @@ for CONFIG in Debug Release; do
     # Run the unit tests
     ./src/libdreddtest/libdreddtest
 
-    check_compile_commands.sh compile_commands.json
+    #check_compile_commands.sh compile_commands.json
 
   popd
 done
