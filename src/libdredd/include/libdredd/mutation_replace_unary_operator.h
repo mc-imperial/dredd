@@ -47,10 +47,6 @@ class MutationReplaceUnaryOperator : public Mutation {
                                       const std::string& input_type,
                                       int& mutation_id) const;
 
-  static void ApplyCppTypeModifiers(const clang::Expr* expr, std::string& type);
-
-  static void ApplyCTypeModifiers(const clang::Expr* expr, std::string& type);
-
   [[nodiscard]] static bool IsPrefix(clang::UnaryOperatorKind op);
 
   [[nodiscard]] bool IsValidReplacementOperator(

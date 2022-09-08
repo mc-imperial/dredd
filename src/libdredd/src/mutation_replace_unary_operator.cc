@@ -254,28 +254,6 @@ void MutationReplaceUnaryOperator::GenerateUnaryOperatorReplacement(
   mutant_offset++;
 }
 
-void MutationReplaceUnaryOperator::ApplyCppTypeModifiers(
-    const clang::Expr* expr, std::string& type) {
-  if (expr->isLValue()) {
-    type += "&";
-    clang::QualType qualified_type = expr->getType();
-    if (qualified_type.isVolatileQualified()) {
-      type = "volatile " + type;
-    }
-  }
-}
-
-void MutationReplaceUnaryOperator::ApplyCTypeModifiers(const clang::Expr* expr,
-                                                       std::string& type) {
-  if (expr->isLValue()) {
-    type += "*";
-    clang::QualType qualified_type = expr->getType();
-    if (qualified_type.isVolatileQualified()) {
-      type = "volatile " + type;
-    }
-  }
-}
-
 void MutationReplaceUnaryOperator::Apply(
     clang::ASTContext& ast_context, const clang::Preprocessor& preprocessor,
     int first_mutation_id_in_file, int& mutation_id, clang::Rewriter& rewriter,
@@ -292,10 +270,12 @@ void MutationReplaceUnaryOperator::Apply(
                                .str();
 
   if (ast_context.getLangOpts().CPlusPlus) {
-    ApplyCppTypeModifiers(unary_operator_.getSubExpr(), input_type);
-    ApplyCppTypeModifiers(&unary_operator_, result_type);
+    MutationReplaceExpr::ApplyCppTypeModifiers(unary_operator_.getSubExpr(),
+                                               input_type);
+    MutationReplaceExpr::ApplyCppTypeModifiers(&unary_operator_, result_type);
   } else {
-    ApplyCTypeModifiers(unary_operator_.getSubExpr(), input_type);
+    MutationReplaceExpr::ApplyCTypeModifiers(unary_operator_.getSubExpr(),
+                                             input_type);
   }
 
   clang::SourceRange unary_operator_source_range_in_main_file =

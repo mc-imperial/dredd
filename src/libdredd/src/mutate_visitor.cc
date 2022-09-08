@@ -171,10 +171,9 @@ bool MutateVisitor::TraverseDependentSizedArrayTypeLoc(
   // that it ignores its parameter.
   (void)this;
   (void)dependent_sized_array_type_loc;
-  // Changing a value-dependent array to a non-constant-sized array is
-  // problematic in C, and in C++ lambdas cannot be used in array size
-  // expressions. For simplicity, don't try to mutate value-dependent array
-  // sizes.
+  // Changing an array whose size is derived from template parameters is
+  // problematic because after template instantiation these lead to either
+  // constant or variable-sized arrays, neither of which can be mutated in C++.
   return true;
 }
 
