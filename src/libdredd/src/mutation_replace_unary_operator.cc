@@ -26,6 +26,7 @@
 #include "clang/Basic/SourceLocation.h"
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Rewrite/Core/Rewriter.h"
+#include "libdredd/mutation_replace_expr.h"
 #include "libdredd/util.h"
 #include "llvm/ADT/StringRef.h"
 
@@ -37,6 +38,31 @@ MutationReplaceUnaryOperator::MutationReplaceUnaryOperator(
 
 bool MutationReplaceUnaryOperator::IsPrefix(clang::UnaryOperatorKind op) {
   return op != clang::UO_PostInc && op != clang::UO_PostDec;
+}
+
+std::string MutationReplaceUnaryOperator::GetExpr(
+    clang::ASTContext& ast_context) const {
+  std::string arg_evaluated = "arg";
+
+  if (ast_context.getLangOpts().CPlusPlus) {
+    arg_evaluated += "()";
+  } else {
+    if (unary_operator_.isIncrementDecrementOp()) {
+      arg_evaluated = "(*" + arg_evaluated + ")";
+    }
+  }
+
+  std::string result;
+  if (IsPrefix(unary_operator_.getOpcode())) {
+    result =
+        clang::UnaryOperator::getOpcodeStr(unary_operator_.getOpcode()).str() +
+        arg_evaluated;
+  } else {
+    result =
+        arg_evaluated +
+        clang::UnaryOperator::getOpcodeStr(unary_operator_.getOpcode()).str();
+  }
+  return result;
 }
 
 bool MutationReplaceUnaryOperator::IsValidReplacementOperator(
@@ -183,6 +209,31 @@ std::string MutationReplaceUnaryOperator::GenerateMutatorFunction(
       clang::UnaryOperatorKind::UO_Not,    clang::UnaryOperatorKind::UO_Minus,
       clang::UnaryOperatorKind::UO_LNot};
 
+  GenerateUnaryOperatorReplacement(arg_evaluated, operators, new_function,
+                                   mutant_offset);
+
+  const clang::BuiltinType* exprType =
+      unary_operator_.getType()->getAs<clang::BuiltinType>();
+
+  MutationReplaceExpr::GenerateUnaryOperatorInsertion(
+      GetExpr(ast_context), unary_operator_, *exprType, new_function,
+      mutant_offset);
+  MutationReplaceExpr::GenerateConstantReplacement(
+      unary_operator_, *exprType, ast_context, new_function, mutant_offset);
+
+  new_function << "  return " << GetExpr(ast_context) << ";\n";
+  new_function << "}\n\n";
+
+  // The function captures |mutant_offset| different mutations, so bump up
+  // the mutation id accordingly.
+  mutation_id += mutant_offset;
+
+  return new_function.str();
+}
+void MutationReplaceUnaryOperator::GenerateUnaryOperatorReplacement(
+    const std::string& arg_evaluated,
+    const std::vector<clang::UnaryOperatorKind>& operators,
+    std::stringstream& new_function, int& mutant_offset) const {
   for (const auto op : operators) {
     if (op == unary_operator_.getOpcode() || !IsValidReplacementOperator(op)) {
       continue;
@@ -201,63 +252,6 @@ std::string MutationReplaceUnaryOperator::GenerateMutatorFunction(
   new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
                << mutant_offset << ")) return " + arg_evaluated + ";\n";
   mutant_offset++;
-
-  if (unary_operator_.getOpcode() == clang::UnaryOperatorKind::UO_LNot) {
-    // true
-    new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
-                 << mutant_offset << ")) return "
-                 << (ast_context.getLangOpts().CPlusPlus ? "true" : "1")
-                 << ";\n";
-    mutant_offset++;
-
-    // false
-    new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
-                 << mutant_offset << ")) return "
-                 << (ast_context.getLangOpts().CPlusPlus ? "false" : "0")
-                 << ";\n";
-    mutant_offset++;
-  }
-
-  new_function << "  return ";
-  if (IsPrefix(unary_operator_.getOpcode())) {
-    new_function
-        << clang::UnaryOperator::getOpcodeStr(unary_operator_.getOpcode()).str()
-        << arg_evaluated + ";\n";
-  } else {
-    new_function
-        << arg_evaluated
-        << clang::UnaryOperator::getOpcodeStr(unary_operator_.getOpcode()).str()
-        << ";\n";
-  }
-  new_function << "}\n\n";
-
-  // The function captures |mutant_offset| different mutations, so bump up
-  // the mutation id accordingly.
-  mutation_id += mutant_offset;
-
-  return new_function.str();
-}
-
-void MutationReplaceUnaryOperator::ApplyCppTypeModifiers(
-    const clang::Expr* expr, std::string& type) {
-  if (expr->isLValue()) {
-    type += "&";
-    clang::QualType qualified_type = expr->getType();
-    if (qualified_type.isVolatileQualified()) {
-      type = "volatile " + type;
-    }
-  }
-}
-
-void MutationReplaceUnaryOperator::ApplyCTypeModifiers(const clang::Expr* expr,
-                                                       std::string& type) {
-  if (expr->isLValue()) {
-    type += "*";
-    clang::QualType qualified_type = expr->getType();
-    if (qualified_type.isVolatileQualified()) {
-      type = "volatile " + type;
-    }
-  }
 }
 
 void MutationReplaceUnaryOperator::Apply(
@@ -276,10 +270,12 @@ void MutationReplaceUnaryOperator::Apply(
                                .str();
 
   if (ast_context.getLangOpts().CPlusPlus) {
-    ApplyCppTypeModifiers(unary_operator_.getSubExpr(), input_type);
-    ApplyCppTypeModifiers(&unary_operator_, result_type);
+    MutationReplaceExpr::ApplyCppTypeModifiers(unary_operator_.getSubExpr(),
+                                               input_type);
+    MutationReplaceExpr::ApplyCppTypeModifiers(&unary_operator_, result_type);
   } else {
-    ApplyCTypeModifiers(unary_operator_.getSubExpr(), input_type);
+    MutationReplaceExpr::ApplyCTypeModifiers(unary_operator_.getSubExpr(),
+                                             input_type);
   }
 
   clang::SourceRange unary_operator_source_range_in_main_file =
@@ -340,9 +336,8 @@ void MutationReplaceUnaryOperator::Apply(
   assert(!result && "Rewrite failed.\n");
   (void)result;  // Keep release-mode compilers happy.
 
-  std::string new_function;
-  new_function = GenerateMutatorFunction(ast_context, new_function_name,
-                                         result_type, input_type, mutation_id);
+  std::string new_function = GenerateMutatorFunction(
+      ast_context, new_function_name, result_type, input_type, mutation_id);
   assert(!new_function.empty() && "Unsupported opcode.");
 
   dredd_declarations.insert(new_function);

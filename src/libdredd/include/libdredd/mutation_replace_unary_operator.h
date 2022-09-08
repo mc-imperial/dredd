@@ -15,8 +15,10 @@
 #ifndef LIBDREDD_MUTATION_REPLACE_UNARY_OPERATOR_H
 #define LIBDREDD_MUTATION_REPLACE_UNARY_OPERATOR_H
 
+#include <sstream>
 #include <string>
 #include <unordered_set>
+#include <vector>
 
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/ASTFwd.h"
@@ -45,16 +47,21 @@ class MutationReplaceUnaryOperator : public Mutation {
                                       const std::string& input_type,
                                       int& mutation_id) const;
 
-  static void ApplyCppTypeModifiers(const clang::Expr* expr, std::string& type);
-
-  static void ApplyCTypeModifiers(const clang::Expr* expr, std::string& type);
-
   [[nodiscard]] static bool IsPrefix(clang::UnaryOperatorKind op);
 
   [[nodiscard]] bool IsValidReplacementOperator(
       clang::UnaryOperatorKind op) const;
 
+  // This returns a string corresponding to the non-mutated expression.
+  std::string GetExpr(clang::ASTContext& ast_context) const;
+
   std::string GetFunctionName(clang::ASTContext& ast_context) const;
+
+  // Replaces unary operators with other valid unary operators.
+  void GenerateUnaryOperatorReplacement(
+      const std::string& arg_evaluated,
+      const std::vector<clang::UnaryOperatorKind>& operators,
+      std::stringstream& new_function, int& mutant_offset) const;
 
   const clang::UnaryOperator& unary_operator_;
 };

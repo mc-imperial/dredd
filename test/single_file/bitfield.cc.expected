@@ -18,7 +18,7 @@ static bool __dredd_enabled_mutation(int local_mutation_id) {
         if (!token.empty()) {
           int value = std::stoi(token);
           int local_value = value - 0;
-          if (local_value >= 0 && local_value < 3) {
+          if (local_value >= 0 && local_value < 8) {
             enabled_bitset[local_value / 64] |= (1 << (local_value % 64));
             some_mutation_enabled = true;
           }
@@ -35,6 +35,16 @@ static bool __dredd_enabled_mutation(int local_mutation_id) {
   return (enabled_bitset[local_mutation_id / 64] & (1 << (local_mutation_id % 64))) != 0;
 }
 
+static int __dredd_replace_expr_int(std::function<int()> arg, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return arg();
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return !(arg());
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return ~(arg());
+  if (__dredd_enabled_mutation(local_mutation_id + 2)) return 0;
+  if (__dredd_enabled_mutation(local_mutation_id + 3)) return 1;
+  if (__dredd_enabled_mutation(local_mutation_id + 4)) return -1;
+  return arg();
+}
+
 struct S {
   int a : 3;
   int b : 3;
@@ -42,7 +52,7 @@ struct S {
 
 void foo() {
   S myS;
-  if (!__dredd_enabled_mutation(0)) { myS.a = myS.b; }
-  if (!__dredd_enabled_mutation(1)) { myS.a++; }
-  if (!__dredd_enabled_mutation(2)) { --myS.b; }
+  if (!__dredd_enabled_mutation(5)) { myS.a = __dredd_replace_expr_int([&]() -> int { return static_cast<int>(myS.b); }, 0); }
+  if (!__dredd_enabled_mutation(6)) { myS.a++; }
+  if (!__dredd_enabled_mutation(7)) { --myS.b; }
 }

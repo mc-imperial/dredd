@@ -15,6 +15,7 @@
 #ifndef LIBDREDD_MUTATION_REPLACE_BINARY_OPERATOR_H
 #define LIBDREDD_MUTATION_REPLACE_BINARY_OPERATOR_H
 
+#include <sstream>
 #include <string>
 #include <unordered_set>
 #include <vector>
@@ -58,6 +59,21 @@ class MutationReplaceBinaryOperator : public Mutation {
 
   [[nodiscard]] bool IsValidReplacementOperator(
       clang::BinaryOperatorKind op) const;
+
+  // This returns a string corresponding to the non-mutated expression.
+  std::string GetExpr(clang::ASTContext& ast_context) const;
+
+  // Replaces binary expressions with either the left or right operand.
+  void GenerateArgumentReplacement(const std::string& arg1_evaluated,
+                                   const std::string& arg2_evaluated,
+                                   std::stringstream& new_function,
+                                   int& mutant_offset) const;
+
+  // Replaces binary operators with other valid binary operators.
+  void GenerateBinaryOperatorReplacement(
+      const std::vector<clang::BinaryOperatorKind>& operators,
+      const std::string& arg1_evaluated, const std::string& arg2_evaluated,
+      std::stringstream& new_function, int& mutant_offset) const;
 
   const clang::BinaryOperator& binary_operator_;
 };

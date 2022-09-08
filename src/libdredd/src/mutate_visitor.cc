@@ -21,6 +21,8 @@
 #include "clang/AST/DeclBase.h"
 #include "clang/AST/DeclCXX.h"
 #include "clang/AST/Expr.h"
+#include "clang/AST/ExprCXX.h"
+#include "clang/AST/LambdaCapture.h"
 #include "clang/AST/OperationKinds.h"
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/AST/Stmt.h"
@@ -33,6 +35,7 @@
 #include "clang/Frontend/CompilerInstance.h"
 #include "libdredd/mutation_remove_statement.h"
 #include "libdredd/mutation_replace_binary_operator.h"
+#include "libdredd/mutation_replace_expr.h"
 #include "libdredd/mutation_replace_unary_operator.h"
 #include "libdredd/util.h"
 #include "llvm/ADT/iterator_range.h"
@@ -45,8 +48,8 @@ MutateVisitor::MutateVisitor(const clang::CompilerInstance& compiler_instance)
 
 bool MutateVisitor::IsTypeSupported(const clang::QualType qual_type) {
   const auto* builtin_type = qual_type->getAs<clang::BuiltinType>();
-  return builtin_type == nullptr ||
-         !(builtin_type->isInteger() || builtin_type->isFloatingPoint());
+  return builtin_type != nullptr &&
+         (builtin_type->isInteger() || builtin_type->isFloatingPoint());
 }
 
 bool MutateVisitor::IsInFunction() {
@@ -162,6 +165,18 @@ bool MutateVisitor::TraverseVariableArrayTypeLoc(
       variable_array_type_loc);
 }
 
+bool MutateVisitor::TraverseDependentSizedArrayTypeLoc(
+    clang::DependentSizedArrayTypeLoc dependent_sized_array_type_loc) {
+  // Prevent compilers complaining that this method could be made static, and
+  // that it ignores its parameter.
+  (void)this;
+  (void)dependent_sized_array_type_loc;
+  // Changing an array whose size is derived from template parameters is
+  // problematic because after template instantiation these lead to either
+  // constant or variable-sized arrays, neither of which can be mutated in C++.
+  return true;
+}
+
 bool MutateVisitor::TraverseTemplateArgumentLoc(
     clang::TemplateArgumentLoc template_argument_loc) {
   // Prevent compilers complaining that this method could be made static, and
@@ -170,6 +185,26 @@ bool MutateVisitor::TraverseTemplateArgumentLoc(
   (void)template_argument_loc;
   // C++ template arguments typically need to be compile-time constants, and so
   // should not be mutated.
+  return true;
+}
+
+bool MutateVisitor::TraverseLambdaCapture(
+    clang::LambdaExpr* lambda_expr, const clang::LambdaCapture* lambda_capture,
+    clang::Expr* init) {
+  // Prevent compilers complaining that this method could be made static, and
+  // that it ignores its parameters.
+  (void)this;
+  (void)lambda_expr;
+  (void)lambda_capture;
+  (void)init;
+  return true;
+}
+
+bool MutateVisitor::TraverseParmVarDecl(clang::ParmVarDecl* parm_var_decl) {
+  // Prevent compilers complaining that this method could be made static, and
+  // that it ignores its parameter.
+  (void)this;
+  (void)parm_var_decl;
   return true;
 }
 
@@ -199,10 +234,10 @@ bool MutateVisitor::VisitUnaryOperator(clang::UnaryOperator* unary_operator) {
   }
 
   // Check that the result type is supported
-  if (IsTypeSupported(unary_operator->getType())) {
+  if (!IsTypeSupported(unary_operator->getType())) {
     return true;
   }
-  if (IsTypeSupported(unary_operator->getSubExpr()->getType())) {
+  if (!IsTypeSupported(unary_operator->getSubExpr()->getType())) {
     return true;
   }
 
@@ -243,13 +278,13 @@ bool MutateVisitor::VisitBinaryOperator(
   // We only want to change operators for binary operations on basic types.
   // In particular, we do not want to mess with pointer arithmetic.
   // Check that the result type is supported
-  if (IsTypeSupported(binary_operator->getType())) {
+  if (!IsTypeSupported(binary_operator->getType())) {
     return true;
   }
-  if (IsTypeSupported(binary_operator->getLHS()->getType())) {
+  if (!IsTypeSupported(binary_operator->getLHS()->getType())) {
     return true;
   }
-  if (IsTypeSupported(binary_operator->getRHS()->getType())) {
+  if (!IsTypeSupported(binary_operator->getRHS()->getType())) {
     return true;
   }
 
@@ -278,6 +313,57 @@ bool MutateVisitor::VisitBinaryOperator(
   return true;
 }
 
+bool MutateVisitor::VisitExpr(clang::Expr* expr) {
+  if (!IsInFunction()) {
+    // Only consider mutating expressions that occur inside functions.
+    return true;
+  }
+
+  if (var_decl_source_locations_.contains(expr->getBeginLoc())) {
+    // The start of the expression coincides with the source location of a
+    // variable declaration. This happens when the expression has the form:
+    // "auto v = ...", e.g. occurring in "if (auto v = ...)". Here, the source
+    // location for "v" is associated with both the declaration of "v" and the
+    // condition expression for the if statement. It must not be mutated,
+    // because this would lead to invalid code of the form:
+    // "if (auto __dredd_fun(v) = ...)".
+    return true;
+  }
+
+  if (GetSourceRangeInMainFile(compiler_instance_.getPreprocessor(), *expr)
+          .isInvalid()) {
+    return true;
+  }
+
+  // Unary and binary operators are intercepted separately.
+  if (llvm::dyn_cast<clang::BinaryOperator>(expr) != nullptr ||
+      llvm::dyn_cast<clang::UnaryOperator>(expr) != nullptr) {
+    return true;
+  }
+
+  // There is no useful way to mutate L-Value boolean expressions in C++ or
+  // general L-Values in C.
+  if (expr->isLValue() &&
+      (expr->getType().isConstQualified() || expr->getType()->isBooleanType() ||
+       !compiler_instance_.getLangOpts().CPlusPlus)) {
+    return true;
+  }
+
+  // Check that the result type is supported
+  if (!IsTypeSupported(expr->getType())) {
+    return true;
+  }
+
+  // As it is not possible to pass bit-fields by reference, mutation of
+  // bit-field l-values is not supported.
+  if (expr->refersToBitField()) {
+    return true;
+  }
+
+  mutations_.push_back(std::make_unique<MutationReplaceExpr>(*expr));
+  return true;
+}
+
 bool MutateVisitor::VisitCompoundStmt(clang::CompoundStmt* compound_stmt) {
   for (auto* stmt : compound_stmt->body()) {
     if (GetSourceRangeInMainFile(compiler_instance_.getPreprocessor(), *stmt)
@@ -296,6 +382,11 @@ bool MutateVisitor::VisitCompoundStmt(clang::CompoundStmt* compound_stmt) {
            "declaration.");
     mutations_.push_back(std::make_unique<MutationRemoveStatement>(*stmt));
   }
+  return true;
+}
+
+bool MutateVisitor::VisitVarDecl(clang::VarDecl* var_decl) {
+  var_decl_source_locations_.insert(var_decl->getLocation());
   return true;
 }
 
