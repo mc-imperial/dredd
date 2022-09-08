@@ -161,32 +161,6 @@ TEST(MutationReplaceExpressionTest, MutateLValues) {
                   expected_dredd_declaration, 0);
 }
 
-TEST(MutationReplaceExpressionTest, MutateBooleanLValues) {
-  std::string original =
-      R"(void foo() {
-  bool x;
-  x;
-}
-)";
-  std::string expected =
-      R"(void foo() {
-  bool x;
-  __dredd_replace_expr_bool_lvalue([&]() -> bool& { return static_cast<bool&>(x); }, 0);
-}
-)";
-  std::string expected_dredd_declaration =
-      R"(static bool& __dredd_replace_expr_bool_lvalue(std::function<bool&()> arg, int local_mutation_id) {
-  if (!__dredd_some_mutation_enabled) return arg();
-  if (__dredd_enabled_mutation(local_mutation_id + 0)) return --(arg());
-  return arg();
-}
-
-)";
-  const int kNumReplacements = 1;
-  TestReplacement(original, expected, kNumReplacements,
-                  expected_dredd_declaration, 0);
-}
-
 TEST(MutationReplaceExpressionTest, MutateFunctionArgs) {
   std::string original =
       R"(
