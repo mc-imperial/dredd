@@ -21,6 +21,8 @@
 #include "clang/AST/DeclBase.h"
 #include "clang/AST/DeclCXX.h"
 #include "clang/AST/Expr.h"
+#include "clang/AST/ExprCXX.h"
+#include "clang/AST/LambdaCapture.h"
 #include "clang/AST/OperationKinds.h"
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/AST/Stmt.h"
@@ -187,6 +189,26 @@ bool MutateVisitor::TraverseTemplateArgumentLoc(
   return true;
 }
 
+bool MutateVisitor::TraverseLambdaCapture(
+    clang::LambdaExpr* lambda_expr, const clang::LambdaCapture* lambda_capture,
+    clang::Expr* init) {
+  // Prevent compilers complaining that this method could be made static, and
+  // that it ignores its parameters.
+  (void)this;
+  (void)lambda_expr;
+  (void)lambda_capture;
+  (void)init;
+  return true;
+}
+
+bool MutateVisitor::TraverseParmVarDecl(clang::ParmVarDecl* parm_var_decl) {
+  // Prevent compilers complaining that this method could be made static, and
+  // that it ignores its parameter.
+  (void)this;
+  (void)parm_var_decl;
+  return true;
+}
+
 bool MutateVisitor::VisitUnaryOperator(clang::UnaryOperator* unary_operator) {
   if (!IsInFunction()) {
     // Only consider mutating unary expressions that occur inside functions.
@@ -298,6 +320,17 @@ bool MutateVisitor::VisitExpr(clang::Expr* expr) {
     return true;
   }
 
+  if (var_decl_source_locations_.contains(expr->getBeginLoc())) {
+    // The start of the expression coincides with the source location of a
+    // variable declaration. This happens when the expression has the form:
+    // "auto v = ...", e.g. occurring in "if (auto v = ...)". Here, the source
+    // location for "v" is associated with both the declaration of "v" and the
+    // condition expression for the if statement. It must not be mutated,
+    // because this would lead to invalid code of the form:
+    // "if (auto __dredd_fun(v) = ...)".
+    return true;
+  }
+
   if (GetSourceRangeInMainFile(compiler_instance_.getPreprocessor(), *expr)
           .isInvalid()) {
     return true;
@@ -350,6 +383,11 @@ bool MutateVisitor::VisitCompoundStmt(clang::CompoundStmt* compound_stmt) {
            "declaration.");
     mutations_.push_back(std::make_unique<MutationRemoveStatement>(*stmt));
   }
+  return true;
+}
+
+bool MutateVisitor::VisitVarDecl(clang::VarDecl* var_decl) {
+  var_decl_source_locations_.insert(var_decl->getLocation());
   return true;
 }
 

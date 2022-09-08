@@ -16,11 +16,15 @@
 #define LIBDREDD_MUTATE_VISITOR_H
 
 #include <memory>
+#include <set>
 #include <unordered_set>
 #include <vector>
 
+#include "clang/AST/Decl.h"
 #include "clang/AST/DeclBase.h"
 #include "clang/AST/Expr.h"
+#include "clang/AST/ExprCXX.h"
+#include "clang/AST/LambdaCapture.h"
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/AST/Stmt.h"
 #include "clang/AST/TemplateBase.h"
@@ -61,6 +65,18 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
   bool TraverseTemplateArgumentLoc(
       clang::TemplateArgumentLoc template_argument_loc);
 
+  // Overridden to avoid mutating lambda capture expressions, because the code
+  // that can occur in a lambda capture expression is very limited and in
+  // particular cannot include other lambdas.
+  bool TraverseLambdaCapture(clang::LambdaExpr* lambda_expr,
+                             const clang::LambdaCapture* lambda_capture,
+                             clang::Expr* init);
+
+  // Overridden to avoid mutating expressions occurring as default values for
+  // parameters, because the code that can occur in default values is very
+  // limited and cannot include lambdas in general.
+  bool TraverseParmVarDecl(clang::ParmVarDecl* parm_var_decl);
+
   bool VisitUnaryOperator(clang::UnaryOperator* unary_operator);
 
   bool VisitBinaryOperator(clang::BinaryOperator* binary_operator);
@@ -68,6 +84,12 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
   bool VisitExpr(clang::Expr* expr);
 
   bool VisitCompoundStmt(clang::CompoundStmt* compound_stmt);
+
+  // Overridden to track all source locations associated with variable
+  // declarations, in order to avoid mutating variable declaration reference
+  // expressions that collide with the declaration of the variable being
+  // referenced (this can happen due to the use of "auto").
+  bool VisitVarDecl(clang::VarDecl* var_decl);
 
   // NOLINTNEXTLINE
   bool shouldTraversePostOrder() { return true; }
@@ -131,6 +153,23 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
 
   // Records the mutations that can be applied.
   std::vector<std::unique_ptr<Mutation>> mutations_;
+
+  // In C++, it is common to introduce a variable in a boolean guard via "auto",
+  // and have the guard evaluate to the variable:
+  //
+  // if (auto x = ...) {
+  //   // Use x
+  // }
+  //
+  // The issue here is that while the Clang AST features separate nodes for the
+  // declaration of x and its use in the condition of the if statement, these
+  // nodes refer to the same source code locations. It is important to avoid
+  // mutating the condition to "if (auto __dredd_function(x) = ...)".
+  //
+  // To avoid this, the set of all source locations for variable declarations is
+  // tracked, and mutations are not applied to expression nodes whose start
+  // location is one of these locations.
+  std::set<clang::SourceLocation> var_decl_source_locations_;
 };
 
 }  // namespace dredd
