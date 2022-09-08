@@ -32,12 +32,12 @@
 
 namespace dredd {
 
-void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& context) {
-  if (context.getDiagnostics().hasErrorOccurred()) {
+void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
+  if (ast_context.getDiagnostics().hasErrorOccurred()) {
     // There has been an error, so we don't do any processing.
     return;
   }
-  visitor_->TraverseDecl(context.getTranslationUnitDecl());
+  visitor_->TraverseDecl(ast_context.getTranslationUnitDecl());
 
   if (visitor_->GetMutations().empty()) {
     // No possibilities for mutation were found; nothing to do.
@@ -68,7 +68,7 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& context) {
   // rewritten.
   for (const auto& mutation : visitor_->GetMutations()) {
     int mutation_id_old = mutation_id_;
-    mutation->Apply(context, compiler_instance_.getPreprocessor(),
+    mutation->Apply(ast_context, compiler_instance_.getPreprocessor(),
                     initial_mutation_id, mutation_id_, rewriter_,
                     dredd_declarations);
     assert(mutation_id_ > mutation_id_old &&

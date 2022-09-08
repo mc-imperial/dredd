@@ -34,7 +34,7 @@ class MutateAstConsumer : public clang::ASTConsumer {
         visitor_(std::make_unique<MutateVisitor>(compiler_instance)),
         mutation_id_(mutation_id) {}
 
-  void HandleTranslationUnit(clang::ASTContext& context) override;
+  void HandleTranslationUnit(clang::ASTContext& ast_context) override;
 
  private:
   [[nodiscard]] std::string GetDreddPreludeCpp(int initial_mutation_id) const;

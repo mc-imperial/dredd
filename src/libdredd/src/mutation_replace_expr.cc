@@ -18,7 +18,9 @@
 #include <sstream>
 
 #include "clang/AST/ASTContext.h"
+#include "clang/AST/ASTTypeTraits.h"
 #include "clang/AST/Expr.h"
+#include "clang/AST/ParentMapContext.h"
 #include "clang/AST/Type.h"
 #include "clang/Basic/LangOptions.h"
 #include "clang/Basic/SourceLocation.h"
@@ -249,7 +251,8 @@ void MutationReplaceExpr::Apply(
   // replacing the text for the unary operator node, because the Clang rewriter
   // does not support nested replacements.
 
-  // These record the text that should be inserted before and after the operand.
+  // These record the text that should be inserted before and after the
+  // expression.
   std::string prefix;
   std::string suffix;
   if (ast_context.getLangOpts().CPlusPlus) {
@@ -267,6 +270,30 @@ void MutationReplaceExpr::Apply(
       suffix.append(")");
     }
     suffix.append(", " + std::to_string(local_mutation_id) + ")");
+  }
+
+  // The following code handles a tricky special case, where constant values are
+  // used in an initializer list in a manner that leads to them being implicitly
+  // cast. There are cases where such implicit casts are allowed for constants
+  // but not for non-constants. This is catered for by inserting an explicit
+  // cast.
+  auto parents = ast_context.getParents<clang::Expr>(expr_);
+  // This the expression occurs in an initializer list and is subject to an
+  // explicit cast then it will have two parents -- the initializer list, and
+  // the implicit cast. (This is probably due to implicit casts being treated
+  // as invisible nodes in the AST.)
+  if (ast_context.getLangOpts().CPlusPlus && parents.size() == 2 &&
+      parents[0].get<clang::InitListExpr>() != nullptr &&
+      parents[1].get<clang::ImplicitCastExpr>() != nullptr) {
+    // Add an explicit cast to the result type of the explicit cast.
+    const auto* implicit_cast_expr = parents[1].get<clang::ImplicitCastExpr>();
+    prefix = "static_cast<" +
+             implicit_cast_expr->getType()
+                 ->getAs<clang::BuiltinType>()
+                 ->getName(ast_context.getPrintingPolicy())
+                 .str() +
+             ">(" + prefix;
+    suffix.append(")");
   }
 
   bool result = rewriter.InsertTextBefore(
