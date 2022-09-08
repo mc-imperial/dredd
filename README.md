@@ -249,6 +249,8 @@ The auxiliary commands in the `scripts` directory are:
 
 ### Working on Dredd from CLion
 
+To work on Dredd from CLion, open the `CMakeLists.txt` within the root of the Dredd repository.
+
 ## Planned features
 
 See [planned feature
