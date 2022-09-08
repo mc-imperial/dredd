@@ -22,6 +22,7 @@
 #include <unordered_set>
 #include <vector>
 
+#include "clang/AST/APValue.h"
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/Expr.h"
 #include "clang/AST/OperationKinds.h"
@@ -31,6 +32,7 @@
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Rewrite/Core/Rewriter.h"
 #include "libdredd/util.h"
+#include "llvm/ADT/APSInt.h"
 #include "llvm/ADT/StringRef.h"
 
 namespace dredd {
@@ -56,6 +58,47 @@ std::string MutationReplaceBinaryOperator::GetExpr(
       clang::BinaryOperator::getOpcodeStr(binary_operator_.getOpcode()).str() +
       " " + arg2_evaluated;
   return result;
+}
+
+bool MutationReplaceBinaryOperator::IsRedundantReplacementOperator(
+    clang::BinaryOperatorKind op, clang::ASTContext& ast_context) const {
+  clang::Expr::EvalResult eval_result;
+  bool rhs_is_int =
+      binary_operator_.getRHS()->EvaluateAsInt(eval_result, ast_context);
+
+  // In the following cases, the replacement is equivalent to either replacement
+  // with a constant or argument replacement.
+  // See https://github.com/mc-imperial/dredd/issues/89 for a more in-depth
+  // explanation.
+  if (rhs_is_int && llvm::APSInt::isSameValue(eval_result.Val.getInt(),
+                                              llvm::APSInt::get(0))) {
+    if (op == clang::BO_Add || op == clang::BO_Sub || op == clang::BO_Shl ||
+        op == clang::BO_Shr || op == clang::BO_Mul || op == clang::BO_Rem) {
+      return true;
+    }
+  } else if (rhs_is_int && llvm::APSInt::isSameValue(eval_result.Val.getInt(),
+                                                     llvm::APSInt::get(1))) {
+    if (op == clang::BO_Mul || op == clang::BO_Div) {
+      return true;
+    }
+  }
+
+  bool lhs_is_int =
+      binary_operator_.getLHS()->EvaluateAsInt(eval_result, ast_context);
+
+  if (lhs_is_int && llvm::APSInt::isSameValue(eval_result.Val.getInt(),
+                                              llvm::APSInt::get(0))) {
+    if (op == clang::BO_Add || op == clang::BO_Shl || op == clang::BO_Shr ||
+        op == clang::BO_Mul || op == clang::BO_Rem || op == clang::BO_Div) {
+      return true;
+    }
+  } else if (lhs_is_int &&
+             llvm::APSInt::isSameValue(eval_result.Val.getInt(),
+                                       llvm::APSInt::get(1)) &&
+             op == clang::BO_Mul) {
+    return true;
+  }
+  return false;
 }
 
 // Certain operators such as % are not compatible with floating point numbers,
@@ -202,31 +245,88 @@ std::string MutationReplaceBinaryOperator::GetFunctionName(
                                   ->getName(ast_context.getPrintingPolicy())
                                   .str());
 
+  if (!binary_operator_.isAssignmentOp()) {
+    clang::Expr::EvalResult eval_result;
+    bool rhs_is_int =
+        binary_operator_.getRHS()->EvaluateAsInt(eval_result, ast_context);
+    if (rhs_is_int && llvm::APSInt::isSameValue(eval_result.Val.getInt(),
+                                                llvm::APSInt::get(0))) {
+      result += "_rhs_zero";
+    } else if (rhs_is_int && llvm::APSInt::isSameValue(eval_result.Val.getInt(),
+                                                       llvm::APSInt::get(1))) {
+      result += "_rhs_one";
+    } else if (rhs_is_int && llvm::APSInt::isSameValue(eval_result.Val.getInt(),
+                                                       llvm::APSInt::get(-1))) {
+      result += "_rhs_minus_one";
+    }
+
+    bool lhs_is_int =
+        binary_operator_.getLHS()->EvaluateAsInt(eval_result, ast_context);
+    if (lhs_is_int && llvm::APSInt::isSameValue(eval_result.Val.getInt(),
+                                                llvm::APSInt::get(0))) {
+      result += "_lhs_zero";
+    } else if (lhs_is_int && llvm::APSInt::isSameValue(eval_result.Val.getInt(),
+                                                       llvm::APSInt::get(1))) {
+      result += "_lhs_one";
+    } else if (lhs_is_int && llvm::APSInt::isSameValue(eval_result.Val.getInt(),
+                                                       llvm::APSInt::get(-1))) {
+      result += "_lhs_minus_one";
+    }
+  }
+
   return result;
 }
 
 void MutationReplaceBinaryOperator::GenerateArgumentReplacement(
     const std::string& arg1_evaluated, const std::string& arg2_evaluated,
-    std::stringstream& new_function, int& mutant_offset) const {
+    clang::ASTContext& ast_context, std::stringstream& new_function,
+    int& mutant_offset) const {
   if (!binary_operator_.isAssignmentOp()) {
+    clang::Expr::EvalResult lhs_eval_result;
+    clang::Expr::EvalResult rhs_eval_result;
+    bool rhs_is_int =
+        binary_operator_.getRHS()->EvaluateAsInt(rhs_eval_result, ast_context);
+    bool lhs_is_int =
+        binary_operator_.getLHS()->EvaluateAsInt(lhs_eval_result, ast_context);
+
     // LHS
-    new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
-                 << mutant_offset << ")) return " << arg1_evaluated << ";\n";
-    mutant_offset++;
+    // These cases are equivalent to constant replacement with the respective
+    // constants
+    if (!(lhs_is_int && (llvm::APSInt::isSameValue(lhs_eval_result.Val.getInt(),
+                                                   llvm::APSInt::get(0)) ||
+                         llvm::APSInt::isSameValue(lhs_eval_result.Val.getInt(),
+                                                   llvm::APSInt::get(1)) ||
+                         llvm::APSInt::isSameValue(lhs_eval_result.Val.getInt(),
+                                                   llvm::APSInt::get(-1))))) {
+      new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
+                   << mutant_offset << ")) return " << arg1_evaluated << ";\n";
+      mutant_offset++;
+    }
 
     // RHS
-    new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
-                 << mutant_offset << ")) return " << arg2_evaluated << ";\n";
-    mutant_offset++;
+    // These cases are equivalent to constant replacement with the respective
+    // constants
+    if (!(rhs_is_int && (llvm::APSInt::isSameValue(rhs_eval_result.Val.getInt(),
+                                                   llvm::APSInt::get(0)) ||
+                         llvm::APSInt::isSameValue(rhs_eval_result.Val.getInt(),
+                                                   llvm::APSInt::get(1)) ||
+                         llvm::APSInt::isSameValue(rhs_eval_result.Val.getInt(),
+                                                   llvm::APSInt::get(-1))))) {
+      new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
+                   << mutant_offset << ")) return " << arg2_evaluated << ";\n";
+      mutant_offset++;
+    }
   }
 }
 
 void MutationReplaceBinaryOperator::GenerateBinaryOperatorReplacement(
     const std::vector<clang::BinaryOperatorKind>& operators,
     const std::string& arg1_evaluated, const std::string& arg2_evaluated,
-    std::stringstream& new_function, int& mutant_offset) const {
+    clang::ASTContext& ast_context, std::stringstream& new_function,
+    int& mutant_offset) const {
   for (auto op : operators) {
-    if (op == binary_operator_.getOpcode() || !IsValidReplacementOperator(op)) {
+    if (op == binary_operator_.getOpcode() || !IsValidReplacementOperator(op) ||
+        IsRedundantReplacementOperator(op, ast_context)) {
       continue;
     }
     new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
@@ -284,7 +384,7 @@ std::string MutationReplaceBinaryOperator::GenerateMutatorFunction(
 
   GenerateBinaryOperatorReplacement(operators, arg1_evaluated, arg2_evaluated,
                                     new_function, mutant_offset);
-  GenerateArgumentReplacement(arg1_evaluated, arg2_evaluated, new_function,
+  GenerateArgumentReplacement(arg1_evaluated, arg2_evaluated, ast_context, new_function,
                               mutant_offset);
 
   new_function << "  return " << GetExpr(ast_context) << ";\n";

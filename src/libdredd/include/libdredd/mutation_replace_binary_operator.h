@@ -57,6 +57,9 @@ class MutationReplaceBinaryOperator : public Mutation {
 
   std::string GetFunctionName(clang::ASTContext& ast_context) const;
 
+  [[nodiscard]] bool IsRedundantReplacementOperator(
+      clang::BinaryOperatorKind op, clang::ASTContext& ast_context) const;
+
   [[nodiscard]] bool IsValidReplacementOperator(
       clang::BinaryOperatorKind op) const;
 
@@ -66,6 +69,7 @@ class MutationReplaceBinaryOperator : public Mutation {
   // Replaces binary expressions with either the left or right operand.
   void GenerateArgumentReplacement(const std::string& arg1_evaluated,
                                    const std::string& arg2_evaluated,
+                                   clang::ASTContext& ast_context,
                                    std::stringstream& new_function,
                                    int& mutant_offset) const;
 
@@ -73,7 +77,8 @@ class MutationReplaceBinaryOperator : public Mutation {
   void GenerateBinaryOperatorReplacement(
       const std::vector<clang::BinaryOperatorKind>& operators,
       const std::string& arg1_evaluated, const std::string& arg2_evaluated,
-      std::stringstream& new_function, int& mutant_offset) const;
+      clang::ASTContext& ast_context, std::stringstream& new_function,
+      int& mutant_offset) const;
 
   // The && and || operators in C require special treatment: due to
   // short-circuit evaluation their arguments must not be prematurely evaluated.

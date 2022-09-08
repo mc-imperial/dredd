@@ -71,13 +71,14 @@ void TestReplacement(const std::string& original, const std::string& expected,
 TEST(MutationReplaceBinaryOperatorTest, MutateAdd) {
   std::string original = "void foo() { 1 + 2; }";
   std::string expected =
-      "void foo() { __dredd_replace_binary_operator_Add_int_int([&]() -> int { "
+      "void foo() { __dredd_replace_binary_operator_Add_int_int_lhs_one([&]() "
+      "-> int { "
       "return "
       "static_cast<int>(1); } , [&]() -> int { return static_cast<int>(2); }, "
       "0); "
       "}";
   std::string expected_dredd_declaration =
-      R"(static int __dredd_replace_binary_operator_Add_int_int(std::function<int()> arg1, std::function<int()> arg2, int local_mutation_id) {
+      R"(static int __dredd_replace_binary_operator_Add_int_int_lhs_one(std::function<int()> arg1, std::function<int()> arg2, int local_mutation_id) {
   if (!__dredd_some_mutation_enabled) return arg1() + arg2();
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return arg1() / arg2();
   if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg1() * arg2();
