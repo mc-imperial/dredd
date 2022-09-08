@@ -68,8 +68,6 @@ void MutationReplaceExpr::GenerateUnaryOperatorInsertion(
     int& mutant_offset) {
   if (expr_.isLValue() && !(expr_.getType().isConstQualified() ||
                             expr_.getType()->isBooleanType())) {
-    // In the boolean case, ++ is redundant since -- is sufficient for flipping
-    // the booleans value.
     new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
                  << mutant_offset << ")) return ++(" << arg_evaluated << ");\n";
     mutant_offset++;
