@@ -314,6 +314,14 @@ bool MutateVisitor::VisitBinaryOperator(
 }
 
 bool MutateVisitor::VisitExpr(clang::Expr* expr) {
+  // Unary and binary operators are intercepted separately. There is no value in
+  // mutating a parentheses expression.
+  if (llvm::dyn_cast<clang::BinaryOperator>(expr) != nullptr ||
+      llvm::dyn_cast<clang::UnaryOperator>(expr) != nullptr ||
+      llvm::dyn_cast<clang::ParenExpr>(expr) != nullptr) {
+    return true;
+  }
+
   if (!IsInFunction()) {
     // Only consider mutating expressions that occur inside functions.
     return true;
@@ -332,12 +340,6 @@ bool MutateVisitor::VisitExpr(clang::Expr* expr) {
 
   if (GetSourceRangeInMainFile(compiler_instance_.getPreprocessor(), *expr)
           .isInvalid()) {
-    return true;
-  }
-
-  // Unary and binary operators are intercepted separately.
-  if (llvm::dyn_cast<clang::BinaryOperator>(expr) != nullptr ||
-      llvm::dyn_cast<clang::UnaryOperator>(expr) != nullptr) {
     return true;
   }
 
