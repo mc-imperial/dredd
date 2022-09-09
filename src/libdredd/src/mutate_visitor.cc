@@ -314,12 +314,22 @@ bool MutateVisitor::VisitBinaryOperator(
 }
 
 bool MutateVisitor::VisitExpr(clang::Expr* expr) {
-  // Unary and binary operators are intercepted separately. There is no value in
-  // mutating a parentheses expression.
-  if (llvm::dyn_cast<clang::BinaryOperator>(expr) != nullptr ||
-      llvm::dyn_cast<clang::UnaryOperator>(expr) != nullptr ||
+  // Unary operators are intercepted separately. There is no value in mutating a
+  // parentheses expression.
+  if (llvm::dyn_cast<clang::UnaryOperator>(expr) != nullptr ||
       llvm::dyn_cast<clang::ParenExpr>(expr) != nullptr) {
     return true;
+  }
+
+  // Binary operators are intercepted separately, except for logical operators
+  // in C, which cannot be replaced via function calls due to problems with
+  // short-circuit evaluation. To make sure that such expressions are at least
+  // replaced with constants, they are intercepted here.
+  if (auto* binary_operator = llvm::dyn_cast<clang::BinaryOperator>(expr)) {
+    if (compiler_instance_.getLangOpts().CPlusPlus ||
+        !binary_operator->isLogicalOp()) {
+      return true;
+    }
   }
 
   if (!IsInFunction()) {
