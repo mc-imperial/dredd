@@ -54,8 +54,6 @@ static int& __dredd_replace_binary_operator_Assign_int_int(std::function<int&()>
   if (__dredd_enabled_mutation(local_mutation_id + 7)) return arg1() >>= arg2();
   if (__dredd_enabled_mutation(local_mutation_id + 8)) return arg1() -= arg2();
   if (__dredd_enabled_mutation(local_mutation_id + 9)) return arg1() ^= arg2();
-  if (__dredd_enabled_mutation(local_mutation_id + 10)) return ++(arg1() = arg2());
-  if (__dredd_enabled_mutation(local_mutation_id + 11)) return --(arg1() = arg2());
   return arg1() = arg2();
 }
 
@@ -76,5 +74,5 @@ T foo(T a) {
 
 void foo() {
   int x;
-  if (!__dredd_enabled_mutation(30)) { __dredd_replace_binary_operator_Assign_int_int([&]() -> int& { return static_cast<int&>(__dredd_replace_expr_int_lvalue([&]() -> int& { return static_cast<int&>(x); }, 6)); } , [&]() -> int { return static_cast<int>(__dredd_replace_expr_int([&]() -> int { return static_cast<int>(foo(__dredd_replace_expr_int([&]() -> int { return 3; }, 8))); }, 13)); }, 18); }
+  if (!__dredd_enabled_mutation(30)) { __dredd_replace_expr_int_lvalue([&]() -> int& { return static_cast<int&>(__dredd_replace_binary_operator_Assign_int_int([&]() -> int& { return static_cast<int&>(__dredd_replace_expr_int_lvalue([&]() -> int& { return static_cast<int&>(x); }, 6)); } , [&]() -> int { return static_cast<int>(__dredd_replace_expr_int([&]() -> int { return static_cast<int>(foo(__dredd_replace_expr_int([&]() -> int { return 3; }, 8))); }, 13)); }, 18)); }, 28); }
 }

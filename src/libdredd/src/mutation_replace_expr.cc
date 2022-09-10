@@ -63,9 +63,10 @@ std::string MutationReplaceExpr::GetFunctionName(
 }
 
 void MutationReplaceExpr::GenerateUnaryOperatorInsertion(
-    const std::string& arg_evaluated, const clang::Expr& expr_,
-    const clang::BuiltinType& exprType, std::stringstream& new_function,
-    int& mutant_offset) {
+    const std::string& arg_evaluated, std::stringstream& new_function,
+    int& mutant_offset) const {
+  const clang::BuiltinType& exprType =
+      *expr_.getType()->getAs<clang::BuiltinType>();
   if (expr_.isLValue() && !(expr_.getType().isConstQualified() ||
                             expr_.getType()->isBooleanType())) {
     new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
@@ -89,9 +90,10 @@ void MutationReplaceExpr::GenerateUnaryOperatorInsertion(
 }
 
 void MutationReplaceExpr::GenerateConstantReplacement(
-    const clang::Expr& expr_, const clang::BuiltinType& exprType,
     clang::ASTContext& ast_context, std::stringstream& new_function,
-    int& mutant_offset) {
+    int& mutant_offset) const {
+  const clang::BuiltinType& exprType =
+      *expr_.getType()->getAs<clang::BuiltinType>();
   if (!expr_.isLValue()) {
     if (exprType.isBooleanType()) {
       // Replace expression with true
@@ -171,13 +173,9 @@ std::string MutationReplaceExpr::GenerateMutatorFunction(
                << arg_evaluated << ";\n";
 
   int mutant_offset = 0;
-  const clang::BuiltinType* exprType =
-      expr_.getType()->getAs<clang::BuiltinType>();
 
-  GenerateUnaryOperatorInsertion(arg_evaluated, expr_, *exprType, new_function,
-                                 mutant_offset);
-  GenerateConstantReplacement(expr_, *exprType, ast_context, new_function,
-                              mutant_offset);
+  GenerateUnaryOperatorInsertion(arg_evaluated, new_function, mutant_offset);
+  GenerateConstantReplacement(ast_context, new_function, mutant_offset);
 
   new_function << "  return " << arg_evaluated << ";\n";
   new_function << "}\n\n";

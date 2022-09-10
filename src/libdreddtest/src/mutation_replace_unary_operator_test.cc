@@ -79,16 +79,11 @@ TEST(MutationReplaceUnaryOperatorTest, MutateMinus) {
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return ~arg();
   if (__dredd_enabled_mutation(local_mutation_id + 1)) return !arg();
   if (__dredd_enabled_mutation(local_mutation_id + 2)) return arg();
-  if (__dredd_enabled_mutation(local_mutation_id + 3)) return !(-arg());
-  if (__dredd_enabled_mutation(local_mutation_id + 4)) return ~(-arg());
-  if (__dredd_enabled_mutation(local_mutation_id + 5)) return 0;
-  if (__dredd_enabled_mutation(local_mutation_id + 6)) return 1;
-  if (__dredd_enabled_mutation(local_mutation_id + 7)) return -1;
   return -arg();
 }
 
 )";
-  const int kNumReplacements = 8;
+  const int kNumReplacements = 3;
   TestReplacement(original, expected, kNumReplacements,
                   expected_dredd_declaration);
 }
@@ -111,15 +106,11 @@ TEST(MutationReplaceUnaryOperatorTest, MutateNot) {
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return ~arg();
   if (__dredd_enabled_mutation(local_mutation_id + 1)) return -arg();
   if (__dredd_enabled_mutation(local_mutation_id + 2)) return arg();
-  if (__dredd_enabled_mutation(local_mutation_id + 3)) return !(!arg());
-  if (__dredd_enabled_mutation(local_mutation_id + 4)) return ~(!arg());
-  if (__dredd_enabled_mutation(local_mutation_id + 5)) return true;
-  if (__dredd_enabled_mutation(local_mutation_id + 6)) return false;
   return !arg();
 }
 
 )";
-  const int kNumReplacements = 7;
+  const int kNumReplacements = 3;
   TestReplacement(original, expected, kNumReplacements,
                   expected_dredd_declaration);
 }
@@ -141,13 +132,11 @@ TEST(MutationReplaceUnaryOperatorTest, MutateIncrement) {
   if (!__dredd_some_mutation_enabled) return ++arg();
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return --arg();
   if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg();
-  if (__dredd_enabled_mutation(local_mutation_id + 2)) return ++(++arg());
-  if (__dredd_enabled_mutation(local_mutation_id + 3)) return --(++arg());
   return ++arg();
 }
 
 )";
-  const int kNumReplacements = 4;
+  const int kNumReplacements = 2;
   TestReplacement(original, expected, kNumReplacements,
                   expected_dredd_declaration);
 }
@@ -172,16 +161,11 @@ TEST(MutationReplaceUnaryOperatorTest, MutateDecrement) {
   if (__dredd_enabled_mutation(local_mutation_id + 2)) return -arg();
   if (__dredd_enabled_mutation(local_mutation_id + 3)) return !arg();
   if (__dredd_enabled_mutation(local_mutation_id + 4)) return arg();
-  if (__dredd_enabled_mutation(local_mutation_id + 5)) return !(arg()--);
-  if (__dredd_enabled_mutation(local_mutation_id + 6)) return ~(arg()--);
-  if (__dredd_enabled_mutation(local_mutation_id + 7)) return 0;
-  if (__dredd_enabled_mutation(local_mutation_id + 8)) return 1;
-  if (__dredd_enabled_mutation(local_mutation_id + 9)) return -1;
   return arg()--;
 }
 
 )";
-  const int kNumReplacements = 10;
+  const int kNumReplacements = 5;
   TestReplacement(original, expected, kNumReplacements,
                   expected_dredd_declaration);
 }
@@ -203,13 +187,11 @@ TEST(MutationReplaceUnaryOperatorTest, MutateDecrementAssign) {
   if (!__dredd_some_mutation_enabled) return --arg();
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return ++arg();
   if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg();
-  if (__dredd_enabled_mutation(local_mutation_id + 2)) return ++(--arg());
-  if (__dredd_enabled_mutation(local_mutation_id + 3)) return --(--arg());
   return --arg();
 }
 
 )";
-  const int kNumReplacements = 4;
+  const int kNumReplacements = 2;
   TestReplacement(original, expected, kNumReplacements,
                   expected_dredd_declaration);
 }
