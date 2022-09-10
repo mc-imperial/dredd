@@ -132,7 +132,7 @@ pushd zstd
     cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ../build/cmake
   popd
   # Build non-mutated zstd
-  make zstd-release
+  CFLAGS=-O0 make zstd-release
   # Use the compiled zstd binary as a target for compression, and compress it.
   cp ./programs/zstd tocompress
   ./zstd tocompress -o normal
@@ -145,7 +145,7 @@ pushd zstd
   ${DREDD_ROOT}/third_party/clang+llvm-13.0.1/bin/dredd -p ${DREDD_ROOT}/zstd/temp/compile_commands.json ${FILES}
   # Build mutated zstd
   make clean
-  make zstd-release
+  CFLAGS=-O0 make zstd-release
   # Use it to compress the original (non-mutated) zstd binary
   ./zstd tocompress -o mutated
   # The results obtained using the original and mutated versions of zstd should
