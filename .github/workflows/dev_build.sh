@@ -23,6 +23,9 @@ help | head
 
 uname
 
+echo "Starting devbuild"
+date
+
 case "$(uname)" in
 "Linux")
   NINJA_OS="linux"
@@ -66,18 +69,25 @@ export DREDD_SKIP_BASH=1
 
 source ./dev_shell.sh.template
 
+echo "Running check_all"
+date
+
 check_all.sh
 
 # Check that dredd works on some projects
 DREDD_ROOT=`pwd`
 cp ${DREDD_ROOT}/temp/build-Debug/src/dredd/dredd ${DREDD_ROOT}/third_party/clang+llvm-13.0.1/bin/dredd
 
-# examples/simple/pi.cc: check that we can build the simple example
+echo "examples/simple/pi.cc: check that we can build the simple example"
+date
+
 ${DREDD_ROOT}/third_party/clang+llvm-13.0.1/bin/dredd examples/simple/pi.cc
 clang++ examples/simple/pi.cc -o examples/simple/pi
 diff <(./examples/simple/pi) <(echo "3.14159")
 
-# examples/math: check that the tests pass after mutating the library
+echo "examples/math: check that the tests pass after mutating the library"
+date
+
 pushd examples/math
   mkdir build
   pushd build
@@ -88,7 +98,9 @@ pushd examples/math
   popd
 popd
 
-# Curl
+echo "Curl"
+date
+
 git clone https://github.com/curl/curl.git
 pushd curl
   git reset --hard curl-7_84_0
@@ -108,7 +120,9 @@ pushd curl
   popd
 popd
 
-# zstd
+echo "zstd"
+date
+
 git clone https://github.com/facebook/zstd.git
 pushd zstd
   git reset --hard v1.4.10
@@ -139,7 +153,9 @@ pushd zstd
   diff normal mutated
 popd
 
-# SPIRV-Tools validator: check that the tests pass after mutating the validator
+echo "SPIRV-Tools validator: check that the tests pass after mutating the validator"
+date
+
 git clone https://github.com/KhronosGroup/SPIRV-Tools.git
 pushd SPIRV-Tools
   git reset --hard c94501352d545e84c821ce031399e76d1af32d18
@@ -165,7 +181,9 @@ pushd SPIRV-Tools/build
   ./test/val/test_val_stuvw
 popd
 
-# LLVM: check that InstCombine builds after mutation
+echo "LLVM: check that InstCombine builds after mutation"
+date
+
 git clone --branch llvmorg-14.0.6 --depth 1 https://github.com/llvm/llvm-project.git
 pushd llvm-project
   mkdir build
@@ -183,5 +201,7 @@ done
 ${DREDD_ROOT}/third_party/clang+llvm-13.0.1/bin/dredd -p ${DREDD_ROOT}/llvm-project/build/compile_commands.json ${FILES}
 pushd llvm-project/build
   ninja LLVMInstCombine
-  # TODO: run some tests
 popd
+
+echo "Finished devbuild"
+date
