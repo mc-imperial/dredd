@@ -28,6 +28,7 @@
 #include "clang/Rewrite/Core/Rewriter.h"
 #include "libdredd/util.h"
 #include "llvm/ADT/StringRef.h"
+#include "llvm/Support/Casting.h"
 
 namespace dredd {
 dredd::MutationReplaceExpr::MutationReplaceExpr(const clang::Expr& expr)
