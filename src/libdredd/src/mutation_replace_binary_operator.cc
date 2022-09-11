@@ -30,7 +30,6 @@
 #include "clang/Basic/SourceLocation.h"
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Rewrite/Core/Rewriter.h"
-#include "libdredd/mutation_replace_expr.h"
 #include "libdredd/util.h"
 #include "llvm/ADT/StringRef.h"
 
@@ -283,18 +282,10 @@ std::string MutationReplaceBinaryOperator::GenerateMutatorFunction(
       << clang::BinaryOperator::getOpcodeStr(binary_operator_.getOpcode()).str()
       << " " << arg2_evaluated << ";\n";
 
-  const clang::BuiltinType* exprType =
-      binary_operator_.getType()->getAs<clang::BuiltinType>();
-
   GenerateBinaryOperatorReplacement(operators, arg1_evaluated, arg2_evaluated,
                                     new_function, mutant_offset);
   GenerateArgumentReplacement(arg1_evaluated, arg2_evaluated, new_function,
                               mutant_offset);
-  MutationReplaceExpr::GenerateUnaryOperatorInsertion(
-      GetExpr(ast_context), binary_operator_, *exprType, new_function,
-      mutant_offset);
-  MutationReplaceExpr::GenerateConstantReplacement(
-      binary_operator_, *exprType, ast_context, new_function, mutant_offset);
 
   new_function << "  return " << GetExpr(ast_context) << ";\n";
   new_function << "}\n\n";

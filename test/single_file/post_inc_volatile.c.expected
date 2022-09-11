@@ -37,11 +37,6 @@ static int __dredd_replace_unary_operator_PostInc_volatile_int(volatile int* arg
   if (__dredd_enabled_mutation(local_mutation_id + 2)) return -(*arg);
   if (__dredd_enabled_mutation(local_mutation_id + 3)) return !(*arg);
   if (__dredd_enabled_mutation(local_mutation_id + 4)) return (*arg);
-  if (__dredd_enabled_mutation(local_mutation_id + 5)) return !((*arg)++);
-  if (__dredd_enabled_mutation(local_mutation_id + 6)) return ~((*arg)++);
-  if (__dredd_enabled_mutation(local_mutation_id + 7)) return 0;
-  if (__dredd_enabled_mutation(local_mutation_id + 8)) return 1;
-  if (__dredd_enabled_mutation(local_mutation_id + 9)) return -1;
   return (*arg)++;
 }
 
@@ -67,11 +62,6 @@ static int __dredd_replace_binary_operator_Assign_int_int(int* arg1, int arg2, i
   if (__dredd_enabled_mutation(local_mutation_id + 7)) return (*arg1) >>= arg2;
   if (__dredd_enabled_mutation(local_mutation_id + 8)) return (*arg1) -= arg2;
   if (__dredd_enabled_mutation(local_mutation_id + 9)) return (*arg1) ^= arg2;
-  if (__dredd_enabled_mutation(local_mutation_id + 10)) return !((*arg1) = arg2);
-  if (__dredd_enabled_mutation(local_mutation_id + 11)) return ~((*arg1) = arg2);
-  if (__dredd_enabled_mutation(local_mutation_id + 12)) return 0;
-  if (__dredd_enabled_mutation(local_mutation_id + 13)) return 1;
-  if (__dredd_enabled_mutation(local_mutation_id + 14)) return -1;
   return (*arg1) = arg2;
 }
 
@@ -83,11 +73,6 @@ static int __dredd_replace_binary_operator_Add_int_int(int arg1, int arg2, int l
   if (__dredd_enabled_mutation(local_mutation_id + 3)) return arg1 - arg2;
   if (__dredd_enabled_mutation(local_mutation_id + 4)) return arg1;
   if (__dredd_enabled_mutation(local_mutation_id + 5)) return arg2;
-  if (__dredd_enabled_mutation(local_mutation_id + 6)) return !(arg1 + arg2);
-  if (__dredd_enabled_mutation(local_mutation_id + 7)) return ~(arg1 + arg2);
-  if (__dredd_enabled_mutation(local_mutation_id + 8)) return 0;
-  if (__dredd_enabled_mutation(local_mutation_id + 9)) return 1;
-  if (__dredd_enabled_mutation(local_mutation_id + 10)) return -1;
   return arg1 + arg2;
 }
 
@@ -95,6 +80,6 @@ int main() {
   volatile int x = __dredd_replace_expr_int(9, 0);
   volatile int y = __dredd_replace_expr_int(43, 5);
   int z;
-  if (!__dredd_enabled_mutation(61)) { __dredd_replace_binary_operator_Assign_int_int(&(z) , __dredd_replace_binary_operator_Add_int_int(__dredd_replace_unary_operator_PostInc_volatile_int(&(x), 10) , __dredd_replace_unary_operator_PostInc_volatile_int(&(y), 20), 30), 41); }
+  if (!__dredd_enabled_mutation(61)) { __dredd_replace_expr_int(__dredd_replace_binary_operator_Assign_int_int(&(z) , __dredd_replace_expr_int(__dredd_replace_binary_operator_Add_int_int(__dredd_replace_expr_int(__dredd_replace_unary_operator_PostInc_volatile_int(&(x), 10), 15) , __dredd_replace_expr_int(__dredd_replace_unary_operator_PostInc_volatile_int(&(y), 20), 25), 30), 36), 41), 51); }
   if (!__dredd_enabled_mutation(62)) { return __dredd_replace_expr_int(z, 56); }
 }

@@ -37,11 +37,6 @@ static int __dredd_replace_unary_operator_LNot__Bool(_Bool arg, int local_mutati
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return ~arg;
   if (__dredd_enabled_mutation(local_mutation_id + 1)) return -arg;
   if (__dredd_enabled_mutation(local_mutation_id + 2)) return arg;
-  if (__dredd_enabled_mutation(local_mutation_id + 3)) return !(!arg);
-  if (__dredd_enabled_mutation(local_mutation_id + 4)) return ~(!arg);
-  if (__dredd_enabled_mutation(local_mutation_id + 5)) return 0;
-  if (__dredd_enabled_mutation(local_mutation_id + 6)) return 1;
-  if (__dredd_enabled_mutation(local_mutation_id + 7)) return -1;
   return !arg;
 }
 
@@ -66,5 +61,5 @@ static _Bool __dredd_replace_expr__Bool(_Bool arg, int local_mutation_id) {
 
 int main() {
   bool y = __dredd_replace_expr__Bool(__dredd_replace_expr_int(true, 0), 5);
-  if (!__dredd_enabled_mutation(21)) { return __dredd_replace_unary_operator_LNot__Bool(__dredd_replace_expr__Bool(y, 9), 13); }
+  if (!__dredd_enabled_mutation(21)) { return __dredd_replace_expr_int(__dredd_replace_unary_operator_LNot__Bool(__dredd_replace_expr__Bool(y, 9), 13), 16); }
 }

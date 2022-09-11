@@ -208,20 +208,12 @@ bool MutateVisitor::TraverseParmVarDecl(clang::ParmVarDecl* parm_var_decl) {
   return true;
 }
 
-bool MutateVisitor::VisitUnaryOperator(clang::UnaryOperator* unary_operator) {
-  if (!IsInFunction()) {
-    // Only consider mutating unary expressions that occur inside functions.
-    return true;
-  }
-
-  // Check that the unary expression and its arguments have source
-  // ranges that are part of the main file. In particular, this avoids
-  // mutating expressions that directly involve the use of macros (though it
-  // is OK if sub-expressions of arguments use macros).
+bool MutateVisitor::HandleUnaryOperator(clang::UnaryOperator* unary_operator) {
+  // Check that the argument to the unary expression has a source ranges that is
+  // part of the main file. In particular, this avoids mutating expressions that
+  // directly involve the use of macros (though it is OK if sub-expressions of
+  // arguments use macros).
   if (GetSourceRangeInMainFile(compiler_instance_.getPreprocessor(),
-                               *unary_operator)
-          .isInvalid() ||
-      GetSourceRangeInMainFile(compiler_instance_.getPreprocessor(),
                                *unary_operator->getSubExpr())
           .isInvalid()) {
     return true;
@@ -233,10 +225,7 @@ bool MutateVisitor::VisitUnaryOperator(clang::UnaryOperator* unary_operator) {
     return true;
   }
 
-  // Check that the result type is supported
-  if (!IsTypeSupported(unary_operator->getType())) {
-    return true;
-  }
+  // Check that the argument type is supported
   if (!IsTypeSupported(unary_operator->getSubExpr()->getType())) {
     return true;
   }
@@ -252,21 +241,13 @@ bool MutateVisitor::VisitUnaryOperator(clang::UnaryOperator* unary_operator) {
   return true;
 }
 
-bool MutateVisitor::VisitBinaryOperator(
+bool MutateVisitor::HandleBinaryOperator(
     clang::BinaryOperator* binary_operator) {
-  if (!IsInFunction()) {
-    // Only consider mutating binary expressions that occur inside functions.
-    return true;
-  }
-
-  // Check that the binary expression and its arguments have source
-  // ranges that are part of the main file. In particular, this avoids
-  // mutating expressions that directly involve the use of macros (though it
-  // is OK if sub-expressions of arguments use macros).
+  // Check that arguments of the binary expression have source ranges that are
+  // part of the main file. In particular, this avoids mutating expressions that
+  // directly involve the use of macros (though it is OK if sub-expressions of
+  // arguments use macros).
   if (GetSourceRangeInMainFile(compiler_instance_.getPreprocessor(),
-                               *binary_operator)
-          .isInvalid() ||
-      GetSourceRangeInMainFile(compiler_instance_.getPreprocessor(),
                                *binary_operator->getLHS())
           .isInvalid() ||
       GetSourceRangeInMainFile(compiler_instance_.getPreprocessor(),
@@ -276,11 +257,7 @@ bool MutateVisitor::VisitBinaryOperator(
   }
 
   // We only want to change operators for binary operations on basic types.
-  // In particular, we do not want to mess with pointer arithmetic.
-  // Check that the result type is supported
-  if (!IsTypeSupported(binary_operator->getType())) {
-    return true;
-  }
+  // Check that the argument types are supported.
   if (!IsTypeSupported(binary_operator->getLHS()->getType())) {
     return true;
   }
@@ -314,11 +291,8 @@ bool MutateVisitor::VisitBinaryOperator(
 }
 
 bool MutateVisitor::VisitExpr(clang::Expr* expr) {
-  // Unary and binary operators are intercepted separately. There is no value in
-  // mutating a parentheses expression.
-  if (llvm::dyn_cast<clang::BinaryOperator>(expr) != nullptr ||
-      llvm::dyn_cast<clang::UnaryOperator>(expr) != nullptr ||
-      llvm::dyn_cast<clang::ParenExpr>(expr) != nullptr) {
+  // There is no value in mutating a parentheses expression.
+  if (llvm::dyn_cast<clang::ParenExpr>(expr) != nullptr) {
     return true;
   }
 
@@ -343,16 +317,24 @@ bool MutateVisitor::VisitExpr(clang::Expr* expr) {
     return true;
   }
 
+  // Check that the result type is supported
+  if (!IsTypeSupported(expr->getType())) {
+    return true;
+  }
+
+  if (auto* unary_operator = llvm::dyn_cast<clang::UnaryOperator>(expr)) {
+    HandleUnaryOperator(unary_operator);
+  }
+
+  if (auto* binary_operator = llvm::dyn_cast<clang::BinaryOperator>(expr)) {
+    HandleBinaryOperator(binary_operator);
+  }
+
   // There is no useful way to mutate L-Value boolean expressions in C++ or
   // general L-Values in C.
   if (expr->isLValue() &&
       (expr->getType().isConstQualified() || expr->getType()->isBooleanType() ||
        !compiler_instance_.getLangOpts().CPlusPlus)) {
-    return true;
-  }
-
-  // Check that the result type is supported
-  if (!IsTypeSupported(expr->getType())) {
     return true;
   }
 
@@ -363,6 +345,7 @@ bool MutateVisitor::VisitExpr(clang::Expr* expr) {
   }
 
   mutations_.push_back(std::make_unique<MutationReplaceExpr>(*expr));
+
   return true;
 }
 

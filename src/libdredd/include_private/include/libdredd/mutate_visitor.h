@@ -78,10 +78,6 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
   // limited and cannot include lambdas in general.
   bool TraverseParmVarDecl(clang::ParmVarDecl* parm_var_decl);
 
-  bool VisitUnaryOperator(clang::UnaryOperator* unary_operator);
-
-  bool VisitBinaryOperator(clang::BinaryOperator* binary_operator);
-
   bool VisitExpr(clang::Expr* expr);
 
   bool VisitCompoundStmt(clang::CompoundStmt* compound_stmt);
@@ -106,6 +102,10 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
   }
 
  private:
+  bool HandleUnaryOperator(clang::UnaryOperator* unary_operator);
+
+  bool HandleBinaryOperator(clang::BinaryOperator* binary_operator);
+
   static bool IsTypeSupported(clang::QualType qual_type);
 
   // Determines whether the AST node being visited is directly inside a

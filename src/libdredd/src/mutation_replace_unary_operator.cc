@@ -212,15 +212,6 @@ std::string MutationReplaceUnaryOperator::GenerateMutatorFunction(
   GenerateUnaryOperatorReplacement(arg_evaluated, operators, new_function,
                                    mutant_offset);
 
-  const clang::BuiltinType* exprType =
-      unary_operator_.getType()->getAs<clang::BuiltinType>();
-
-  MutationReplaceExpr::GenerateUnaryOperatorInsertion(
-      GetExpr(ast_context), unary_operator_, *exprType, new_function,
-      mutant_offset);
-  MutationReplaceExpr::GenerateConstantReplacement(
-      unary_operator_, *exprType, ast_context, new_function, mutant_offset);
-
   new_function << "  return " << GetExpr(ast_context) << ";\n";
   new_function << "}\n\n";
 

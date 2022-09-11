@@ -60,14 +60,9 @@ static int __dredd_replace_binary_operator_Add_int_int(std::function<int()> arg1
   if (__dredd_enabled_mutation(local_mutation_id + 3)) return arg1() - arg2();
   if (__dredd_enabled_mutation(local_mutation_id + 4)) return arg1();
   if (__dredd_enabled_mutation(local_mutation_id + 5)) return arg2();
-  if (__dredd_enabled_mutation(local_mutation_id + 6)) return !(arg1() + arg2());
-  if (__dredd_enabled_mutation(local_mutation_id + 7)) return ~(arg1() + arg2());
-  if (__dredd_enabled_mutation(local_mutation_id + 8)) return 0;
-  if (__dredd_enabled_mutation(local_mutation_id + 9)) return 1;
-  if (__dredd_enabled_mutation(local_mutation_id + 10)) return -1;
   return arg1() + arg2();
 }
 
 void foo(int a, int b) {
-  int x = __dredd_replace_binary_operator_Add_int_int([&]() -> int { return static_cast<int>(__dredd_replace_expr_int([&]() -> int { return static_cast<int>(__dredd_replace_expr_int_lvalue([&]() -> int& { return static_cast<int&>(a); }, 0)); }, 2)); } , [&]() -> int { return static_cast<int>(__dredd_replace_expr_int([&]() -> int { return static_cast<int>(__dredd_replace_expr_int_lvalue([&]() -> int& { return static_cast<int&>(b); }, 7)); }, 9)); }, 14);
+  int x = __dredd_replace_expr_int([&]() -> int { return static_cast<int>(__dredd_replace_binary_operator_Add_int_int([&]() -> int { return static_cast<int>(__dredd_replace_expr_int([&]() -> int { return static_cast<int>(__dredd_replace_expr_int_lvalue([&]() -> int& { return static_cast<int&>(a); }, 0)); }, 2)); } , [&]() -> int { return static_cast<int>(__dredd_replace_expr_int([&]() -> int { return static_cast<int>(__dredd_replace_expr_int_lvalue([&]() -> int& { return static_cast<int&>(b); }, 7)); }, 9)); }, 14)); }, 20);
 }
