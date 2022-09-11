@@ -251,22 +251,32 @@ void MutationReplaceExpr::Apply(
   // expression.
   std::string prefix;
   std::string suffix;
+
   if (ast_context.getLangOpts().CPlusPlus) {
-    prefix = new_function_name + "([&]() -> " + result_type + " { return " +
-             // We don't need to static cast constant expressions
-             (expr_.isCXX11ConstantExpr(ast_context)
-                  ? ""
-                  : "static_cast<" + result_type + ">(");
-    suffix = (expr_.isCXX11ConstantExpr(ast_context) ? "" : ")");
-    suffix.append("; }, " + std::to_string(local_mutation_id) + ")");
+    prefix.append(new_function_name + "([&]() -> " + result_type +
+                  " { return " +
+                  // We don't need to static cast constant expressions
+                  (expr_.isCXX11ConstantExpr(ast_context)
+                       ? ""
+                       : "static_cast<" + result_type + ">("));
+    suffix.append(expr_.isCXX11ConstantExpr(ast_context) ? "" : ")");
+    suffix.append("; }");
   } else {
-    prefix = new_function_name + "(";
+    prefix.append(new_function_name + "(");
     if (expr_.isLValue() && input_type.ends_with('*')) {
       prefix.append("&(");
       suffix.append(")");
+    } else if (const auto* binary_expr =
+                   llvm::dyn_cast<clang::BinaryOperator>(&expr_)) {
+      // The comma operator requires special care in C, to avoid it appearing to
+      // provide multiple parameters for an enclosing function call.
+      if (binary_expr->isCommaOp()) {
+        prefix.append("(");
+        suffix.append(")");
+      }
     }
-    suffix.append(", " + std::to_string(local_mutation_id) + ")");
   }
+  suffix.append(", " + std::to_string(local_mutation_id) + ")");
 
   // The following code handles a tricky special case, where constant values are
   // used in an initializer list in a manner that leads to them being implicitly

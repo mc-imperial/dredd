@@ -20,7 +20,6 @@
 #include <unordered_set>
 
 #include "clang/AST/ASTContext.h"
-#include "clang/AST/Type.h"
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Rewrite/Core/Rewriter.h"
 #include "libdredd/mutation.h"
