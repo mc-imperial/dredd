@@ -277,14 +277,6 @@ bool MutateVisitor::HandleBinaryOperator(
     return true;
   }
 
-  if (!compiler_instance_.getLangOpts().CPlusPlus) {
-    if (binary_operator->isLogicalOp()) {
-      // Due to problems with short-circuit evaluation, logical operators are
-      // not mutated when handling C.
-      return true;
-    }
-  }
-
   mutations_.push_back(
       std::make_unique<MutationReplaceBinaryOperator>(*binary_operator));
   return true;
