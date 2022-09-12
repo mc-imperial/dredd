@@ -397,9 +397,10 @@ std::string MutationReplaceBinaryOperator::GenerateMutatorFunction(
       << " " << arg2_evaluated << ";\n";
 
   GenerateBinaryOperatorReplacement(operators, arg1_evaluated, arg2_evaluated,
-                                    ast_context, optimise_mutations, new_function, mutant_offset);
-  GenerateArgumentReplacement(arg1_evaluated, arg2_evaluated, ast_context, optimise_mutations, new_function,
-                              mutant_offset);
+                                    ast_context, optimise_mutations,
+                                    new_function, mutant_offset);
+  GenerateArgumentReplacement(arg1_evaluated, arg2_evaluated, ast_context,
+                              optimise_mutations, new_function, mutant_offset);
 
   new_function << "  return " << GetExpr(ast_context) << ";\n";
   new_function << "}\n\n";
