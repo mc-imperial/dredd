@@ -25,7 +25,6 @@
 #include "clang/Tooling/Tooling.h"
 #include "libdredd/mutate_ast_consumer.h"
 #include "llvm/ADT/StringRef.h"
-#include "llvm/Support/CommandLine.h"
 #include "llvm/Support/raw_ostream.h"
 
 namespace dredd {
