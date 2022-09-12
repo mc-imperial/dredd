@@ -75,6 +75,27 @@ class MutationReplaceBinaryOperator : public Mutation {
       const std::string& arg1_evaluated, const std::string& arg2_evaluated,
       std::stringstream& new_function, int& mutant_offset) const;
 
+  // The && and || operators in C require special treatment: due to
+  // short-circuit evaluation their arguments must not be prematurely evaluated.
+  // In C++ this is worked around via lambdas, but lambdas are not available in
+  // C.
+  //
+  // The C workaround is, conceptually, to achieve replacements as follows:
+  //  - "a && b" -> "a || b" via "!(!a && !b)"
+  //  - "a && b" -> "a" via "a && 1"
+  //  - "a && b" -> "b" via "1 && a"
+  // with analogous replacements for "||".
+  //
+  // Using these rewritings avoid the need to change when the operator arguments
+  // are evaluated when no mutations are enabled.
+  void HandleCLogicalOperator(
+      const clang::Preprocessor& preprocessor,
+      const std::string& new_function_prefix, const std::string& result_type,
+      const std::string& lhs_type, const std::string& rhs_type,
+      int first_mutation_id_in_file, int& mutation_id,
+      clang::Rewriter& rewriter,
+      std::unordered_set<std::string>& dredd_declarations) const;
+
   const clang::BinaryOperator& binary_operator_;
 };
 

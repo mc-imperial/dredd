@@ -317,6 +317,17 @@ void MutationReplaceBinaryOperator::Apply(
                              ->getName(ast_context.getPrintingPolicy())
                              .str();
 
+  if (!ast_context.getLangOpts().CPlusPlus && binary_operator_.isLogicalOp()) {
+    // Logical operators in C require special treatment (see the header file for
+    // details). Rather than scattering this special treatment throughout the
+    // logic for handling other operators, it is simpler to handle this case
+    // separately.
+    HandleCLogicalOperator(preprocessor, new_function_name, result_type,
+                           lhs_type, rhs_type, first_mutation_id_in_file,
+                           mutation_id, rewriter, dredd_declarations);
+    return;
+  }
+
   if (binary_operator_.isAssignmentOp()) {
     if (ast_context.getLangOpts().CPlusPlus) {
       result_type += "&";
@@ -463,6 +474,149 @@ void MutationReplaceBinaryOperator::ReplaceOperator(
                                          rhs_suffix);
   assert(!result && "Rewrite failed.\n");
   (void)result;  // Keep release-mode compilers happy.
+}
+
+void MutationReplaceBinaryOperator::HandleCLogicalOperator(
+    const clang::Preprocessor& preprocessor,
+    const std::string& new_function_prefix, const std::string& result_type,
+    const std::string& lhs_type, const std::string& rhs_type,
+    int first_mutation_id_in_file, int& mutation_id, clang::Rewriter& rewriter,
+    std::unordered_set<std::string>& dredd_declarations) const {
+  // A C logical operator "op" is handled by transforming:
+  //
+  //   a op b
+  //
+  // to:
+  //
+  //   __dred_fun_outer(__dredd_fun_lhs(a) op __dredd_fun_rhs(b))
+  //
+  // These functions collectively handle three cases:
+  //
+  // - Case 0: swapping the operator, achieved by having all functions negate
+  //   their argument.
+  //
+  // - Case 1: replacing the expression with "a", achieved by having the "outer"
+  //   and "lhs" functions do nothing, and the "rhs" function return either 0 or
+  //   1, depending on the operator.
+  //
+  // - Case 2: replacing the expression with "b", achieved by having the "outer"
+  //   and "rhs" functions do nothing, and the "lhs" function return either 0 or
+  //   1, depending on the operator.
+
+  {
+    // Rewrite the LHS of the expression, and introduce the associated function.
+    auto source_range_lhs =
+        GetSourceRangeInMainFile(preprocessor, *binary_operator_.getLHS());
+    const std::string lhs_function_name = new_function_prefix + "_lhs";
+    rewriter.InsertTextBefore(source_range_lhs.getBegin(),
+                              lhs_function_name + "(");
+    rewriter.InsertTextAfterToken(
+        source_range_lhs.getEnd(),
+        ", " + std::to_string(mutation_id - first_mutation_id_in_file) + ")");
+
+    std::stringstream lhs_function;
+    lhs_function << "static " << lhs_type << " " << lhs_function_name << "("
+                 << lhs_type << " arg, int local_mutation_id) {\n";
+    lhs_function << "  if (!__dredd_some_mutation_enabled) return arg;\n";
+    // Case 0: swapping the operator.
+    // Replacing && with || is achieved by negating the whole expression, and
+    // negating each of the LHS and RHS. The same holds for replacing || with
+    // &&. This case handles negating the LHS.
+    lhs_function << "  if (__dredd_enabled_mutation(local_mutation_id + 0)) "
+                    "return !arg;\n";
+
+    // Case 1: replacing with LHS: no action is needed here.
+
+    // Case 2: replacing with RHS.
+    if (binary_operator_.getOpcode() == clang::BinaryOperatorKind::BO_LAnd) {
+      // Replacing "a && b" with "b" is achieved by replacing "a" with "1".
+      lhs_function << "  if (__dredd_enabled_mutation(local_mutation_id + 2)) "
+                      "return 1;\n";
+    } else {
+      // Replacing "a || b" with "b" is achieved by replacing "a" with "0".
+      lhs_function << "  if (__dredd_enabled_mutation(local_mutation_id + 2)) "
+                      "return 0;\n";
+    }
+    lhs_function << "  return arg;\n";
+    lhs_function << "}\n";
+    dredd_declarations.insert(lhs_function.str());
+  }
+
+  {
+    // Rewrite the RHS of the expression, and introduce the associated function.
+    auto source_range_rhs =
+        GetSourceRangeInMainFile(preprocessor, *binary_operator_.getRHS());
+    const std::string rhs_function_name = new_function_prefix + "_rhs";
+    rewriter.InsertTextBefore(source_range_rhs.getBegin(),
+                              rhs_function_name + "(");
+    rewriter.InsertTextAfterToken(
+        source_range_rhs.getEnd(),
+        ", " + std::to_string(mutation_id - first_mutation_id_in_file) + ")");
+
+    std::stringstream rhs_function;
+    rhs_function << "static " << rhs_type << " " << rhs_function_name << "("
+                 << rhs_type << " arg, int local_mutation_id) {\n";
+    rhs_function << "  if (!__dredd_some_mutation_enabled) return arg;\n";
+    // Case 0: swapping the operator.
+    // Replacing && with || is achieved by negating the whole expression, and
+    // negating each of the LHS and RHS. The same holds for replacing || with
+    // &&. This case handles negating the RHS.
+    rhs_function << "  if (__dredd_enabled_mutation(local_mutation_id + 0)) "
+                    "return !arg;\n";
+
+    // Case 1: replacing with LHS.
+    if (binary_operator_.getOpcode() == clang::BinaryOperatorKind::BO_LAnd) {
+      // Replacing "a && b" with "a" is achieved by replacing "b" with "1".
+      rhs_function << "  if (__dredd_enabled_mutation(local_mutation_id + 1)) "
+                      "return 1;\n";
+    } else {
+      // Replacing "a || b" with "a" is achieved by replacing "b" with "0".
+      rhs_function << "  if (__dredd_enabled_mutation(local_mutation_id + 1)) "
+                      "return 0;\n";
+    }
+
+    // Case 2: replacing with RHS: no action is needed here.
+
+    rhs_function << "  return arg;\n";
+    rhs_function << "}\n";
+    dredd_declarations.insert(rhs_function.str());
+  }
+
+  {
+    // Rewrite the overall expression, and introduce the associated function.
+    auto source_range_binary_operator =
+        GetSourceRangeInMainFile(preprocessor, binary_operator_);
+    const std::string outer_function_name = new_function_prefix + "_outer";
+    rewriter.InsertTextBefore(source_range_binary_operator.getBegin(),
+                              outer_function_name + "(");
+    rewriter.InsertTextAfterToken(
+        source_range_binary_operator.getEnd(),
+        ", " + std::to_string(mutation_id - first_mutation_id_in_file) + ")");
+
+    std::stringstream outer_function;
+    outer_function << "static " << result_type << " " << outer_function_name
+                   << "(" << result_type << " arg, int local_mutation_id) {\n";
+    // Case 0: swapping the operator.
+    // Replacing && with || is achieved by negating the whole expression, and
+    // negating each of the LHS and RHS. The same holds for replacing || with
+    // &&. This case handles negating the whole expression.
+    outer_function << "  if (__dredd_enabled_mutation(local_mutation_id + 0)) "
+                      "return !arg;\n";
+
+    // Case 1: replacing with LHS: no action is needed here.
+
+    // Case 2: replacing with RHS: no action is needed here.
+
+    outer_function << "  return arg;\n";
+    outer_function << "}\n";
+    dredd_declarations.insert(outer_function.str());
+  }
+
+  // The mutation id is increased by 3 due to:
+  // - Swapping the operator
+  // - Replacing with LHS
+  // - Replacing with RHS
+  mutation_id += 3;
 }
 
 }  // namespace dredd
