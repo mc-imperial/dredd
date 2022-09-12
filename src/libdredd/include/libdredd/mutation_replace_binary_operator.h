@@ -36,7 +36,7 @@ class MutationReplaceBinaryOperator : public Mutation {
 
   void Apply(
       clang::ASTContext& ast_context, const clang::Preprocessor& preprocessor,
-      int first_mutation_id_in_file, int& mutation_id,
+      int first_mutation_id_in_file, int& mutation_id, bool optimise_mutations,
       clang::Rewriter& rewriter,
       std::unordered_set<std::string>& dredd_declarations) const override;
 
@@ -44,7 +44,7 @@ class MutationReplaceBinaryOperator : public Mutation {
   std::string GenerateMutatorFunction(
       clang::ASTContext& ast_context, const std::string& function_name,
       const std::string& result_type, const std::string& lhs_type,
-      const std::string& rhs_type,
+      const std::string& rhs_type, bool optimise_mutations,
       const std::vector<clang::BinaryOperatorKind>& operators,
       int& mutation_id) const;
 
@@ -70,6 +70,7 @@ class MutationReplaceBinaryOperator : public Mutation {
   void GenerateArgumentReplacement(const std::string& arg1_evaluated,
                                    const std::string& arg2_evaluated,
                                    clang::ASTContext& ast_context,
+                                   bool optimise_mutations,
                                    std::stringstream& new_function,
                                    int& mutant_offset) const;
 
@@ -77,8 +78,8 @@ class MutationReplaceBinaryOperator : public Mutation {
   void GenerateBinaryOperatorReplacement(
       const std::vector<clang::BinaryOperatorKind>& operators,
       const std::string& arg1_evaluated, const std::string& arg2_evaluated,
-      clang::ASTContext& ast_context, std::stringstream& new_function,
-      int& mutant_offset) const;
+      clang::ASTContext& ast_context, bool optimise_mutations,
+      std::stringstream& new_function, int& mutant_offset) const;
 
   // The && and || operators in C require special treatment: due to
   // short-circuit evaluation their arguments must not be prematurely evaluated.

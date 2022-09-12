@@ -25,14 +25,18 @@
 #include "clang/Tooling/Tooling.h"
 #include "libdredd/mutate_ast_consumer.h"
 #include "llvm/ADT/StringRef.h"
+#include "llvm/Support/CommandLine.h"
 #include "llvm/Support/raw_ostream.h"
 
 namespace dredd {
 
 class MutateFrontendAction : public clang::ASTFrontendAction {
  public:
-  MutateFrontendAction(int& mutation_id, std::set<std::string>& processed_files)
-      : mutation_id_(mutation_id), processed_files_(processed_files) {}
+  MutateFrontendAction(bool optimise_mutations, int& mutation_id,
+                       std::set<std::string>& processed_files)
+      : mutation_id_(mutation_id),
+        optimise_mutations_(optimise_mutations),
+        processed_files_(processed_files) {}
 
   std::unique_ptr<clang::ASTConsumer> CreateASTConsumer(
       clang::CompilerInstance& ci, llvm::StringRef file) override;
@@ -53,37 +57,42 @@ class MutateFrontendAction : public clang::ASTFrontendAction {
 
  private:
   int& mutation_id_;
+  bool optimise_mutations_;
   std::set<std::string>& processed_files_;
 };
 
 std::unique_ptr<clang::tooling::FrontendActionFactory>
-NewMutateFrontendActionFactory(int& mutation_id) {
+NewMutateFrontendActionFactory(bool optimise_mutations, int& mutation_id) {
   class MutateFrontendActionFactory
       : public clang::tooling::FrontendActionFactory {
    public:
-    explicit MutateFrontendActionFactory(int& mutation_id)
-        : mutation_id_(mutation_id) {}
+    explicit MutateFrontendActionFactory(bool optimise_mutations,
+                                         int& mutation_id)
+        : mutation_id_(mutation_id), optimise_mutations_(optimise_mutations) {}
 
     std::unique_ptr<clang::FrontendAction> create() override {
-      return std::make_unique<MutateFrontendAction>(mutation_id_,
-                                                    processed_files_);
+      return std::make_unique<MutateFrontendAction>(
+          optimise_mutations_, mutation_id_, processed_files_);
     }
 
    private:
     int& mutation_id_;
+    bool optimise_mutations_;
 
     // Stores the ids of the files that have been processed so far, to avoid
     // processing a file multiple times.
     std::set<std::string> processed_files_;
   };
 
-  return std::make_unique<MutateFrontendActionFactory>(mutation_id);
+  return std::make_unique<MutateFrontendActionFactory>(optimise_mutations,
+                                                       mutation_id);
 }
 
 std::unique_ptr<clang::ASTConsumer> MutateFrontendAction::CreateASTConsumer(
     clang::CompilerInstance& ci, llvm::StringRef file) {
   (void)file;
-  return std::make_unique<MutateAstConsumer>(ci, mutation_id_);
+  return std::make_unique<MutateAstConsumer>(ci, optimise_mutations_,
+                                             mutation_id_);
 }
 
 }  // namespace dredd

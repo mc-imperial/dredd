@@ -41,6 +41,10 @@ static llvm::cl::extrahelp common_help(
     clang::tooling::CommonOptionsParser::HelpMessage);
 // NOLINTNEXTLINE
 static llvm::cl::OptionCategory mutate_category("mutate options");
+// NOLINTNEXTLINE
+static llvm::cl::opt<bool> NoMutationOpts(
+    "no-mutation-opts", llvm::cl::desc("Disable Dredd's optimisations"),
+    llvm::cl::cat(mutate_category));
 
 #if defined(__clang__)
 #pragma clang diagnostic pop
@@ -67,7 +71,7 @@ int main(int argc, const char** argv) {
   int mutation_id = 0;
 
   std::unique_ptr<clang::tooling::FrontendActionFactory> factory =
-      dredd::NewMutateFrontendActionFactory(mutation_id);
+      dredd::NewMutateFrontendActionFactory(!NoMutationOpts, mutation_id);
 
   return Tool.run(factory.get());
 }

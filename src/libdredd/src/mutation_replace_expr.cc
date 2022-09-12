@@ -214,7 +214,8 @@ void MutationReplaceExpr::ApplyCTypeModifiers(const clang::Expr* expr,
 
 void MutationReplaceExpr::Apply(
     clang::ASTContext& ast_context, const clang::Preprocessor& preprocessor,
-    int first_mutation_id_in_file, int& mutation_id, clang::Rewriter& rewriter,
+    int first_mutation_id_in_file, int& mutation_id, bool optimise_mutations,
+    clang::Rewriter& rewriter,
     std::unordered_set<std::string>& dredd_declarations) const {
   std::string new_function_name = GetFunctionName(ast_context);
   std::string result_type = expr_.getType()
@@ -311,6 +312,7 @@ void MutationReplaceExpr::Apply(
   assert(!result && "Rewrite failed.\n");
   (void)result;
 
+  (void)optimise_mutations;
   std::string new_function = GenerateMutatorFunction(
       ast_context, new_function_name, result_type, input_type, mutation_id);
   assert(!new_function.empty() && "Unsupported expression.");

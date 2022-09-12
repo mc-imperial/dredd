@@ -47,7 +47,7 @@ void TestRemoval(const std::string& original, const std::string& expected,
   std::unordered_set<std::string> dredd_declarations;
   mutation_supplier(ast_unit->getASTContext())
       .Apply(ast_unit->getASTContext(), ast_unit->getPreprocessor(), 0,
-             mutation_id, rewriter, dredd_declarations);
+             mutation_id, true, rewriter, dredd_declarations);
   ASSERT_EQ(1, mutation_id);
   ASSERT_EQ(0, dredd_declarations.size());
   const clang::RewriteBuffer* rewrite_buffer = rewriter.getRewriteBufferFor(

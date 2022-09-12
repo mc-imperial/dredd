@@ -34,7 +34,8 @@ MutationRemoveStatement::MutationRemoveStatement(const clang::Stmt& statement)
 
 void MutationRemoveStatement::Apply(
     clang::ASTContext& ast_context, const clang::Preprocessor& preprocessor,
-    int first_mutation_id_in_file, int& mutation_id, clang::Rewriter& rewriter,
+    int first_mutation_id_in_file, int& mutation_id, bool optimise_mutations,
+    clang::Rewriter& rewriter,
     std::unordered_set<std::string>& dredd_declarations) const {
   (void)dredd_declarations;  // Unused
   clang::CharSourceRange source_range = clang::CharSourceRange::getTokenRange(
@@ -95,6 +96,7 @@ void MutationRemoveStatement::Apply(
           "}");
   assert(!result && "Rewrite failed.\n");
   (void)result;  // Keep release-mode compilers happy.
+  (void)optimise_mutations;
   mutation_id++;
 }
 
