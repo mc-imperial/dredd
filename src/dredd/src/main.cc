@@ -12,11 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <fstream>
 #include <memory>
+#include <string>
 #include <type_traits>
 
 #include "clang/Tooling/CommonOptionsParser.h"
 #include "clang/Tooling/Tooling.h"
+#include "libdredd/mutation_info.h"
 #include "libdredd/new_mutate_frontend_action_factory.h"
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/StringRef.h"
@@ -45,6 +48,12 @@ static llvm::cl::OptionCategory mutate_category("mutate options");
 static llvm::cl::opt<bool> no_mutation_opts(
     "no-mutation-opts", llvm::cl::desc("Disable Dredd's optimisations"),
     llvm::cl::cat(mutate_category));
+// NOLINTNEXTLINE
+static llvm::cl::opt<std::string> mutation_info_file(
+    "mutation-info-file", llvm::cl::Required,
+    llvm::cl::desc(
+        ".json file into which mutation information should be written"),
+    llvm::cl::cat(mutate_category));
 
 #if defined(__clang__)
 #pragma clang diagnostic pop
@@ -68,10 +77,24 @@ int main(int argc, const char** argv) {
   clang::tooling::ClangTool Tool(options.get().getCompilations(),
                                  options.get().getSourcePathList());
 
+  // Used to give each mutation a unique identifier.
   int mutation_id = 0;
 
-  std::unique_ptr<clang::tooling::FrontendActionFactory> factory =
-      dredd::NewMutateFrontendActionFactory(!no_mutation_opts, mutation_id);
+  // Keeps track of the mutations that are applied to each source file,
+  // including their hierarchical structure.
+  dredd::MutationInfo mutation_info;
 
-  return Tool.run(factory.get());
+  std::unique_ptr<clang::tooling::FrontendActionFactory> factory =
+      dredd::NewMutateFrontendActionFactory(!no_mutation_opts, mutation_id,
+                                            mutation_info);
+
+  const int return_code = Tool.run(factory.get());
+
+  if (return_code == 0) {
+    // Application of mutations was successful, so write out the mutation info
+    // in JSON format.
+    std::ofstream json_out(mutation_info_file);
+    mutation_info.ToJson(json_out);
+  }
+  return return_code;
 }

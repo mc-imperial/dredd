@@ -73,6 +73,6 @@ static int __dredd_replace_binary_operator_Assign_int_int(int* arg1, int arg2, i
 int main() {
   int x;
   volatile int y;
-  if (!__dredd_enabled_mutation(40)) { __dredd_replace_expr_int(__dredd_replace_binary_operator_Assign_int_int(&(x) , __dredd_replace_expr_int(2, 0), 5), 15); }
-  if (!__dredd_enabled_mutation(41)) { __dredd_replace_expr_int(__dredd_replace_binary_operator_Assign_volatile_int_int(&(y) , __dredd_replace_expr_int(4, 20), 25), 35); }
+  if (!__dredd_enabled_mutation(20)) { __dredd_replace_expr_int(__dredd_replace_binary_operator_Assign_int_int(&(x) , __dredd_replace_expr_int(2, 0), 5), 15); }
+  if (!__dredd_enabled_mutation(41)) { __dredd_replace_expr_int(__dredd_replace_binary_operator_Assign_volatile_int_int(&(y) , __dredd_replace_expr_int(4, 21), 26), 36); }
 }

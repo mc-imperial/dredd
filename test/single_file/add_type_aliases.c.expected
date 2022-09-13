@@ -126,13 +126,13 @@ int main() {
   int64_t h;
   uint64_t i;
 
-  if (!__dredd_enabled_mutation(174)) { __dredd_replace_expr_unsigned_int(__dredd_replace_binary_operator_Add_unsigned_int_unsigned_int(__dredd_replace_expr_unsigned_int(a, 0) , __dredd_replace_expr_unsigned_int(a, 4), 8), 14); }
-  if (!__dredd_enabled_mutation(175)) { __dredd_replace_expr_unsigned_int(__dredd_replace_binary_operator_Add_unsigned_int_unsigned_int(__dredd_replace_expr_unsigned_int(b, 18) , __dredd_replace_expr_unsigned_int(b, 22), 26), 32); }
-  if (!__dredd_enabled_mutation(176)) { __dredd_replace_expr_int(__dredd_replace_binary_operator_Add_int_int(__dredd_replace_expr_int(c, 36) , __dredd_replace_expr_int(c, 41), 46), 52); }
-  if (!__dredd_enabled_mutation(177)) { __dredd_replace_expr_int(__dredd_replace_binary_operator_Add_int_int(__dredd_replace_expr_int(d, 57) , __dredd_replace_expr_int(d, 62), 67), 73); }
-  if (!__dredd_enabled_mutation(178)) { __dredd_replace_expr_unsigned_long(__dredd_replace_binary_operator_Add_unsigned_long_unsigned_long(__dredd_replace_expr_unsigned_long(e, 78) , __dredd_replace_expr_unsigned_long(e, 82), 86), 92); }
-  if (!__dredd_enabled_mutation(179)) { __dredd_replace_expr_unsigned_long(__dredd_replace_binary_operator_Add_unsigned_long_unsigned_long(__dredd_replace_expr_unsigned_long(f, 96) , __dredd_replace_expr_unsigned_long(f, 100), 104), 110); }
-  if (!__dredd_enabled_mutation(180)) { __dredd_replace_expr_long(__dredd_replace_binary_operator_Add_long_long(__dredd_replace_expr_long(g, 114) , __dredd_replace_expr_long(g, 119), 124), 130); }
-  if (!__dredd_enabled_mutation(181)) { __dredd_replace_expr_long(__dredd_replace_binary_operator_Add_long_long(__dredd_replace_expr_long(h, 135) , __dredd_replace_expr_long(h, 140), 145), 151); }
-  if (!__dredd_enabled_mutation(182)) { __dredd_replace_expr_unsigned_long(__dredd_replace_binary_operator_Add_unsigned_long_unsigned_long(__dredd_replace_expr_unsigned_long(i, 156) , __dredd_replace_expr_unsigned_long(i, 160), 164), 170); }
+  if (!__dredd_enabled_mutation(18)) { __dredd_replace_expr_unsigned_int(__dredd_replace_binary_operator_Add_unsigned_int_unsigned_int(__dredd_replace_expr_unsigned_int(a, 0) , __dredd_replace_expr_unsigned_int(a, 4), 8), 14); }
+  if (!__dredd_enabled_mutation(37)) { __dredd_replace_expr_unsigned_int(__dredd_replace_binary_operator_Add_unsigned_int_unsigned_int(__dredd_replace_expr_unsigned_int(b, 19) , __dredd_replace_expr_unsigned_int(b, 23), 27), 33); }
+  if (!__dredd_enabled_mutation(59)) { __dredd_replace_expr_int(__dredd_replace_binary_operator_Add_int_int(__dredd_replace_expr_int(c, 38) , __dredd_replace_expr_int(c, 43), 48), 54); }
+  if (!__dredd_enabled_mutation(81)) { __dredd_replace_expr_int(__dredd_replace_binary_operator_Add_int_int(__dredd_replace_expr_int(d, 60) , __dredd_replace_expr_int(d, 65), 70), 76); }
+  if (!__dredd_enabled_mutation(100)) { __dredd_replace_expr_unsigned_long(__dredd_replace_binary_operator_Add_unsigned_long_unsigned_long(__dredd_replace_expr_unsigned_long(e, 82) , __dredd_replace_expr_unsigned_long(e, 86), 90), 96); }
+  if (!__dredd_enabled_mutation(119)) { __dredd_replace_expr_unsigned_long(__dredd_replace_binary_operator_Add_unsigned_long_unsigned_long(__dredd_replace_expr_unsigned_long(f, 101) , __dredd_replace_expr_unsigned_long(f, 105), 109), 115); }
+  if (!__dredd_enabled_mutation(141)) { __dredd_replace_expr_long(__dredd_replace_binary_operator_Add_long_long(__dredd_replace_expr_long(g, 120) , __dredd_replace_expr_long(g, 125), 130), 136); }
+  if (!__dredd_enabled_mutation(163)) { __dredd_replace_expr_long(__dredd_replace_binary_operator_Add_long_long(__dredd_replace_expr_long(h, 142) , __dredd_replace_expr_long(h, 147), 152), 158); }
+  if (!__dredd_enabled_mutation(182)) { __dredd_replace_expr_unsigned_long(__dredd_replace_binary_operator_Add_unsigned_long_unsigned_long(__dredd_replace_expr_unsigned_long(i, 164) , __dredd_replace_expr_unsigned_long(i, 168), 172), 178); }
 }

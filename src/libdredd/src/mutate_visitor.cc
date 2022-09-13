@@ -16,6 +16,7 @@
 
 #include <cassert>
 #include <cstddef>
+#include <memory>
 
 #include "clang/AST/Decl.h"
 #include "clang/AST/DeclBase.h"
@@ -33,6 +34,7 @@
 #include "clang/Basic/SourceLocation.h"
 #include "clang/Basic/SourceManager.h"
 #include "clang/Frontend/CompilerInstance.h"
+#include "libdredd/mutation.h"
 #include "libdredd/mutation_remove_statement.h"
 #include "libdredd/mutation_replace_binary_operator.h"
 #include "libdredd/mutation_replace_expr.h"
@@ -46,7 +48,10 @@ namespace dredd {
 MutateVisitor::MutateVisitor(const clang::CompilerInstance& compiler_instance,
                              bool optimise_mutations)
     : compiler_instance_(compiler_instance),
-      optimise_mutations_(optimise_mutations) {}
+      optimise_mutations_(optimise_mutations),
+      mutation_tree_root_() {
+  mutation_tree_path_.push_back(&mutation_tree_root_);
+}
 
 bool MutateVisitor::IsTypeSupported(const clang::QualType qual_type) {
   const auto* builtin_type = qual_type->getAs<clang::BuiltinType>();
@@ -80,7 +85,12 @@ bool MutateVisitor::IsInFunction() {
 bool MutateVisitor::TraverseDecl(clang::Decl* decl) {
   if (llvm::dyn_cast<clang::TranslationUnitDecl>(decl) != nullptr) {
     // This is the top-level translation unit declaration, so descend into it.
-    return RecursiveASTVisitor::TraverseDecl(decl);
+    bool result = RecursiveASTVisitor::TraverseDecl(decl);
+    // At this point the translation unit has been fully visited, so the
+    // mutation tree that has been built can be made simpler, in preparation for
+    // later turning it into a JSON summary.
+    mutation_tree_root_.TidyUp();
+    return result;
   }
   auto source_range_in_main_file =
       GetSourceRangeInMainFile(compiler_instance_.getPreprocessor(), *decl);
@@ -135,6 +145,13 @@ bool MutateVisitor::TraverseDecl(clang::Decl* decl) {
   enclosing_decls_.pop_back();
 
   return true;
+}
+
+bool MutateVisitor::TraverseStmt(clang::Stmt* stmt) {
+  // Add a node to the mutation tree to capture any mutations beneath this
+  // statement.
+  PushMutationTreeRAII push_mutation_tree(*this);
+  return RecursiveASTVisitor::TraverseStmt(stmt);
 }
 
 bool MutateVisitor::TraverseCaseStmt(clang::CaseStmt* case_stmt) {
@@ -238,7 +255,7 @@ bool MutateVisitor::HandleUnaryOperator(clang::UnaryOperator* unary_operator) {
     return true;
   }
 
-  mutations_.push_back(
+  mutation_tree_path_.back()->AddMutation(
       std::make_unique<MutationReplaceUnaryOperator>(*unary_operator));
   return true;
 }
@@ -289,7 +306,7 @@ bool MutateVisitor::HandleBinaryOperator(
     return true;
   }
 
-  mutations_.push_back(
+  mutation_tree_path_.back()->AddMutation(
       std::make_unique<MutationReplaceBinaryOperator>(*binary_operator));
   return true;
 }
@@ -348,28 +365,38 @@ bool MutateVisitor::VisitExpr(clang::Expr* expr) {
     return true;
   }
 
-  mutations_.push_back(std::make_unique<MutationReplaceExpr>(*expr));
+  mutation_tree_path_.back()->AddMutation(
+      std::make_unique<MutationReplaceExpr>(*expr));
 
   return true;
 }
 
-bool MutateVisitor::VisitCompoundStmt(clang::CompoundStmt* compound_stmt) {
+bool MutateVisitor::TraverseCompoundStmt(clang::CompoundStmt* compound_stmt) {
   for (auto* stmt : compound_stmt->body()) {
+    // To ensure that each sub-statement of a compound statement has its
+    // mutations recorded in sibling subtrees of the mutation tree, a mutation
+    // tree node is pushed per sub-statement.
+    PushMutationTreeRAII push_mutation_tree(*this);
+    TraverseStmt(stmt);
     if (GetSourceRangeInMainFile(compiler_instance_.getPreprocessor(), *stmt)
             .isInvalid() ||
         llvm::dyn_cast<clang::NullStmt>(stmt) != nullptr ||
         llvm::dyn_cast<clang::DeclStmt>(stmt) != nullptr ||
         llvm::dyn_cast<clang::SwitchCase>(stmt) != nullptr ||
-        llvm::dyn_cast<clang::LabelStmt>(stmt) != nullptr) {
+        llvm::dyn_cast<clang::LabelStmt>(stmt) != nullptr ||
+        llvm::dyn_cast<clang::CompoundStmt>(stmt) != nullptr) {
       // Wrapping switch cases, labels and null statements in conditional code
       // has no effect. Declarations cannot be wrapped in conditional code
-      // without risking breaking compilation.
+      // without risking breaking compilation. It is probably redundant to
+      // remove a compound statement since each of its sub-statements will be
+      // considered for removal anyway.
       continue;
     }
     assert(!enclosing_decls_.empty() &&
            "Statements can only be removed if they are nested in some "
            "declaration.");
-    mutations_.push_back(std::make_unique<MutationRemoveStatement>(*stmt));
+    mutation_tree_path_.back()->AddMutation(
+        std::make_unique<MutationRemoveStatement>(*stmt));
   }
   return true;
 }

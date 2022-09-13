@@ -47,7 +47,7 @@ struct S {
 
 void foo() {
   struct S myS;
-  if (!__dredd_enabled_mutation(20)) { __dredd_replace_expr_int(myS.a = __dredd_replace_expr_int(myS.b, 0), 5); }
-  if (!__dredd_enabled_mutation(21)) { __dredd_replace_expr_int(myS.a++, 10); }
-  if (!__dredd_enabled_mutation(22)) { __dredd_replace_expr_int(--myS.b, 15); }
+  if (!__dredd_enabled_mutation(10)) { __dredd_replace_expr_int(myS.a = __dredd_replace_expr_int(myS.b, 0), 5); }
+  if (!__dredd_enabled_mutation(16)) { __dredd_replace_expr_int(myS.a++, 11); }
+  if (!__dredd_enabled_mutation(22)) { __dredd_replace_expr_int(--myS.b, 17); }
 }

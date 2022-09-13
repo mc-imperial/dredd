@@ -79,6 +79,6 @@ int main() {
   float x = __dredd_replace_expr_float(__dredd_replace_expr_double(5.235, 0), 3);
   float y = __dredd_replace_expr_float(__dredd_replace_expr_double(754.34623, 6), 9);
   float z;
-  if (!__dredd_enabled_mutation(38)) { __dredd_replace_expr_float(__dredd_replace_binary_operator_Assign_float_float(&(z) , __dredd_replace_expr_float(__dredd_replace_binary_operator_Add_float_float(__dredd_replace_expr_float(x, 12) , __dredd_replace_expr_float(y, 15), 18), 23), 26), 30); }
-  if (!__dredd_enabled_mutation(39)) { return __dredd_replace_expr_int(0, 33); }
+  if (!__dredd_enabled_mutation(33)) { __dredd_replace_expr_float(__dredd_replace_binary_operator_Assign_float_float(&(z) , __dredd_replace_expr_float(__dredd_replace_binary_operator_Add_float_float(__dredd_replace_expr_float(x, 12) , __dredd_replace_expr_float(y, 15), 18), 23), 26), 30); }
+  if (!__dredd_enabled_mutation(39)) { return __dredd_replace_expr_int(0, 34); }
 }

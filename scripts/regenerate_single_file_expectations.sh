@@ -35,7 +35,7 @@ then
     cp $f .
     copy_of_f=$(basename $f)      
     # Mutate the test case using Dredd
-    ${DREDD_INSTALLED_EXECUTABLE} ${copy_of_f} --
+    ${DREDD_INSTALLED_EXECUTABLE} --mutation-info-file temp.json ${copy_of_f} --
     # Check that the mutated file compiles
     if [[ $f == *.cc ]]
     then
@@ -50,7 +50,7 @@ then
     cp $f .
     copy_of_f=$(basename $f)
     # Mutate the test case using Dredd
-    ${DREDD_INSTALLED_EXECUTABLE} --no-mutation-opts ${copy_of_f} --
+    ${DREDD_INSTALLED_EXECUTABLE} --no-mutation-opts --mutation-info-file temp.json ${copy_of_f} --
     # Check that the mutated file compiles
     if [[ $f == *.cc ]]
     then

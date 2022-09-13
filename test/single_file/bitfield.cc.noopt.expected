@@ -52,7 +52,7 @@ struct S {
 
 void foo() {
   S myS;
-  if (!__dredd_enabled_mutation(10)) { myS.a = __dredd_replace_expr_int([&]() -> int { return static_cast<int>(myS.b); }, 0); }
-  if (!__dredd_enabled_mutation(11)) { __dredd_replace_expr_int([&]() -> int { return static_cast<int>(myS.a++); }, 5); }
+  if (!__dredd_enabled_mutation(5)) { myS.a = __dredd_replace_expr_int([&]() -> int { return static_cast<int>(myS.b); }, 0); }
+  if (!__dredd_enabled_mutation(11)) { __dredd_replace_expr_int([&]() -> int { return static_cast<int>(myS.a++); }, 6); }
   if (!__dredd_enabled_mutation(12)) { --myS.b; }
 }

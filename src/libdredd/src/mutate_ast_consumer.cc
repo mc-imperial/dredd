@@ -19,16 +19,20 @@
 #include <sstream>
 #include <string>
 #include <unordered_set>
+#include <utility>
 #include <vector>
 
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/Decl.h"
 #include "clang/Basic/Diagnostic.h"
+#include "clang/Basic/FileEntry.h"
 #include "clang/Basic/LangOptions.h"
 #include "clang/Basic/SourceLocation.h"
+#include "clang/Basic/SourceManager.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Rewrite/Core/Rewriter.h"
 #include "libdredd/mutation.h"
+#include "llvm/ADT/StringRef.h"
 
 namespace dredd {
 
@@ -38,11 +42,6 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
     return;
   }
   visitor_->TraverseDecl(ast_context.getTranslationUnitDecl());
-
-  if (visitor_->GetMutations().empty()) {
-    // No possibilities for mutation were found; nothing to do.
-    return;
-  }
 
   rewriter_.setSourceMgr(compiler_instance_.getSourceManager(),
                          compiler_instance_.getLangOpts());
@@ -62,20 +61,21 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
   // file in a deterministic order.
   std::unordered_set<std::string> dredd_declarations;
 
-  // By construction, mutations are processed in a bottom-up fashion. This
-  // property should be preserved when the specific mutations are made at
-  // random, to avoid attempts to rewrite a child node after its parent has been
-  // rewritten.
-  for (const auto& mutation : visitor_->GetMutations()) {
-    int mutation_id_old = mutation_id_;
-    mutation->Apply(ast_context, compiler_instance_.getPreprocessor(),
-                    optimise_mutations_, initial_mutation_id, mutation_id_,
-                    rewriter_, dredd_declarations);
-    assert(mutation_id_ > mutation_id_old &&
-           "Every mutation should lead to the mutation id increasing by at "
-           "least 1.");
-    (void)mutation_id_old;  // Keep release-mode compilers happy.
+  if (visitor_->GetMutations().IsEmpty()) {
+    // No possibilities for mutation were found; nothing to do.
+    return;
   }
+
+  auto mutation_ids =
+      ApplyMutations(visitor_->GetMutations(), initial_mutation_id, ast_context,
+                     dredd_declarations);
+
+  mutation_info_.AddInfoForFile(
+      ast_context.getSourceManager()
+          .getFileEntryForID(ast_context.getSourceManager().getMainFileID())
+          ->getName()
+          .str(),
+      std::move(mutation_ids));
 
   clang::SourceLocation start_location_of_first_decl_in_source_file =
       visitor_->GetStartLocationOfFirstDeclInSourceFile();
@@ -245,6 +245,35 @@ std::string MutateAstConsumer::GetDreddPreludeC(int initial_mutation_id) const {
             "(local_mutation_id % 64));\n";
   result << "}\n\n";
   return result.str();
+}
+
+MutationIdTreeNode MutateAstConsumer::ApplyMutations(
+    const MutationTreeNode& mutation_tree_node, int initial_mutation_id,
+    clang::ASTContext& context,
+    std::unordered_set<std::string>& dredd_declarations) {
+  assert(!(mutation_tree_node.IsEmpty() &&
+           mutation_tree_node.GetChildren().size() == 1) &&
+         "The mutation tree should already be compressed.");
+  MutationIdTreeNode result;
+  for (const auto& child : mutation_tree_node.GetChildren()) {
+    assert(!child.IsEmpty() &&
+           "The mutation tree should not have empty subtrees.");
+    result.AddChild(ApplyMutations(child, initial_mutation_id, context,
+                                   dredd_declarations));
+  }
+  for (const auto& mutation : mutation_tree_node.GetMutations()) {
+    int mutation_id_old = mutation_id_;
+    mutation->Apply(context, compiler_instance_.getPreprocessor(),
+                    optimise_mutations_, initial_mutation_id, mutation_id_,
+                    rewriter_, dredd_declarations);
+    assert(mutation_id_ > mutation_id_old &&
+           "Every mutation should lead to the mutation id increasing by at "
+           "least 1.");
+    for (int i = mutation_id_old; i < mutation_id_; i++) {
+      result.AddId(i);
+    }
+  }
+  return result;
 }
 
 }  // namespace dredd
