@@ -277,6 +277,21 @@ bool MutateVisitor::HandleBinaryOperator(
     return true;
   }
 
+  // If mutations are enabled and both operands of a binary expressions are 0,
+  // constant replacement with zero
+  clang::Expr::EvalResult eval_result;
+  if (!binary_operator->isLogicalOp() &&
+      !(binary_operator->getLHS()->EvaluateAsInt(
+            eval_result, compiler_instance_.getASTContext()) &&
+        llvm::APSInt::isSameValue(eval_result.Val.getInt(),
+                                  llvm::APSInt::get(0))) &&
+      !(binary_operator->getRHS()->EvaluateAsInt(
+            eval_result, compiler_instance_.getASTContext()) &&
+        llvm::APSInt::isSameValue(eval_result.Val.getInt(),
+                                  llvm::APSInt::get(0)))) {
+    return true;
+  }
+
   mutations_.push_back(
       std::make_unique<MutationReplaceBinaryOperator>(*binary_operator));
   return true;
