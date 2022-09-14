@@ -33,11 +33,9 @@
 namespace dredd {
 namespace {
 
-void TestReplacement(const std::string &original,
-                     const std::string &expected,
-                     int num_replacements,
-                     bool optimise_mutations,
-                     const std::string &expected_dredd_declaration) {
+void TestReplacement(const std::string& original, const std::string& expected,
+                     int num_replacements, bool optimise_mutations,
+                     const std::string& expected_dredd_declaration) {
   auto ast_unit = clang::tooling::buildASTFromCodeWithArgs(original, {"-w"});
   ASSERT_FALSE(ast_unit->getDiagnostics().hasErrorOccurred());
   auto function_decl = clang::ast_matchers::match(
@@ -58,8 +56,9 @@ void TestReplacement(const std::string &original,
                            ast_unit->getLangOpts());
   int mutation_id = 0;
   std::unordered_set<std::string> dredd_declarations;
-  mutation.Apply(ast_unit->getASTContext(), ast_unit->getPreprocessor(), optimise_mutations,
-                 0, mutation_id, rewriter, dredd_declarations);
+  mutation.Apply(ast_unit->getASTContext(), ast_unit->getPreprocessor(),
+                 optimise_mutations, 0, mutation_id, rewriter,
+                 dredd_declarations);
   ASSERT_EQ(num_replacements, mutation_id);
   ASSERT_EQ(1, dredd_declarations.size());
   ASSERT_EQ(expected_dredd_declaration, *dredd_declarations.begin());
