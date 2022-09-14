@@ -33,8 +33,8 @@ class MutateFrontendAction : public clang::ASTFrontendAction {
  public:
   MutateFrontendAction(bool optimise_mutations, int& mutation_id,
                        std::set<std::string>& processed_files)
-      : mutation_id_(mutation_id),
-        optimise_mutations_(optimise_mutations),
+      : optimise_mutations_(optimise_mutations),
+        mutation_id_(mutation_id),
         processed_files_(processed_files) {}
 
   std::unique_ptr<clang::ASTConsumer> CreateASTConsumer(
@@ -55,8 +55,8 @@ class MutateFrontendAction : public clang::ASTFrontendAction {
   }
 
  private:
+  const bool optimise_mutations_;
   int& mutation_id_;
-  bool optimise_mutations_;
   std::set<std::string>& processed_files_;
 };
 
@@ -65,9 +65,8 @@ NewMutateFrontendActionFactory(bool optimise_mutations, int& mutation_id) {
   class MutateFrontendActionFactory
       : public clang::tooling::FrontendActionFactory {
    public:
-    explicit MutateFrontendActionFactory(bool optimise_mutations,
-                                         int& mutation_id)
-        : mutation_id_(mutation_id), optimise_mutations_(optimise_mutations) {}
+    MutateFrontendActionFactory(bool optimise_mutations, int& mutation_id)
+        : optimise_mutations_(optimise_mutations), mutation_id_(mutation_id) {}
 
     std::unique_ptr<clang::FrontendAction> create() override {
       return std::make_unique<MutateFrontendAction>(
@@ -75,8 +74,8 @@ NewMutateFrontendActionFactory(bool optimise_mutations, int& mutation_id) {
     }
 
    private:
+    const bool optimise_mutations_;
     int& mutation_id_;
-    bool optimise_mutations_;
 
     // Stores the ids of the files that have been processed so far, to avoid
     // processing a file multiple times.
@@ -89,7 +88,7 @@ NewMutateFrontendActionFactory(bool optimise_mutations, int& mutation_id) {
 
 std::unique_ptr<clang::ASTConsumer> MutateFrontendAction::CreateASTConsumer(
     clang::CompilerInstance& ci, llvm::StringRef file) {
-  (void)file;
+  (void)file;  // Unused
   return std::make_unique<MutateAstConsumer>(ci, optimise_mutations_,
                                              mutation_id_);
 }

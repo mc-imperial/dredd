@@ -49,7 +49,7 @@ class Mutation {
   // avoiding redundant repeat declarations.
   virtual void Apply(
       clang::ASTContext& ast_context, const clang::Preprocessor& preprocessor,
-      int first_mutation_id_in_file, int& mutation_id, bool optimise_mutations,
+      bool optimise_mutations, int first_mutation_id_in_file, int& mutation_id,
       clang::Rewriter& rewriter,
       std::unordered_set<std::string>& dredd_declarations) const = 0;
 };

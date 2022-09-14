@@ -50,7 +50,7 @@ class MutateAstConsumer : public clang::ASTConsumer {
   // for different translation units.
   int& mutation_id_;
   // Used to disable dredd's mutations.
-  bool optimise_mutations_;
+  const bool optimise_mutations_;
 };
 
 }  // namespace dredd

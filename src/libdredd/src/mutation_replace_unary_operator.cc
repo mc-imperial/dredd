@@ -247,9 +247,11 @@ void MutationReplaceUnaryOperator::GenerateUnaryOperatorReplacement(
 
 void MutationReplaceUnaryOperator::Apply(
     clang::ASTContext& ast_context, const clang::Preprocessor& preprocessor,
-    int first_mutation_id_in_file, int& mutation_id, bool optimise_mutations,
+    bool optimise_mutations, int first_mutation_id_in_file, int& mutation_id,
     clang::Rewriter& rewriter,
     std::unordered_set<std::string>& dredd_declarations) const {
+  (void)optimise_mutations;  // Unused
+
   std::string new_function_name = GetFunctionName(ast_context);
   std::string result_type = unary_operator_.getType()
                                 ->getAs<clang::BuiltinType>()
@@ -328,7 +330,6 @@ void MutationReplaceUnaryOperator::Apply(
   assert(!result && "Rewrite failed.\n");
   (void)result;  // Keep release-mode compilers happy.
 
-  (void)optimise_mutations;
   std::string new_function = GenerateMutatorFunction(
       ast_context, new_function_name, result_type, input_type, mutation_id);
   assert(!new_function.empty() && "Unsupported opcode.");

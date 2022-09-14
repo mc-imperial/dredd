@@ -42,7 +42,7 @@ static llvm::cl::extrahelp common_help(
 // NOLINTNEXTLINE
 static llvm::cl::OptionCategory mutate_category("mutate options");
 // NOLINTNEXTLINE
-static llvm::cl::opt<bool> NoMutationOpts(
+static llvm::cl::opt<bool> no_mutation_opts(
     "no-mutation-opts", llvm::cl::desc("Disable Dredd's optimisations"),
     llvm::cl::cat(mutate_category));
 
@@ -71,7 +71,7 @@ int main(int argc, const char** argv) {
   int mutation_id = 0;
 
   std::unique_ptr<clang::tooling::FrontendActionFactory> factory =
-      dredd::NewMutateFrontendActionFactory(!NoMutationOpts, mutation_id);
+      dredd::NewMutateFrontendActionFactory(!no_mutation_opts, mutation_id);
 
   return Tool.run(factory.get());
 }
