@@ -1,0 +1,53 @@
+#include <stdio.h>
+
+#include <inttypes.h>
+#include <stdlib.h>
+#include <string.h>
+static int __dredd_some_mutation_enabled = 1;
+static int __dredd_enabled_mutation(int local_mutation_id) {
+  static int initialized = 0;
+  static uint64_t enabled_bitset[1];
+  if (!initialized) {
+    int some_mutation_enabled = 0;
+    const char* dredd_environment_variable = getenv("DREDD_ENABLED_MUTATION");
+    if (dredd_environment_variable) {
+      char* temp = malloc(strlen(dredd_environment_variable) + 1);
+      strcpy(temp, dredd_environment_variable);
+      char* token;
+      token = strtok(temp, ",");
+      while(token) {
+        int value = atoi(token);
+        int local_value = value - 0;
+        if (local_value >= 0 && local_value < 42) {
+          enabled_bitset[local_value / 64] |= (1 << (local_value % 64));
+          some_mutation_enabled = 1;
+        }
+        token = strtok(NULL, ",");
+      }
+      free(temp);
+    }
+    initialized = 1;
+    __dredd_some_mutation_enabled = some_mutation_enabled;
+  }
+  return enabled_bitset[local_mutation_id / 64] & (1 << (local_mutation_id % 64));
+}
+
+static int __dredd_replace_expr_int(int arg, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return arg;
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return !(arg);
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return ~(arg);
+  if (__dredd_enabled_mutation(local_mutation_id + 2)) return 0;
+  if (__dredd_enabled_mutation(local_mutation_id + 3)) return 1;
+  if (__dredd_enabled_mutation(local_mutation_id + 4)) return -1;
+  return arg;
+}
+
+int main() {
+  if (!__dredd_enabled_mutation(35)) { __dredd_replace_expr_int(printf("%s\n", "A\n"), 0); }
+  if (!__dredd_enabled_mutation(36)) { __dredd_replace_expr_int(printf("%s\n", "B\n"), 5); }
+  if (!__dredd_enabled_mutation(37)) { __dredd_replace_expr_int(printf("%s\n", "C\n"), 10); }
+  if (!__dredd_enabled_mutation(38)) { __dredd_replace_expr_int(printf("%s\n", "D\n"), 15); }
+  if (!__dredd_enabled_mutation(39)) { __dredd_replace_expr_int(printf("%s\n", "E\n"), 20); }
+  if (!__dredd_enabled_mutation(40)) { __dredd_replace_expr_int(printf("%s\n", "F\n"), 25); }
+  if (!__dredd_enabled_mutation(41)) { __dredd_replace_expr_int(printf("%s\n", "G\n"), 30); }
+}

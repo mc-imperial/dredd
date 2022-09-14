@@ -152,7 +152,7 @@ bool MutationReplaceBinaryOperator::IsValidReplacementOperator(
 }
 
 std::string MutationReplaceBinaryOperator::GetFunctionName(
-    clang::ASTContext& ast_context) const {
+    bool optimise_mutations, clang::ASTContext& ast_context) const {
   std::string result = "__dredd_replace_binary_operator_";
 
   // A string corresponding to the binary operator forms part of the name of the
@@ -280,7 +280,7 @@ std::string MutationReplaceBinaryOperator::GetFunctionName(
   // important to change the name of the mutator function to avoid clashes
   // with other versions that apply to the same operator and types but cannot
   // be optimised.
-  if (!binary_operator_.isAssignmentOp()) {
+  if (optimise_mutations && !binary_operator_.isAssignmentOp()) {
     clang::Expr::EvalResult eval_result;
     bool rhs_is_int =
         binary_operator_.getRHS()->EvaluateAsInt(eval_result, ast_context);
@@ -440,7 +440,8 @@ void MutationReplaceBinaryOperator::Apply(
     bool optimise_mutations, int first_mutation_id_in_file, int& mutation_id,
     clang::Rewriter& rewriter,
     std::unordered_set<std::string>& dredd_declarations) const {
-  std::string new_function_name = GetFunctionName(ast_context);
+  std::string new_function_name =
+      GetFunctionName(optimise_mutations, ast_context);
   std::string result_type = binary_operator_.getType()
                                 ->getAs<clang::BuiltinType>()
                                 ->getName(ast_context.getPrintingPolicy())

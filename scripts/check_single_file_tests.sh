@@ -34,10 +34,25 @@ then
     # that it can be mutated without affecting the original
     cp $f .
     copy_of_f=$(basename $f)      
-    # Mutate the test case using Dredd
+    # Mutate the test case using Dredd with optimisations
     ${DREDD_INSTALLED_EXECUTABLE} ${copy_of_f} --
     # Check that the mutated test case is as expected
     diff ${copy_of_f} $f.expected
+    # Check that the mutated file compiles
+    if [[ $f == *.cc ]]
+    then
+      ${CXX} -c ${copy_of_f}
+    else
+      ${CC} -c ${copy_of_f}
+    fi
+    # Copy the single-file test case to the temporary directory so
+    # that it can be mutated without affecting the original
+    cp $f .
+    copy_of_f=$(basename $f)
+    # Mutate the test case using Dredd without optimisations
+    ${DREDD_INSTALLED_EXECUTABLE} --no-mutations-opts ${copy_of_f} --
+    # Check that the mutated test case is as expected
+    diff ${copy_of_f} $f.noopt.expected
     # Check that the mutated file compiles
     if [[ $f == *.cc ]]
     then
