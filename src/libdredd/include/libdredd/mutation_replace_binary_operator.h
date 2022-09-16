@@ -67,6 +67,10 @@ class MutationReplaceBinaryOperator : public Mutation {
   // This returns a string corresponding to the non-mutated expression.
   std::string GetExpr(clang::ASTContext& ast_context) const;
 
+  // Check if an expression is equivalent to a constant.
+  static bool ExprIsEquivalentTo(clang::Expr* expr, int x,
+                                 clang::ASTContext& ast_context);
+
   // Replaces binary expressions with either the left or right operand.
   void GenerateArgumentReplacement(const std::string& arg1_evaluated,
                                    const std::string& arg2_evaluated,

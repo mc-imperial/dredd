@@ -60,27 +60,25 @@ std::string MutationReplaceBinaryOperator::GetExpr(
   return result;
 }
 
+bool MutationReplaceBinaryOperator::ExprIsEquivalentTo(
+    clang::Expr* expr, int x, clang::ASTContext& ast_context) {
+  clang::Expr::EvalResult eval_result;
+  if (expr->EvaluateAsInt(eval_result, ast_context)) {
+    return llvm::APSInt::isSameValue(eval_result.Val.getInt(),
+                                     llvm::APSInt::get(x));
+  }
+  return false;
+}
+
 bool MutationReplaceBinaryOperator::IsRedundantReplacementOperator(
     clang::BinaryOperatorKind op, clang::ASTContext& ast_context) const {
   clang::Expr::EvalResult rhs_eval_result;
   clang::Expr::EvalResult lhs_eval_result;
 
-  bool rhs_is_int =
-      binary_operator_.getRHS()->EvaluateAsInt(rhs_eval_result, ast_context);
-  bool lhs_is_int =
-      binary_operator_.getLHS()->EvaluateAsInt(lhs_eval_result, ast_context);
-
-  // We cannot apply these optimisations if the operands are not integers.
-  if (!rhs_is_int || !lhs_is_int) {
-    return false;
-  }
-
   // In the case where both operands are 0, the only case that isn't covered
   // by constant replacement is undefined behaviour, this is achieved by /.
-  if (llvm::APSInt::isSameValue(rhs_eval_result.Val.getInt(),
-                                llvm::APSInt::get(0)) &&
-      llvm::APSInt::isSameValue(lhs_eval_result.Val.getInt(),
-                                llvm::APSInt::get(0))) {
+  if (ExprIsEquivalentTo(binary_operator_.getRHS(), 0, ast_context) &&
+      ExprIsEquivalentTo(binary_operator_.getLHS(), 0, ast_context)) {
     if (op == clang::BO_Div) {
       return false;
     }
@@ -88,8 +86,7 @@ bool MutationReplaceBinaryOperator::IsRedundantReplacementOperator(
 
   // In the following cases, the replacement is equivalent to either replacement
   // with a constant or argument replacement.
-  if (llvm::APSInt::isSameValue(rhs_eval_result.Val.getInt(),
-                                llvm::APSInt::get(0))) {
+  if (ExprIsEquivalentTo(binary_operator_.getRHS(), 0, ast_context)) {
     // When the right operand is 0: +, -, << and >> are all equivalent to
     // replacement with the right operand; * is equivalent to replacement with
     // the constant 0 and % is equivalent to replacement with / in that both
@@ -100,8 +97,7 @@ bool MutationReplaceBinaryOperator::IsRedundantReplacementOperator(
     }
   }
 
-  if (llvm::APSInt::isSameValue(rhs_eval_result.Val.getInt(),
-                                llvm::APSInt::get(1))) {
+  if (ExprIsEquivalentTo(binary_operator_.getRHS(), 1, ast_context)) {
     // When the right operand is 1: * and / are equivalent to replacement by
     // the left operand.
     if (op == clang::BO_Mul || op == clang::BO_Div) {
@@ -109,8 +105,7 @@ bool MutationReplaceBinaryOperator::IsRedundantReplacementOperator(
     }
   }
 
-  if (llvm::APSInt::isSameValue(lhs_eval_result.Val.getInt(),
-                                llvm::APSInt::get(0))) {
+  if (ExprIsEquivalentTo(binary_operator_.getLHS(), 0, ast_context)) {
     // When the left operand is 0: *, /, %, << and >> are equivalent to
     // replacement by the constant 0 and + is equivalent to replacement by the
     // right operand.
@@ -120,8 +115,7 @@ bool MutationReplaceBinaryOperator::IsRedundantReplacementOperator(
     }
   }
 
-  if (llvm::APSInt::isSameValue(lhs_eval_result.Val.getInt(),
-                                llvm::APSInt::get(1)) &&
+  if (ExprIsEquivalentTo(binary_operator_.getLHS(), 1, ast_context) &&
       op == clang::BO_Mul) {
     // When the left operand is 1: * is equivalent to replacement by the right
     // operand.
