@@ -59,7 +59,8 @@ class MutationReplaceUnaryOperator : public Mutation {
   // This returns a string corresponding to the non-mutated expression.
   std::string GetExpr(clang::ASTContext& ast_context) const;
 
-  std::string GetFunctionName(bool optimise_mutations, clang::ASTContext &ast_context) const;
+  std::string GetFunctionName(bool optimise_mutations,
+                              clang::ASTContext& ast_context) const;
 
   // Replaces unary operators with other valid unary operators.
   void GenerateUnaryOperatorReplacement(

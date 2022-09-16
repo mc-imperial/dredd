@@ -106,7 +106,8 @@ bool MutationReplaceUnaryOperator::IsValidReplacementOperator(
   return true;
 }
 
-std::string MutationReplaceUnaryOperator::GetFunctionName(bool optimise_mutations, clang::ASTContext &ast_context) const {
+std::string MutationReplaceUnaryOperator::GetFunctionName(
+    bool optimise_mutations, clang::ASTContext& ast_context) const {
   std::string result = "__dredd_replace_unary_operator_";
 
   // A string corresponding to the unary operator forms part of the name of the
@@ -162,8 +163,11 @@ std::string MutationReplaceUnaryOperator::GetFunctionName(bool optimise_mutation
                                   ->getName(ast_context.getPrintingPolicy())
                                   .str());
 
-  // Since the optimised cases are the same for both op 0 and op 1, we only need to distinguish in the case op -1
-  if (optimise_mutations && MutationReplaceExpr::ExprIsEquivalentTo(*unary_operator_.getSubExpr(), -1, ast_context)) {
+  // Since the optimised cases are the same for both op 0 and op 1, we only need
+  // to distinguish in the case op -1
+  if (optimise_mutations &&
+      MutationReplaceExpr::ExprIsEquivalentTo(*unary_operator_.getSubExpr(), -1,
+                                              ast_context)) {
     result += "_minus_one";
   }
 
@@ -290,7 +294,8 @@ void MutationReplaceUnaryOperator::Apply(
     std::unordered_set<std::string>& dredd_declarations) const {
   (void)optimise_mutations;  // Unused
 
-  std::string new_function_name = GetFunctionName(optimise_mutations, ast_context);
+  std::string new_function_name =
+      GetFunctionName(optimise_mutations, ast_context);
   std::string result_type = unary_operator_.getType()
                                 ->getAs<clang::BuiltinType>()
                                 ->getName(ast_context.getPrintingPolicy())
