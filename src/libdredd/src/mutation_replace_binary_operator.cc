@@ -68,9 +68,9 @@ bool MutationReplaceBinaryOperator::IsRedundantReplacementOperator(
 
   // In the case where both operands are 0, the only case that isn't covered
   // by constant replacement is undefined behaviour, this is achieved by /.
-  if (MutationReplaceExpr::ExprIsEquivalentTo(binary_operator_.getRHS(), 0,
+  if (MutationReplaceExpr::ExprIsEquivalentTo(*binary_operator_.getRHS(), 0,
                                               ast_context) &&
-      MutationReplaceExpr::ExprIsEquivalentTo(binary_operator_.getLHS(), 0,
+      MutationReplaceExpr::ExprIsEquivalentTo(*binary_operator_.getLHS(), 0,
                                               ast_context)) {
     if (op == clang::BO_Div) {
       return false;
@@ -79,7 +79,7 @@ bool MutationReplaceBinaryOperator::IsRedundantReplacementOperator(
 
   // In the following cases, the replacement is equivalent to either replacement
   // with a constant or argument replacement.
-  if (MutationReplaceExpr::ExprIsEquivalentTo(binary_operator_.getRHS(), 0,
+  if (MutationReplaceExpr::ExprIsEquivalentTo(*binary_operator_.getRHS(), 0,
                                               ast_context)) {
     // When the right operand is 0: +, -, << and >> are all equivalent to
     // replacement with the right operand; * is equivalent to replacement with
@@ -91,7 +91,7 @@ bool MutationReplaceBinaryOperator::IsRedundantReplacementOperator(
     }
   }
 
-  if (MutationReplaceExpr::ExprIsEquivalentTo(binary_operator_.getRHS(), 1,
+  if (MutationReplaceExpr::ExprIsEquivalentTo(*binary_operator_.getRHS(), 1,
                                               ast_context)) {
     // When the right operand is 1: * and / are equivalent to replacement by
     // the left operand.
@@ -100,7 +100,7 @@ bool MutationReplaceBinaryOperator::IsRedundantReplacementOperator(
     }
   }
 
-  if (MutationReplaceExpr::ExprIsEquivalentTo(binary_operator_.getLHS(), 0,
+  if (MutationReplaceExpr::ExprIsEquivalentTo(*binary_operator_.getLHS(), 0,
                                               ast_context)) {
     // When the left operand is 0: *, /, %, << and >> are equivalent to
     // replacement by the constant 0 and + is equivalent to replacement by the
@@ -111,7 +111,7 @@ bool MutationReplaceBinaryOperator::IsRedundantReplacementOperator(
     }
   }
 
-  if (MutationReplaceExpr::ExprIsEquivalentTo(binary_operator_.getLHS(), 1,
+  if (MutationReplaceExpr::ExprIsEquivalentTo(*binary_operator_.getLHS(), 1,
                                               ast_context) &&
       op == clang::BO_Mul) {
     // When the left operand is 1: * is equivalent to replacement by the right

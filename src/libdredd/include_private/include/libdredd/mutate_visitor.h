@@ -38,8 +38,8 @@ namespace dredd {
 
 class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
  public:
-  explicit MutateVisitor(const clang::CompilerInstance& compiler_instance,
-                         bool optimise_mutations);
+  MutateVisitor(const clang::CompilerInstance& compiler_instance,
+                bool optimise_mutations);
 
   bool TraverseDecl(clang::Decl* decl);
 

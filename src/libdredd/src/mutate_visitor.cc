@@ -283,9 +283,9 @@ bool MutateVisitor::HandleBinaryOperator(
   // replacement with a constant in all cases.
   if (optimise_mutations_ &&
       MutationReplaceExpr::ExprIsEquivalentTo(
-          binary_operator->getLHS(), 0, compiler_instance_.getASTContext()) &&
+          *binary_operator->getLHS(), 0, compiler_instance_.getASTContext()) &&
       MutationReplaceExpr::ExprIsEquivalentTo(
-          binary_operator->getRHS(), 1, compiler_instance_.getASTContext())) {
+          *binary_operator->getRHS(), 1, compiler_instance_.getASTContext())) {
     return true;
   }
 

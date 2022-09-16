@@ -65,12 +65,13 @@ std::string MutationReplaceExpr::GetFunctionName(
   return result;
 }
 
-bool MutationReplaceExpr::ExprIsEquivalentTo(clang::Expr* expr, int x,
+bool MutationReplaceExpr::ExprIsEquivalentTo(const clang::Expr& expr,
+                                             int constant,
                                              clang::ASTContext& ast_context) {
   clang::Expr::EvalResult eval_result;
-  if (expr->EvaluateAsInt(eval_result, ast_context)) {
+  if (expr.EvaluateAsInt(eval_result, ast_context)) {
     return llvm::APSInt::isSameValue(eval_result.Val.getInt(),
-                                     llvm::APSInt::get(x));
+                                     llvm::APSInt::get(constant));
   }
   return false;
 }
