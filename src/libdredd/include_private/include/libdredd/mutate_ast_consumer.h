@@ -31,7 +31,8 @@ class MutateAstConsumer : public clang::ASTConsumer {
   MutateAstConsumer(const clang::CompilerInstance& compiler_instance,
                     bool optimise_mutations, int& mutation_id)
       : compiler_instance_(compiler_instance),
-        visitor_(std::make_unique<MutateVisitor>(compiler_instance)),
+        visitor_(std::make_unique<MutateVisitor>(compiler_instance,
+                                                 optimise_mutations)),
         mutation_id_(mutation_id),
         optimise_mutations_(optimise_mutations) {}
 

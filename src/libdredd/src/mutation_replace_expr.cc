@@ -17,6 +17,7 @@
 #include <cassert>
 #include <sstream>
 
+#include "clang/AST/APValue.h"
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/ASTTypeTraits.h"
 #include "clang/AST/Expr.h"
@@ -27,6 +28,7 @@
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Rewrite/Core/Rewriter.h"
 #include "libdredd/util.h"
+#include "llvm/ADT/APSInt.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/Support/Casting.h"
 
@@ -61,6 +63,16 @@ std::string MutationReplaceExpr::GetFunctionName(
   }
 
   return result;
+}
+
+bool MutationReplaceExpr::ExprIsEquivalentTo(clang::Expr* expr, int x,
+                                             clang::ASTContext& ast_context) {
+  clang::Expr::EvalResult eval_result;
+  if (expr->EvaluateAsInt(eval_result, ast_context)) {
+    return llvm::APSInt::isSameValue(eval_result.Val.getInt(),
+                                     llvm::APSInt::get(x));
+  }
+  return false;
 }
 
 void MutationReplaceExpr::GenerateUnaryOperatorInsertion(

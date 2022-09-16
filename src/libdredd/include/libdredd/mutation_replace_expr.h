@@ -40,6 +40,10 @@ class MutationReplaceExpr : public Mutation {
 
   static void ApplyCTypeModifiers(const clang::Expr* expr, std::string& type);
 
+  // Check if an expression is equivalent to a constant.
+  static bool ExprIsEquivalentTo(clang::Expr* expr, int x,
+                                 clang::ASTContext& ast_context);
+
  private:
   // Replace expressions with constants.
   void GenerateConstantReplacement(clang::ASTContext& ast_context,
