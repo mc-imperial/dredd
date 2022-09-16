@@ -34,7 +34,7 @@ namespace dredd {
 namespace {
 
 void TestReplacement(const std::string& original, const std::string& expected,
-                     int num_replacements,
+                     int num_replacements, bool optimise_mutations,
                      const std::string& expected_dredd_declaration) {
   auto ast_unit = clang::tooling::buildASTFromCodeWithArgs(original, {"-w"});
   ASSERT_FALSE(ast_unit->getDiagnostics().hasErrorOccurred());
@@ -56,8 +56,9 @@ void TestReplacement(const std::string& original, const std::string& expected,
                            ast_unit->getLangOpts());
   int mutation_id = 0;
   std::unordered_set<std::string> dredd_declarations;
-  mutation.Apply(ast_unit->getASTContext(), ast_unit->getPreprocessor(), 0,
-                 mutation_id, rewriter, dredd_declarations);
+  mutation.Apply(ast_unit->getASTContext(), ast_unit->getPreprocessor(),
+                 optimise_mutations, 0, mutation_id, rewriter,
+                 dredd_declarations);
   ASSERT_EQ(num_replacements, mutation_id);
   ASSERT_EQ(1, dredd_declarations.size());
   ASSERT_EQ(expected_dredd_declaration, *dredd_declarations.begin());
@@ -84,7 +85,8 @@ TEST(MutationReplaceUnaryOperatorTest, MutateMinus) {
 
 )";
   const int kNumReplacements = 3;
-  TestReplacement(original, expected, kNumReplacements,
+  // Test without optimisations
+  TestReplacement(original, expected, kNumReplacements, false,
                   expected_dredd_declaration);
 }
 
@@ -111,7 +113,8 @@ TEST(MutationReplaceUnaryOperatorTest, MutateNot) {
 
 )";
   const int kNumReplacements = 3;
-  TestReplacement(original, expected, kNumReplacements,
+  // Test without optimisations
+  TestReplacement(original, expected, kNumReplacements, false,
                   expected_dredd_declaration);
 }
 
@@ -137,7 +140,8 @@ TEST(MutationReplaceUnaryOperatorTest, MutateIncrement) {
 
 )";
   const int kNumReplacements = 2;
-  TestReplacement(original, expected, kNumReplacements,
+  // Test without optimisations
+  TestReplacement(original, expected, kNumReplacements, false,
                   expected_dredd_declaration);
 }
 
@@ -166,7 +170,8 @@ TEST(MutationReplaceUnaryOperatorTest, MutateDecrement) {
 
 )";
   const int kNumReplacements = 5;
-  TestReplacement(original, expected, kNumReplacements,
+  // Test without optimisations
+  TestReplacement(original, expected, kNumReplacements, false,
                   expected_dredd_declaration);
 }
 
@@ -192,7 +197,8 @@ TEST(MutationReplaceUnaryOperatorTest, MutateDecrementAssign) {
 
 )";
   const int kNumReplacements = 2;
-  TestReplacement(original, expected, kNumReplacements,
+  // Test without optimisations
+  TestReplacement(original, expected, kNumReplacements, false,
                   expected_dredd_declaration);
 }
 

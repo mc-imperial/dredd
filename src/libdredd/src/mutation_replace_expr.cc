@@ -17,6 +17,7 @@
 #include <cassert>
 #include <sstream>
 
+#include "clang/AST/APValue.h"
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/ASTTypeTraits.h"
 #include "clang/AST/Expr.h"
@@ -27,6 +28,7 @@
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Rewrite/Core/Rewriter.h"
 #include "libdredd/util.h"
+#include "llvm/ADT/APSInt.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/Support/Casting.h"
 
@@ -61,6 +63,17 @@ std::string MutationReplaceExpr::GetFunctionName(
   }
 
   return result;
+}
+
+bool MutationReplaceExpr::ExprIsEquivalentTo(const clang::Expr& expr,
+                                             int constant,
+                                             clang::ASTContext& ast_context) {
+  clang::Expr::EvalResult eval_result;
+  if (expr.EvaluateAsInt(eval_result, ast_context)) {
+    return llvm::APSInt::isSameValue(eval_result.Val.getInt(),
+                                     llvm::APSInt::get(constant));
+  }
+  return false;
 }
 
 void MutationReplaceExpr::GenerateUnaryOperatorInsertion(
@@ -214,8 +227,11 @@ void MutationReplaceExpr::ApplyCTypeModifiers(const clang::Expr* expr,
 
 void MutationReplaceExpr::Apply(
     clang::ASTContext& ast_context, const clang::Preprocessor& preprocessor,
-    int first_mutation_id_in_file, int& mutation_id, clang::Rewriter& rewriter,
+    bool optimise_mutations, int first_mutation_id_in_file, int& mutation_id,
+    clang::Rewriter& rewriter,
     std::unordered_set<std::string>& dredd_declarations) const {
+  (void)optimise_mutations;  // Unused
+
   std::string new_function_name = GetFunctionName(ast_context);
   std::string result_type = expr_.getType()
                                 ->getAs<clang::BuiltinType>()
@@ -309,7 +325,7 @@ void MutationReplaceExpr::Apply(
   result = rewriter.InsertTextAfterToken(
       expr_source_range_in_main_file.getEnd(), suffix);
   assert(!result && "Rewrite failed.\n");
-  (void)result;
+  (void)result;  // Keep release mode compilers happy.
 
   std::string new_function = GenerateMutatorFunction(
       ast_context, new_function_name, result_type, input_type, mutation_id);

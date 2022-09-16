@@ -247,8 +247,11 @@ void MutationReplaceUnaryOperator::GenerateUnaryOperatorReplacement(
 
 void MutationReplaceUnaryOperator::Apply(
     clang::ASTContext& ast_context, const clang::Preprocessor& preprocessor,
-    int first_mutation_id_in_file, int& mutation_id, clang::Rewriter& rewriter,
+    bool optimise_mutations, int first_mutation_id_in_file, int& mutation_id,
+    clang::Rewriter& rewriter,
     std::unordered_set<std::string>& dredd_declarations) const {
+  (void)optimise_mutations;  // Unused
+
   std::string new_function_name = GetFunctionName(ast_context);
   std::string result_type = unary_operator_.getType()
                                 ->getAs<clang::BuiltinType>()

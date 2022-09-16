@@ -45,6 +45,21 @@ then
     fi
     # Copy the mutated file so that it becomes the new test expectation
     cp ${copy_of_f} $f.expected
+    # Copy the single-file test case to the temporary directory so
+    # that it can be mutated without affecting the original
+    cp $f .
+    copy_of_f=$(basename $f)
+    # Mutate the test case using Dredd
+    ${DREDD_INSTALLED_EXECUTABLE} --no-mutation-opts ${copy_of_f} --
+    # Check that the mutated file compiles
+    if [[ $f == *.cc ]]
+    then
+      ${CXX} -c ${copy_of_f}
+    else
+      ${CC} -c ${copy_of_f}
+    fi
+    # Copy the mutated file so that it becomes the new test expectation
+    cp ${copy_of_f} $f.noopt.expected
     # Clean up
     rm ${copy_of_f}
     rm ${copy_of_f%.*}.o

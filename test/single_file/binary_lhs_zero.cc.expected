@@ -1,0 +1,65 @@
+#include <cinttypes>
+#include <cstddef>
+#include <functional>
+#include <string>
+
+static bool __dredd_some_mutation_enabled = true;
+static bool __dredd_enabled_mutation(int local_mutation_id) {
+  static bool initialized = false;
+  static uint64_t enabled_bitset[1];
+  if (!initialized) {
+    bool some_mutation_enabled = false;
+    const char* dredd_environment_variable = std::getenv("DREDD_ENABLED_MUTATION");
+    if (dredd_environment_variable != nullptr) {
+      std::string contents(dredd_environment_variable);
+      while (true) {
+        size_t pos = contents.find(",");
+        std::string token = (pos == std::string::npos ? contents : contents.substr(0, pos));
+        if (!token.empty()) {
+          int value = std::stoi(token);
+          int local_value = value - 0;
+          if (local_value >= 0 && local_value < 25) {
+            enabled_bitset[local_value / 64] |= (1 << (local_value % 64));
+            some_mutation_enabled = true;
+          }
+        }
+        if (pos == std::string::npos) {
+          break;
+        }
+        contents.erase(0, pos + 1);
+      }
+    }
+    initialized = true;
+    __dredd_some_mutation_enabled = some_mutation_enabled;
+  }
+  return (enabled_bitset[local_mutation_id / 64] & (1 << (local_mutation_id % 64))) != 0;
+}
+
+static int& __dredd_replace_expr_int_lvalue(std::function<int&()> arg, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return arg();
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return ++(arg());
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return --(arg());
+  return arg();
+}
+
+static int __dredd_replace_expr_int(std::function<int()> arg, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return arg();
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return !(arg());
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return ~(arg());
+  if (__dredd_enabled_mutation(local_mutation_id + 2)) return 0;
+  if (__dredd_enabled_mutation(local_mutation_id + 3)) return 1;
+  if (__dredd_enabled_mutation(local_mutation_id + 4)) return -1;
+  return arg();
+}
+
+static int __dredd_replace_binary_operator_Add_int_int_lhs_zero(std::function<int()> arg1, std::function<int()> arg2, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return arg1() + arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return arg1() - arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg2();
+  return arg1() + arg2();
+}
+
+int main() {
+  int x = __dredd_replace_expr_int([&]() -> int { return __dredd_replace_binary_operator_Add_int_int_lhs_zero([&]() -> int { return static_cast<int>(__dredd_replace_expr_int([&]() -> int { return 0; }, 0)); } , [&]() -> int { return static_cast<int>(__dredd_replace_expr_int([&]() -> int { return 8; }, 5)); }, 10); }, 12);
+  if (!__dredd_enabled_mutation(24)) { return __dredd_replace_expr_int([&]() -> int { return static_cast<int>(__dredd_replace_expr_int_lvalue([&]() -> int& { return static_cast<int&>(x); }, 17)); }, 19); }
+}

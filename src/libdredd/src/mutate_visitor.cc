@@ -43,8 +43,10 @@
 
 namespace dredd {
 
-MutateVisitor::MutateVisitor(const clang::CompilerInstance& compiler_instance)
-    : compiler_instance_(compiler_instance) {}
+MutateVisitor::MutateVisitor(const clang::CompilerInstance& compiler_instance,
+                             bool optimise_mutations)
+    : compiler_instance_(compiler_instance),
+      optimise_mutations_(optimise_mutations) {}
 
 bool MutateVisitor::IsTypeSupported(const clang::QualType qual_type) {
   const auto* builtin_type = qual_type->getAs<clang::BuiltinType>();
@@ -274,6 +276,16 @@ bool MutateVisitor::HandleBinaryOperator(
   if (binary_operator->isCommaOp()) {
     // The comma operator is so versatile that it does not make a great deal of
     // sense to try to rewrite it.
+    return true;
+  }
+
+  // There is no useful way to mutate this expression since it is equivalent to
+  // replacement with a constant in all cases.
+  if (optimise_mutations_ &&
+      MutationReplaceExpr::ExprIsEquivalentTo(
+          *binary_operator->getLHS(), 0, compiler_instance_.getASTContext()) &&
+      MutationReplaceExpr::ExprIsEquivalentTo(
+          *binary_operator->getRHS(), 1, compiler_instance_.getASTContext())) {
     return true;
   }
 

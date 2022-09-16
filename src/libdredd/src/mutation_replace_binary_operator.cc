@@ -22,6 +22,7 @@
 #include <unordered_set>
 #include <vector>
 
+#include "clang/AST/APValue.h"
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/Expr.h"
 #include "clang/AST/OperationKinds.h"
@@ -30,7 +31,9 @@
 #include "clang/Basic/SourceLocation.h"
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Rewrite/Core/Rewriter.h"
+#include "libdredd/mutation_replace_expr.h"
 #include "libdredd/util.h"
+#include "llvm/ADT/APSInt.h"
 #include "llvm/ADT/StringRef.h"
 
 namespace dredd {
@@ -58,6 +61,67 @@ std::string MutationReplaceBinaryOperator::GetExpr(
   return result;
 }
 
+bool MutationReplaceBinaryOperator::IsRedundantReplacementOperator(
+    clang::BinaryOperatorKind op, clang::ASTContext& ast_context) const {
+  clang::Expr::EvalResult rhs_eval_result;
+  clang::Expr::EvalResult lhs_eval_result;
+
+  // In the case where both operands are 0, the only case that isn't covered
+  // by constant replacement is undefined behaviour, this is achieved by /.
+  if (MutationReplaceExpr::ExprIsEquivalentTo(*binary_operator_.getRHS(), 0,
+                                              ast_context) &&
+      MutationReplaceExpr::ExprIsEquivalentTo(*binary_operator_.getLHS(), 0,
+                                              ast_context)) {
+    if (op == clang::BO_Div) {
+      return false;
+    }
+  }
+
+  // In the following cases, the replacement is equivalent to either replacement
+  // with a constant or argument replacement.
+  if (MutationReplaceExpr::ExprIsEquivalentTo(*binary_operator_.getRHS(), 0,
+                                              ast_context)) {
+    // When the right operand is 0: +, -, << and >> are all equivalent to
+    // replacement with the right operand; * is equivalent to replacement with
+    // the constant 0 and % is equivalent to replacement with / in that both
+    // cases lead to undefined behaviour.
+    if (op == clang::BO_Add || op == clang::BO_Sub || op == clang::BO_Shl ||
+        op == clang::BO_Shr || op == clang::BO_Mul || op == clang::BO_Rem) {
+      return true;
+    }
+  }
+
+  if (MutationReplaceExpr::ExprIsEquivalentTo(*binary_operator_.getRHS(), 1,
+                                              ast_context)) {
+    // When the right operand is 1: * and / are equivalent to replacement by
+    // the left operand.
+    if (op == clang::BO_Mul || op == clang::BO_Div) {
+      return true;
+    }
+  }
+
+  if (MutationReplaceExpr::ExprIsEquivalentTo(*binary_operator_.getLHS(), 0,
+                                              ast_context)) {
+    // When the left operand is 0: *, /, %, << and >> are equivalent to
+    // replacement by the constant 0 and + is equivalent to replacement by the
+    // right operand.
+    if (op == clang::BO_Add || op == clang::BO_Shl || op == clang::BO_Shr ||
+        op == clang::BO_Mul || op == clang::BO_Rem || op == clang::BO_Div) {
+      return true;
+    }
+  }
+
+  if (MutationReplaceExpr::ExprIsEquivalentTo(*binary_operator_.getLHS(), 1,
+                                              ast_context) &&
+      op == clang::BO_Mul) {
+    // When the left operand is 1: * is equivalent to replacement by the right
+    // operand.
+    return true;
+  }
+
+  return false;
+}
+
 // Certain operators such as % are not compatible with floating point numbers,
 // this function checks which operators can be applied for each type.
 bool MutationReplaceBinaryOperator::IsValidReplacementOperator(
@@ -78,7 +142,7 @@ bool MutationReplaceBinaryOperator::IsValidReplacementOperator(
 }
 
 std::string MutationReplaceBinaryOperator::GetFunctionName(
-    clang::ASTContext& ast_context) const {
+    bool optimise_mutations, clang::ASTContext& ast_context) const {
   std::string result = "__dredd_replace_binary_operator_";
 
   // A string corresponding to the binary operator forms part of the name of the
@@ -202,31 +266,94 @@ std::string MutationReplaceBinaryOperator::GetFunctionName(
                                   ->getName(ast_context.getPrintingPolicy())
                                   .str());
 
+  // In the case that we can optimise out some binary expressions, it is
+  // important to change the name of the mutator function to avoid clashes
+  // with other versions that apply to the same operator and types but cannot
+  // be optimised.
+  if (optimise_mutations && !binary_operator_.isAssignmentOp()) {
+    clang::Expr::EvalResult eval_result;
+    bool rhs_is_int =
+        binary_operator_.getRHS()->EvaluateAsInt(eval_result, ast_context);
+    if (rhs_is_int && llvm::APSInt::isSameValue(eval_result.Val.getInt(),
+                                                llvm::APSInt::get(0))) {
+      result += "_rhs_zero";
+    } else if (rhs_is_int && llvm::APSInt::isSameValue(eval_result.Val.getInt(),
+                                                       llvm::APSInt::get(1))) {
+      result += "_rhs_one";
+    } else if (rhs_is_int && llvm::APSInt::isSameValue(eval_result.Val.getInt(),
+                                                       llvm::APSInt::get(-1))) {
+      result += "_rhs_minus_one";
+    }
+
+    bool lhs_is_int =
+        binary_operator_.getLHS()->EvaluateAsInt(eval_result, ast_context);
+    if (lhs_is_int && llvm::APSInt::isSameValue(eval_result.Val.getInt(),
+                                                llvm::APSInt::get(0))) {
+      result += "_lhs_zero";
+    } else if (lhs_is_int && llvm::APSInt::isSameValue(eval_result.Val.getInt(),
+                                                       llvm::APSInt::get(1))) {
+      result += "_lhs_one";
+    } else if (lhs_is_int && llvm::APSInt::isSameValue(eval_result.Val.getInt(),
+                                                       llvm::APSInt::get(-1))) {
+      result += "_lhs_minus_one";
+    }
+  }
+
   return result;
 }
 
 void MutationReplaceBinaryOperator::GenerateArgumentReplacement(
     const std::string& arg1_evaluated, const std::string& arg2_evaluated,
+    clang::ASTContext& ast_context, bool optimise_mutations,
     std::stringstream& new_function, int& mutant_offset) const {
   if (!binary_operator_.isAssignmentOp()) {
     // LHS
-    new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
-                 << mutant_offset << ")) return " << arg1_evaluated << ";\n";
-    mutant_offset++;
+    // These cases are equivalent to constant replacement with the respective
+    // constants
+    clang::Expr::EvalResult lhs_eval_result;
+    bool lhs_is_int =
+        binary_operator_.getLHS()->EvaluateAsInt(lhs_eval_result, ast_context);
+    if (!optimise_mutations ||
+        !(lhs_is_int && (llvm::APSInt::isSameValue(lhs_eval_result.Val.getInt(),
+                                                   llvm::APSInt::get(0)) ||
+                         llvm::APSInt::isSameValue(lhs_eval_result.Val.getInt(),
+                                                   llvm::APSInt::get(1)) ||
+                         llvm::APSInt::isSameValue(lhs_eval_result.Val.getInt(),
+                                                   llvm::APSInt::get(-1))))) {
+      new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
+                   << mutant_offset << ")) return " << arg1_evaluated << ";\n";
+      mutant_offset++;
+    }
 
     // RHS
-    new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
-                 << mutant_offset << ")) return " << arg2_evaluated << ";\n";
-    mutant_offset++;
+    // These cases are equivalent to constant replacement with the respective
+    // constants
+    clang::Expr::EvalResult rhs_eval_result;
+    bool rhs_is_int =
+        binary_operator_.getRHS()->EvaluateAsInt(rhs_eval_result, ast_context);
+    if (!optimise_mutations ||
+        !(rhs_is_int && (llvm::APSInt::isSameValue(rhs_eval_result.Val.getInt(),
+                                                   llvm::APSInt::get(0)) ||
+                         llvm::APSInt::isSameValue(rhs_eval_result.Val.getInt(),
+                                                   llvm::APSInt::get(1)) ||
+                         llvm::APSInt::isSameValue(rhs_eval_result.Val.getInt(),
+                                                   llvm::APSInt::get(-1))))) {
+      new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
+                   << mutant_offset << ")) return " << arg2_evaluated << ";\n";
+      mutant_offset++;
+    }
   }
 }
 
 void MutationReplaceBinaryOperator::GenerateBinaryOperatorReplacement(
     const std::vector<clang::BinaryOperatorKind>& operators,
     const std::string& arg1_evaluated, const std::string& arg2_evaluated,
+    clang::ASTContext& ast_context, bool optimise_mutations,
     std::stringstream& new_function, int& mutant_offset) const {
   for (auto op : operators) {
-    if (op == binary_operator_.getOpcode() || !IsValidReplacementOperator(op)) {
+    if (op == binary_operator_.getOpcode() || !IsValidReplacementOperator(op) ||
+        (optimise_mutations &&
+         IsRedundantReplacementOperator(op, ast_context))) {
       continue;
     }
     new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
@@ -240,7 +367,7 @@ void MutationReplaceBinaryOperator::GenerateBinaryOperatorReplacement(
 std::string MutationReplaceBinaryOperator::GenerateMutatorFunction(
     clang::ASTContext& ast_context, const std::string& function_name,
     const std::string& result_type, const std::string& lhs_type,
-    const std::string& rhs_type,
+    const std::string& rhs_type, bool optimise_mutations,
     const std::vector<clang::BinaryOperatorKind>& operators,
     int& mutation_id) const {
   std::stringstream new_function;
@@ -283,9 +410,10 @@ std::string MutationReplaceBinaryOperator::GenerateMutatorFunction(
       << " " << arg2_evaluated << ";\n";
 
   GenerateBinaryOperatorReplacement(operators, arg1_evaluated, arg2_evaluated,
+                                    ast_context, optimise_mutations,
                                     new_function, mutant_offset);
-  GenerateArgumentReplacement(arg1_evaluated, arg2_evaluated, new_function,
-                              mutant_offset);
+  GenerateArgumentReplacement(arg1_evaluated, arg2_evaluated, ast_context,
+                              optimise_mutations, new_function, mutant_offset);
 
   new_function << "  return " << GetExpr(ast_context) << ";\n";
   new_function << "}\n\n";
@@ -299,9 +427,11 @@ std::string MutationReplaceBinaryOperator::GenerateMutatorFunction(
 
 void MutationReplaceBinaryOperator::Apply(
     clang::ASTContext& ast_context, const clang::Preprocessor& preprocessor,
-    int first_mutation_id_in_file, int& mutation_id, clang::Rewriter& rewriter,
+    bool optimise_mutations, int first_mutation_id_in_file, int& mutation_id,
+    clang::Rewriter& rewriter,
     std::unordered_set<std::string>& dredd_declarations) const {
-  std::string new_function_name = GetFunctionName(ast_context);
+  std::string new_function_name =
+      GetFunctionName(optimise_mutations, ast_context);
   std::string result_type = binary_operator_.getType()
                                 ->getAs<clang::BuiltinType>()
                                 ->getName(ast_context.getPrintingPolicy())
@@ -389,9 +519,9 @@ void MutationReplaceBinaryOperator::Apply(
         logical_operators, relational_operators, shift_operators}) {
     if (std::find(operators.begin(), operators.end(),
                   binary_operator_.getOpcode()) != operators.end()) {
-      new_function =
-          GenerateMutatorFunction(ast_context, new_function_name, result_type,
-                                  lhs_type, rhs_type, operators, mutation_id);
+      new_function = GenerateMutatorFunction(
+          ast_context, new_function_name, result_type, lhs_type, rhs_type,
+          optimise_mutations, operators, mutation_id);
       break;
     }
   }

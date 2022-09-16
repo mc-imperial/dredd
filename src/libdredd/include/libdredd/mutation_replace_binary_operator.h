@@ -36,7 +36,7 @@ class MutationReplaceBinaryOperator : public Mutation {
 
   void Apply(
       clang::ASTContext& ast_context, const clang::Preprocessor& preprocessor,
-      int first_mutation_id_in_file, int& mutation_id,
+      bool optimise_mutations, int first_mutation_id_in_file, int& mutation_id,
       clang::Rewriter& rewriter,
       std::unordered_set<std::string>& dredd_declarations) const override;
 
@@ -44,7 +44,7 @@ class MutationReplaceBinaryOperator : public Mutation {
   std::string GenerateMutatorFunction(
       clang::ASTContext& ast_context, const std::string& function_name,
       const std::string& result_type, const std::string& lhs_type,
-      const std::string& rhs_type,
+      const std::string& rhs_type, bool optimise_mutations,
       const std::vector<clang::BinaryOperatorKind>& operators,
       int& mutation_id) const;
 
@@ -55,7 +55,11 @@ class MutationReplaceBinaryOperator : public Mutation {
                        int first_mutation_id_in_file, int& mutation_id,
                        clang::Rewriter& rewriter) const;
 
-  std::string GetFunctionName(clang::ASTContext& ast_context) const;
+  std::string GetFunctionName(bool optimise_mutations,
+                              clang::ASTContext& ast_context) const;
+
+  [[nodiscard]] bool IsRedundantReplacementOperator(
+      clang::BinaryOperatorKind op, clang::ASTContext& ast_context) const;
 
   [[nodiscard]] bool IsValidReplacementOperator(
       clang::BinaryOperatorKind op) const;
@@ -66,6 +70,8 @@ class MutationReplaceBinaryOperator : public Mutation {
   // Replaces binary expressions with either the left or right operand.
   void GenerateArgumentReplacement(const std::string& arg1_evaluated,
                                    const std::string& arg2_evaluated,
+                                   clang::ASTContext& ast_context,
+                                   bool optimise_mutations,
                                    std::stringstream& new_function,
                                    int& mutant_offset) const;
 
@@ -73,6 +79,7 @@ class MutationReplaceBinaryOperator : public Mutation {
   void GenerateBinaryOperatorReplacement(
       const std::vector<clang::BinaryOperatorKind>& operators,
       const std::string& arg1_evaluated, const std::string& arg2_evaluated,
+      clang::ASTContext& ast_context, bool optimise_mutations,
       std::stringstream& new_function, int& mutant_offset) const;
 
   // The && and || operators in C require special treatment: due to

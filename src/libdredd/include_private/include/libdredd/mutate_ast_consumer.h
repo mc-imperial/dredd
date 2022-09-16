@@ -29,10 +29,12 @@ namespace dredd {
 class MutateAstConsumer : public clang::ASTConsumer {
  public:
   MutateAstConsumer(const clang::CompilerInstance& compiler_instance,
-                    int& mutation_id)
+                    bool optimise_mutations, int& mutation_id)
       : compiler_instance_(compiler_instance),
-        visitor_(std::make_unique<MutateVisitor>(compiler_instance)),
-        mutation_id_(mutation_id) {}
+        visitor_(std::make_unique<MutateVisitor>(compiler_instance,
+                                                 optimise_mutations)),
+        mutation_id_(mutation_id),
+        optimise_mutations_(optimise_mutations) {}
 
   void HandleTranslationUnit(clang::ASTContext& ast_context) override;
 
@@ -48,6 +50,8 @@ class MutateAstConsumer : public clang::ASTConsumer {
   // Counter used to give each mutation a unique id; shared among AST consumers
   // for different translation units.
   int& mutation_id_;
+  // Used to disable dredd's mutations.
+  const bool optimise_mutations_;
 };
 
 }  // namespace dredd
