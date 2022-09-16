@@ -70,12 +70,15 @@ bool MutationReplaceBinaryOperator::IsRedundantReplacementOperator(
   bool lhs_is_int =
       binary_operator_.getLHS()->EvaluateAsInt(lhs_eval_result, ast_context);
 
+  // We cannot apply these optimisations if the operands are not integers.
+  if (!rhs_is_int || !lhs_is_int) {
+    return false;
+  }
+
   // In the case where both operands are 0, the only case that isn't covered
   // by constant replacement is undefined behaviour, this is achieved by /.
-  if (rhs_is_int &&
-      llvm::APSInt::isSameValue(rhs_eval_result.Val.getInt(),
+  if (llvm::APSInt::isSameValue(rhs_eval_result.Val.getInt(),
                                 llvm::APSInt::get(0)) &&
-      lhs_is_int &&
       llvm::APSInt::isSameValue(lhs_eval_result.Val.getInt(),
                                 llvm::APSInt::get(0))) {
     if (op == clang::BO_Div) {
@@ -85,48 +88,44 @@ bool MutationReplaceBinaryOperator::IsRedundantReplacementOperator(
 
   // In the following cases, the replacement is equivalent to either replacement
   // with a constant or argument replacement.
-  if (rhs_is_int) {
-    if (llvm::APSInt::isSameValue(rhs_eval_result.Val.getInt(),
-                                  llvm::APSInt::get(0))) {
-      // When the right operand is 0: +, -, << and >> are all equivalent to
-      // replacement with the right operand; * is equivalent to replacement with
-      // the constant 0 and % is equivalent to replacement with / in that both
-      // cases lead to undefined behaviour.
-      if (op == clang::BO_Add || op == clang::BO_Sub || op == clang::BO_Shl ||
-          op == clang::BO_Shr || op == clang::BO_Mul || op == clang::BO_Rem) {
-        return true;
-      }
-    }
-
-    if (llvm::APSInt::isSameValue(rhs_eval_result.Val.getInt(),
-                                  llvm::APSInt::get(1))) {
-      // When the right operand is 1: * and / are equivalent to replacement by
-      // the left operand.
-      if (op == clang::BO_Mul || op == clang::BO_Div) {
-        return true;
-      }
+  if (llvm::APSInt::isSameValue(rhs_eval_result.Val.getInt(),
+                                llvm::APSInt::get(0))) {
+    // When the right operand is 0: +, -, << and >> are all equivalent to
+    // replacement with the right operand; * is equivalent to replacement with
+    // the constant 0 and % is equivalent to replacement with / in that both
+    // cases lead to undefined behaviour.
+    if (op == clang::BO_Add || op == clang::BO_Sub || op == clang::BO_Shl ||
+        op == clang::BO_Shr || op == clang::BO_Mul || op == clang::BO_Rem) {
+      return true;
     }
   }
 
-  if (lhs_is_int) {
-    if (llvm::APSInt::isSameValue(lhs_eval_result.Val.getInt(),
-                                  llvm::APSInt::get(0))) {
-      // When the left operand is 0: *, /, %, << and >> are equivalent to
-      // replacement by the constant 0 and + is equivalent to replacement by the
-      // right operand.
-      if (op == clang::BO_Add || op == clang::BO_Shl || op == clang::BO_Shr ||
-          op == clang::BO_Mul || op == clang::BO_Rem || op == clang::BO_Div) {
-        return true;
-      }
-    }
-
-    if (llvm::APSInt::isSameValue(lhs_eval_result.Val.getInt(),
-                                  llvm::APSInt::get(1)) &&
-        op == clang::BO_Mul) {
-      // When the left operand is 1: * is equivalent to replacement by the right
-      // operand.
+  if (llvm::APSInt::isSameValue(rhs_eval_result.Val.getInt(),
+                                llvm::APSInt::get(1))) {
+    // When the right operand is 1: * and / are equivalent to replacement by
+    // the left operand.
+    if (op == clang::BO_Mul || op == clang::BO_Div) {
       return true;
     }
+  }
+
+  if (llvm::APSInt::isSameValue(lhs_eval_result.Val.getInt(),
+                                llvm::APSInt::get(0))) {
+    // When the left operand is 0: *, /, %, << and >> are equivalent to
+    // replacement by the constant 0 and + is equivalent to replacement by the
+    // right operand.
+    if (op == clang::BO_Add || op == clang::BO_Shl || op == clang::BO_Shr ||
+        op == clang::BO_Mul || op == clang::BO_Rem || op == clang::BO_Div) {
+      return true;
+    }
+  }
+
+  if (llvm::APSInt::isSameValue(lhs_eval_result.Val.getInt(),
+                                llvm::APSInt::get(1)) &&
+      op == clang::BO_Mul) {
+    // When the left operand is 1: * is equivalent to replacement by the right
+    // operand.
+    return true;
   }
 
   return false;
