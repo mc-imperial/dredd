@@ -45,6 +45,7 @@ class MutationReplaceUnaryOperator : public Mutation {
                                       const std::string& function_name,
                                       const std::string& result_type,
                                       const std::string& input_type,
+                                      bool optimise_mutations,
                                       int& mutation_id) const;
 
   [[nodiscard]] static bool IsPrefix(clang::UnaryOperatorKind op);
@@ -52,14 +53,18 @@ class MutationReplaceUnaryOperator : public Mutation {
   [[nodiscard]] bool IsValidReplacementOperator(
       clang::UnaryOperatorKind op) const;
 
+  [[nodiscard]] bool IsRedundantReplacementOperator(
+      clang::UnaryOperatorKind op, clang::ASTContext& ast_context) const;
+
   // This returns a string corresponding to the non-mutated expression.
   std::string GetExpr(clang::ASTContext& ast_context) const;
 
-  std::string GetFunctionName(clang::ASTContext& ast_context) const;
+  std::string GetFunctionName(bool optimise_mutations, clang::ASTContext &ast_context) const;
 
   // Replaces unary operators with other valid unary operators.
   void GenerateUnaryOperatorReplacement(
-      const std::string& arg_evaluated,
+      const std::string& arg_evaluated, clang::ASTContext& ast_context,
+      bool optimise_mutations,
       const std::vector<clang::UnaryOperatorKind>& operators,
       std::stringstream& new_function, int& mutant_offset) const;
 

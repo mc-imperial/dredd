@@ -18,7 +18,7 @@ static bool __dredd_enabled_mutation(int local_mutation_id) {
         if (!token.empty()) {
           int value = std::stoi(token);
           int local_value = value - 0;
-          if (local_value >= 0 && local_value < 21) {
+          if (local_value >= 0 && local_value < 20) {
             enabled_bitset[local_value / 64] |= (1 << (local_value % 64));
             some_mutation_enabled = true;
           }
@@ -49,7 +49,6 @@ static bool __dredd_replace_unary_operator_LNot_bool(std::function<bool()> arg, 
   if (!__dredd_some_mutation_enabled) return !arg();
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return ~arg();
   if (__dredd_enabled_mutation(local_mutation_id + 1)) return -arg();
-  if (__dredd_enabled_mutation(local_mutation_id + 2)) return arg();
   return !arg();
 }
 
@@ -64,5 +63,5 @@ static bool __dredd_replace_expr_bool(std::function<bool()> arg, int local_mutat
 
 int main() {
   bool y = __dredd_replace_expr_bool([&]() -> bool { return true; }, 0);
-  if (!__dredd_enabled_mutation(20)) { return __dredd_replace_expr_int([&]() -> int { return static_cast<int>(__dredd_replace_expr_bool([&]() -> bool { return static_cast<bool>(__dredd_replace_unary_operator_LNot_bool([&]() -> bool { return static_cast<bool>(__dredd_replace_expr_bool([&]() -> bool { return static_cast<bool>(y); }, 4)); }, 8)); }, 11)); }, 15); }
+  if (!__dredd_enabled_mutation(19)) { return __dredd_replace_expr_int([&]() -> int { return static_cast<int>(__dredd_replace_expr_bool([&]() -> bool { return static_cast<bool>(__dredd_replace_unary_operator_LNot_bool([&]() -> bool { return static_cast<bool>(__dredd_replace_expr_bool([&]() -> bool { return static_cast<bool>(y); }, 4)); }, 8)); }, 10)); }, 14); }
 }

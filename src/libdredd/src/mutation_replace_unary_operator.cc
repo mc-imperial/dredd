@@ -106,8 +106,7 @@ bool MutationReplaceUnaryOperator::IsValidReplacementOperator(
   return true;
 }
 
-std::string MutationReplaceUnaryOperator::GetFunctionName(
-    clang::ASTContext& ast_context) const {
+std::string MutationReplaceUnaryOperator::GetFunctionName(bool optimise_mutations, clang::ASTContext &ast_context) const {
   std::string result = "__dredd_replace_unary_operator_";
 
   // A string corresponding to the unary operator forms part of the name of the
@@ -163,13 +162,18 @@ std::string MutationReplaceUnaryOperator::GetFunctionName(
                                   ->getName(ast_context.getPrintingPolicy())
                                   .str());
 
+  // Since the optimised cases are the same for both op 0 and op 1, we only need to distinguish in the case op -1
+  if (optimise_mutations && MutationReplaceExpr::ExprIsEquivalentTo(*unary_operator_.getSubExpr(), -1, ast_context)) {
+    result += "_minus_one";
+  }
+
   return result;
 }
 
 std::string MutationReplaceUnaryOperator::GenerateMutatorFunction(
     clang::ASTContext& ast_context, const std::string& function_name,
     const std::string& result_type, const std::string& input_type,
-    int& mutation_id) const {
+    bool optimise_mutations, int& mutation_id) const {
   std::stringstream new_function;
   new_function << "static " << result_type << " " << function_name << "(";
   if (ast_context.getLangOpts().CPlusPlus) {
@@ -209,7 +213,8 @@ std::string MutationReplaceUnaryOperator::GenerateMutatorFunction(
       clang::UnaryOperatorKind::UO_Not,    clang::UnaryOperatorKind::UO_Minus,
       clang::UnaryOperatorKind::UO_LNot};
 
-  GenerateUnaryOperatorReplacement(arg_evaluated, operators, new_function,
+  GenerateUnaryOperatorReplacement(arg_evaluated, ast_context,
+                                   optimise_mutations, operators, new_function,
                                    mutant_offset);
 
   new_function << "  return " << GetExpr(ast_context) << ";\n";
@@ -221,12 +226,36 @@ std::string MutationReplaceUnaryOperator::GenerateMutatorFunction(
 
   return new_function.str();
 }
+
+bool MutationReplaceUnaryOperator::IsRedundantReplacementOperator(
+    clang::UnaryOperatorKind op, clang::ASTContext& ast_context) const {
+  if (MutationReplaceExpr::ExprIsEquivalentTo(*unary_operator_.getSubExpr(), 0,
+                                              ast_context) ||
+      MutationReplaceExpr::ExprIsEquivalentTo(*unary_operator_.getSubExpr(), 1,
+                                              ast_context)) {
+    if (op == clang::UO_Minus || op == clang::UO_LNot) {
+      return true;
+    }
+  }
+
+  if (MutationReplaceExpr::ExprIsEquivalentTo(*unary_operator_.getSubExpr(), -1,
+                                              ast_context) &&
+      op == clang::UO_Minus) {
+    return true;
+  }
+
+  return false;
+}
+
 void MutationReplaceUnaryOperator::GenerateUnaryOperatorReplacement(
-    const std::string& arg_evaluated,
+    const std::string& arg_evaluated, clang::ASTContext& ast_context,
+    bool optimise_mutations,
     const std::vector<clang::UnaryOperatorKind>& operators,
     std::stringstream& new_function, int& mutant_offset) const {
   for (const auto op : operators) {
-    if (op == unary_operator_.getOpcode() || !IsValidReplacementOperator(op)) {
+    if (op == unary_operator_.getOpcode() || !IsValidReplacementOperator(op) ||
+        (optimise_mutations &&
+         IsRedundantReplacementOperator(op, ast_context))) {
       continue;
     }
     new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
@@ -240,9 +269,18 @@ void MutationReplaceUnaryOperator::GenerateUnaryOperatorReplacement(
     }
     mutant_offset++;
   }
-  new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
-               << mutant_offset << ")) return " + arg_evaluated + ";\n";
-  mutant_offset++;
+
+  if (!optimise_mutations ||
+      MutationReplaceExpr::ExprIsEquivalentTo(*unary_operator_.getSubExpr(), 0,
+                                              ast_context) ||
+      MutationReplaceExpr::ExprIsEquivalentTo(*unary_operator_.getSubExpr(), 1,
+                                              ast_context) ||
+      MutationReplaceExpr::ExprIsEquivalentTo(*unary_operator_.getSubExpr(), -1,
+                                              ast_context)) {
+    new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
+                 << mutant_offset << ")) return " + arg_evaluated + ";\n";
+    mutant_offset++;
+  }
 }
 
 void MutationReplaceUnaryOperator::Apply(
@@ -252,7 +290,7 @@ void MutationReplaceUnaryOperator::Apply(
     std::unordered_set<std::string>& dredd_declarations) const {
   (void)optimise_mutations;  // Unused
 
-  std::string new_function_name = GetFunctionName(ast_context);
+  std::string new_function_name = GetFunctionName(optimise_mutations, ast_context);
   std::string result_type = unary_operator_.getType()
                                 ->getAs<clang::BuiltinType>()
                                 ->getName(ast_context.getPrintingPolicy())
@@ -330,8 +368,9 @@ void MutationReplaceUnaryOperator::Apply(
   assert(!result && "Rewrite failed.\n");
   (void)result;  // Keep release-mode compilers happy.
 
-  std::string new_function = GenerateMutatorFunction(
-      ast_context, new_function_name, result_type, input_type, mutation_id);
+  std::string new_function =
+      GenerateMutatorFunction(ast_context, new_function_name, result_type,
+                              input_type, optimise_mutations, mutation_id);
   assert(!new_function.empty() && "Unsupported opcode.");
 
   dredd_declarations.insert(new_function);
