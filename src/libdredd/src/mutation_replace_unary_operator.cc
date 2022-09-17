@@ -246,10 +246,9 @@ std::string MutationReplaceUnaryOperator::GenerateMutatorFunction(
 
 bool MutationReplaceUnaryOperator::IsRedundantReplacementOperator(
     clang::UnaryOperatorKind op, clang::ASTContext& ast_context) const {
-  // When the operand is 0: - is equivalent to replacement with 0 and ! is equivalent
-  // to replacement with 1.
-  // When the operand is 1: - is equivalent to replacement with -1 and ! is equivalent
-  // to replacement with 0.
+  // When the operand is 0: - is equivalent to replacement with 0 and ! is
+  // equivalent to replacement with 1. When the operand is 1: - is equivalent to
+  // replacement with -1 and ! is equivalent to replacement with 0.
   if (MutationReplaceExpr::ExprIsEquivalentTo(*unary_operator_.getSubExpr(), 0,
                                               ast_context) ||
       MutationReplaceExpr::ExprIsEquivalentTo(*unary_operator_.getSubExpr(), 1,
