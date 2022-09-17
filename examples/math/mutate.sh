@@ -18,4 +18,4 @@ for f in `ls ../math/src/*.cc`
 do
     FILES="${FILES} ${f}"
 done
-../../../third_party/clang+llvm-13.0.1/bin/dredd -p ./build/compile_commands.json ${FILES}
+../../../third_party/clang+llvm-13.0.1/bin/dredd --mutation-info-file mutation_info.json -p ./build/compile_commands.json ${FILES}
