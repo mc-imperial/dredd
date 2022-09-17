@@ -163,8 +163,10 @@ std::string MutationReplaceUnaryOperator::GetFunctionName(
                                   ->getName(ast_context.getPrintingPolicy())
                                   .str());
 
-  // Since the optimised cases are the same for both op 0 and op 1, we only need
-  // to distinguish in the case op -1
+  // In the case that we can optimise out some unary expressions, it is
+  // important to change the name of the mutator function to avoid clashes
+  // with other versions that apply to the same operator and types but cannot
+  // be optimised.
   if (optimise_mutations) {
     if (MutationReplaceExpr::ExprIsEquivalentTo(*unary_operator_.getSubExpr(),
                                                 0, ast_context)) {
@@ -237,13 +239,108 @@ std::string MutationReplaceUnaryOperator::GenerateMutatorFunction(
 
   // The function captures |mutant_offset| different mutations, so bump up
   // the mutation id accordingly.
-  mutation_id += mutant_offset;
+  mutation_id += mutant_offset
+393e2a6
+@JamesLee-Jones
+Fix formatting
+cf9757b
+Merge state
+
+Add more commits by pushing to the constant-folding-unary branch on JamesLee-Jones/dredd.
+Changes approved
+1 approving review
+1 approval
+View
+Unresolved conversations
+1 conversation must be resolved before merging.
+All checks have passed
+9 successful checks
+@github-actions
+.github/workflows/build.yml / build (macOS-latest, Debug) (pull_request) Successful in 2m
+Details
+@github-actions
+.github/workflows/c_apps.yml / build (pull_request) Successful in 3m
+Details
+@github-actions
+.github/workflows/cxx_apps.yml / build (pull_request) Successful in 31m
+Details
+@github-actions
+.github/workflows/dev_build.yml / build (pull_request) Successful in 17m
+Details
+@github-actions
+.github/workflows/build.yml / build (macOS-latest, Release) (pull_request) Successful in 2m
+Details
+@github-actions
+.github/workflows/build.yml / build (ubuntu-20.04, Debug, gcc-10, g++-10) (pull_request) Successful in 11m
+Details
+@github-actions
+.github/workflows/build.yml / build (ubuntu-20.04, Release, gcc-10, g++-10) (pull_request) Successful in 11m
+Details
+@github-actions
+.github/workflows/build.yml / build (ubuntu-20.04, Debug, clang-12, clang++-12) (pull_request) Successful in 15m
+Details
+@github-actions
+.github/workflows/build.yml / build (ubuntu-20.04, Release, clang-12, clang++-12) (pull_request) Successful in 10m
+Details
+Merging is blocked
+The base branch requires all conversations on code to be resolved.
+
+or view
+
+.
+@JamesLee-Jones
+Add heading text
+Add bold text, <Ctrl+b>
+Add italic text, <Ctrl+i>
+Add a quote, <Ctrl+Shift+.>
+Add code, <Ctrl+e>
+Add a link, <Ctrl+k>
+Add a bulleted list, <Ctrl+Shift+8>
+Add a numbered list, <Ctrl+Shift+7>
+Add a task list, <Ctrl+Shift+l>
+Directly mention a user or team
+Reference an issue, pull request, or discussion
+Add saved reply
+Attach files by dragging & dropping, selecting or pasting them.
+Styling with Markdown is supported
+Remember, contributions to this repository should follow our GitHub Community Guidelines.
+ProTip! Add .patch or .diff to the end of URLs for Git’s plaintext views.
+Reviewers
+
+@afd
+afd
+Still in progress?
+Assignees
+No one—
+Labels
+None yet
+Projects
+None yet
+Milestone
+No milestone
+Development
+
+Successfully merging this pull request may close these issues.
+Exploit constant folding to avoid redundant unary operator mutations
+Notifications
+Customize
+
+You’re receiving notifications because you authored the thread.
+2 participants
+@JamesLee-Jones
+@afd
+Allow edits and access to secrets by maintainers
+;
 
   return new_function.str();
 }
 
 bool MutationReplaceUnaryOperator::IsRedundantReplacementOperator(
     clang::UnaryOperatorKind op, clang::ASTContext& ast_context) const {
+  // When the operand is 0: - is equivalent to replacement with 0 and ! is equivalent
+  // to replacement with 1.
+  // When the operand is 1: - is equivalent to replacement with -1 and ! is equivalent
+  // to replacement with 0.
   if (MutationReplaceExpr::ExprIsEquivalentTo(*unary_operator_.getSubExpr(), 0,
                                               ast_context) ||
       MutationReplaceExpr::ExprIsEquivalentTo(*unary_operator_.getSubExpr(), 1,
@@ -253,6 +350,7 @@ bool MutationReplaceUnaryOperator::IsRedundantReplacementOperator(
     }
   }
 
+  // When the operand is -1: - is equivalent to replacement with 1.
   if (MutationReplaceExpr::ExprIsEquivalentTo(*unary_operator_.getSubExpr(), -1,
                                               ast_context) &&
       op == clang::UO_Minus) {
@@ -285,6 +383,8 @@ void MutationReplaceUnaryOperator::GenerateUnaryOperatorReplacement(
     mutant_offset++;
   }
 
+  // In these cases, replacement with the argument is equivalent to replacement
+  // with the respective constant.
   if (!optimise_mutations ||
       MutationReplaceExpr::ExprIsEquivalentTo(*unary_operator_.getSubExpr(), 0,
                                               ast_context) ||
