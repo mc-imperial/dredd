@@ -165,10 +165,21 @@ std::string MutationReplaceUnaryOperator::GetFunctionName(
 
   // Since the optimised cases are the same for both op 0 and op 1, we only need
   // to distinguish in the case op -1
-  if (optimise_mutations &&
-      MutationReplaceExpr::ExprIsEquivalentTo(*unary_operator_.getSubExpr(), -1,
+  if (optimise_mutations) {
+    if (MutationReplaceExpr::ExprIsEquivalentTo(*unary_operator_.getSubExpr(), 0,
+                                                ast_context)) {
+      result += "_zero";
+    }
+
+    if (MutationReplaceExpr::ExprIsEquivalentTo(*unary_operator_.getSubExpr(), 1,
+                                                ast_context)) {
+      result += "_one";
+    }
+
+    if (MutationReplaceExpr::ExprIsEquivalentTo(*unary_operator_.getSubExpr(), -1,
                                               ast_context)) {
-    result += "_minus_one";
+        result += "_minus_one";
+      }
   }
 
   return result;
