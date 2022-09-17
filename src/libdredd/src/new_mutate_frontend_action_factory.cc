@@ -32,9 +32,11 @@ namespace dredd {
 class MutateFrontendAction : public clang::ASTFrontendAction {
  public:
   MutateFrontendAction(bool optimise_mutations, int& mutation_id,
+                       MutationInfo& mutation_info,
                        std::set<std::string>& processed_files)
       : optimise_mutations_(optimise_mutations),
         mutation_id_(mutation_id),
+        mutation_info_(mutation_info),
         processed_files_(processed_files) {}
 
   std::unique_ptr<clang::ASTConsumer> CreateASTConsumer(
@@ -57,40 +59,46 @@ class MutateFrontendAction : public clang::ASTFrontendAction {
  private:
   const bool optimise_mutations_;
   int& mutation_id_;
+  MutationInfo& mutation_info_;
   std::set<std::string>& processed_files_;
 };
 
 std::unique_ptr<clang::tooling::FrontendActionFactory>
-NewMutateFrontendActionFactory(bool optimise_mutations, int& mutation_id) {
+NewMutateFrontendActionFactory(bool optimise_mutations, int& mutation_id,
+                               MutationInfo& mutation_info) {
   class MutateFrontendActionFactory
       : public clang::tooling::FrontendActionFactory {
    public:
-    MutateFrontendActionFactory(bool optimise_mutations, int& mutation_id)
-        : optimise_mutations_(optimise_mutations), mutation_id_(mutation_id) {}
+    MutateFrontendActionFactory(bool optimise_mutations, int& mutation_id,
+                                MutationInfo& mutation_info)
+        : optimise_mutations_(optimise_mutations),
+          mutation_id_(mutation_id),
+          mutation_info_(mutation_info) {}
 
     std::unique_ptr<clang::FrontendAction> create() override {
       return std::make_unique<MutateFrontendAction>(
-          optimise_mutations_, mutation_id_, processed_files_);
+          optimise_mutations_, mutation_id_, mutation_info_, processed_files_);
     }
 
    private:
     const bool optimise_mutations_;
     int& mutation_id_;
+    MutationInfo& mutation_info_;
 
     // Stores the ids of the files that have been processed so far, to avoid
     // processing a file multiple times.
     std::set<std::string> processed_files_;
   };
 
-  return std::make_unique<MutateFrontendActionFactory>(optimise_mutations,
-                                                       mutation_id);
+  return std::make_unique<MutateFrontendActionFactory>(
+      optimise_mutations, mutation_id, mutation_info);
 }
 
 std::unique_ptr<clang::ASTConsumer> MutateFrontendAction::CreateASTConsumer(
     clang::CompilerInstance& ci, llvm::StringRef file) {
   (void)file;  // Unused
   return std::make_unique<MutateAstConsumer>(ci, optimise_mutations_,
-                                             mutation_id_);
+                                             mutation_id_, mutation_info_);
 }
 
 }  // namespace dredd

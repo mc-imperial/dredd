@@ -54,8 +54,8 @@ static int __dredd_replace_expr_int(std::function<int()> arg, int local_mutation
 
 int foo(int x) {
   // It is important that "y" is not mutated in "auto y"
-  if (!__dredd_enabled_mutation(20)) { if (auto y = __dredd_replace_expr_int([&]() -> int { return static_cast<int>(__dredd_replace_expr_int_lvalue([&]() -> int& { return static_cast<int&>(x); }, 0)); }, 2)) {
+  if (!__dredd_enabled_mutation(15)) { if (auto y = __dredd_replace_expr_int([&]() -> int { return static_cast<int>(__dredd_replace_expr_int_lvalue([&]() -> int& { return static_cast<int&>(x); }, 0)); }, 2)) {
     if (!__dredd_enabled_mutation(14)) { return __dredd_replace_expr_int([&]() -> int { return static_cast<int>(__dredd_replace_expr_int_lvalue([&]() -> int& { return static_cast<int&>(y); }, 7)); }, 9); }
   } }
-  if (!__dredd_enabled_mutation(21)) { return __dredd_replace_expr_int([&]() -> int { return 2; }, 15); }
+  if (!__dredd_enabled_mutation(21)) { return __dredd_replace_expr_int([&]() -> int { return 2; }, 16); }
 }

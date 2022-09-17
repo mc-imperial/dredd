@@ -15,7 +15,6 @@
 #ifndef LIBDREDD_MUTATE_VISITOR_H
 #define LIBDREDD_MUTATE_VISITOR_H
 
-#include <memory>
 #include <set>
 #include <unordered_set>
 #include <vector>
@@ -32,7 +31,7 @@
 #include "clang/AST/TypeLoc.h"
 #include "clang/Basic/SourceLocation.h"
 #include "clang/Frontend/CompilerInstance.h"
-#include "libdredd/mutation.h"
+#include "libdredd/mutation_tree_node.h"
 
 namespace dredd {
 
@@ -42,6 +41,8 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
                 bool optimise_mutations);
 
   bool TraverseDecl(clang::Decl* decl);
+
+  bool TraverseStmt(clang::Stmt* stmt);
 
   // Overridden in order to avoid visiting the expressions associated with case
   // statements.
@@ -81,7 +82,7 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
 
   bool VisitExpr(clang::Expr* expr);
 
-  bool VisitCompoundStmt(clang::CompoundStmt* compound_stmt);
+  bool TraverseCompoundStmt(clang::CompoundStmt* compound_stmt);
 
   // Overridden to track all source locations associated with variable
   // declarations, in order to avoid mutating variable declaration reference
@@ -92,9 +93,10 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
   // NOLINTNEXTLINE
   bool shouldTraversePostOrder() { return true; }
 
-  [[nodiscard]] const std::vector<std::unique_ptr<Mutation>>& GetMutations()
-      const {
-    return mutations_;
+  // Should only be called after visitation is complete. Yields the tree of
+  // mutations for the translation unit.
+  [[nodiscard]] const MutationTreeNode& GetMutations() const {
+    return mutation_tree_root_;
   }
 
   [[nodiscard]] clang::SourceLocation GetStartLocationOfFirstDeclInSourceFile()
@@ -103,6 +105,32 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
   }
 
  private:
+  // Helper class that uses the RAII pattern to support pushing a new mutation
+  // tree node on to the stack of mutation tree nodes used during visitation,
+  // and automatically popping the node off the stack when control returns from
+  // the visitor method that performed the push.
+  class PushMutationTreeRAII {
+   public:
+    explicit PushMutationTreeRAII(MutateVisitor& mutate_visitor)
+        : mutate_visitor_(mutate_visitor) {
+      mutate_visitor_.mutation_tree_path_.push_back(
+          &mutate_visitor_.mutation_tree_path_.back()->AddChild(
+              MutationTreeNode()));
+    }
+    ~PushMutationTreeRAII() { mutate_visitor_.mutation_tree_path_.pop_back(); }
+
+    PushMutationTreeRAII(const PushMutationTreeRAII&) = delete;
+
+    PushMutationTreeRAII& operator=(const PushMutationTreeRAII&) = delete;
+
+    PushMutationTreeRAII(PushMutationTreeRAII&&) = delete;
+
+    PushMutationTreeRAII& operator=(PushMutationTreeRAII&&) = delete;
+
+   private:
+    MutateVisitor& mutate_visitor_;
+  };
+
   bool HandleUnaryOperator(clang::UnaryOperator* unary_operator);
 
   bool HandleBinaryOperator(clang::BinaryOperator* binary_operator);
@@ -154,8 +182,12 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
   std::unordered_set<clang::Stmt*> contains_continue_for_enclosing_loop_;
   std::unordered_set<clang::Stmt*> contains_case_for_enclosing_switch_;
 
-  // Records the mutations that can be applied.
-  std::vector<std::unique_ptr<Mutation>> mutations_;
+  // Records the mutations that can be applied, in a hierarchical manner.
+  MutationTreeNode mutation_tree_root_;
+
+  // Used to keep track of how mutations are hierarchically organised while the
+  // AST is being visited.
+  std::vector<MutationTreeNode*> mutation_tree_path_;
 
   // In C++, it is common to introduce a variable in a boolean guard via "auto",
   // and have the guard evaluate to the variable:

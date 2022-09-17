@@ -18,11 +18,13 @@
 #include <memory>
 
 #include "clang/Tooling/Tooling.h"
+#include "libdredd/mutation_info.h"
 
 namespace dredd {
 
 std::unique_ptr<clang::tooling::FrontendActionFactory>
-NewMutateFrontendActionFactory(bool optimise_mutations, int& mutation_id);
+NewMutateFrontendActionFactory(bool optimise_mutations, int& mutation_id,
+                               MutationInfo& mutation_info);
 
 }
 

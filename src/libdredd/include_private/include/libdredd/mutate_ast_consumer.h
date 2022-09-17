@@ -17,24 +17,29 @@
 
 #include <memory>
 #include <string>
+#include <unordered_set>
 
 #include "clang/AST/ASTConsumer.h"
 #include "clang/AST/ASTContext.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Rewrite/Core/Rewriter.h"
 #include "libdredd/mutate_visitor.h"
+#include "libdredd/mutation_info.h"
+#include "libdredd/mutation_tree_node.h"
 
 namespace dredd {
 
 class MutateAstConsumer : public clang::ASTConsumer {
  public:
   MutateAstConsumer(const clang::CompilerInstance& compiler_instance,
-                    bool optimise_mutations, int& mutation_id)
+                    bool optimise_mutations, int& mutation_id,
+                    MutationInfo& mutation_info)
       : compiler_instance_(compiler_instance),
+        optimise_mutations_(optimise_mutations),
         visitor_(std::make_unique<MutateVisitor>(compiler_instance,
                                                  optimise_mutations)),
         mutation_id_(mutation_id),
-        optimise_mutations_(optimise_mutations) {}
+        mutation_info_(mutation_info) {}
 
   void HandleTranslationUnit(clang::ASTContext& ast_context) override;
 
@@ -43,15 +48,25 @@ class MutateAstConsumer : public clang::ASTConsumer {
 
   [[nodiscard]] std::string GetDreddPreludeC(int initial_mutation_id) const;
 
+  MutationIdTreeNode ApplyMutations(
+      const MutationTreeNode& mutation_tree_node, int initial_mutation_id,
+      clang::ASTContext& context,
+      std::unordered_set<std::string>& dredd_declarations);
+
   const clang::CompilerInstance& compiler_instance_;
+
+  // True if and only if Dredd's optimisations are enabled.
+  const bool optimise_mutations_;
+
   std::unique_ptr<MutateVisitor> visitor_;
+
   clang::Rewriter rewriter_;
 
   // Counter used to give each mutation a unique id; shared among AST consumers
   // for different translation units.
   int& mutation_id_;
-  // Used to disable dredd's mutations.
-  const bool optimise_mutations_;
+
+  MutationInfo& mutation_info_;
 };
 
 }  // namespace dredd

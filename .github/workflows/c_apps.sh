@@ -91,7 +91,7 @@ pushd curl
   do
       FILES="${FILES} ${f}"
   done
-  ${DREDD_ROOT}/third_party/clang+llvm-13.0.1/bin/dredd -p ${DREDD_ROOT}/curl/build/compile_commands.json ${FILES}
+  ${DREDD_ROOT}/third_party/clang+llvm-13.0.1/bin/dredd --mutation-info-file temp.json -p ${DREDD_ROOT}/curl/build/compile_commands.json ${FILES}
   pushd build
     ninja
     # TODO: run some tests
@@ -120,7 +120,7 @@ pushd zstd
   do
     FILES="${FILES} ${f}"
   done
-  ${DREDD_ROOT}/third_party/clang+llvm-13.0.1/bin/dredd -p ${DREDD_ROOT}/zstd/temp/compile_commands.json ${FILES}
+  ${DREDD_ROOT}/third_party/clang+llvm-13.0.1/bin/dredd --mutation-info-file temp.json -p ${DREDD_ROOT}/zstd/temp/compile_commands.json ${FILES}
   # Build mutated zstd
   make clean
   CFLAGS=-O0 make zstd-release

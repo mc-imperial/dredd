@@ -79,7 +79,7 @@ cp ${DREDD_ROOT}/build/src/dredd/dredd ${DREDD_ROOT}/third_party/clang+llvm-13.0
 echo "examples/simple/pi.cc: check that we can build the simple example"
 date
 
-${DREDD_ROOT}/third_party/clang+llvm-13.0.1/bin/dredd examples/simple/pi.cc
+${DREDD_ROOT}/third_party/clang+llvm-13.0.1/bin/dredd --mutation-info-file temp.json examples/simple/pi.cc
 clang++ examples/simple/pi.cc -o examples/simple/pi
 diff <(./examples/simple/pi) <(echo "3.14159")
 
@@ -115,7 +115,7 @@ for f in `ls SPIRV-Tools/source/val/*.cpp`
 do
     FILES="${FILES} ${DREDD_ROOT}/${f}"
 done
-${DREDD_ROOT}/third_party/clang+llvm-13.0.1/bin/dredd -p ${DREDD_ROOT}/SPIRV-Tools/build/compile_commands.json ${FILES}
+${DREDD_ROOT}/third_party/clang+llvm-13.0.1/bin/dredd --mutation-info-file temp.json -p ${DREDD_ROOT}/SPIRV-Tools/build/compile_commands.json ${FILES}
 pushd SPIRV-Tools/build
   ninja test_val_abcde test_val_capability test_val_fghijklmnop test_val_limits test_val_stuvw
   ./test/val/test_val_abcde
@@ -141,7 +141,7 @@ for f in `ls llvm-project/llvm/lib/Transforms/InstCombine/*.cpp`
 do
     FILES="${FILES} ${DREDD_ROOT}/${f}"
 done
-${DREDD_ROOT}/third_party/clang+llvm-13.0.1/bin/dredd -p ${DREDD_ROOT}/llvm-project/build/compile_commands.json ${FILES}
+${DREDD_ROOT}/third_party/clang+llvm-13.0.1/bin/dredd --mutation-info-file temp.json -p ${DREDD_ROOT}/llvm-project/build/compile_commands.json ${FILES}
 pushd llvm-project/build
   ninja LLVMInstCombine
 popd

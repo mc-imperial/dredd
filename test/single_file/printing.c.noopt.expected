@@ -43,11 +43,11 @@ static int __dredd_replace_expr_int(int arg, int local_mutation_id) {
 }
 
 int main() {
-  if (!__dredd_enabled_mutation(35)) { __dredd_replace_expr_int(printf("%s\n", "A\n"), 0); }
-  if (!__dredd_enabled_mutation(36)) { __dredd_replace_expr_int(printf("%s\n", "B\n"), 5); }
-  if (!__dredd_enabled_mutation(37)) { __dredd_replace_expr_int(printf("%s\n", "C\n"), 10); }
-  if (!__dredd_enabled_mutation(38)) { __dredd_replace_expr_int(printf("%s\n", "D\n"), 15); }
-  if (!__dredd_enabled_mutation(39)) { __dredd_replace_expr_int(printf("%s\n", "E\n"), 20); }
-  if (!__dredd_enabled_mutation(40)) { __dredd_replace_expr_int(printf("%s\n", "F\n"), 25); }
-  if (!__dredd_enabled_mutation(41)) { __dredd_replace_expr_int(printf("%s\n", "G\n"), 30); }
+  if (!__dredd_enabled_mutation(5)) { __dredd_replace_expr_int(printf("%s\n", "A\n"), 0); }
+  if (!__dredd_enabled_mutation(11)) { __dredd_replace_expr_int(printf("%s\n", "B\n"), 6); }
+  if (!__dredd_enabled_mutation(17)) { __dredd_replace_expr_int(printf("%s\n", "C\n"), 12); }
+  if (!__dredd_enabled_mutation(23)) { __dredd_replace_expr_int(printf("%s\n", "D\n"), 18); }
+  if (!__dredd_enabled_mutation(29)) { __dredd_replace_expr_int(printf("%s\n", "E\n"), 24); }
+  if (!__dredd_enabled_mutation(35)) { __dredd_replace_expr_int(printf("%s\n", "F\n"), 30); }
+  if (!__dredd_enabled_mutation(41)) { __dredd_replace_expr_int(printf("%s\n", "G\n"), 36); }
 }
