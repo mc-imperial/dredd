@@ -63,9 +63,6 @@ std::string MutationReplaceBinaryOperator::GetExpr(
 
 bool MutationReplaceBinaryOperator::IsRedundantReplacementOperator(
     clang::BinaryOperatorKind op, clang::ASTContext& ast_context) const {
-  clang::Expr::EvalResult rhs_eval_result;
-  clang::Expr::EvalResult lhs_eval_result;
-
   // In the case where both operands are 0, the only case that isn't covered
   // by constant replacement is undefined behaviour, this is achieved by /.
   if (MutationReplaceExpr::ExprIsEquivalentTo(*binary_operator_.getRHS(), 0,

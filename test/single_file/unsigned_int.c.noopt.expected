@@ -16,7 +16,7 @@ static int __dredd_enabled_mutation(int local_mutation_id) {
       while(token) {
         int value = atoi(token);
         int local_value = value - 0;
-        if (local_value >= 0 && local_value < 18) {
+        if (local_value >= 0 && local_value < 34) {
           enabled_bitset[local_value / 64] |= (1 << (local_value % 64));
           some_mutation_enabled = 1;
         }
@@ -30,11 +30,29 @@ static int __dredd_enabled_mutation(int local_mutation_id) {
   return enabled_bitset[local_mutation_id / 64] & (1 << (local_mutation_id % 64));
 }
 
-static int __dredd_replace_unary_operator_Minus_int(int arg, int local_mutation_id) {
-  if (!__dredd_some_mutation_enabled) return -arg;
-  if (__dredd_enabled_mutation(local_mutation_id + 0)) return ~arg;
+static unsigned int __dredd_replace_expr_unsigned_int(unsigned int arg, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return arg;
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return !(arg);
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return ~(arg);
+  if (__dredd_enabled_mutation(local_mutation_id + 2)) return 0;
+  if (__dredd_enabled_mutation(local_mutation_id + 3)) return 1;
+  return arg;
+}
+
+static int __dredd_replace_unary_operator_Not_int(int arg, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return ~arg;
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return -arg;
   if (__dredd_enabled_mutation(local_mutation_id + 1)) return !arg;
-  return -arg;
+  if (__dredd_enabled_mutation(local_mutation_id + 2)) return arg;
+  return ~arg;
+}
+
+static int __dredd_replace_unary_operator_LNot_int(int arg, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return !arg;
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return ~arg;
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return -arg;
+  if (__dredd_enabled_mutation(local_mutation_id + 2)) return arg;
+  return !arg;
 }
 
 static int __dredd_replace_expr_int(int arg, int local_mutation_id) {
@@ -48,6 +66,6 @@ static int __dredd_replace_expr_int(int arg, int local_mutation_id) {
 }
 
 int main() {
-  int x = __dredd_replace_expr_int(1, 0);
-  if (!__dredd_enabled_mutation(17)) { return __dredd_replace_expr_int(__dredd_replace_unary_operator_Minus_int(__dredd_replace_expr_int(x, 5), 10), 12); }
+  unsigned int x = __dredd_replace_expr_unsigned_int(__dredd_replace_expr_int(__dredd_replace_unary_operator_LNot_int(__dredd_replace_expr_int(0, 0), 5), 8), 13);
+  unsigned int y = __dredd_replace_expr_unsigned_int(__dredd_replace_expr_int(__dredd_replace_unary_operator_Not_int(__dredd_replace_expr_int(7, 17), 22), 25), 30);
 }
