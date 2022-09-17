@@ -134,13 +134,13 @@ static double __dredd_replace_expr_double(double arg, int local_mutation_id) {
 int main() {
   int x = __dredd_replace_expr_int(3, 0);
   float y = __dredd_replace_expr_float(__dredd_replace_expr_double(3.532, 5), 8);
-  if (!__dredd_enabled_mutation(21)) { __dredd_replace_expr_int(__dredd_replace_unary_operator_PostInc_int(&(x), 11), 16); }
-  if (!__dredd_enabled_mutation(29)) { __dredd_replace_expr_float(__dredd_replace_unary_operator_PostInc_float(&(y), 22), 26); }
-  if (!__dredd_enabled_mutation(40)) { __dredd_replace_expr_int(__dredd_replace_unary_operator_PreInc_int(&(x), 30), 35); }
-  if (!__dredd_enabled_mutation(48)) { __dredd_replace_expr_float(__dredd_replace_unary_operator_PreInc_float(&(y), 41), 45); }
-  if (!__dredd_enabled_mutation(59)) { __dredd_replace_expr_int(__dredd_replace_unary_operator_PreDec_int(&(x), 49), 54); }
-  if (!__dredd_enabled_mutation(67)) { __dredd_replace_expr_float(__dredd_replace_unary_operator_PreDec_float(&(y), 60), 64); }
-  if (!__dredd_enabled_mutation(78)) { __dredd_replace_expr_int(__dredd_replace_unary_operator_PostDec_int(&(x), 68), 73); }
-  if (!__dredd_enabled_mutation(86)) { __dredd_replace_expr_float(__dredd_replace_unary_operator_PostDec_float(&(y), 79), 83); }
-  if (!__dredd_enabled_mutation(100)) { return __dredd_replace_expr_int(__dredd_replace_unary_operator_Minus_int(__dredd_replace_expr_int(x, 87), 92), 95); }
+  if (!__dredd_enabled_mutation(20)) { __dredd_replace_expr_int(__dredd_replace_unary_operator_PostInc_int(&(x), 11), 15); }
+  if (!__dredd_enabled_mutation(27)) { __dredd_replace_expr_float(__dredd_replace_unary_operator_PostInc_float(&(y), 21), 24); }
+  if (!__dredd_enabled_mutation(37)) { __dredd_replace_expr_int(__dredd_replace_unary_operator_PreInc_int(&(x), 28), 32); }
+  if (!__dredd_enabled_mutation(44)) { __dredd_replace_expr_float(__dredd_replace_unary_operator_PreInc_float(&(y), 38), 41); }
+  if (!__dredd_enabled_mutation(54)) { __dredd_replace_expr_int(__dredd_replace_unary_operator_PreDec_int(&(x), 45), 49); }
+  if (!__dredd_enabled_mutation(61)) { __dredd_replace_expr_float(__dredd_replace_unary_operator_PreDec_float(&(y), 55), 58); }
+  if (!__dredd_enabled_mutation(71)) { __dredd_replace_expr_int(__dredd_replace_unary_operator_PostDec_int(&(x), 62), 66); }
+  if (!__dredd_enabled_mutation(78)) { __dredd_replace_expr_float(__dredd_replace_unary_operator_PostDec_float(&(y), 72), 75); }
+  if (!__dredd_enabled_mutation(91)) { return __dredd_replace_expr_int(__dredd_replace_unary_operator_Minus_int(__dredd_replace_expr_int(x, 79), 84), 86); }
 }
