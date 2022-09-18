@@ -33,40 +33,48 @@ fi
 
 f="${DREDD_REPO_ROOT}/${1}"
 
-# Copy the single-file test case to the temporary directory so
-# that it can be mutated without affecting the original
-cp $f .
-copy_of_f=$(basename $f)      
-# Mutate the test case using Dredd with optimisations
-${DREDD_INSTALLED_EXECUTABLE} --mutation-info-file temp.json ${copy_of_f} --
-# Check that the mutated test case is as expected
-diff ${copy_of_f} $f.expected
-# Check that the mutated file compiles
-if [[ $f == *.cc ]]
-then
-  ${CXX} -c ${copy_of_f}
-else
-  ${CC} -c ${copy_of_f}
-fi
+for opt in "opt" "noopt"
+do
+  DREDD_EXTRA_ARGS=""
+  DREDD_EXPECTED_FILE=""
+  if [ ${opt} == "noopt" ]
+  then
+    DREDD_EXTRA_ARGS="--no-mutation-opts"
+    DREDD_EXPECTED_FILE="$f.noopt.expected"
+  else
+    DREDD_EXPECTED_FILE="$f.expected"
+  fi
 
-# Copy the single-file test case to the temporary directory so
-# that it can be mutated without affecting the original
-cp $f .
-copy_of_f=$(basename $f)
+  # Copy the single-file test case to the temporary directory so
+  # that it can be mutated without affecting the original
+  cp $f .
+  copy_of_f=$(basename $f)
 
-# Mutate the test case using Dredd without optimisations
-${DREDD_INSTALLED_EXECUTABLE} --no-mutation-opts --mutation-info-file temp.json ${copy_of_f} --
-# Check that the mutated test case is as expected
-diff ${copy_of_f} $f.noopt.expected
-# Check that the mutated file compiles
-if [[ $f == *.cc ]]
-then
-  ${CXX} -c ${copy_of_f}
-else
-  ${CC} -c ${copy_of_f}
-fi
+  # Mutate the test case using Dredd with optimisations
+  ${DREDD_INSTALLED_EXECUTABLE} ${DREDD_EXTRA_ARGS} --mutation-info-file temp.json ${copy_of_f} --
 
-# Clean up
-rm ${copy_of_f}
-rm ${copy_of_f%.*}.o
+  if [ -z "${DREDD_REGENERATE_TEST_CASE+x}" ]
+  then
+    # Check that the mutated test case is as expected
+    diff ${copy_of_f} ${DREDD_EXPECTED_FILE}
+  fi
 
+  # Check that the mutated file compiles
+  if [[ $f == *.cc ]]
+  then
+    ${CXX} -c ${copy_of_f}
+  else
+    ${CC} -c ${copy_of_f}
+  fi
+
+  if [ "${DREDD_REGENERATE_TEST_CASE+x}" ]
+  then
+    # Copy the mutated file so that it becomes the new test expectation
+    cp ${copy_of_f} ${DREDD_EXPECTED_FILE}
+  fi
+
+  # Clean up
+  rm ${copy_of_f}
+  rm ${copy_of_f%.*}.o
+
+done

@@ -18,55 +18,5 @@ set -e
 set -u
 set -x
 
-DREDD_INSTALLED_EXECUTABLE=${DREDD_REPO_ROOT}/third_party/clang+llvm-13.0.1/bin/dredd
-
-# Move to the temporary directory
-cd "${DREDD_REPO_ROOT}"
-cd temp/
-
-if [ -z "${DREDD_SKIP_COPY_EXECUTABLE+x}" ]
-then
-  # Ensure that Dredd is in its installed location. This depends on a
-  # debug build being available
-  cp build-Debug/src/dredd/dredd ${DREDD_INSTALLED_EXECUTABLE}
-fi
-
-f="${DREDD_REPO_ROOT}/${1}"
-
-# Copy the single-file test case to the temporary directory so
-# that it can be mutated without affecting the original
-cp $f .
-copy_of_f=$(basename $f)      
-# Mutate the test case using Dredd with optimisations
-${DREDD_INSTALLED_EXECUTABLE} --mutation-info-file temp.json ${copy_of_f} --
-# Check that the mutated file compiles
-if [[ $f == *.cc ]]
-then
-  ${CXX} -c ${copy_of_f}
-else
-  ${CC} -c ${copy_of_f}
-fi
-# Copy the mutated file so that it becomes the new test expectation
-cp ${copy_of_f} $f.expected
-
-# Copy the single-file test case to the temporary directory so
-# that it can be mutated without affecting the original
-cp $f .
-copy_of_f=$(basename $f)
-
-# Mutate the test case using Dredd without optimisations
-${DREDD_INSTALLED_EXECUTABLE} --no-mutation-opts --mutation-info-file temp.json ${copy_of_f} --
-# Check that the mutated file compiles
-if [[ $f == *.cc ]]
-then
-  ${CXX} -c ${copy_of_f}
-else
-  ${CC} -c ${copy_of_f}
-fi
-# Copy the mutated file so that it becomes the new test expectation
-cp ${copy_of_f} $f.noopt.expected
-
-# Clean up
-rm ${copy_of_f}
-rm ${copy_of_f%.*}.o
-
+export DREDD_REGENERATE_TEST_CASE=1
+check_one_single_file_test.sh "${1}"
