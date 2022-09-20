@@ -23,8 +23,8 @@
 namespace dredd {
 
 std::unique_ptr<clang::tooling::FrontendActionFactory>
-NewMutateFrontendActionFactory(bool optimise_mutations, int& mutation_id,
-                               MutationInfo& mutation_info);
+NewMutateFrontendActionFactory(bool optimise_mutations, bool dump_asts,
+                               int& mutation_id, MutationInfo& mutation_info);
 
 }
 

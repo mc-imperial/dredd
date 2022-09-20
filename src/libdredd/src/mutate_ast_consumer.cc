@@ -33,6 +33,7 @@
 #include "clang/Rewrite/Core/Rewriter.h"
 #include "libdredd/mutation.h"
 #include "llvm/ADT/StringRef.h"
+#include "llvm/Support/raw_ostream.h"
 
 namespace dredd {
 
@@ -40,6 +41,16 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
   if (ast_context.getDiagnostics().hasErrorOccurred()) {
     // There has been an error, so we don't do any processing.
     return;
+  }
+  if (dump_ast_) {
+    llvm::errs() << "AST for: "
+                 << ast_context.getSourceManager()
+                        .getFileEntryForID(
+                            ast_context.getSourceManager().getMainFileID())
+                        ->getName()
+                 << "\n";
+    ast_context.getTranslationUnitDecl()->dump();
+    llvm::errs() << "\n";
   }
   visitor_->TraverseDecl(ast_context.getTranslationUnitDecl());
 
