@@ -28,13 +28,15 @@ if [ -z "${DREDD_SKIP_COPY_EXECUTABLE+x}" ]
 then
   # Ensure that Dredd is in its installed location. This depends on a
   # debug build being available
-  cp build-Debug/src/dredd/dredd ${DREDD_INSTALLED_EXECUTABLE}
+  cp build-Debug/src/dredd/dredd "${DREDD_INSTALLED_EXECUTABLE}"
 fi
 
 f="${DREDD_REPO_ROOT}/${1}"
 
 for opt in "opt" "noopt"
 do
+  # Determine whether optimisations should be disabled or not, and whether the
+  # name of the expectation file should reflect this.
   DREDD_EXTRA_ARGS=""
   DREDD_EXPECTED_FILE=""
   if [ ${opt} == "noopt" ]
@@ -47,34 +49,34 @@ do
 
   # Copy the single-file test case to the temporary directory so
   # that it can be mutated without affecting the original
-  cp $f .
-  copy_of_f=$(basename $f)
+  cp "$f" .
+  copy_of_f=$(basename "$f")
 
-  # Mutate the test case using Dredd with optimisations
-  ${DREDD_INSTALLED_EXECUTABLE} ${DREDD_EXTRA_ARGS} --mutation-info-file temp.json ${copy_of_f} --
+  # Mutate the test case using Dredd
+  ${DREDD_INSTALLED_EXECUTABLE} ${DREDD_EXTRA_ARGS} --mutation-info-file temp.json "${copy_of_f}" --
 
   if [ -z "${DREDD_REGENERATE_TEST_CASE+x}" ]
   then
     # Check that the mutated test case is as expected
-    diff ${copy_of_f} ${DREDD_EXPECTED_FILE}
+    diff "${copy_of_f}" "${DREDD_EXPECTED_FILE}"
   fi
 
   # Check that the mutated file compiles
   if [[ $f == *.cc ]]
   then
-    ${CXX} -c ${copy_of_f}
+    ${CXX} -c "${copy_of_f}"
   else
-    ${CC} -c ${copy_of_f}
+    ${CC} -c "${copy_of_f}"
   fi
 
   if [ "${DREDD_REGENERATE_TEST_CASE+x}" ]
   then
     # Copy the mutated file so that it becomes the new test expectation
-    cp ${copy_of_f} ${DREDD_EXPECTED_FILE}
+    cp "${copy_of_f}" "${DREDD_EXPECTED_FILE}"
   fi
 
   # Clean up
-  rm ${copy_of_f}
-  rm ${copy_of_f%.*}.o
+  rm "${copy_of_f}"
+  rm "${copy_of_f%.*}".o
 
 done

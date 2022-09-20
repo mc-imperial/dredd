@@ -20,7 +20,7 @@ set -x
 
 cd "${DREDD_REPO_ROOT}"
 
-for f in `dredd_cmake_files.sh`
+for f in $(dredd_cmake_files.sh)
 do
-    cmake-lint $f
+    cmake-lint "$f"
 done

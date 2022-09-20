@@ -21,13 +21,13 @@ set -x
 cd "${DREDD_REPO_ROOT}"
 
 dredd_source_files.sh | xargs clang-format -i --verbose
-for f in `dredd_cmake_files.sh`
+for f in $(dredd_cmake_files.sh)
 do
-    cmake-format --first-comment-is-literal TRUE -i $f
+    cmake-format --first-comment-is-literal TRUE -i "$f"
 done
 
 examples_source_files.sh | xargs clang-format -i --verbose
-for f in `examples_cmake_files.sh`
+for f in $(examples_cmake_files.sh)
 do
-    cmake-format --first-comment-is-literal TRUE -i $f
+    cmake-format --first-comment-is-literal TRUE -i "$f"
 done

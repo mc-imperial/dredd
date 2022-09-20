@@ -22,19 +22,20 @@ if [ -z "${DREDD_SKIP_CHECK_COMPILE_COMMANDS+x}" ]
 then
   DREDD_INSTALLED_EXECUTABLE=${DREDD_REPO_ROOT}/third_party/clang+llvm-13.0.1/bin/dredd
 
-  cd ${DREDD_REPO_ROOT}
+  cd "${DREDD_REPO_ROOT}"
   
   # Ensure that Dredd is in its installed location. This depends on a
   # debug build being available
-  cp temp/build-Debug/src/dredd/dredd ${DREDD_INSTALLED_EXECUTABLE}
+  cp temp/build-Debug/src/dredd/dredd "${DREDD_INSTALLED_EXECUTABLE}"
 
   # Avoid copying Dredd to its installed location when invoking the script that
   # checks a single test.
   export DREDD_SKIP_COPY_EXECUTABLE=1
   
   # Consider each single-file test case
-  for f in `ls test/single_file/*.cc test/single_file/*.c`
+  for f in test/single_file/*.cc test/single_file/*.c
   do
-    check_one_single_file_test.sh ${f}
+    [[ -e "$f" ]] || break
+    check_one_single_file_test.sh "${f}"
   done
 fi
