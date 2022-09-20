@@ -270,12 +270,11 @@ void MutationReplaceExpr::Apply(
   std::string suffix;
 
   if (ast_context.getLangOpts().CPlusPlus) {
-    prefix.append(new_function_name + "([&]() -> " + result_type +
-                  " { return " +
+    prefix.append(new_function_name + "([&]() -> " + input_type + " { return " +
                   // We don't need to static cast constant expressions
                   (expr_.isCXX11ConstantExpr(ast_context)
                        ? ""
-                       : "static_cast<" + result_type + ">("));
+                       : "static_cast<" + input_type + ">("));
     suffix.append(expr_.isCXX11ConstantExpr(ast_context) ? "" : ")");
     suffix.append("; }");
   } else {
