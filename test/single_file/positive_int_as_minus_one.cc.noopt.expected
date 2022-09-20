@@ -35,7 +35,7 @@ static bool __dredd_enabled_mutation(int local_mutation_id) {
   return (enabled_bitset[local_mutation_id / 64] & (1 << (local_mutation_id % 64))) != 0;
 }
 
-static unsigned int& __dredd_replace_expr_unsigned_int_lvalue(std::function<unsigned int&()> arg, int local_mutation_id) {
+static unsigned int __dredd_replace_expr_unsigned_int_lvalue(std::function<unsigned int&()> arg, int local_mutation_id) {
   if (!__dredd_some_mutation_enabled) return arg();
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return ++(arg());
   if (__dredd_enabled_mutation(local_mutation_id + 1)) return --(arg());

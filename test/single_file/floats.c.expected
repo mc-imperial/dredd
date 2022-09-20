@@ -16,7 +16,7 @@ static int __dredd_enabled_mutation(int local_mutation_id) {
       while(token) {
         int value = atoi(token);
         int local_value = value - 0;
-        if (local_value >= 0 && local_value < 65) {
+        if (local_value >= 0 && local_value < 71) {
           enabled_bitset[local_value / 64] |= (1 << (local_value % 64));
           some_mutation_enabled = 1;
         }
@@ -55,6 +55,13 @@ static float __dredd_replace_binary_operator_SubAssign_float_double(float* arg1,
   if (__dredd_enabled_mutation(local_mutation_id + 2)) return (*arg1) /= arg2;
   if (__dredd_enabled_mutation(local_mutation_id + 3)) return (*arg1) *= arg2;
   return (*arg1) -= arg2;
+}
+
+static double __dredd_replace_expr_double_lvalue(double* arg, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return (*arg);
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return ++((*arg));
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return --((*arg));
+  return (*arg);
 }
 
 static double __dredd_replace_expr_double(double arg, int local_mutation_id) {
@@ -99,6 +106,6 @@ int main() {
   if (!__dredd_enabled_mutation(13)) { __dredd_replace_expr_double(__dredd_replace_binary_operator_AddAssign_double_double(&(x) , __dredd_replace_expr_double(0.5, 3), 6), 10); }
   float y = __dredd_replace_expr_float(__dredd_replace_expr_double(64343.7, 14), 17);
   if (!__dredd_enabled_mutation(30)) { __dredd_replace_expr_float(__dredd_replace_binary_operator_SubAssign_float_double(&(y) , __dredd_replace_expr_double(1.2, 20), 23), 27); }
-  double z = __dredd_replace_expr_double(__dredd_replace_binary_operator_Mul_double_double(__dredd_replace_expr_double(x, 31) , __dredd_replace_expr_double(5.5, 34), 37), 42);
-  if (!__dredd_enabled_mutation(64)) { return __dredd_replace_expr_int(__dredd_replace_expr_double(__dredd_replace_binary_operator_Add_double_double(__dredd_replace_expr_double(z, 45) , __dredd_replace_expr_double(x, 48), 51), 56), 59); }
+  double z = __dredd_replace_expr_double(__dredd_replace_binary_operator_Mul_double_double(__dredd_replace_expr_double(__dredd_replace_expr_double_lvalue(&(x), 31), 33) , __dredd_replace_expr_double(5.5, 36), 39), 44);
+  if (!__dredd_enabled_mutation(70)) { return __dredd_replace_expr_int(__dredd_replace_expr_double(__dredd_replace_binary_operator_Add_double_double(__dredd_replace_expr_double(__dredd_replace_expr_double_lvalue(&(z), 47), 49) , __dredd_replace_expr_double(__dredd_replace_expr_double_lvalue(&(x), 52), 54), 57), 62), 65); }
 }

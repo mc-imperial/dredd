@@ -31,7 +31,7 @@ namespace dredd {
 
 class MutateAstConsumer : public clang::ASTConsumer {
  public:
-  MutateAstConsumer(const clang::CompilerInstance& compiler_instance,
+  MutateAstConsumer(clang::CompilerInstance& compiler_instance,
                     bool optimise_mutations, bool dump_ast, int& mutation_id,
                     MutationInfo& mutation_info)
       : compiler_instance_(compiler_instance),
