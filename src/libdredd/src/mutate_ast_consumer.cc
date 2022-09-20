@@ -41,6 +41,16 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
     // There has been an error, so we don't do any processing.
     return;
   }
+  if (dump_ast_) {
+    llvm::errs() << "AST for: "
+                 << ast_context.getSourceManager()
+                        .getFileEntryForID(
+                            ast_context.getSourceManager().getMainFileID())
+                        ->getName()
+                 << "\n";
+    ast_context.getTranslationUnitDecl()->dump();
+    llvm::errs() << "\n";
+  }
   visitor_->TraverseDecl(ast_context.getTranslationUnitDecl());
 
   rewriter_.setSourceMgr(compiler_instance_.getSourceManager(),
