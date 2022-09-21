@@ -37,7 +37,7 @@ dredd::MutationReplaceExpr::MutationReplaceExpr(const clang::Expr& expr)
     : expr_(expr) {}
 
 std::string MutationReplaceExpr::GetFunctionName(
-    clang::ASTContext& ast_context) const {
+    bool optimise_mutations, clang::ASTContext& ast_context) const {
   std::string result = "__dredd_replace_expr_";
 
   if (expr_.isLValue()) {
@@ -62,23 +62,47 @@ std::string MutationReplaceExpr::GetFunctionName(
     result += "_lvalue";
   }
 
+  // This is sufficient to prevent name clashes as this is the
+  // only unary operator insertion optimisation that depends on the
+  // input expression. ~ is omitted for all boolean expressions
+  // so the type that is included in the function name will be enough
+  // in that case.
+  if (optimise_mutations && IsRedundantOperatorInsertion(expr_, ast_context)) {
+    result += "_uoi_optimised";
+  }
+
   return result;
 }
 
 bool MutationReplaceExpr::ExprIsEquivalentTo(const clang::Expr& expr,
                                              int constant,
                                              clang::ASTContext& ast_context) {
-  clang::Expr::EvalResult eval_result;
-  if (expr.EvaluateAsInt(eval_result, ast_context)) {
-    return llvm::APSInt::isSameValue(eval_result.Val.getInt(),
+  clang::Expr::EvalResult int_result;
+  if (expr.getType()->isIntegerType() &&
+      expr.EvaluateAsInt(int_result, ast_context)) {
+    return llvm::APSInt::isSameValue(int_result.Val.getInt(),
                                      llvm::APSInt::get(constant));
   }
   return false;
 }
 
+bool MutationReplaceExpr::IsRedundantOperatorInsertion(
+    const clang::Expr& expr, clang::ASTContext& ast_context) {
+  // We use this value to capture the value that the expression evaluates
+  // to if it does indeed evaluate to a constant, but we do not use this value
+  // because either way, operator insertion would be redundant.
+  bool unused_bool_value;
+  return (expr.getType()->isBooleanType() &&
+          expr.EvaluateAsBooleanCondition(unused_bool_value, ast_context)) ||
+         (expr.getType()->isIntegerType() &&
+          (ExprIsEquivalentTo(expr, 0, ast_context) ||
+           ExprIsEquivalentTo(expr, 1, ast_context)));
+}
+
 void MutationReplaceExpr::GenerateUnaryOperatorInsertion(
-    clang::ASTContext& ast_context, const std::string& arg_evaluated,
-    std::stringstream& new_function, int& mutant_offset) const {
+    const std::string& arg_evaluated, clang::ASTContext& ast_context,
+    bool optimise_mutations, std::stringstream& new_function,
+    int& mutant_offset) const {
   const clang::BuiltinType& exprType =
       *expr_.getType()->getAs<clang::BuiltinType>();
 
@@ -93,13 +117,20 @@ void MutationReplaceExpr::GenerateUnaryOperatorInsertion(
   }
 
   if (!expr_.isLValue() && (exprType.isBooleanType() || exprType.isInteger())) {
-    new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
-                 << mutant_offset << ")) return !(" << arg_evaluated << ");\n";
-    mutant_offset++;
+    if (!optimise_mutations ||
+        !IsRedundantOperatorInsertion(expr_, ast_context)) {
+      new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
+                   << mutant_offset << ")) return !(" << arg_evaluated
+                   << ");\n";
+      mutant_offset++;
+    }
 
-    new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
-                 << mutant_offset << ")) return ~(" << arg_evaluated << ");\n";
-    mutant_offset++;
+    if (!expr_.getType()->isBooleanType()) {
+      new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
+                   << mutant_offset << ")) return ~(" << arg_evaluated
+                   << ");\n";
+      mutant_offset++;
+    }
   }
 }
 
@@ -166,7 +197,7 @@ void MutationReplaceExpr::GenerateConstantReplacement(
 std::string MutationReplaceExpr::GenerateMutatorFunction(
     clang::ASTContext& ast_context, const std::string& function_name,
     const std::string& result_type, const std::string& input_type,
-    int& mutation_id) const {
+    bool optimise_mutations, int& mutation_id) const {
   std::stringstream new_function;
   new_function << "static " << result_type << " " << function_name << "(";
   if (ast_context.getLangOpts().CPlusPlus) {
@@ -190,8 +221,8 @@ std::string MutationReplaceExpr::GenerateMutatorFunction(
 
   int mutant_offset = 0;
 
-  GenerateUnaryOperatorInsertion(ast_context, arg_evaluated, new_function,
-                                 mutant_offset);
+  GenerateUnaryOperatorInsertion(arg_evaluated, ast_context, optimise_mutations,
+                                 new_function, mutant_offset);
   GenerateConstantReplacement(ast_context, new_function, mutant_offset);
 
   new_function << "  return " << arg_evaluated << ";\n";
@@ -235,7 +266,8 @@ void MutationReplaceExpr::Apply(
     std::unordered_set<std::string>& dredd_declarations) const {
   (void)optimise_mutations;  // Unused
 
-  std::string new_function_name = GetFunctionName(ast_context);
+  std::string new_function_name =
+      GetFunctionName(optimise_mutations, ast_context);
   std::string result_type = expr_.getType()
                                 ->getAs<clang::BuiltinType>()
                                 ->getName(ast_context.getPrintingPolicy())
@@ -330,8 +362,9 @@ void MutationReplaceExpr::Apply(
   assert(!result && "Rewrite failed.\n");
   (void)result;  // Keep release mode compilers happy.
 
-  std::string new_function = GenerateMutatorFunction(
-      ast_context, new_function_name, result_type, input_type, mutation_id);
+  std::string new_function =
+      GenerateMutatorFunction(ast_context, new_function_name, result_type,
+                              input_type, optimise_mutations, mutation_id);
   assert(!new_function.empty() && "Unsupported expression.");
 
   dredd_declarations.insert(new_function);

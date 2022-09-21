@@ -56,14 +56,18 @@ class MutationReplaceExpr : public Mutation {
                               const clang::Expr& expr);
 
  private:
+  static bool IsRedundantOperatorInsertion(const clang::Expr& expr,
+                                           clang::ASTContext& ast_context);
+
   // Replace expressions with constants.
   void GenerateConstantReplacement(clang::ASTContext& ast_context,
                                    std::stringstream& new_function,
                                    int& mutant_offset) const;
 
   // Insert valid unary operators such as !, ~, ++ and --.
-  void GenerateUnaryOperatorInsertion(clang::ASTContext& ast_context,
-                                      const std::string& arg_evaluated,
+  void GenerateUnaryOperatorInsertion(const std::string& arg_evaluated,
+                                      clang::ASTContext& ast_context,
+                                      bool optimise_mutations,
                                       std::stringstream& new_function,
                                       int& mutant_offset) const;
 
@@ -71,10 +75,11 @@ class MutationReplaceExpr : public Mutation {
                                       const std::string& function_name,
                                       const std::string& result_type,
                                       const std::string& input_type,
+                                      bool optimise_mutations,
                                       int& mutation_id) const;
 
   [[nodiscard]] std::string GetFunctionName(
-      clang::ASTContext& ast_context) const;
+      bool optimise_mutations, clang::ASTContext& ast_context) const;
 
   const clang::Expr& expr_;
 };
