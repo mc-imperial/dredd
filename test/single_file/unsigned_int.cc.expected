@@ -18,7 +18,7 @@ static bool __dredd_enabled_mutation(int local_mutation_id) {
         if (!token.empty()) {
           int value = std::stoi(token);
           int local_value = value - 0;
-          if (local_value >= 0 && local_value < 23) {
+          if (local_value >= 0 && local_value < 20) {
             enabled_bitset[local_value / 64] |= (1 << (local_value % 64));
             some_mutation_enabled = true;
           }
@@ -42,6 +42,15 @@ static int __dredd_replace_unary_operator_Not_int(std::function<int()> arg, int 
   return ~arg();
 }
 
+static int __dredd_replace_expr_int_uoi_optimised(std::function<int()> arg, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return arg();
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return ~(arg());
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return 0;
+  if (__dredd_enabled_mutation(local_mutation_id + 2)) return 1;
+  if (__dredd_enabled_mutation(local_mutation_id + 3)) return -1;
+  return arg();
+}
+
 static int __dredd_replace_expr_int(std::function<int()> arg, int local_mutation_id) {
   if (!__dredd_some_mutation_enabled) return arg();
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return !(arg());
@@ -59,16 +68,14 @@ static bool __dredd_replace_unary_operator_LNot_bool_zero(std::function<bool()> 
   return !arg();
 }
 
-static bool __dredd_replace_expr_bool(std::function<bool()> arg, int local_mutation_id) {
+static bool __dredd_replace_expr_bool_uoi_optimised(std::function<bool()> arg, int local_mutation_id) {
   if (!__dredd_some_mutation_enabled) return arg();
-  if (__dredd_enabled_mutation(local_mutation_id + 0)) return !(arg());
-  if (__dredd_enabled_mutation(local_mutation_id + 1)) return ~(arg());
-  if (__dredd_enabled_mutation(local_mutation_id + 2)) return true;
-  if (__dredd_enabled_mutation(local_mutation_id + 3)) return false;
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return true;
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return false;
   return arg();
 }
 
 int main() {
-  unsigned int x = __dredd_replace_expr_bool([&]() -> bool { return __dredd_replace_unary_operator_LNot_bool_zero([&]() -> bool { return __dredd_replace_expr_int([&]() -> int { return 0; }, 0); }, 5); }, 7);
-  unsigned int y = __dredd_replace_expr_int([&]() -> int { return __dredd_replace_unary_operator_Not_int([&]() -> int { return __dredd_replace_expr_int([&]() -> int { return 7; }, 11); }, 16); }, 18);
+  unsigned int x = __dredd_replace_expr_bool_uoi_optimised([&]() -> bool { return __dredd_replace_unary_operator_LNot_bool_zero([&]() -> bool { return __dredd_replace_expr_int_uoi_optimised([&]() -> int { return 0; }, 0); }, 4); }, 6);
+  unsigned int y = __dredd_replace_expr_int([&]() -> int { return __dredd_replace_unary_operator_Not_int([&]() -> int { return __dredd_replace_expr_int([&]() -> int { return 7; }, 8); }, 13); }, 15);
 }

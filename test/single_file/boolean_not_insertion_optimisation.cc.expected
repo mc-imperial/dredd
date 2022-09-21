@@ -18,7 +18,7 @@ static bool __dredd_enabled_mutation(int local_mutation_id) {
         if (!token.empty()) {
           int value = std::stoi(token);
           int local_value = value - 0;
-          if (local_value >= 0 && local_value < 8) {
+          if (local_value >= 0 && local_value < 15) {
             enabled_bitset[local_value / 64] |= (1 << (local_value % 64));
             some_mutation_enabled = true;
           }
@@ -35,6 +35,21 @@ static bool __dredd_enabled_mutation(int local_mutation_id) {
   return (enabled_bitset[local_mutation_id / 64] & (1 << (local_mutation_id % 64))) != 0;
 }
 
+static bool& __dredd_replace_binary_operator_Assign_bool_bool(std::function<bool&()> arg1, std::function<bool()> arg2, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return arg1() = arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return arg1() += arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg1() &= arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 2)) return arg1() /= arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 3)) return arg1() *= arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 4)) return arg1() |= arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 5)) return arg1() %= arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 6)) return arg1() <<= arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 7)) return arg1() >>= arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 8)) return arg1() -= arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 9)) return arg1() ^= arg2();
+  return arg1() = arg2();
+}
+
 static bool __dredd_replace_expr_bool_uoi_optimised(std::function<bool()> arg, int local_mutation_id) {
   if (!__dredd_some_mutation_enabled) return arg();
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return true;
@@ -42,21 +57,7 @@ static bool __dredd_replace_expr_bool_uoi_optimised(std::function<bool()> arg, i
   return arg();
 }
 
-void g();
-
-int f()
-{
-  if (!__dredd_enabled_mutation(0)) { g() /* something */ ; }
-  if (!__dredd_enabled_mutation(1)) { g() // something
-; }
-
-  if (!__dredd_enabled_mutation(4)) { if(__dredd_replace_expr_bool_uoi_optimised([&]() -> bool { return true; }, 2)) {
-
-  }
-  // something
-}
-  if (!__dredd_enabled_mutation(7)) { if(__dredd_replace_expr_bool_uoi_optimised([&]() -> bool { return true; }, 5)) {
-
-  } /* something */
-}
+int main() {
+  bool x = __dredd_replace_expr_bool_uoi_optimised([&]() -> bool { return true; }, 0);
+  if (!__dredd_enabled_mutation(14)) { __dredd_replace_binary_operator_Assign_bool_bool([&]() -> bool& { return static_cast<bool&>(x); } , [&]() -> bool { return static_cast<bool>(__dredd_replace_expr_bool_uoi_optimised([&]() -> bool { return false; }, 2)); }, 4); }
 }

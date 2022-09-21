@@ -16,7 +16,7 @@ static int __dredd_enabled_mutation(int local_mutation_id) {
       while(token) {
         int value = atoi(token);
         int local_value = value - 0;
-        if (local_value >= 0 && local_value < 38) {
+        if (local_value >= 0 && local_value < 37) {
           enabled_bitset[local_value / 64] |= (1 << (local_value % 64));
           some_mutation_enabled = 1;
         }
@@ -30,13 +30,12 @@ static int __dredd_enabled_mutation(int local_mutation_id) {
   return enabled_bitset[local_mutation_id / 64] & (1 << (local_mutation_id % 64));
 }
 
-static int __dredd_replace_expr_int(int arg, int local_mutation_id) {
+static int __dredd_replace_expr_int_uoi_optimised(int arg, int local_mutation_id) {
   if (!__dredd_some_mutation_enabled) return arg;
-  if (__dredd_enabled_mutation(local_mutation_id + 0)) return !(arg);
-  if (__dredd_enabled_mutation(local_mutation_id + 1)) return ~(arg);
-  if (__dredd_enabled_mutation(local_mutation_id + 2)) return 0;
-  if (__dredd_enabled_mutation(local_mutation_id + 3)) return 1;
-  if (__dredd_enabled_mutation(local_mutation_id + 4)) return -1;
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return ~(arg);
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return 0;
+  if (__dredd_enabled_mutation(local_mutation_id + 2)) return 1;
+  if (__dredd_enabled_mutation(local_mutation_id + 3)) return -1;
   return arg;
 }
 
@@ -87,5 +86,5 @@ int main() {
   float y = __dredd_replace_expr_double(754.34623, 3);
   float z;
   if (!__dredd_enabled_mutation(31)) { __dredd_replace_expr_float(__dredd_replace_binary_operator_Assign_float_float(&(z) , __dredd_replace_expr_float(__dredd_replace_binary_operator_Add_float_float(__dredd_replace_expr_float(__dredd_replace_expr_float_lvalue(&(x), 6), 8) , __dredd_replace_expr_float(__dredd_replace_expr_float_lvalue(&(y), 11), 13), 16), 21), 24), 28); }
-  if (!__dredd_enabled_mutation(37)) { return __dredd_replace_expr_int(0, 32); }
+  if (!__dredd_enabled_mutation(36)) { return __dredd_replace_expr_int_uoi_optimised(0, 32); }
 }

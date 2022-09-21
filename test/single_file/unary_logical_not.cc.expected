@@ -18,7 +18,7 @@ static bool __dredd_enabled_mutation(int local_mutation_id) {
         if (!token.empty()) {
           int value = std::stoi(token);
           int local_value = value - 0;
-          if (local_value >= 0 && local_value < 15) {
+          if (local_value >= 0 && local_value < 11) {
             enabled_bitset[local_value / 64] |= (1 << (local_value % 64));
             some_mutation_enabled = true;
           }
@@ -42,16 +42,22 @@ static bool __dredd_replace_unary_operator_LNot_bool(std::function<bool()> arg, 
   return !arg();
 }
 
+static bool __dredd_replace_expr_bool_uoi_optimised(std::function<bool()> arg, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return arg();
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return true;
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return false;
+  return arg();
+}
+
 static bool __dredd_replace_expr_bool(std::function<bool()> arg, int local_mutation_id) {
   if (!__dredd_some_mutation_enabled) return arg();
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return !(arg());
-  if (__dredd_enabled_mutation(local_mutation_id + 1)) return ~(arg());
-  if (__dredd_enabled_mutation(local_mutation_id + 2)) return true;
-  if (__dredd_enabled_mutation(local_mutation_id + 3)) return false;
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return true;
+  if (__dredd_enabled_mutation(local_mutation_id + 2)) return false;
   return arg();
 }
 
 int main() {
-  bool y = __dredd_replace_expr_bool([&]() -> bool { return true; }, 0);
-  if (!__dredd_enabled_mutation(14)) { return __dredd_replace_expr_bool([&]() -> bool { return static_cast<bool>(__dredd_replace_unary_operator_LNot_bool([&]() -> bool { return static_cast<bool>(__dredd_replace_expr_bool([&]() -> bool { return static_cast<bool>(y); }, 4)); }, 8)); }, 10); }
+  bool y = __dredd_replace_expr_bool_uoi_optimised([&]() -> bool { return true; }, 0);
+  if (!__dredd_enabled_mutation(10)) { return __dredd_replace_expr_bool([&]() -> bool { return static_cast<bool>(__dredd_replace_unary_operator_LNot_bool([&]() -> bool { return static_cast<bool>(__dredd_replace_expr_bool([&]() -> bool { return static_cast<bool>(y); }, 2)); }, 5)); }, 7); }
 }
