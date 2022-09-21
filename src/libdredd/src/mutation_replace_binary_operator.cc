@@ -22,7 +22,6 @@
 #include <unordered_set>
 #include <vector>
 
-#include "clang/AST/APValue.h"
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/Expr.h"
 #include "clang/AST/OperationKinds.h"
@@ -33,7 +32,6 @@
 #include "clang/Rewrite/Core/Rewriter.h"
 #include "libdredd/mutation_replace_expr.h"
 #include "libdredd/util.h"
-#include "llvm/ADT/APSInt.h"
 #include "llvm/ADT/StringRef.h"
 
 namespace dredd {
