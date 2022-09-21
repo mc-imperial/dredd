@@ -268,30 +268,25 @@ std::string MutationReplaceBinaryOperator::GetFunctionName(
   // with other versions that apply to the same operator and types but cannot
   // be optimised.
   if (optimise_mutations && !binary_operator_.isAssignmentOp()) {
-    clang::Expr::EvalResult eval_result;
-    bool rhs_is_int =
-        binary_operator_.getRHS()->EvaluateAsInt(eval_result, ast_context);
-    if (rhs_is_int && llvm::APSInt::isSameValue(eval_result.Val.getInt(),
-                                                llvm::APSInt::get(0))) {
+    if (MutationReplaceExpr::ExprIsEquivalentTo(*binary_operator_.getRHS(), 0,
+                                                ast_context)) {
       result += "_rhs_zero";
-    } else if (rhs_is_int && llvm::APSInt::isSameValue(eval_result.Val.getInt(),
-                                                       llvm::APSInt::get(1))) {
+    } else if (MutationReplaceExpr::ExprIsEquivalentTo(
+                   *binary_operator_.getRHS(), 1, ast_context)) {
       result += "_rhs_one";
-    } else if (rhs_is_int && llvm::APSInt::isSameValue(eval_result.Val.getInt(),
-                                                       llvm::APSInt::get(-1))) {
+    } else if (MutationReplaceExpr::ExprIsEquivalentTo(
+                   *binary_operator_.getRHS(), -1, ast_context)) {
       result += "_rhs_minus_one";
     }
 
-    bool lhs_is_int =
-        binary_operator_.getLHS()->EvaluateAsInt(eval_result, ast_context);
-    if (lhs_is_int && llvm::APSInt::isSameValue(eval_result.Val.getInt(),
-                                                llvm::APSInt::get(0))) {
+    if (MutationReplaceExpr::ExprIsEquivalentTo(*binary_operator_.getLHS(), 0,
+                                                ast_context)) {
       result += "_lhs_zero";
-    } else if (lhs_is_int && llvm::APSInt::isSameValue(eval_result.Val.getInt(),
-                                                       llvm::APSInt::get(1))) {
+    } else if (MutationReplaceExpr::ExprIsEquivalentTo(
+                   *binary_operator_.getLHS(), 1, ast_context)) {
       result += "_lhs_one";
-    } else if (lhs_is_int && llvm::APSInt::isSameValue(eval_result.Val.getInt(),
-                                                       llvm::APSInt::get(-1))) {
+    } else if (MutationReplaceExpr::ExprIsEquivalentTo(
+                   *binary_operator_.getLHS(), -1, ast_context)) {
       result += "_lhs_minus_one";
     }
   }
