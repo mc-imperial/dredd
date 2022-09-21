@@ -54,7 +54,11 @@ Before following these instructions, make sure you have built Dredd and that the
 `pi.cc` is a small example in `examples/simple` that calculates an approximation of pi. To run this example, run the following from the root of the repository:
 ```
 # This will modify pi.cc in-place.
-third_party/clang+llvm-13.0.1/bin/dredd examples/simple/pi.cc
+# The --mutation-info-file argument is used to specify a JSON file to
+# which Dredd will output machine-readable information about the
+# mutations it applied. For the purposes of this example, this file
+# can be ignored.
+third_party/clang+llvm-13.0.1/bin/dredd examples/simple/pi.cc --mutation-info-file temp.json
 # clang++ can be replaced with your favourite C++ compiler.
 clang++ examples/simple/pi.cc -o examples/simple/pi
 ```
@@ -94,9 +98,9 @@ All tests should pass.
 
 To apply mutants to a single file in the library, run the following command:
 ```
-/path/to/dredd/repo/third_party/clang+llvm-13.0.1/bin/dredd -p compile_commands.js <path-to-file>
+/path/to/dredd/repo/third_party/clang+llvm-13.0.1/bin/dredd -p compile_commands.js <path-to-file> --mutation-info-file temp.json
 ``` 
-For example, running `../../../third_party/clang+llvm-13.0.1/bin/dredd ../math/src/exp.cc` from the build directory will apply
+For example, running `../../../third_party/clang+llvm-13.0.1/bin/dredd ../math/src/exp.cc --mutation-info-file temp.json` from the build directory will apply
 mutants to the file `exp.cc`. 
 
 To view the changes that Dredd has made you can do `git status` to see that `exp.cc` has changed, and `git diff` to see
