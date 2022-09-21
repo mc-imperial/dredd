@@ -79,7 +79,7 @@ class MutationReplaceExpr : public Mutation {
                                       int& mutation_id) const;
 
   [[nodiscard]] std::string GetFunctionName(
-      clang::ASTContext& ast_context) const;
+      bool optimise_mutations, clang::ASTContext& ast_context) const;
 
   const clang::Expr& expr_;
 };

@@ -37,7 +37,7 @@ dredd::MutationReplaceExpr::MutationReplaceExpr(const clang::Expr& expr)
     : expr_(expr) {}
 
 std::string MutationReplaceExpr::GetFunctionName(
-    clang::ASTContext& ast_context) const {
+    bool optimise_mutations, clang::ASTContext& ast_context) const {
   std::string result = "__dredd_replace_expr_";
 
   if (expr_.isLValue()) {
@@ -67,7 +67,7 @@ std::string MutationReplaceExpr::GetFunctionName(
   // input expression. ~ is omitted for all boolean expressions
   // so the type that is included in the function name will be enough
   // in that case.
-  if (IsRedundantOperatorInsertion(expr_, ast_context)) {
+  if (optimise_mutations && IsRedundantOperatorInsertion(expr_, ast_context)) {
     result += "_uoi_optimised";
   }
 
@@ -266,7 +266,8 @@ void MutationReplaceExpr::Apply(
     std::unordered_set<std::string>& dredd_declarations) const {
   (void)optimise_mutations;  // Unused
 
-  std::string new_function_name = GetFunctionName(ast_context);
+  std::string new_function_name =
+      GetFunctionName(optimise_mutations, ast_context);
   std::string result_type = expr_.getType()
                                 ->getAs<clang::BuiltinType>()
                                 ->getName(ast_context.getPrintingPolicy())
