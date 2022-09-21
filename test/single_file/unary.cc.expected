@@ -18,7 +18,7 @@ static bool __dredd_enabled_mutation(int local_mutation_id) {
         if (!token.empty()) {
           int value = std::stoi(token);
           int local_value = value - 0;
-          if (local_value >= 0 && local_value < 68) {
+          if (local_value >= 0 && local_value < 65) {
             enabled_bitset[local_value / 64] |= (1 << (local_value % 64));
             some_mutation_enabled = true;
           }
@@ -135,14 +135,14 @@ static double __dredd_replace_expr_double(std::function<double()> arg, int local
 
 int main() {
   int x = __dredd_replace_expr_int([&]() -> int { return 3; }, 0);
-  float y = __dredd_replace_expr_float([&]() -> float { return __dredd_replace_expr_double([&]() -> double { return 3.532; }, 5); }, 8);
-  if (!__dredd_enabled_mutation(20)) { __dredd_replace_expr_int([&]() -> int { return static_cast<int>(__dredd_replace_unary_operator_PostInc_int([&]() -> int& { return static_cast<int&>(x); }, 11)); }, 15); }
-  if (!__dredd_enabled_mutation(27)) { __dredd_replace_expr_float([&]() -> float { return static_cast<float>(__dredd_replace_unary_operator_PostInc_float([&]() -> float& { return static_cast<float&>(y); }, 21)); }, 24); }
-  if (!__dredd_enabled_mutation(29)) { __dredd_replace_unary_operator_PreInc_int([&]() -> int& { return static_cast<int&>(x); }, 28); }
-  if (!__dredd_enabled_mutation(31)) { __dredd_replace_unary_operator_PreInc_float([&]() -> float& { return static_cast<float&>(y); }, 30); }
-  if (!__dredd_enabled_mutation(33)) { __dredd_replace_unary_operator_PreDec_int([&]() -> int& { return static_cast<int&>(x); }, 32); }
-  if (!__dredd_enabled_mutation(35)) { __dredd_replace_unary_operator_PreDec_float([&]() -> float& { return static_cast<float&>(y); }, 34); }
-  if (!__dredd_enabled_mutation(45)) { __dredd_replace_expr_int([&]() -> int { return static_cast<int>(__dredd_replace_unary_operator_PostDec_int([&]() -> int& { return static_cast<int&>(x); }, 36)); }, 40); }
-  if (!__dredd_enabled_mutation(52)) { __dredd_replace_expr_float([&]() -> float { return static_cast<float>(__dredd_replace_unary_operator_PostDec_float([&]() -> float& { return static_cast<float&>(y); }, 46)); }, 49); }
-  if (!__dredd_enabled_mutation(67)) { return __dredd_replace_expr_int([&]() -> int { return static_cast<int>(__dredd_replace_unary_operator_Minus_int([&]() -> int { return static_cast<int>(__dredd_replace_expr_int([&]() -> int { return static_cast<int>(__dredd_replace_expr_int_lvalue([&]() -> int& { return static_cast<int&>(x); }, 53)); }, 55)); }, 60)); }, 62); }
+  float y = __dredd_replace_expr_double([&]() -> double { return 3.532; }, 5);
+  if (!__dredd_enabled_mutation(17)) { __dredd_replace_expr_int([&]() -> int { return static_cast<int>(__dredd_replace_unary_operator_PostInc_int([&]() -> int& { return static_cast<int&>(x); }, 8)); }, 12); }
+  if (!__dredd_enabled_mutation(24)) { __dredd_replace_expr_float([&]() -> float { return static_cast<float>(__dredd_replace_unary_operator_PostInc_float([&]() -> float& { return static_cast<float&>(y); }, 18)); }, 21); }
+  if (!__dredd_enabled_mutation(26)) { __dredd_replace_unary_operator_PreInc_int([&]() -> int& { return static_cast<int&>(x); }, 25); }
+  if (!__dredd_enabled_mutation(28)) { __dredd_replace_unary_operator_PreInc_float([&]() -> float& { return static_cast<float&>(y); }, 27); }
+  if (!__dredd_enabled_mutation(30)) { __dredd_replace_unary_operator_PreDec_int([&]() -> int& { return static_cast<int&>(x); }, 29); }
+  if (!__dredd_enabled_mutation(32)) { __dredd_replace_unary_operator_PreDec_float([&]() -> float& { return static_cast<float&>(y); }, 31); }
+  if (!__dredd_enabled_mutation(42)) { __dredd_replace_expr_int([&]() -> int { return static_cast<int>(__dredd_replace_unary_operator_PostDec_int([&]() -> int& { return static_cast<int&>(x); }, 33)); }, 37); }
+  if (!__dredd_enabled_mutation(49)) { __dredd_replace_expr_float([&]() -> float { return static_cast<float>(__dredd_replace_unary_operator_PostDec_float([&]() -> float& { return static_cast<float&>(y); }, 43)); }, 46); }
+  if (!__dredd_enabled_mutation(64)) { return __dredd_replace_expr_int([&]() -> int { return static_cast<int>(__dredd_replace_unary_operator_Minus_int([&]() -> int { return static_cast<int>(__dredd_replace_expr_int([&]() -> int { return static_cast<int>(__dredd_replace_expr_int_lvalue([&]() -> int& { return static_cast<int&>(x); }, 50)); }, 52)); }, 57)); }, 59); }
 }

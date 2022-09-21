@@ -365,6 +365,22 @@ bool MutateVisitor::VisitExpr(clang::Expr* expr) {
     return true;
   }
 
+  if (optimise_mutations_) {
+    if (auto* cast_expr = llvm::dyn_cast<clang::CastExpr>(expr)) {
+      if (!cast_expr->getSubExpr()->isLValue() || cast_expr->isLValue()) {
+        // Only mutate a cast expression if it changes an l-value to an r-value.
+        // This is because different mutations will be applied to the l-value
+        // and r-value forms. Otherwise it is highly likely that the applied
+        // mutations would have the same effect as one another; the possible
+        // differences arising due to a change of type are unlikely to be all
+        // that interesting, and r-value to r-value implicit casts are very
+        // common, e.g. occurring whenever a signed literal, such as `1`, is
+        // used in an unsigned context.
+        return true;
+      }
+    }
+  }
+
   mutation_tree_path_.back()->AddMutation(
       std::make_unique<MutationReplaceExpr>(*expr));
 
