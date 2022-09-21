@@ -18,7 +18,7 @@ static bool __dredd_enabled_mutation(int local_mutation_id) {
         if (!token.empty()) {
           int value = std::stoi(token);
           int local_value = value - 0;
-          if (local_value >= 0 && local_value < 12) {
+          if (local_value >= 0 && local_value < 10) {
             enabled_bitset[local_value / 64] |= (1 << (local_value % 64));
             some_mutation_enabled = true;
           }
@@ -38,9 +38,8 @@ static bool __dredd_enabled_mutation(int local_mutation_id) {
 static bool __dredd_replace_expr_bool(std::function<bool()> arg, int local_mutation_id) {
   if (!__dredd_some_mutation_enabled) return arg();
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return !(arg());
-  if (__dredd_enabled_mutation(local_mutation_id + 1)) return ~(arg());
-  if (__dredd_enabled_mutation(local_mutation_id + 2)) return true;
-  if (__dredd_enabled_mutation(local_mutation_id + 3)) return false;
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return true;
+  if (__dredd_enabled_mutation(local_mutation_id + 2)) return false;
   return arg();
 }
 
@@ -52,12 +51,12 @@ int f()
   if (!__dredd_enabled_mutation(1)) { g() // something
 ; }
 
-  if (!__dredd_enabled_mutation(6)) { if(__dredd_replace_expr_bool([&]() -> bool { return true; }, 2)) {
+  if (!__dredd_enabled_mutation(5)) { if(__dredd_replace_expr_bool([&]() -> bool { return true; }, 2)) {
 
   }
   // something
 }
-  if (!__dredd_enabled_mutation(11)) { if(__dredd_replace_expr_bool([&]() -> bool { return true; }, 7)) {
+  if (!__dredd_enabled_mutation(9)) { if(__dredd_replace_expr_bool([&]() -> bool { return true; }, 6)) {
 
   } /* something */
 }
