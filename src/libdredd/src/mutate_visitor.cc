@@ -312,9 +312,11 @@ bool MutateVisitor::HandleBinaryOperator(
 }
 
 bool MutateVisitor::VisitExpr(clang::Expr* expr) {
-  // There is no value in mutating a parentheses expression.
-  if (llvm::dyn_cast<clang::ParenExpr>(expr) != nullptr) {
-    return true;
+  if (optimise_mutations_) {
+    // There is no value in mutating a parentheses expression.
+    if (llvm::dyn_cast<clang::ParenExpr>(expr) != nullptr) {
+      return true;
+    }
   }
 
   if (!IsInFunction()) {
@@ -399,13 +401,16 @@ bool MutateVisitor::TraverseCompoundStmt(clang::CompoundStmt* compound_stmt) {
         llvm::dyn_cast<clang::NullStmt>(stmt) != nullptr ||
         llvm::dyn_cast<clang::DeclStmt>(stmt) != nullptr ||
         llvm::dyn_cast<clang::SwitchCase>(stmt) != nullptr ||
-        llvm::dyn_cast<clang::LabelStmt>(stmt) != nullptr ||
-        llvm::dyn_cast<clang::CompoundStmt>(stmt) != nullptr) {
+        llvm::dyn_cast<clang::LabelStmt>(stmt) != nullptr) {
       // Wrapping switch cases, labels and null statements in conditional code
       // has no effect. Declarations cannot be wrapped in conditional code
-      // without risking breaking compilation. It is probably redundant to
-      // remove a compound statement since each of its sub-statements will be
-      // considered for removal anyway.
+      // without risking breaking compilation.
+      continue;
+    }
+    if (optimise_mutations_ &&
+        llvm::dyn_cast<clang::CompoundStmt>(stmt) != nullptr) {
+      // It is likely redundant to remove a compound statement since each of its
+      // sub-statements will be considered for removal anyway.
       continue;
     }
     assert(!enclosing_decls_.empty() &&
