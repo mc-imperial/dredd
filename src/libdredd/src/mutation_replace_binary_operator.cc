@@ -303,42 +303,48 @@ void MutationReplaceBinaryOperator::GenerateArgumentReplacement(
     const std::string& arg1_evaluated, const std::string& arg2_evaluated,
     clang::ASTContext& ast_context, bool optimise_mutations,
     std::stringstream& new_function, int& mutant_offset) const {
-  if (!binary_operator_.isAssignmentOp()) {
-    // LHS
-    // These cases are equivalent to constant replacement with the respective
-    // constants
-    clang::Expr::EvalResult lhs_eval_result;
-    bool lhs_is_int =
-        binary_operator_.getLHS()->EvaluateAsInt(lhs_eval_result, ast_context);
-    if (!optimise_mutations ||
-        !(lhs_is_int && (llvm::APSInt::isSameValue(lhs_eval_result.Val.getInt(),
-                                                   llvm::APSInt::get(0)) ||
-                         llvm::APSInt::isSameValue(lhs_eval_result.Val.getInt(),
-                                                   llvm::APSInt::get(1)) ||
-                         llvm::APSInt::isSameValue(lhs_eval_result.Val.getInt(),
-                                                   llvm::APSInt::get(-1))))) {
-      new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
-                   << mutant_offset << ")) return " << arg1_evaluated << ";\n";
-      mutant_offset++;
-    }
+  if (binary_operator_.isAssignmentOp()) {
+    // It would be possible to replace an assignment operator, such as `x = y`,
+    // with its LHS. However, since the most common case is for such expressions
+    // to appear as top-level statements, with the LHS being a side effect-free
+    // expression, this replacement will almost always be equivalent to removing
+    // the enclosing statement.
+    return;
+  }
+  // LHS
+  // These cases are equivalent to constant replacement with the respective
+  // constants
+  clang::Expr::EvalResult lhs_eval_result;
+  bool lhs_is_int =
+      binary_operator_.getLHS()->EvaluateAsInt(lhs_eval_result, ast_context);
+  if (!optimise_mutations ||
+      !(lhs_is_int && (llvm::APSInt::isSameValue(lhs_eval_result.Val.getInt(),
+                                                 llvm::APSInt::get(0)) ||
+                       llvm::APSInt::isSameValue(lhs_eval_result.Val.getInt(),
+                                                 llvm::APSInt::get(1)) ||
+                       llvm::APSInt::isSameValue(lhs_eval_result.Val.getInt(),
+                                                 llvm::APSInt::get(-1))))) {
+    new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
+                 << mutant_offset << ")) return " << arg1_evaluated << ";\n";
+    mutant_offset++;
+  }
 
-    // RHS
-    // These cases are equivalent to constant replacement with the respective
-    // constants
-    clang::Expr::EvalResult rhs_eval_result;
-    bool rhs_is_int =
-        binary_operator_.getRHS()->EvaluateAsInt(rhs_eval_result, ast_context);
-    if (!optimise_mutations ||
-        !(rhs_is_int && (llvm::APSInt::isSameValue(rhs_eval_result.Val.getInt(),
-                                                   llvm::APSInt::get(0)) ||
-                         llvm::APSInt::isSameValue(rhs_eval_result.Val.getInt(),
-                                                   llvm::APSInt::get(1)) ||
-                         llvm::APSInt::isSameValue(rhs_eval_result.Val.getInt(),
-                                                   llvm::APSInt::get(-1))))) {
-      new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
-                   << mutant_offset << ")) return " << arg2_evaluated << ";\n";
-      mutant_offset++;
-    }
+  // RHS
+  // These cases are equivalent to constant replacement with the respective
+  // constants
+  clang::Expr::EvalResult rhs_eval_result;
+  bool rhs_is_int =
+      binary_operator_.getRHS()->EvaluateAsInt(rhs_eval_result, ast_context);
+  if (!optimise_mutations ||
+      !(rhs_is_int && (llvm::APSInt::isSameValue(rhs_eval_result.Val.getInt(),
+                                                 llvm::APSInt::get(0)) ||
+                       llvm::APSInt::isSameValue(rhs_eval_result.Val.getInt(),
+                                                 llvm::APSInt::get(1)) ||
+                       llvm::APSInt::isSameValue(rhs_eval_result.Val.getInt(),
+                                                 llvm::APSInt::get(-1))))) {
+    new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
+                 << mutant_offset << ")) return " << arg2_evaluated << ";\n";
+    mutant_offset++;
   }
 }
 
