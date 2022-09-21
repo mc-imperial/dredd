@@ -117,9 +117,11 @@ void MutationReplaceExpr::GenerateUnaryOperatorInsertion(
       mutant_offset++;
     }
 
-    new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
-                 << mutant_offset << ")) return ~(" << arg_evaluated << ");\n";
-    mutant_offset++;
+    if (!optimise_mutations || !expr_.getType()->isBooleanType()) {
+      new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
+                   << mutant_offset << ")) return ~(" << arg_evaluated << ");\n";
+      mutant_offset++;
+    }
   }
 }
 
