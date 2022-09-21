@@ -16,7 +16,7 @@ static int __dredd_enabled_mutation(int local_mutation_id) {
       while(token) {
         int value = atoi(token);
         int local_value = value - 0;
-        if (local_value >= 0 && local_value < 23) {
+        if (local_value >= 0 && local_value < 8) {
           enabled_bitset[local_value / 64] |= (1 << (local_value % 64));
           some_mutation_enabled = 1;
         }
@@ -47,7 +47,7 @@ struct S {
 
 void foo() {
   struct S myS;
-  if (!__dredd_enabled_mutation(10)) { __dredd_replace_expr_int(myS.a = __dredd_replace_expr_int(myS.b, 0), 5); }
-  if (!__dredd_enabled_mutation(16)) { __dredd_replace_expr_int(myS.a++, 11); }
-  if (!__dredd_enabled_mutation(22)) { __dredd_replace_expr_int(--myS.b, 17); }
+  if (!__dredd_enabled_mutation(5)) { myS.a = __dredd_replace_expr_int(myS.b, 0); }
+  if (!__dredd_enabled_mutation(6)) { myS.a++; }
+  if (!__dredd_enabled_mutation(7)) { --myS.b; }
 }
