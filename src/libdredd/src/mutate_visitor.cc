@@ -45,7 +45,7 @@
 
 namespace dredd {
 
-MutateVisitor::MutateVisitor(const clang::CompilerInstance& compiler_instance,
+MutateVisitor::MutateVisitor(clang::CompilerInstance& compiler_instance,
                              bool optimise_mutations)
     : compiler_instance_(compiler_instance),
       optimise_mutations_(optimise_mutations),
@@ -351,11 +351,11 @@ bool MutateVisitor::VisitExpr(clang::Expr* expr) {
     HandleBinaryOperator(binary_operator);
   }
 
-  // There is no useful way to mutate L-Value boolean expressions in C++ or
-  // general L-Values in C.
-  if (expr->isLValue() &&
-      (expr->getType().isConstQualified() || expr->getType()->isBooleanType() ||
-       !compiler_instance_.getLangOpts().CPlusPlus)) {
+  // L-values are only mutated by inserting the prefix operators ++ and --, and
+  // only under specific circumstances as documented by
+  // MutationReplaceExpr::CanMutateLValue.
+  if (expr->isLValue() && !MutationReplaceExpr::CanMutateLValue(
+                              compiler_instance_.getASTContext(), *expr)) {
     return true;
   }
 

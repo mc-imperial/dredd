@@ -44,6 +44,17 @@ class MutationReplaceExpr : public Mutation {
   static bool ExprIsEquivalentTo(const clang::Expr& expr, int constant,
                                  clang::ASTContext& ast_context);
 
+  // L-value expressions can be mutated via insertion of the ++ and -- prefix
+  // operators. This is only done when an l-value is about to be implicitly
+  // converted to an r-value. This works well in C, where these operators do not
+  // return an l-value, and should also provide a reasonable degree of mutation
+  // of l-values for C++.
+  //
+  // This helper function determines when an l-value expression is suitable for
+  // such a mutation.
+  static bool CanMutateLValue(clang::ASTContext& ast_context,
+                              const clang::Expr& expr);
+
  private:
   // Replace expressions with constants.
   void GenerateConstantReplacement(clang::ASTContext& ast_context,
@@ -51,7 +62,8 @@ class MutationReplaceExpr : public Mutation {
                                    int& mutant_offset) const;
 
   // Insert valid unary operators such as !, ~, ++ and --.
-  void GenerateUnaryOperatorInsertion(const std::string& arg_evaluated,
+  void GenerateUnaryOperatorInsertion(clang::ASTContext& ast_context,
+                                      const std::string& arg_evaluated,
                                       std::stringstream& new_function,
                                       int& mutant_offset) const;
 

@@ -77,12 +77,12 @@ bool MutationReplaceExpr::ExprIsEquivalentTo(const clang::Expr& expr,
 }
 
 void MutationReplaceExpr::GenerateUnaryOperatorInsertion(
-    const std::string& arg_evaluated, std::stringstream& new_function,
-    int& mutant_offset) const {
+    clang::ASTContext& ast_context, const std::string& arg_evaluated,
+    std::stringstream& new_function, int& mutant_offset) const {
   const clang::BuiltinType& exprType =
       *expr_.getType()->getAs<clang::BuiltinType>();
-  if (expr_.isLValue() && !(expr_.getType().isConstQualified() ||
-                            expr_.getType()->isBooleanType())) {
+
+  if (expr_.isLValue() && CanMutateLValue(ast_context, expr_)) {
     new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
                  << mutant_offset << ")) return ++(" << arg_evaluated << ");\n";
     mutant_offset++;
@@ -179,6 +179,8 @@ std::string MutationReplaceExpr::GenerateMutatorFunction(
   std::string arg_evaluated = "arg";
   if (ast_context.getLangOpts().CPlusPlus) {
     arg_evaluated += "()";
+  } else if (expr_.isLValue()) {
+    arg_evaluated = "(*" + arg_evaluated + ")";
   }
 
   // Quickly apply the original operator if no mutant is enabled (which will be
@@ -188,7 +190,8 @@ std::string MutationReplaceExpr::GenerateMutatorFunction(
 
   int mutant_offset = 0;
 
-  GenerateUnaryOperatorInsertion(arg_evaluated, new_function, mutant_offset);
+  GenerateUnaryOperatorInsertion(ast_context, arg_evaluated, new_function,
+                                 mutant_offset);
   GenerateConstantReplacement(ast_context, new_function, mutant_offset);
 
   new_function << "  return " << arg_evaluated << ";\n";
@@ -239,12 +242,14 @@ void MutationReplaceExpr::Apply(
                                 .str();
 
   std::string input_type = result_type;
+  // Type modifiers are added to the input type, if it is an l-value. The result
+  // type is left unmodified, because l-values are only mutated in positions
+  // where they are implicitly cast to r-values, so the associated mutator
+  // function should return a value, not a reference.
   if (ast_context.getLangOpts().CPlusPlus) {
     ApplyCppTypeModifiers(&expr_, input_type);
-    ApplyCppTypeModifiers(&expr_, result_type);
   } else {
     ApplyCTypeModifiers(&expr_, input_type);
-    ApplyCTypeModifiers(&expr_, result_type);
   }
 
   clang::SourceRange expr_source_range_in_main_file =
@@ -330,6 +335,26 @@ void MutationReplaceExpr::Apply(
   assert(!new_function.empty() && "Unsupported expression.");
 
   dredd_declarations.insert(new_function);
+}
+
+bool MutationReplaceExpr::CanMutateLValue(clang::ASTContext& ast_context,
+                                          const clang::Expr& expr) {
+  assert(expr.isLValue() &&
+         "Method should only be invoked on an l-value expression.");
+  if (expr.getType().isConstQualified() || expr.getType()->isBooleanType()) {
+    return false;
+  }
+  // The following checks that `expr` is the child of an ImplicitCastExpr that
+  // yields an r-value.
+  auto parents = ast_context.getParents<clang::Expr>(expr);
+  if (parents.size() != 1) {
+    return false;
+  }
+  const auto* implicit_cast = parents[0].get<clang::ImplicitCastExpr>();
+  if (implicit_cast == nullptr || implicit_cast->isLValue()) {
+    return false;
+  }
+  return true;
 }
 
 }  // namespace dredd

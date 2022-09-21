@@ -138,17 +138,17 @@ TEST(MutationReplaceExpressionTest, MutateLValues) {
   std::string original =
       R"(void foo() {
   int x;
-  x;
+  -x;
 }
 )";
   std::string expected =
       R"(void foo() {
   int x;
-  __dredd_replace_expr_int_lvalue([&]() -> int& { return static_cast<int&>(x); }, 0);
+  -__dredd_replace_expr_int_lvalue([&]() -> int& { return static_cast<int&>(x); }, 0);
 }
 )";
   std::string expected_dredd_declaration =
-      R"(static int& __dredd_replace_expr_int_lvalue(std::function<int&()> arg, int local_mutation_id) {
+      R"(static int __dredd_replace_expr_int_lvalue(std::function<int&()> arg, int local_mutation_id) {
   if (!__dredd_some_mutation_enabled) return arg();
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return ++(arg());
   if (__dredd_enabled_mutation(local_mutation_id + 1)) return --(arg());
@@ -158,7 +158,7 @@ TEST(MutationReplaceExpressionTest, MutateLValues) {
 )";
   const int kNumReplacements = 2;
   TestReplacement(original, expected, kNumReplacements,
-                  expected_dredd_declaration, 0);
+                  expected_dredd_declaration, 2);
 }
 
 TEST(MutationReplaceExpressionTest, MutateFunctionArgs) {

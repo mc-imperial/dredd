@@ -7,7 +7,7 @@
 static int __dredd_some_mutation_enabled = 1;
 static int __dredd_enabled_mutation(int local_mutation_id) {
   static int initialized = 0;
-  static uint64_t enabled_bitset[3];
+  static uint64_t enabled_bitset[4];
   if (!initialized) {
     int some_mutation_enabled = 0;
     const char* dredd_environment_variable = getenv("DREDD_ENABLED_MUTATION");
@@ -19,7 +19,7 @@ static int __dredd_enabled_mutation(int local_mutation_id) {
       while(token) {
         int value = atoi(token);
         int local_value = value - 0;
-        if (local_value >= 0 && local_value < 183) {
+        if (local_value >= 0 && local_value < 219) {
           enabled_bitset[local_value / 64] |= (1 << (local_value % 64));
           some_mutation_enabled = 1;
         }
@@ -31,6 +31,13 @@ static int __dredd_enabled_mutation(int local_mutation_id) {
     __dredd_some_mutation_enabled = some_mutation_enabled;
   }
   return enabled_bitset[local_mutation_id / 64] & (1 << (local_mutation_id % 64));
+}
+
+static unsigned long __dredd_replace_expr_unsigned_long_lvalue(unsigned long* arg, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return (*arg);
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return ++((*arg));
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return --((*arg));
+  return (*arg);
 }
 
 static unsigned long __dredd_replace_expr_unsigned_long(unsigned long arg, int local_mutation_id) {
@@ -53,6 +60,13 @@ static unsigned long __dredd_replace_binary_operator_Add_unsigned_long_unsigned_
   return arg1 + arg2;
 }
 
+static unsigned int __dredd_replace_expr_unsigned_int_lvalue(unsigned int* arg, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return (*arg);
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return ++((*arg));
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return --((*arg));
+  return (*arg);
+}
+
 static unsigned int __dredd_replace_expr_unsigned_int(unsigned int arg, int local_mutation_id) {
   if (!__dredd_some_mutation_enabled) return arg;
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return !(arg);
@@ -71,6 +85,13 @@ static unsigned int __dredd_replace_binary_operator_Add_unsigned_int_unsigned_in
   if (__dredd_enabled_mutation(local_mutation_id + 4)) return arg1;
   if (__dredd_enabled_mutation(local_mutation_id + 5)) return arg2;
   return arg1 + arg2;
+}
+
+static long __dredd_replace_expr_long_lvalue(long* arg, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return (*arg);
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return ++((*arg));
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return --((*arg));
+  return (*arg);
 }
 
 static long __dredd_replace_expr_long(long arg, int local_mutation_id) {
@@ -92,6 +113,13 @@ static long __dredd_replace_binary_operator_Add_long_long(long arg1, long arg2, 
   if (__dredd_enabled_mutation(local_mutation_id + 4)) return arg1;
   if (__dredd_enabled_mutation(local_mutation_id + 5)) return arg2;
   return arg1 + arg2;
+}
+
+static int __dredd_replace_expr_int_lvalue(int* arg, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return (*arg);
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return ++((*arg));
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return --((*arg));
+  return (*arg);
 }
 
 static int __dredd_replace_expr_int(int arg, int local_mutation_id) {
@@ -126,13 +154,13 @@ int main() {
   int64_t h;
   uint64_t i;
 
-  if (!__dredd_enabled_mutation(18)) { __dredd_replace_expr_unsigned_int(__dredd_replace_binary_operator_Add_unsigned_int_unsigned_int(__dredd_replace_expr_unsigned_int(a, 0) , __dredd_replace_expr_unsigned_int(a, 4), 8), 14); }
-  if (!__dredd_enabled_mutation(37)) { __dredd_replace_expr_unsigned_int(__dredd_replace_binary_operator_Add_unsigned_int_unsigned_int(__dredd_replace_expr_unsigned_int(b, 19) , __dredd_replace_expr_unsigned_int(b, 23), 27), 33); }
-  if (!__dredd_enabled_mutation(59)) { __dredd_replace_expr_int(__dredd_replace_binary_operator_Add_int_int(__dredd_replace_expr_int(c, 38) , __dredd_replace_expr_int(c, 43), 48), 54); }
-  if (!__dredd_enabled_mutation(81)) { __dredd_replace_expr_int(__dredd_replace_binary_operator_Add_int_int(__dredd_replace_expr_int(d, 60) , __dredd_replace_expr_int(d, 65), 70), 76); }
-  if (!__dredd_enabled_mutation(100)) { __dredd_replace_expr_unsigned_long(__dredd_replace_binary_operator_Add_unsigned_long_unsigned_long(__dredd_replace_expr_unsigned_long(e, 82) , __dredd_replace_expr_unsigned_long(e, 86), 90), 96); }
-  if (!__dredd_enabled_mutation(119)) { __dredd_replace_expr_unsigned_long(__dredd_replace_binary_operator_Add_unsigned_long_unsigned_long(__dredd_replace_expr_unsigned_long(f, 101) , __dredd_replace_expr_unsigned_long(f, 105), 109), 115); }
-  if (!__dredd_enabled_mutation(141)) { __dredd_replace_expr_long(__dredd_replace_binary_operator_Add_long_long(__dredd_replace_expr_long(g, 120) , __dredd_replace_expr_long(g, 125), 130), 136); }
-  if (!__dredd_enabled_mutation(163)) { __dredd_replace_expr_long(__dredd_replace_binary_operator_Add_long_long(__dredd_replace_expr_long(h, 142) , __dredd_replace_expr_long(h, 147), 152), 158); }
-  if (!__dredd_enabled_mutation(182)) { __dredd_replace_expr_unsigned_long(__dredd_replace_binary_operator_Add_unsigned_long_unsigned_long(__dredd_replace_expr_unsigned_long(i, 164) , __dredd_replace_expr_unsigned_long(i, 168), 172), 178); }
+  if (!__dredd_enabled_mutation(22)) { __dredd_replace_expr_unsigned_int(__dredd_replace_binary_operator_Add_unsigned_int_unsigned_int(__dredd_replace_expr_unsigned_int(__dredd_replace_expr_unsigned_int_lvalue(&(a), 0), 2) , __dredd_replace_expr_unsigned_int(__dredd_replace_expr_unsigned_int_lvalue(&(a), 6), 8), 12), 18); }
+  if (!__dredd_enabled_mutation(45)) { __dredd_replace_expr_unsigned_int(__dredd_replace_binary_operator_Add_unsigned_int_unsigned_int(__dredd_replace_expr_unsigned_int(__dredd_replace_expr_unsigned_int_lvalue(&(b), 23), 25) , __dredd_replace_expr_unsigned_int(__dredd_replace_expr_unsigned_int_lvalue(&(b), 29), 31), 35), 41); }
+  if (!__dredd_enabled_mutation(71)) { __dredd_replace_expr_int(__dredd_replace_binary_operator_Add_int_int(__dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(&(c), 46), 48) , __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(&(c), 53), 55), 60), 66); }
+  if (!__dredd_enabled_mutation(97)) { __dredd_replace_expr_int(__dredd_replace_binary_operator_Add_int_int(__dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(&(d), 72), 74) , __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(&(d), 79), 81), 86), 92); }
+  if (!__dredd_enabled_mutation(120)) { __dredd_replace_expr_unsigned_long(__dredd_replace_binary_operator_Add_unsigned_long_unsigned_long(__dredd_replace_expr_unsigned_long(__dredd_replace_expr_unsigned_long_lvalue(&(e), 98), 100) , __dredd_replace_expr_unsigned_long(__dredd_replace_expr_unsigned_long_lvalue(&(e), 104), 106), 110), 116); }
+  if (!__dredd_enabled_mutation(143)) { __dredd_replace_expr_unsigned_long(__dredd_replace_binary_operator_Add_unsigned_long_unsigned_long(__dredd_replace_expr_unsigned_long(__dredd_replace_expr_unsigned_long_lvalue(&(f), 121), 123) , __dredd_replace_expr_unsigned_long(__dredd_replace_expr_unsigned_long_lvalue(&(f), 127), 129), 133), 139); }
+  if (!__dredd_enabled_mutation(169)) { __dredd_replace_expr_long(__dredd_replace_binary_operator_Add_long_long(__dredd_replace_expr_long(__dredd_replace_expr_long_lvalue(&(g), 144), 146) , __dredd_replace_expr_long(__dredd_replace_expr_long_lvalue(&(g), 151), 153), 158), 164); }
+  if (!__dredd_enabled_mutation(195)) { __dredd_replace_expr_long(__dredd_replace_binary_operator_Add_long_long(__dredd_replace_expr_long(__dredd_replace_expr_long_lvalue(&(h), 170), 172) , __dredd_replace_expr_long(__dredd_replace_expr_long_lvalue(&(h), 177), 179), 184), 190); }
+  if (!__dredd_enabled_mutation(218)) { __dredd_replace_expr_unsigned_long(__dredd_replace_binary_operator_Add_unsigned_long_unsigned_long(__dredd_replace_expr_unsigned_long(__dredd_replace_expr_unsigned_long_lvalue(&(i), 196), 198) , __dredd_replace_expr_unsigned_long(__dredd_replace_expr_unsigned_long_lvalue(&(i), 202), 204), 208), 214); }
 }

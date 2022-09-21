@@ -38,7 +38,7 @@ static bool __dredd_enabled_mutation(int local_mutation_id) {
   return (enabled_bitset[local_mutation_id / 64] & (1 << (local_mutation_id % 64))) != 0;
 }
 
-static unsigned long& __dredd_replace_expr_unsigned_long_lvalue(std::function<unsigned long&()> arg, int local_mutation_id) {
+static unsigned long __dredd_replace_expr_unsigned_long_lvalue(std::function<unsigned long&()> arg, int local_mutation_id) {
   if (!__dredd_some_mutation_enabled) return arg();
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return ++(arg());
   if (__dredd_enabled_mutation(local_mutation_id + 1)) return --(arg());
@@ -65,7 +65,7 @@ static unsigned long __dredd_replace_binary_operator_Add_unsigned_long_unsigned_
   return arg1() + arg2();
 }
 
-static unsigned int& __dredd_replace_expr_unsigned_int_lvalue(std::function<unsigned int&()> arg, int local_mutation_id) {
+static unsigned int __dredd_replace_expr_unsigned_int_lvalue(std::function<unsigned int&()> arg, int local_mutation_id) {
   if (!__dredd_some_mutation_enabled) return arg();
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return ++(arg());
   if (__dredd_enabled_mutation(local_mutation_id + 1)) return --(arg());
@@ -92,7 +92,7 @@ static unsigned int __dredd_replace_binary_operator_Add_unsigned_int_unsigned_in
   return arg1() + arg2();
 }
 
-static long& __dredd_replace_expr_long_lvalue(std::function<long&()> arg, int local_mutation_id) {
+static long __dredd_replace_expr_long_lvalue(std::function<long&()> arg, int local_mutation_id) {
   if (!__dredd_some_mutation_enabled) return arg();
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return ++(arg());
   if (__dredd_enabled_mutation(local_mutation_id + 1)) return --(arg());
@@ -120,7 +120,7 @@ static long __dredd_replace_binary_operator_Add_long_long(std::function<long()> 
   return arg1() + arg2();
 }
 
-static int& __dredd_replace_expr_int_lvalue(std::function<int&()> arg, int local_mutation_id) {
+static int __dredd_replace_expr_int_lvalue(std::function<int&()> arg, int local_mutation_id) {
   if (!__dredd_some_mutation_enabled) return arg();
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return ++(arg());
   if (__dredd_enabled_mutation(local_mutation_id + 1)) return --(arg());

@@ -16,7 +16,7 @@ static int __dredd_enabled_mutation(int local_mutation_id) {
       while(token) {
         int value = atoi(token);
         int local_value = value - 0;
-        if (local_value >= 0 && local_value < 40) {
+        if (local_value >= 0 && local_value < 44) {
           enabled_bitset[local_value / 64] |= (1 << (local_value % 64));
           some_mutation_enabled = 1;
         }
@@ -38,6 +38,13 @@ static int __dredd_replace_expr_int(int arg, int local_mutation_id) {
   if (__dredd_enabled_mutation(local_mutation_id + 3)) return 1;
   if (__dredd_enabled_mutation(local_mutation_id + 4)) return -1;
   return arg;
+}
+
+static float __dredd_replace_expr_float_lvalue(float* arg, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return (*arg);
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return ++((*arg));
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return --((*arg));
+  return (*arg);
 }
 
 static float __dredd_replace_expr_float(float arg, int local_mutation_id) {
@@ -79,6 +86,6 @@ int main() {
   float x = __dredd_replace_expr_float(__dredd_replace_expr_double(5.235, 0), 3);
   float y = __dredd_replace_expr_float(__dredd_replace_expr_double(754.34623, 6), 9);
   float z;
-  if (!__dredd_enabled_mutation(33)) { __dredd_replace_expr_float(__dredd_replace_binary_operator_Assign_float_float(&(z) , __dredd_replace_expr_float(__dredd_replace_binary_operator_Add_float_float(__dredd_replace_expr_float(x, 12) , __dredd_replace_expr_float(y, 15), 18), 23), 26), 30); }
-  if (!__dredd_enabled_mutation(39)) { return __dredd_replace_expr_int(0, 34); }
+  if (!__dredd_enabled_mutation(37)) { __dredd_replace_expr_float(__dredd_replace_binary_operator_Assign_float_float(&(z) , __dredd_replace_expr_float(__dredd_replace_binary_operator_Add_float_float(__dredd_replace_expr_float(__dredd_replace_expr_float_lvalue(&(x), 12), 14) , __dredd_replace_expr_float(__dredd_replace_expr_float_lvalue(&(y), 17), 19), 22), 27), 30), 34); }
+  if (!__dredd_enabled_mutation(43)) { return __dredd_replace_expr_int(0, 38); }
 }
