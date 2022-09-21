@@ -62,8 +62,13 @@ std::string MutationReplaceExpr::GetFunctionName(
     result += "_lvalue";
   }
 
+  // This is sufficient to prevent name clashes as this is the
+  // only unary operator insertion optimisation that depends on the
+  // input expression. ~ is omitted for all boolean expressions
+  // so the type that is included in the function name will be enough
+  // in that case.
   if (IsRedundantOperatorInsertion(expr_, ast_context)) {
-    result += "_optimised";
+    result += "_uoi_optimised";
   }
 
   return result;
@@ -83,9 +88,12 @@ bool MutationReplaceExpr::ExprIsEquivalentTo(const clang::Expr& expr,
 
 bool MutationReplaceExpr::IsRedundantOperatorInsertion(
     const clang::Expr& expr, clang::ASTContext& ast_context) {
-  bool result;
+  // We use this value to capture the value that the expression evaluates
+  // to if it does indeed evaluate to a constant, but we do not use this value
+  // because either way, operator insertion would be redundant.
+  bool unused_bool_value;
   return (expr.getType()->isBooleanType() &&
-          expr.EvaluateAsBooleanCondition(result, ast_context)) ||
+          expr.EvaluateAsBooleanCondition(unused_bool_value, ast_context)) ||
          (expr.getType()->isIntegerType() &&
           (ExprIsEquivalentTo(expr, 0, ast_context) ||
            ExprIsEquivalentTo(expr, 1, ast_context)));
