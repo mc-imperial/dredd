@@ -18,7 +18,7 @@ static bool __dredd_enabled_mutation(int local_mutation_id) {
         if (!token.empty()) {
           int value = std::stoi(token);
           int local_value = value - 0;
-          if (local_value >= 0 && local_value < 24) {
+          if (local_value >= 0 && local_value < 23) {
             enabled_bitset[local_value / 64] |= (1 << (local_value % 64));
             some_mutation_enabled = true;
           }
@@ -35,12 +35,11 @@ static bool __dredd_enabled_mutation(int local_mutation_id) {
   return (enabled_bitset[local_mutation_id / 64] & (1 << (local_mutation_id % 64))) != 0;
 }
 
-static int __dredd_replace_expr_int_uoi_optimised(std::function<int()> arg, int local_mutation_id) {
+static int __dredd_replace_expr_int_uoi_optimised_zero(std::function<int()> arg, int local_mutation_id) {
   if (!__dredd_some_mutation_enabled) return arg();
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return ~(arg());
-  if (__dredd_enabled_mutation(local_mutation_id + 1)) return 0;
-  if (__dredd_enabled_mutation(local_mutation_id + 2)) return 1;
-  if (__dredd_enabled_mutation(local_mutation_id + 3)) return -1;
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return 1;
+  if (__dredd_enabled_mutation(local_mutation_id + 2)) return -1;
   return arg();
 }
 
@@ -69,6 +68,6 @@ static int __dredd_replace_binary_operator_Add_int_int_lhs_zero(std::function<in
 }
 
 int main() {
-  int x = __dredd_replace_expr_int([&]() -> int { return __dredd_replace_binary_operator_Add_int_int_lhs_zero([&]() -> int { return static_cast<int>(__dredd_replace_expr_int_uoi_optimised([&]() -> int { return 0; }, 0)); } , [&]() -> int { return static_cast<int>(__dredd_replace_expr_int([&]() -> int { return 8; }, 4)); }, 9); }, 11);
-  if (!__dredd_enabled_mutation(23)) { return __dredd_replace_expr_int([&]() -> int { return static_cast<int>(__dredd_replace_expr_int_lvalue([&]() -> int& { return static_cast<int&>(x); }, 16)); }, 18); }
+  int x = __dredd_replace_expr_int([&]() -> int { return __dredd_replace_binary_operator_Add_int_int_lhs_zero([&]() -> int { return static_cast<int>(__dredd_replace_expr_int_uoi_optimised_zero([&]() -> int { return 0; }, 0)); } , [&]() -> int { return static_cast<int>(__dredd_replace_expr_int([&]() -> int { return 8; }, 3)); }, 8); }, 10);
+  if (!__dredd_enabled_mutation(22)) { return __dredd_replace_expr_int([&]() -> int { return static_cast<int>(__dredd_replace_expr_int_lvalue([&]() -> int& { return static_cast<int&>(x); }, 15)); }, 17); }
 }

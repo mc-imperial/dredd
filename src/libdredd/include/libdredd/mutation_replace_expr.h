@@ -61,6 +61,7 @@ class MutationReplaceExpr : public Mutation {
 
   // Replace expressions with constants.
   void GenerateConstantReplacement(clang::ASTContext& ast_context,
+                                   bool optimise_mutations,
                                    std::stringstream& new_function,
                                    int& mutant_offset) const;
 

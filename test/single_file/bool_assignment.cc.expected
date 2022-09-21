@@ -18,7 +18,7 @@ static bool __dredd_enabled_mutation(int local_mutation_id) {
         if (!token.empty()) {
           int value = std::stoi(token);
           int local_value = value - 0;
-          if (local_value >= 0 && local_value < 4) {
+          if (local_value >= 0 && local_value < 2) {
             enabled_bitset[local_value / 64] |= (1 << (local_value % 64));
             some_mutation_enabled = true;
           }
@@ -35,19 +35,19 @@ static bool __dredd_enabled_mutation(int local_mutation_id) {
   return (enabled_bitset[local_mutation_id / 64] & (1 << (local_mutation_id % 64))) != 0;
 }
 
-static int __dredd_replace_expr_int_uoi_optimised_zero(std::function<int()> arg, int local_mutation_id) {
+static bool __dredd_replace_expr_bool_uoi_optimised_zero(std::function<bool()> arg, int local_mutation_id) {
   if (!__dredd_some_mutation_enabled) return arg();
-  if (__dredd_enabled_mutation(local_mutation_id + 0)) return ~(arg());
-  if (__dredd_enabled_mutation(local_mutation_id + 1)) return 1;
-  if (__dredd_enabled_mutation(local_mutation_id + 2)) return -1;
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return true;
+  return arg();
+}
+
+static bool __dredd_replace_expr_bool_uoi_optimised_one(std::function<bool()> arg, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return arg();
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return false;
   return arg();
 }
 
 int main() {
-  if (!__dredd_enabled_mutation(3)) { switch(__dredd_replace_expr_int_uoi_optimised_zero([&]() -> int { return 0; }, 0)) {
-  case -1:
-    break;
-  default:
-    break;
-  } }
+  bool x = __dredd_replace_expr_bool_uoi_optimised_one([&]() -> bool { return true; }, 0);
+  bool y = __dredd_replace_expr_bool_uoi_optimised_zero([&]() -> bool { return false; }, 1);
 }
