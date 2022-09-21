@@ -16,7 +16,7 @@ static int __dredd_enabled_mutation(int local_mutation_id) {
       while(token) {
         int value = atoi(token);
         int local_value = value - 0;
-        if (local_value >= 0 && local_value < 63) {
+        if (local_value >= 0 && local_value < 58) {
           enabled_bitset[local_value / 64] |= (1 << (local_value % 64));
           some_mutation_enabled = 1;
         }
@@ -86,6 +86,6 @@ int main() {
   volatile int x = __dredd_replace_expr_int(9, 0);
   volatile int y = __dredd_replace_expr_int(43, 5);
   int z;
-  if (!__dredd_enabled_mutation(54)) { __dredd_replace_expr_int(__dredd_replace_binary_operator_Assign_int_int(&(z) , __dredd_replace_expr_int(__dredd_replace_binary_operator_Add_int_int(__dredd_replace_expr_int(__dredd_replace_unary_operator_PostInc_volatile_int(&(x), 10), 14) , __dredd_replace_expr_int(__dredd_replace_unary_operator_PostInc_volatile_int(&(y), 19), 23), 28), 34), 39), 49); }
-  if (!__dredd_enabled_mutation(62)) { return __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(&(z), 55), 57); }
+  if (!__dredd_enabled_mutation(49)) { __dredd_replace_binary_operator_Assign_int_int(&(z) , __dredd_replace_expr_int(__dredd_replace_binary_operator_Add_int_int(__dredd_replace_expr_int(__dredd_replace_unary_operator_PostInc_volatile_int(&(x), 10), 14) , __dredd_replace_expr_int(__dredd_replace_unary_operator_PostInc_volatile_int(&(y), 19), 23), 28), 34), 39); }
+  if (!__dredd_enabled_mutation(57)) { return __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(&(z), 50), 52); }
 }

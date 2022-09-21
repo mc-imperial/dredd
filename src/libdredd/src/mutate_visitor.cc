@@ -18,6 +18,8 @@
 #include <cstddef>
 #include <memory>
 
+#include "clang/AST/ASTContext.h"
+#include "clang/AST/ASTTypeTraits.h"
 #include "clang/AST/Decl.h"
 #include "clang/AST/DeclBase.h"
 #include "clang/AST/DeclCXX.h"
@@ -25,6 +27,7 @@
 #include "clang/AST/ExprCXX.h"
 #include "clang/AST/LambdaCapture.h"
 #include "clang/AST/OperationKinds.h"
+#include "clang/AST/ParentMapContext.h"
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/AST/Stmt.h"
 #include "clang/AST/TemplateBase.h"
@@ -368,16 +371,31 @@ bool MutateVisitor::VisitExpr(clang::Expr* expr) {
   }
 
   if (optimise_mutations_) {
+    // Only mutate a cast expression if it changes an l-value to an r-value.
+    // This is because different mutations will be applied to the l-value
+    // and r-value forms. Otherwise it is highly likely that the applied
+    // mutations would have the same effect as one another; the possible
+    // differences arising due to a change of type are unlikely to be all
+    // that interesting, and r-value to r-value implicit casts are very
+    // common, e.g. occurring whenever a signed literal, such as `1`, is
+    // used in an unsigned context.
     if (auto* cast_expr = llvm::dyn_cast<clang::CastExpr>(expr)) {
       if (!cast_expr->getSubExpr()->isLValue() || cast_expr->isLValue()) {
-        // Only mutate a cast expression if it changes an l-value to an r-value.
-        // This is because different mutations will be applied to the l-value
-        // and r-value forms. Otherwise it is highly likely that the applied
-        // mutations would have the same effect as one another; the possible
-        // differences arising due to a change of type are unlikely to be all
-        // that interesting, and r-value to r-value implicit casts are very
-        // common, e.g. occurring whenever a signed literal, such as `1`, is
-        // used in an unsigned context.
+        return true;
+      }
+    }
+
+    // If an expression is the direct child of a compound statement then don't
+    // mutate it, because:
+    // - replacing it with a constant has the same effect as deleting it;
+    // - if it is an r-value, inserting a unary operator has no effect;
+    // - if it is an l-value, inserting an increment operator is fairly well
+    // captured by inserting an increment before a future use of the l-value (it
+    // is not exactly the same, because the future use could be dynamically
+    // reached in different manners compared with this statement).
+    for (const auto& parent :
+         compiler_instance_.getASTContext().getParents<clang::Stmt>(*expr)) {
+      if (parent.get<clang::CompoundStmt>() != nullptr) {
         return true;
       }
     }
