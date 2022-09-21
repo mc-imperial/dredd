@@ -251,8 +251,7 @@ void MutationReplaceExpr::Apply(
       GetSourceRangeInMainFile(preprocessor, expr_);
   assert(expr_source_range_in_main_file.isValid() && "Invalid source range.");
 
-  // Replace the unary operator expression with a call to the wrapper
-  // function.
+  // Replace the operator expression with a call to the wrapper function.
   //
   // Subtracting |first_mutation_id_in_file| turns the global mutation id,
   // |mutation_id|, into a file-local mutation id.
@@ -261,7 +260,7 @@ void MutationReplaceExpr::Apply(
   // Replacement of an expression with a function call is simulated by
   // Inserting suitable text before and after the expression.
   // This is preferable over the (otherwise more intuitive) approach of directly
-  // replacing the text for the unary operator node, because the Clang rewriter
+  // replacing the text for the expression node, because the Clang rewriter
   // does not support nested replacements.
 
   // These record the text that should be inserted before and after the
