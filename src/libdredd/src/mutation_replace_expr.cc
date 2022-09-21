@@ -88,7 +88,6 @@ std::string MutationReplaceExpr::GetFunctionName(
 bool MutationReplaceExpr::ExprIsEquivalentTo(const clang::Expr& expr,
                                              int constant,
                                              clang::ASTContext& ast_context) {
-
   clang::Expr::EvalResult int_eval_result;
   if (expr.getType()->isIntegerType() &&
       expr.EvaluateAsInt(int_eval_result, ast_context)) {
@@ -162,75 +161,95 @@ void MutationReplaceExpr::GenerateUnaryOperatorInsertion(
 void MutationReplaceExpr::GenerateConstantReplacement(
     clang::ASTContext& ast_context, bool optimise_mutations,
     std::stringstream& new_function, int& mutant_offset) const {
+  if (!expr_.isLValue()) {
+    GenerateBooleanConstantReplacement(ast_context, optimise_mutations,
+                                       new_function, mutant_offset);
+    GenerateIntegerConstantReplacement(ast_context, optimise_mutations,
+                                       new_function, mutant_offset);
+    GenerateFloatConstantReplacement(ast_context, optimise_mutations,
+                                     new_function, mutant_offset);
+  }
+}
+void MutationReplaceExpr::GenerateFloatConstantReplacement(
+    clang::ASTContext& ast_context, bool optimise_mutations,
+    std::stringstream& new_function, int& mutant_offset) const {
   const clang::BuiltinType& exprType =
       *expr_.getType()->getAs<clang::BuiltinType>();
-  if (!expr_.isLValue()) {
-    if (exprType.isBooleanType()) {
-      if (!optimise_mutations || !ExprIsEquivalentTo(expr_, 1, ast_context)) {
-        // Replace expression with true
-        new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
-                     << mutant_offset << ")) return "
-                     << (ast_context.getLangOpts().CPlusPlus ? "true" : "1")
-                     << ";\n";
-        mutant_offset++;
-      }
-
-      if (!optimise_mutations || !ExprIsEquivalentTo(expr_, 0, ast_context)) {
-        // Replace expression with false
-        new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
-                     << mutant_offset << ")) return "
-                     << (ast_context.getLangOpts().CPlusPlus ? "false" : "0")
-                     << ";\n";
-        mutant_offset++;
-      }
+  if (exprType.isFloatingPoint()) {
+    if (!optimise_mutations || !ExprIsEquivalentTo(expr_, 0, ast_context)) {
+      // Replace floating point expression with 0.0
+      new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
+                   << mutant_offset << ")) return 0.0;\n";
+      mutant_offset++;
     }
 
-    if (exprType.isInteger() && !exprType.isBooleanType()) {
-      if (!optimise_mutations || !ExprIsEquivalentTo(expr_, 0, ast_context)) {
-        // Replace expression with 0
-        new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
-                     << mutant_offset << ")) return 0;\n";
-        mutant_offset++;
-      }
-
-      if (!optimise_mutations || !ExprIsEquivalentTo(expr_, 1, ast_context)) {
-        // Replace expression with 1
-        new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
-                     << mutant_offset << ")) return 1;\n";
-        mutant_offset++;
-      }
+    if (!optimise_mutations || !ExprIsEquivalentTo(expr_, 1, ast_context)) {
+      // Replace floating point expression with 1.0
+      new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
+                   << mutant_offset << ")) return 1.0;\n";
+      mutant_offset++;
     }
 
-    if (exprType.isSignedInteger()) {
-      if (!optimise_mutations || !ExprIsEquivalentTo(expr_, -1, ast_context)) {
-        // Replace signed integer expression with -1
-        new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
-                     << mutant_offset << ")) return -1;\n";
-        mutant_offset++;
-      }
+    if (!optimise_mutations || !ExprIsEquivalentTo(expr_, -1, ast_context)) {
+      // Replace floating point expression with -1.0
+      new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
+                   << mutant_offset << ")) return -1.0;\n";
+      mutant_offset++;
+    }
+  }
+}
+void MutationReplaceExpr::GenerateIntegerConstantReplacement(
+    clang::ASTContext& ast_context, bool optimise_mutations,
+    std::stringstream& new_function, int& mutant_offset) const {
+  const clang::BuiltinType& exprType =
+      *expr_.getType()->getAs<clang::BuiltinType>();
+  if (exprType.isInteger() && !exprType.isBooleanType()) {
+    if (!optimise_mutations || !ExprIsEquivalentTo(expr_, 0, ast_context)) {
+      // Replace expression with 0
+      new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
+                   << mutant_offset << ")) return 0;\n";
+      mutant_offset++;
     }
 
-    if (exprType.isFloatingPoint()) {
-      if (!optimise_mutations || !ExprIsEquivalentTo(expr_, 0, ast_context)) {
-        // Replace floating point expression with 0.0
-        new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
-                     << mutant_offset << ")) return 0.0;\n";
-        mutant_offset++;
-      }
+    if (!optimise_mutations || !ExprIsEquivalentTo(expr_, 1, ast_context)) {
+      // Replace expression with 1
+      new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
+                   << mutant_offset << ")) return 1;\n";
+      mutant_offset++;
+    }
+  }
 
-      if (!optimise_mutations || !ExprIsEquivalentTo(expr_, 1, ast_context)) {
-        // Replace floating point expression with 1.0
-        new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
-                     << mutant_offset << ")) return 1.0;\n";
-        mutant_offset++;
-      }
+  if (exprType.isSignedInteger()) {
+    if (!optimise_mutations || !ExprIsEquivalentTo(expr_, -1, ast_context)) {
+      // Replace signed integer expression with -1
+      new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
+                   << mutant_offset << ")) return -1;\n";
+      mutant_offset++;
+    }
+  }
+}
+void MutationReplaceExpr::GenerateBooleanConstantReplacement(
+    clang::ASTContext& ast_context, bool optimise_mutations,
+    std::stringstream& new_function, int& mutant_offset) const {
+  const clang::BuiltinType& exprType =
+      *expr_.getType()->getAs<clang::BuiltinType>();
+  if (exprType.isBooleanType()) {
+    if (!optimise_mutations || !ExprIsEquivalentTo(expr_, 1, ast_context)) {
+      // Replace expression with true
+      new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
+                   << mutant_offset << ")) return "
+                   << (ast_context.getLangOpts().CPlusPlus ? "true" : "1")
+                   << ";\n";
+      mutant_offset++;
+    }
 
-      if (!optimise_mutations || !ExprIsEquivalentTo(expr_, -1, ast_context)) {
-        // Replace floating point expression with -1.0
-        new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
-                     << mutant_offset << ")) return -1.0;\n";
-        mutant_offset++;
-      }
+    if (!optimise_mutations || !ExprIsEquivalentTo(expr_, 0, ast_context)) {
+      // Replace expression with false
+      new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
+                   << mutant_offset << ")) return "
+                   << (ast_context.getLangOpts().CPlusPlus ? "false" : "0")
+                   << ";\n";
+      mutant_offset++;
     }
   }
 }
@@ -262,8 +281,8 @@ std::string MutationReplaceExpr::GenerateMutatorFunction(
 
   int mutant_offset = 0;
 
-  GenerateUnaryOperatorInsertion(arg_evaluated, ast_context, optimise_mutations, new_function,
-                                 mutant_offset);
+  GenerateUnaryOperatorInsertion(arg_evaluated, ast_context, optimise_mutations,
+                                 new_function, mutant_offset);
   GenerateConstantReplacement(ast_context, optimise_mutations, new_function,
                               mutant_offset);
 

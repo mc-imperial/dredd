@@ -65,6 +65,21 @@ class MutationReplaceExpr : public Mutation {
                                    std::stringstream& new_function,
                                    int& mutant_offset) const;
 
+  void GenerateBooleanConstantReplacement(clang::ASTContext& ast_context,
+                                          bool optimise_mutations,
+                                          std::stringstream& new_function,
+                                          int& mutant_offset) const;
+
+  void GenerateIntegerConstantReplacement(clang::ASTContext& ast_context,
+                                          bool optimise_mutations,
+                                          std::stringstream& new_function,
+                                          int& mutant_offset) const;
+
+  void GenerateFloatConstantReplacement(clang::ASTContext& ast_context,
+                                        bool optimise_mutations,
+                                        std::stringstream& new_function,
+                                        int& mutant_offset) const;
+
   // Insert valid unary operators such as !, ~, ++ and --.
   void GenerateUnaryOperatorInsertion(const std::string& arg_evaluated,
                                       clang::ASTContext& ast_context,
