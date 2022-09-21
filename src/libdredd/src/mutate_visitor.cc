@@ -391,6 +391,15 @@ bool MutateVisitor::VisitExpr(clang::Expr* expr) {
 
 bool MutateVisitor::TraverseCompoundStmt(clang::CompoundStmt* compound_stmt) {
   for (auto* stmt : compound_stmt->body()) {
+    if (optimise_mutations_) {
+      if (auto* expr = llvm::dyn_cast<clang::Expr>(stmt)) {
+        if (!expr->HasSideEffects(compiler_instance_.getASTContext())) {
+          // There is no point mutating a side-effect free expression statement.
+          continue;
+        }
+      }
+    }
+
     // To ensure that each sub-statement of a compound statement has its
     // mutations recorded in sibling subtrees of the mutation tree, a mutation
     // tree node is pushed per sub-statement.
