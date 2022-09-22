@@ -41,8 +41,12 @@ class MutationReplaceExpr : public Mutation {
   static void ApplyCTypeModifiers(const clang::Expr* expr, std::string& type);
 
   // Check if an expression is equivalent to a constant.
-  static bool ExprIsEquivalentTo(const clang::Expr& expr, int constant,
-                                 clang::ASTContext& ast_context);
+  static bool ExprIsEquivalentToInt(const clang::Expr& expr, int constant,
+                                    clang::ASTContext& ast_context);
+  static bool ExprIsEquivalentToFloat(const clang::Expr& expr, double constant,
+                                      clang::ASTContext& ast_context);
+  static bool ExprIsEquivalentToBool(const clang::Expr& expr, bool constant,
+                                     clang::ASTContext& ast_context);
 
   // L-value expressions can be mutated via insertion of the ++ and -- prefix
   // operators. This is only done when an l-value is about to be implicitly
@@ -59,10 +63,29 @@ class MutationReplaceExpr : public Mutation {
   static bool IsRedundantOperatorInsertion(const clang::Expr& expr,
                                            clang::ASTContext& ast_context);
 
+  void AddOptimisationSpecifier(clang::ASTContext& ast_context,
+                                std::string& function_name) const;
+
   // Replace expressions with constants.
   void GenerateConstantReplacement(clang::ASTContext& ast_context,
+                                   bool optimise_mutations,
                                    std::stringstream& new_function,
                                    int& mutant_offset) const;
+
+  void GenerateBooleanConstantReplacement(clang::ASTContext& ast_context,
+                                          bool optimise_mutations,
+                                          std::stringstream& new_function,
+                                          int& mutant_offset) const;
+
+  void GenerateIntegerConstantReplacement(clang::ASTContext& ast_context,
+                                          bool optimise_mutations,
+                                          std::stringstream& new_function,
+                                          int& mutant_offset) const;
+
+  void GenerateFloatConstantReplacement(clang::ASTContext& ast_context,
+                                        bool optimise_mutations,
+                                        std::stringstream& new_function,
+                                        int& mutant_offset) const;
 
   // Insert valid unary operators such as !, ~, ++ and --.
   void GenerateUnaryOperatorInsertion(const std::string& arg_evaluated,
