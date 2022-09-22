@@ -63,6 +63,9 @@ class MutationReplaceExpr : public Mutation {
   static bool IsRedundantOperatorInsertion(const clang::Expr& expr,
                                            clang::ASTContext& ast_context);
 
+  void AddOptimisationSpecifier(clang::ASTContext& ast_context,
+                                std::string& function_name) const;
+
   // Replace expressions with constants.
   void GenerateConstantReplacement(clang::ASTContext& ast_context,
                                    bool optimise_mutations,

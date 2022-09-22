@@ -64,40 +64,45 @@ std::string MutationReplaceExpr::GetFunctionName(
   }
 
   if (optimise_mutations) {
-    // This is sufficient to prevent name clashes as this is the
-    // only unary operator insertion optimisation that depends on the
-    // input expression. ~ is omitted for all boolean expressions
-    // so the type that is included in the function name will be enough
-    // in that case.
-    if (IsRedundantOperatorInsertion(expr_, ast_context)) {
-      result += "_uoi_optimised";
-    }
-
-    if ((expr_.getType()->isIntegerType() &&
-         !expr_.getType()->isBooleanType()) ||
-        expr_.getType()->isFloatingType()) {
-      if (ExprIsEquivalentToInt(expr_, 0, ast_context) ||
-          ExprIsEquivalentToFloat(expr_, 0, ast_context)) {
-        result += "_zero";
-      } else if (ExprIsEquivalentToInt(expr_, 1, ast_context) ||
-                 ExprIsEquivalentToFloat(expr_, 1, ast_context)) {
-        result += "_one";
-      } else if (ExprIsEquivalentToInt(expr_, -1, ast_context) ||
-                 ExprIsEquivalentToFloat(expr_, -1, ast_context)) {
-        result += "_minus_one";
-      }
-    }
-
-    if (expr_.getType()->isBooleanType()) {
-      if (ExprIsEquivalentToBool(expr_, true, ast_context)) {
-        result += "_true";
-      } else if (ExprIsEquivalentToBool(expr_, false, ast_context)) {
-        result += "_false";
-      }
-    }
+    AddOptimisationSpecifier(ast_context, result);
   }
 
   return result;
+}
+
+void MutationReplaceExpr::AddOptimisationSpecifier(
+    clang::ASTContext& ast_context,
+    std::string& function_name)
+    const {  // This is sufficient to prevent name clashes as this is the
+             // only unary operator insertion optimisation that depends on the
+             // input expression. ~ is omitted for all boolean expressions
+             // so the type that is included in the function name will be enough
+             // in that case.
+  if (IsRedundantOperatorInsertion(expr_, ast_context)) {
+    function_name += "_uoi_optimised";
+  }
+
+  if ((expr_.getType()->isIntegerType() && !expr_.getType()->isBooleanType()) ||
+      expr_.getType()->isFloatingType()) {
+    if (ExprIsEquivalentToInt(expr_, 0, ast_context) ||
+        ExprIsEquivalentToFloat(expr_, 0, ast_context)) {
+      function_name += "_zero";
+    } else if (ExprIsEquivalentToInt(expr_, 1, ast_context) ||
+               ExprIsEquivalentToFloat(expr_, 1, ast_context)) {
+      function_name += "_one";
+    } else if (ExprIsEquivalentToInt(expr_, -1, ast_context) ||
+               ExprIsEquivalentToFloat(expr_, -1, ast_context)) {
+      function_name += "_minus_one";
+    }
+  }
+
+  if (expr_.getType()->isBooleanType()) {
+    if (ExprIsEquivalentToBool(expr_, true, ast_context)) {
+      function_name += "_true";
+    } else if (ExprIsEquivalentToBool(expr_, false, ast_context)) {
+      function_name += "_false";
+    }
+  }
 }
 
 bool MutationReplaceExpr::ExprIsEquivalentToInt(
