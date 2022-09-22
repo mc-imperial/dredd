@@ -18,7 +18,7 @@ project(
   dredd
   VERSION 1.0
   DESCRIPTION "Dredd"
-  LANGUAGES CXX)
+  LANGUAGES C CXX)
 
 # Note: this is not an option; it is used to set the default value for some
 # options below. It is set to ON if Dredd is the root project being built, and
