@@ -302,10 +302,16 @@ bool MutateVisitor::HandleBinaryOperator(
   // There is no useful way to mutate this expression since it is equivalent to
   // replacement with a constant in all cases.
   if (optimise_mutations_ &&
-      MutationReplaceExpr::ExprIsEquivalentTo(
-          *binary_operator->getLHS(), 0, compiler_instance_.getASTContext()) &&
-      MutationReplaceExpr::ExprIsEquivalentTo(
-          *binary_operator->getRHS(), 1, compiler_instance_.getASTContext())) {
+      (MutationReplaceExpr::ExprIsEquivalentToInt(
+           *binary_operator->getLHS(), 0, compiler_instance_.getASTContext()) ||
+       MutationReplaceExpr::ExprIsEquivalentToFloat(
+           *binary_operator->getLHS(), 0,
+           compiler_instance_.getASTContext())) &&
+      (MutationReplaceExpr::ExprIsEquivalentToInt(
+           *binary_operator->getRHS(), 1, compiler_instance_.getASTContext()) ||
+       MutationReplaceExpr::ExprIsEquivalentToFloat(
+           *binary_operator->getRHS(), 1,
+           compiler_instance_.getASTContext()))) {
     return true;
   }
 

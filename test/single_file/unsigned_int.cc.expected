@@ -67,13 +67,13 @@ static bool __dredd_replace_unary_operator_LNot_bool_zero(std::function<bool()> 
   return !arg();
 }
 
-static bool __dredd_replace_expr_bool_uoi_optimised_one(std::function<bool()> arg, int local_mutation_id) {
+static bool __dredd_replace_expr_bool_uoi_optimised_true(std::function<bool()> arg, int local_mutation_id) {
   if (!__dredd_some_mutation_enabled) return arg();
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return false;
   return arg();
 }
 
 int main() {
-  unsigned int x = __dredd_replace_expr_bool_uoi_optimised_one([&]() -> bool { return __dredd_replace_unary_operator_LNot_bool_zero([&]() -> bool { return __dredd_replace_expr_int_uoi_optimised_zero([&]() -> int { return 0; }, 0); }, 3); }, 5);
+  unsigned int x = __dredd_replace_expr_bool_uoi_optimised_true([&]() -> bool { return __dredd_replace_unary_operator_LNot_bool_zero([&]() -> bool { return __dredd_replace_expr_int_uoi_optimised_zero([&]() -> int { return 0; }, 0); }, 3); }, 5);
   unsigned int y = __dredd_replace_expr_int([&]() -> int { return __dredd_replace_unary_operator_Not_int([&]() -> int { return __dredd_replace_expr_int([&]() -> int { return 7; }, 6); }, 11); }, 13);
 }

@@ -42,7 +42,7 @@ static bool __dredd_replace_unary_operator_LNot_bool(std::function<bool()> arg, 
   return !arg();
 }
 
-static bool __dredd_replace_expr_bool_uoi_optimised_one(std::function<bool()> arg, int local_mutation_id) {
+static bool __dredd_replace_expr_bool_uoi_optimised_true(std::function<bool()> arg, int local_mutation_id) {
   if (!__dredd_some_mutation_enabled) return arg();
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return false;
   return arg();
@@ -57,6 +57,6 @@ static bool __dredd_replace_expr_bool(std::function<bool()> arg, int local_mutat
 }
 
 int main() {
-  bool y = __dredd_replace_expr_bool_uoi_optimised_one([&]() -> bool { return true; }, 0);
+  bool y = __dredd_replace_expr_bool_uoi_optimised_true([&]() -> bool { return true; }, 0);
   if (!__dredd_enabled_mutation(9)) { return __dredd_replace_expr_bool([&]() -> bool { return static_cast<bool>(__dredd_replace_unary_operator_LNot_bool([&]() -> bool { return static_cast<bool>(__dredd_replace_expr_bool([&]() -> bool { return static_cast<bool>(y); }, 1)); }, 4)); }, 6); }
 }
