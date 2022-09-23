@@ -76,7 +76,7 @@ popd
 
 # Check that dredd works on some projects
 DREDD_ROOT=$(pwd)
-DREDD_EXECUTABLE="${DREDD_ROOT}/third_party/clang+llvm-${DREDD_LLVM_TAG}/bin/dredd"
+DREDD_EXECUTABLE="${DREDD_ROOT}/third_party/clang+llvm/bin/dredd"
 cp "${DREDD_ROOT}/build/src/dredd/dredd" "${DREDD_EXECUTABLE}"
 
 echo "Curl"
