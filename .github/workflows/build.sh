@@ -25,6 +25,8 @@ help | head
 
 uname
 
+DREDD_LLVM_TAG=$(./scripts/llvm_tag.sh)
+
 case "$(uname)" in
 "Linux")
   NINJA_OS="linux"
@@ -40,19 +42,21 @@ case "$(uname)" in
   export CXX="${LINUX_CXX}"
 
   # Install clang.
-  CLANG_VERSION=clang+llvm-13.0.1-x86_64-linux-gnu-ubuntu-18.04
-  curl -fsSL -o ${CLANG_VERSION}.tar.xz "https://github.com/llvm/llvm-project/releases/download/llvmorg-13.0.1/${CLANG_VERSION}.tar.xz"
-  tar xf "${CLANG_VERSION}".tar.xz
-  mv "${CLANG_VERSION}" ./third_party/clang+llvm-13.0.1
+  pushd ./third_party/clang+llvm
+  curl -fsSL -o clang+llvm.zip "https://github.com/mc-imperial/build-clang/releases/download/llvmorg-${DREDD_LLVM_TAG}/build-clang-llvmorg-${DREDD_LLVM_TAG}-Linux_x64_Release.zip"
+  unzip clang+llvm.zip
+  rm clang+llvm.zip
+  popd
   ;;
 
 "Darwin")
   NINJA_OS="mac"
   # Install clang.
-  CLANG_VERSION=clang+llvm-13.0.1-x86_64-apple-darwin
-  curl -fsSL -o ${CLANG_VERSION}.tar.xz "https://github.com/llvm/llvm-project/releases/download/llvmorg-13.0.1/${CLANG_VERSION}.tar.xz"
-  tar xf "${CLANG_VERSION}".tar.xz
-  mv "${CLANG_VERSION}" ./third_party/clang+llvm-13.0.1
+  pushd ./third_party/clang+llvm
+  curl -fsSL -o clang+llvm.zip "https://github.com/mc-imperial/build-clang/releases/download/llvmorg-${DREDD_LLVM_TAG}/build-clang-llvmorg-${DREDD_LLVM_TAG}-Mac_x64_Release.zip"
+  unzip clang+llvm.zip
+  rm clang+llvm.zip
+  popd
   ;;
 
 *)

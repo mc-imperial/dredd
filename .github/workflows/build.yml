@@ -48,7 +48,7 @@ jobs:
             config: Release
             linux_cc: clang-12
             linux_cxx: clang++-12
-          # Note: Clang 13 is tested via the dev_build workflow.
+          # Note: A more recent Clang is tested via the dev_build workflow.
 
     runs-on: ${{ matrix.os }}
     env:

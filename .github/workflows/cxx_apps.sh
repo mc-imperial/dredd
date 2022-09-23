@@ -41,13 +41,11 @@ case "$(uname)" in
   ;;
 esac
 
-export PATH="${HOME}/bin:$PATH"
-mkdir -p "${HOME}/bin"
-pushd "${HOME}/bin"
-  # Install ninja.
-  curl -fsSL -o ninja-build.zip "https://github.com/ninja-build/ninja/releases/download/v1.11.0/ninja-${NINJA_OS}.zip"
-  unzip ninja-build.zip
-  ls
+# Install clang.
+pushd ./third_party/clang+llvm
+curl -fsSL -o clang+llvm.zip "https://github.com/mc-imperial/build-clang/releases/download/llvmorg-${DREDD_LLVM_TAG}/build-clang-llvmorg-${DREDD_LLVM_TAG}-Linux_x64_Release.zip"
+unzip clang+llvm.zip
+rm clang+llvm.zip
 popd
 
 DREDD_LLVM_TAG=$(./scripts/llvm_tag.sh)
