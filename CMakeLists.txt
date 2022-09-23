@@ -63,14 +63,14 @@ endif()
 
 # Third party targets.
 
-set(LLVM_DIR "${CMAKE_SOURCE_DIR}/third_party/clang+llvm-13.0.1/lib/cmake/llvm")
+set(LLVM_DIR "${CMAKE_SOURCE_DIR}/third_party/clang+llvm/cmake/llvm")
 
 # Unfortunately this disables this warning entirely. At present, cmake-lint does
 # not support disabling just for the following line.
 
 # cmake-lint: disable=C0103
 set(Clang_DIR
-    "${CMAKE_SOURCE_DIR}/third_party/clang+llvm-13.0.1/lib/cmake/clang")
+    "${CMAKE_SOURCE_DIR}/third_party/clang+llvm/lib/cmake/clang")
 
 if(NOT EXISTS "${LLVM_DIR}/LLVMConfig.cmake")
   message(FATAL_ERROR "Could not find LLVMConfig.cmake under ${LLVM_DIR}. \
