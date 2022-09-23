@@ -76,6 +76,10 @@ popd
 
 # Check that dredd works on some projects
 DREDD_ROOT=$(pwd)
+
+# TODO remove
+echo ${DREDD_ROOT}
+
 DREDD_EXECUTABLE="${DREDD_ROOT}/third_party/clang+llvm/bin/dredd"
 cp "${DREDD_ROOT}/build/src/dredd/dredd" "${DREDD_EXECUTABLE}"
 
@@ -94,6 +98,10 @@ pushd curl
   do
       FILES="${FILES} ${f}"
   done
+
+  # TODO remove
+  echo ${DREDD_ROOT}
+
   "${DREDD_EXECUTABLE}" --mutation-info-file temp.json -p "${DREDD_ROOT}/curl/build/compile_commands.json" "${FILES}"
   pushd build
     ninja

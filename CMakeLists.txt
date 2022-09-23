@@ -69,8 +69,7 @@ set(LLVM_DIR "${CMAKE_SOURCE_DIR}/third_party/clang+llvm/lib/cmake/llvm")
 # not support disabling just for the following line.
 
 # cmake-lint: disable=C0103
-set(Clang_DIR
-    "${CMAKE_SOURCE_DIR}/third_party/clang+llvm/lib/cmake/clang")
+set(Clang_DIR "${CMAKE_SOURCE_DIR}/third_party/clang+llvm/lib/cmake/clang")
 
 if(NOT EXISTS "${LLVM_DIR}/LLVMConfig.cmake")
   message(FATAL_ERROR "Could not find LLVMConfig.cmake under ${LLVM_DIR}. \
