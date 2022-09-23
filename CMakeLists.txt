@@ -63,7 +63,7 @@ endif()
 
 # Third party targets.
 
-set(LLVM_DIR "${CMAKE_SOURCE_DIR}/third_party/clang+llvm/cmake/llvm")
+set(LLVM_DIR "${CMAKE_SOURCE_DIR}/third_party/clang+llvm/lib/cmake/llvm")
 
 # Unfortunately this disables this warning entirely. At present, cmake-lint does
 # not support disabling just for the following line.
