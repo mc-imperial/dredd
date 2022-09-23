@@ -102,7 +102,7 @@ pushd curl
   # TODO remove
   echo ${DREDD_ROOT}
 
-  "${DREDD_EXECUTABLE}" --mutation-info-file temp.json -p "${DREDD_ROOT}/curl/build/compile_commands.json" "${FILES}"
+  "${DREDD_EXECUTABLE}" --mutation-info-file temp.json -p "build/compile_commands.json" "${FILES}"
   pushd build
     ninja
     # TODO: run some tests
@@ -131,7 +131,7 @@ pushd zstd
   do
     FILES="${FILES} ${f}"
   done
-  "${DREDD_EXECUTABLE}" --mutation-info-file temp.json -p "${DREDD_ROOT}/zstd/temp/compile_commands.json" "${FILES}"
+  "${DREDD_EXECUTABLE}" --mutation-info-file temp.json -p "zstd/temp/compile_commands.json" "${FILES}"
   # Build mutated zstd
   make clean
   CFLAGS=-O0 make zstd-release
