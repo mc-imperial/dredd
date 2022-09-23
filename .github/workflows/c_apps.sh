@@ -93,16 +93,16 @@ pushd curl
   pushd build
     cmake -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ..
   popd
-  FILES=""
+  FILES=()
   for f in $(find src -name "*.c")
   do
-      FILES="${FILES} ${f}"
+      FILES+=("${f}")
   done
 
   # TODO remove
   echo ${DREDD_ROOT}
 
-  "${DREDD_EXECUTABLE}" --mutation-info-file temp.json -p "build/compile_commands.json" "${FILES}"
+  "${DREDD_EXECUTABLE}" --mutation-info-file temp.json -p "build/compile_commands.json" ${FILES}
   pushd build
     ninja
     # TODO: run some tests
@@ -126,12 +126,12 @@ pushd zstd
   cp ./programs/zstd tocompress
   ./zstd tocompress -o normal
   # Mutate all the source files in the lib directory of zstd
-  FILES=""
+  FILES=()
   for f in $(find lib -name "*.c")
   do
-    FILES="${FILES} ${f}"
+    FILES+=("${f}")
   done
-  "${DREDD_EXECUTABLE}" --mutation-info-file temp.json -p "zstd/temp/compile_commands.json" "${FILES}"
+  "${DREDD_EXECUTABLE}" --mutation-info-file temp.json -p "zstd/temp/compile_commands.json" ${FILES}
   # Build mutated zstd
   make clean
   CFLAGS=-O0 make zstd-release
