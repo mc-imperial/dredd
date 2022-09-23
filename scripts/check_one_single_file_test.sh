@@ -18,7 +18,7 @@ set -e
 set -u
 set -x
 
-DREDD_INSTALLED_EXECUTABLE=${DREDD_REPO_ROOT}/third_party/clang+llvm-13.0.1/bin/dredd
+DREDD_INSTALLED_EXECUTABLE=${DREDD_REPO_ROOT}/third_party/clang+llvm-14.0.6/bin/dredd
 
 # Move to the temporary directory
 cd "${DREDD_REPO_ROOT}"
