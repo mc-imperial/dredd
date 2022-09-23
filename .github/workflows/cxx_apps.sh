@@ -53,14 +53,13 @@ popd
 DREDD_LLVM_TAG=$(./scripts/llvm_tag.sh)
 
 # Install clang.
-CLANG_VERSION=clang+llvm-${DREDD_LLVM_TAG}
-pushd ./third_party/"${CLANG_VERSION}"
-curl -fsSL -o "${CLANG_VERSION}.zip" "https://github.com/mc-imperial/build-clang/releases/download/llvmorg-${DREDD_LLVM_TAG}/build-clang-llvmorg-${DREDD_LLVM_TAG}-Linux_x64_Release.zip"
-unzip "${CLANG_VERSION}.zip"
-rm "${CLANG_VERSION}.zip"
+pushd ./third_party/clang+llvm
+curl -fsSL -o clang+llvm.zip "https://github.com/mc-imperial/build-clang/releases/download/llvmorg-${DREDD_LLVM_TAG}/build-clang-llvmorg-${DREDD_LLVM_TAG}-Linux_x64_Release.zip"
+unzip clang+llvm.zip
+rm clang+llvm.zip
 popd
 
-export PATH="./third_party/clang+llvm-${DREDD_LLVM_TAG}/bin:$PATH"
+export PATH="./third_party/clang+llvm/bin:$PATH"
 
 export CC=clang
 export CXX=clang++
@@ -77,7 +76,7 @@ popd
 
 # Check that dredd works on some projects
 DREDD_ROOT=$(pwd)
-DREDD_EXECUTABLE="${DREDD_ROOT}/third_party/clang+llvm-${DREDD_LLVM_TAG}/bin/dredd"
+DREDD_EXECUTABLE="${DREDD_ROOT}/third_party/clang+llvm/bin/dredd"
 cp "${DREDD_ROOT}/build/src/dredd/dredd" "${DREDD_EXECUTABLE}"
 
 echo "examples/simple/pi.cc: check that we can build the simple example"

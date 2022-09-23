@@ -26,11 +26,8 @@ test -f ./src/iwyu.imp
 DREDD_REPO_ROOT="$(pwd)"
 export DREDD_REPO_ROOT
 
-DREDD_LLVM_TAG=$(./scripts/llvm_tag.sh)
-export DREDD_LLVM_TAG
-
 # Check that the Clang/LLVM release has been downloaded.
-CLANG_RELEASE="${DREDD_REPO_ROOT}/third_party/clang+llvm-${DREDD_LLVM_TAG}"
+CLANG_RELEASE="${DREDD_REPO_ROOT}/third_party/clang+llvm"
 test -f ${CLANG_RELEASE}/bin/clang++
 
 # If DREDD_SKIP_COMPILER_SET is unset:

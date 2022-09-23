@@ -20,7 +20,7 @@ set -x
 
 if [ -z "${DREDD_SKIP_CHECK_COMPILE_COMMANDS+x}" ]
 then
-  DREDD_INSTALLED_EXECUTABLE="${DREDD_REPO_ROOT}/third_party/clang+llvm-${DREDD_LLVM_TAG}/bin/dredd"
+  DREDD_INSTALLED_EXECUTABLE="${DREDD_REPO_ROOT}/third_party/clang+llvm/bin/dredd"
 
   cd "${DREDD_REPO_ROOT}"
   
