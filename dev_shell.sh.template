@@ -26,8 +26,11 @@ test -f ./src/iwyu.imp
 DREDD_REPO_ROOT="$(pwd)"
 export DREDD_REPO_ROOT
 
+DREDD_LLVM_TAG=$(./scripts/llvm_tag.sh)
+export DREDD_LLVM_TAG
+
 # Check that the Clang/LLVM release has been downloaded.
-CLANG_RELEASE=${DREDD_REPO_ROOT}/third_party/clang+llvm-14.0.6
+CLANG_RELEASE="${DREDD_REPO_ROOT}/third_party/clang+llvm-${DREDD_LLVM_TAG}"
 test -f ${CLANG_RELEASE}/bin/clang++
 
 # If DREDD_SKIP_COMPILER_SET is unset:
@@ -37,7 +40,7 @@ if test -z ${DREDD_SKIP_COMPILER_SET+x}; then
 fi
 
 # Ensure that the downloaded Clang/LLVM release is on the path
-PATH="${DREDD_REPO_ROOT}/third_party/clang+llvm-14.0.6/bin:${PATH}"
+PATH="${CLANG_RELEASE}/bin:${PATH}"
 export PATH
 
 cd temp/
