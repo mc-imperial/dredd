@@ -77,6 +77,7 @@ You can also enable multiple mutants by setting the environment variable to a co
 To clean up and restore the file `pi.cc` to it's initial state, run
 ```
 rm examples/simple/pi
+rm temp.json
 git checkout HEAD examples/simple/pi.cc
 ```
 
@@ -116,6 +117,7 @@ For the example project we provide a shell script to do this, `mutate.sh`.
 To revert the changes that Dredd made to `exp.cc`, run:
 ```
 git checkout HEAD ../math/src/exp.cc
+rm temp.json
 # Confirm that git now regards the file exp.cc as having no modifications
 git status ../math/src/exp.cc
 ```
@@ -154,6 +156,7 @@ You can also enable multiple mutants by setting `DREDD_ENABLED_MUTATION` to a co
 
 To clean up the `examples/math` directory, run the following from the build directory:
 ```
+rm temp.json
 cd .. && rm -rf build
 git checkout HEAD .
 ```
