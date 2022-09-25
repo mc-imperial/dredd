@@ -47,7 +47,7 @@ without having to build it from source.
 
 We first show how to apply Dredd to a simple stand-alone program. We will then show how to apply it to a larger C++ CMake project.
 
-Before following these instructions, make sure you have built Dredd and that the `dredd` executable is located under `<repository-root>/third_party/clang+llvm-14.0.6/bin`.
+Before following these instructions, make sure you have built Dredd and that the `dredd` executable is located under `<repository-root>/third_party/clang+llvm/bin`.
 
 ### Applying Dredd to a single file example
 
@@ -58,7 +58,7 @@ Before following these instructions, make sure you have built Dredd and that the
 # which Dredd will output machine-readable information about the
 # mutations it applied. For the purposes of this example, this file
 # can be ignored.
-third_party/clang+llvm-14.0.6/bin/dredd examples/simple/pi.cc --mutation-info-file temp.json
+third_party/clang+llvm/bin/dredd examples/simple/pi.cc --mutation-info-file temp.json
 # clang++ can be replaced with your favourite C++ compiler.
 clang++ examples/simple/pi.cc -o examples/simple/pi
 ```
@@ -98,9 +98,9 @@ All tests should pass.
 
 To apply mutants to a single file in the library, run the following command:
 ```
-/path/to/dredd/repo/third_party/clang+llvm-14.0.6/bin/dredd -p compile_commands.js <path-to-file> --mutation-info-file temp.json
+/path/to/dredd/repo/third_party/clang+llvm/bin/dredd -p compile_commands.js <path-to-file> --mutation-info-file temp.json
 ``` 
-For example, running `../../../third_party/clang+llvm-14.0.6/bin/dredd ../math/src/exp.cc --mutation-info-file temp.json` from the build directory will apply
+For example, running `../../../third_party/clang+llvm/bin/dredd ../math/src/exp.cc --mutation-info-file temp.json` from the build directory will apply
 mutants to the file `exp.cc`. 
 
 To view the changes that Dredd has made you can do `git status` to see that `exp.cc` has changed, and `git diff` to see
@@ -191,12 +191,11 @@ Dredd builds against various Clang and LLVM libraries. Rather than including Cla
 From the root of the repository, execute the following commands:
 
 ```
-cd third_party/clang+llvm-14.0.6
+DREDD_LLVM_TAG=$(./scripts/llvm_tag.sh)
 # The release file is pretty large, so this download may take a while
-curl -Lo clang+llvm-14.0.6.zip https://github.com/mc-imperial/build-clang/releases/download/llvmorg-14.0.6/build-clang-llvmorg-14.0.6-Linux_x64_Release.zip
-unzip clang+llvm-14.0.6.zip
-rm clang+llvm-14.0.6.zip
-cd ../..
+curl -Lo clang+llvm.zip https://github.com/mc-imperial/build-clang/releases/download/llvmorg-${DREDD_LLVM_TAG}/build-clang-llvmorg-${DREDD_LLVM_TAG}-Linux_x64_Release.zip
+unzip clang+llvm.zip -d third_party/clang+llvm
+rm clang+llvm.zip
 ```
 
 ### Build steps
@@ -209,7 +208,7 @@ mkdir build && cd build
 cmake -G Ninja .. -DCMAKE_BUILD_TYPE=Debug
 cmake --build . --config Debug
 # TODO: the following should be handled using a proper cmake install command
-cp src/dredd/dredd ../third_party/clang+llvm-14.0.6/bin
+cp src/dredd/dredd ../third_party/clang+llvm/bin
 ```
 
 ## Guide for developers
@@ -221,7 +220,7 @@ you must first run `./dev_shell.sh.template` from the root of the Dredd repo. Th
 environment variables are set as well as building tools that are used in other check commands.
 
 The last four scripts in this section assume that a build Dredd is under `temp/build-Debug`, as they copy the Dredd
-binary to `third_party/clang+llvm-14.0.6/bin` to execute the test files. Therefore, to use these scripts, 
+binary to `third_party/clang+llvm/bin` to execute the test files. Therefore, to use these scripts, 
 one should ensure that `check_build.sh` has been executed at least up to the point where a debug build has finished.
 
 The commands that can be run in isolation in the `scripts` directory are:
