@@ -281,7 +281,7 @@ MutationIdTreeNode MutateAstConsumer::ApplyMutations(
            "Every mutation should lead to the mutation id increasing by at "
            "least 1.");
     for (int i = mutation_id_old; i < mutation_id_; i++) {
-      result.AddId(i);
+      result.AddMutationId(i);
     }
   }
   return result;

@@ -36,8 +36,10 @@ MutationReplaceUnaryOperator::MutationReplaceUnaryOperator(
     const clang::UnaryOperator& unary_operator)
     : unary_operator_(unary_operator) {}
 
-bool MutationReplaceUnaryOperator::IsPrefix(clang::UnaryOperatorKind op) {
-  return op != clang::UO_PostInc && op != clang::UO_PostDec;
+bool MutationReplaceUnaryOperator::IsPrefix(
+    clang::UnaryOperatorKind operator_kind) {
+  return operator_kind != clang::UO_PostInc &&
+         operator_kind != clang::UO_PostDec;
 }
 
 std::string MutationReplaceUnaryOperator::GetExpr(
@@ -66,17 +68,19 @@ std::string MutationReplaceUnaryOperator::GetExpr(
 }
 
 bool MutationReplaceUnaryOperator::IsValidReplacementOperator(
-    clang::UnaryOperatorKind op) const {
+    clang::UnaryOperatorKind operator_kind) const {
   if (!unary_operator_.getSubExpr()->isLValue() &&
-      (op == clang::UO_PreInc || op == clang::UO_PreDec ||
-       op == clang::UO_PostInc || op == clang::UO_PostDec)) {
+      (operator_kind == clang::UO_PreInc || operator_kind == clang::UO_PreDec ||
+       operator_kind == clang::UO_PostInc ||
+       operator_kind == clang::UO_PostDec)) {
     // The increment and decrement operators require an l-value.
     return false;
   }
 
   if ((unary_operator_.getOpcode() == clang::UO_PostDec ||
        unary_operator_.getOpcode() == clang::UO_PostInc) &&
-      (op == clang::UO_PreDec || op == clang::UO_PreInc)) {
+      (operator_kind == clang::UO_PreDec ||
+       operator_kind == clang::UO_PreInc)) {
     // Do not replace a post-increment/decrement with a pre-increment/decrement;
     // it's unlikely to be interesting.
     return false;
@@ -84,22 +88,23 @@ bool MutationReplaceUnaryOperator::IsValidReplacementOperator(
 
   if ((unary_operator_.getOpcode() == clang::UO_PreDec ||
        unary_operator_.getOpcode() == clang::UO_PreInc) &&
-      (op == clang::UO_PostDec || op == clang::UO_PostInc)) {
+      (operator_kind == clang::UO_PostDec ||
+       operator_kind == clang::UO_PostInc)) {
     // Do not replace a pre-increment/decrement with a pre-increment/decrement;
     // it's unlikely to be interesting.
     return false;
   }
 
-  if (unary_operator_.isLValue() &&
-      !(op == clang::UO_PreInc || op == clang::UO_PreDec)) {
+  if (unary_operator_.isLValue() && !(operator_kind == clang::UO_PreInc ||
+                                      operator_kind == clang::UO_PreDec)) {
     // In C++, only pre-increment/decrement operations yield an l-value.
     return false;
   }
 
-  if (op == clang::UO_Not && unary_operator_.getSubExpr()
-                                 ->getType()
-                                 ->getAs<clang::BuiltinType>()
-                                 ->isFloatingPoint()) {
+  if (operator_kind == clang::UO_Not && unary_operator_.getSubExpr()
+                                            ->getType()
+                                            ->getAs<clang::BuiltinType>()
+                                            ->isFloatingPoint()) {
     return false;
   }
 
@@ -251,7 +256,8 @@ std::string MutationReplaceUnaryOperator::GenerateMutatorFunction(
 }
 
 bool MutationReplaceUnaryOperator::IsRedundantReplacementOperator(
-    clang::UnaryOperatorKind op, clang::ASTContext& ast_context) const {
+    clang::UnaryOperatorKind operator_kind,
+    clang::ASTContext& ast_context) const {
   // When the operand is 0: - is equivalent to replacement with 0 and ! is
   // equivalent to replacement with 1. When the operand is 1: - is equivalent to
   // replacement with -1 and ! is equivalent to replacement with 0.
@@ -263,7 +269,7 @@ bool MutationReplaceUnaryOperator::IsRedundantReplacementOperator(
                                                  1, ast_context) ||
       MutationReplaceExpr::ExprIsEquivalentToFloat(
           *unary_operator_.getSubExpr(), 1, ast_context)) {
-    if (op == clang::UO_Minus || op == clang::UO_LNot) {
+    if (operator_kind == clang::UO_Minus || operator_kind == clang::UO_LNot) {
       return true;
     }
   }
@@ -273,7 +279,7 @@ bool MutationReplaceUnaryOperator::IsRedundantReplacementOperator(
                                                   -1, ast_context) ||
        MutationReplaceExpr::ExprIsEquivalentToFloat(
            *unary_operator_.getSubExpr(), -1, ast_context)) &&
-      op == clang::UO_Minus) {
+      operator_kind == clang::UO_Minus) {
     return true;
   }
 
@@ -285,20 +291,22 @@ void MutationReplaceUnaryOperator::GenerateUnaryOperatorReplacement(
     bool optimise_mutations,
     const std::vector<clang::UnaryOperatorKind>& operators,
     std::stringstream& new_function, int& mutant_offset) const {
-  for (const auto op : operators) {
-    if (op == unary_operator_.getOpcode() || !IsValidReplacementOperator(op) ||
+  for (const auto operator_kind : operators) {
+    if (operator_kind == unary_operator_.getOpcode() ||
+        !IsValidReplacementOperator(operator_kind) ||
         (optimise_mutations &&
-         IsRedundantReplacementOperator(op, ast_context))) {
+         IsRedundantReplacementOperator(operator_kind, ast_context))) {
       continue;
     }
     new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
                  << mutant_offset << ")) return ";
-    if (IsPrefix(op)) {
-      new_function << clang::UnaryOperator::getOpcodeStr(op).str()
+    if (IsPrefix(operator_kind)) {
+      new_function << clang::UnaryOperator::getOpcodeStr(operator_kind).str()
                    << arg_evaluated + ";\n";
     } else {
       new_function << arg_evaluated
-                   << clang::UnaryOperator::getOpcodeStr(op).str() << ";\n";
+                   << clang::UnaryOperator::getOpcodeStr(operator_kind).str()
+                   << ";\n";
     }
     mutant_offset++;
   }

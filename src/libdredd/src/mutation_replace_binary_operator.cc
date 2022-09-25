@@ -62,7 +62,8 @@ std::string MutationReplaceBinaryOperator::GetExpr(
 }
 
 bool MutationReplaceBinaryOperator::IsRedundantReplacementOperator(
-    clang::BinaryOperatorKind op, clang::ASTContext& ast_context) const {
+    clang::BinaryOperatorKind operator_kind,
+    clang::ASTContext& ast_context) const {
   // In the case where both operands are 0, the only case that isn't covered
   // by constant replacement is undefined behaviour, this is achieved by /.
   if ((MutationReplaceExpr::ExprIsEquivalentToInt(*binary_operator_.getRHS(), 0,
@@ -73,7 +74,7 @@ bool MutationReplaceBinaryOperator::IsRedundantReplacementOperator(
                                                   ast_context) ||
        MutationReplaceExpr::ExprIsEquivalentToFloat(*binary_operator_.getRHS(),
                                                     0, ast_context))) {
-    if (op == clang::BO_Div) {
+    if (operator_kind == clang::BO_Div) {
       return false;
     }
   }
@@ -88,8 +89,9 @@ bool MutationReplaceBinaryOperator::IsRedundantReplacementOperator(
     // replacement with the right operand; * is equivalent to replacement with
     // the constant 0 and % is equivalent to replacement with / in that both
     // cases lead to undefined behaviour.
-    if (op == clang::BO_Add || op == clang::BO_Sub || op == clang::BO_Shl ||
-        op == clang::BO_Shr || op == clang::BO_Mul || op == clang::BO_Rem) {
+    if (operator_kind == clang::BO_Add || operator_kind == clang::BO_Sub ||
+        operator_kind == clang::BO_Shl || operator_kind == clang::BO_Shr ||
+        operator_kind == clang::BO_Mul || operator_kind == clang::BO_Rem) {
       return true;
     }
   }
@@ -100,7 +102,7 @@ bool MutationReplaceBinaryOperator::IsRedundantReplacementOperator(
                                                     1, ast_context))) {
     // When the right operand is 1: * and / are equivalent to replacement by
     // the left operand.
-    if (op == clang::BO_Mul || op == clang::BO_Div) {
+    if (operator_kind == clang::BO_Mul || operator_kind == clang::BO_Div) {
       return true;
     }
   }
@@ -112,8 +114,9 @@ bool MutationReplaceBinaryOperator::IsRedundantReplacementOperator(
     // When the left operand is 0: *, /, %, << and >> are equivalent to
     // replacement by the constant 0 and + is equivalent to replacement by the
     // right operand.
-    if (op == clang::BO_Add || op == clang::BO_Shl || op == clang::BO_Shr ||
-        op == clang::BO_Mul || op == clang::BO_Rem || op == clang::BO_Div) {
+    if (operator_kind == clang::BO_Add || operator_kind == clang::BO_Shl ||
+        operator_kind == clang::BO_Shr || operator_kind == clang::BO_Mul ||
+        operator_kind == clang::BO_Rem || operator_kind == clang::BO_Div) {
       return true;
     }
   }
@@ -122,7 +125,7 @@ bool MutationReplaceBinaryOperator::IsRedundantReplacementOperator(
                                                   ast_context) ||
        MutationReplaceExpr::ExprIsEquivalentToFloat(*binary_operator_.getLHS(),
                                                     1, ast_context)) &&
-      op == clang::BO_Mul) {
+      operator_kind == clang::BO_Mul) {
     // When the left operand is 1: * is equivalent to replacement by the right
     // operand.
     return true;
@@ -134,7 +137,7 @@ bool MutationReplaceBinaryOperator::IsRedundantReplacementOperator(
 // Certain operators such as % are not compatible with floating point numbers,
 // this function checks which operators can be applied for each type.
 bool MutationReplaceBinaryOperator::IsValidReplacementOperator(
-    clang::BinaryOperatorKind op) const {
+    clang::BinaryOperatorKind operator_kind) const {
   const auto* lhs_type =
       binary_operator_.getLHS()->getType()->getAs<clang::BuiltinType>();
   assert((lhs_type->isFloatingPoint() || lhs_type->isInteger()) &&
@@ -144,10 +147,13 @@ bool MutationReplaceBinaryOperator::IsValidReplacementOperator(
   assert((rhs_type->isFloatingPoint() || rhs_type->isInteger()) &&
          "Expected rhs to be either integer or floating-point.");
   return !((lhs_type->isFloatingPoint() || rhs_type->isFloatingPoint()) &&
-           (op == clang::BO_Rem || op == clang::BO_AndAssign ||
-            op == clang::BO_OrAssign || op == clang::BO_RemAssign ||
-            op == clang::BO_ShlAssign || op == clang::BO_ShrAssign ||
-            op == clang::BO_XorAssign));
+           (operator_kind == clang::BO_Rem ||
+            operator_kind == clang::BO_AndAssign ||
+            operator_kind == clang::BO_OrAssign ||
+            operator_kind == clang::BO_RemAssign ||
+            operator_kind == clang::BO_ShlAssign ||
+            operator_kind == clang::BO_ShrAssign ||
+            operator_kind == clang::BO_XorAssign));
 }
 
 std::string MutationReplaceBinaryOperator::GetFunctionName(
@@ -372,16 +378,17 @@ void MutationReplaceBinaryOperator::GenerateBinaryOperatorReplacement(
     const std::string& arg1_evaluated, const std::string& arg2_evaluated,
     clang::ASTContext& ast_context, bool optimise_mutations,
     std::stringstream& new_function, int& mutant_offset) const {
-  for (auto op : operators) {
-    if (op == binary_operator_.getOpcode() || !IsValidReplacementOperator(op) ||
+  for (auto operator_kind : operators) {
+    if (operator_kind == binary_operator_.getOpcode() ||
+        !IsValidReplacementOperator(operator_kind) ||
         (optimise_mutations &&
-         IsRedundantReplacementOperator(op, ast_context))) {
+         IsRedundantReplacementOperator(operator_kind, ast_context))) {
       continue;
     }
     new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
                  << mutant_offset << ")) return " << arg1_evaluated << " "
-                 << clang::BinaryOperator::getOpcodeStr(op).str() << " "
-                 << arg2_evaluated << ";\n";
+                 << clang::BinaryOperator::getOpcodeStr(operator_kind).str()
+                 << " " << arg2_evaluated << ";\n";
     mutant_offset++;
   }
 }

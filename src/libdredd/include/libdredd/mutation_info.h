@@ -52,7 +52,7 @@ class MutationIdTreeNode {
   void ToJson(int indent, std::ostream& json_out) const;
 
   // Adds the given mutation id to the set of ids captured by the tree node.
-  void AddId(int id);
+  void AddMutationId(int mutation_id);
 
   // Adds the given subtree to this node as a child. An r-value reference is
   // used to ensure that the subtree is moved into this tree.

@@ -55,13 +55,13 @@ void MutationTreeNode::Compress() {
 }
 
 void MutationTreeNode::PruneEmptySubtrees() {
-  auto it = children_.begin();
-  while (it != children_.end()) {
-    if (it->IsEmpty()) {
-      it = children_.erase(it);
+  auto child_iterator = children_.begin();
+  while (child_iterator != children_.end()) {
+    if (child_iterator->IsEmpty()) {
+      child_iterator = children_.erase(child_iterator);
     } else {
-      it->PruneEmptySubtrees();
-      ++it;
+      child_iterator->PruneEmptySubtrees();
+      ++child_iterator;
     }
   }
 }
