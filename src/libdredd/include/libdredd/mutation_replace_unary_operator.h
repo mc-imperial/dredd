@@ -48,13 +48,14 @@ class MutationReplaceUnaryOperator : public Mutation {
                                       bool optimise_mutations,
                                       int& mutation_id) const;
 
-  [[nodiscard]] static bool IsPrefix(clang::UnaryOperatorKind op);
+  [[nodiscard]] static bool IsPrefix(clang::UnaryOperatorKind operator_kind);
 
   [[nodiscard]] bool IsValidReplacementOperator(
-      clang::UnaryOperatorKind op) const;
+      clang::UnaryOperatorKind operator_kind) const;
 
   [[nodiscard]] bool IsRedundantReplacementOperator(
-      clang::UnaryOperatorKind op, clang::ASTContext& ast_context) const;
+      clang::UnaryOperatorKind operator_kind,
+      clang::ASTContext& ast_context) const;
 
   // This returns a string corresponding to the non-mutated expression.
   std::string GetExpr(clang::ASTContext& ast_context) const;
