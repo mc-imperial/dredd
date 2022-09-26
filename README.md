@@ -40,14 +40,15 @@ program.
 
 ## Using Dredd
 
-TODO(https://github.com/mc-imperial/dredd/issues/29): provide support
-for Dredd releases (on Linux at least), so that folks can use Dredd
-without having to build it from source.
+To get started, either
 
+* [download the latest Dredd release](https://github.com/mc-imperial/dredd/releases/latest) and unzip at a location of your choice, or
+
+* [build Dredd from source](#building-dredd-from-source) and copy the `dredd` executable from `build/src/dredd/` into `third_party/clang+llvm/bin`.
+
+In the following instructions, `/path/to/dredd` denotes the path of the `dredd` executable.
 
 We first show how to apply Dredd to a simple stand-alone program. We will then show how to apply it to a larger C++ CMake project.
-
-Before following these instructions, make sure you have built Dredd and that the `dredd` executable is located under `<repository-root>/third_party/clang+llvm/bin`.
 
 ### Applying Dredd to a single file example
 
@@ -58,7 +59,7 @@ Before following these instructions, make sure you have built Dredd and that the
 # which Dredd will output machine-readable information about the
 # mutations it applied. For the purposes of this example, this file
 # can be ignored.
-third_party/clang+llvm/bin/dredd examples/simple/pi.cc --mutation-info-file temp.json
+/path/to/dredd examples/simple/pi.cc --mutation-info-file temp.json
 # clang++ can be replaced with your favourite C++ compiler.
 clang++ examples/simple/pi.cc -o examples/simple/pi
 ```
@@ -99,9 +100,9 @@ All tests should pass.
 
 To apply mutants to a single file in the library, run the following command:
 ```
-/path/to/dredd/repo/third_party/clang+llvm/bin/dredd -p compile_commands.js <path-to-file> --mutation-info-file temp.json
+/path/to/dredd -p compile_commands.js <path-to-file> --mutation-info-file temp.json
 ``` 
-For example, running `../../../third_party/clang+llvm/bin/dredd ../math/src/exp.cc --mutation-info-file temp.json` from the build directory will apply
+For example, running `/path/to/dredd ../math/src/exp.cc --mutation-info-file temp.json` from the `build` directory will apply
 mutants to the file `exp.cc`. 
 
 To view the changes that Dredd has made you can do `git status` to see that `exp.cc` has changed, and `git diff` to see
@@ -195,6 +196,7 @@ From the root of the repository, execute the following commands:
 
 ```
 DREDD_LLVM_TAG=$(./scripts/llvm_tag.sh)
+# Change Release to Debug if you plan to subsequently perform a debug build of Dredd
 # The release file is pretty large, so this download may take a while
 curl -Lo clang+llvm.zip https://github.com/mc-imperial/build-clang/releases/download/llvmorg-${DREDD_LLVM_TAG}/build-clang-llvmorg-${DREDD_LLVM_TAG}-Linux_x64_Release.zip
 unzip clang+llvm.zip -d third_party/clang+llvm
@@ -204,19 +206,20 @@ rm clang+llvm.zip
 ### Build steps
 
 From the root of the repository, execute the following commands.
-Change `Debug` to `Release` for a release build.
+Change `Release` to `Debug` for a debug build.
 
 ```
 mkdir build && cd build
-cmake -G Ninja .. -DCMAKE_BUILD_TYPE=Debug
-cmake --build . --config Debug
-# TODO: the following should be handled using a proper cmake install command
+cmake -G Ninja .. -DCMAKE_BUILD_TYPE=Release
+cmake --build . --config Release
 cp src/dredd/dredd ../third_party/clang+llvm/bin
 ```
 
 ## Guide for developers
 
-This project uses the [Google C++ style guide](https://google.github.io/styleguide/cppguide.html). 
+This project uses the [Google C++ style guide](https://google.github.io/styleguide/cppguide.html).
+
+The following guide assumes that you are using Linux for development.
 
 The `scripts` directory contains a number of commands that are useful for developers. To make use of these commands,
 you must first run `./dev_shell.sh.template` from the root of the Dredd repo. This will ensure that the necessary
