@@ -24,7 +24,6 @@ jobs:
       fail-fast: false
       matrix:
         os:
-          - windows-latest
           - macOS-latest
         config:
           - Debug
@@ -95,10 +94,3 @@ jobs:
         shell: bash
         if: |
           !startsWith(matrix.os, 'windows')
-      - name: build_step_windows
-        run: |
-          call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" x64
-          "C:\Program Files\Git\bin\bash.EXE" --noprofile --norc -e -o pipefail .github/workflows/build.sh
-        shell: cmd
-        if: |
-          startsWith(matrix.os, 'windows')

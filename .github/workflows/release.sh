@@ -30,7 +30,6 @@ DREDD_LLVM_TAG=$(./scripts/llvm_tag.sh)
 case "$(uname)" in
 "Linux")
   NINJA_OS="linux"
-  BUILD_PLATFORM="Linux_x64"
   PYTHON="python3"
   LLVM_RELEASE_OS="Linux"
   # Provided by build.yml.
@@ -47,14 +46,12 @@ case "$(uname)" in
 
 "Darwin")
   NINJA_OS="mac"
-  BUILD_PLATFORM="Mac_x64"
   PYTHON="python3"
   LLVM_RELEASE_OS="Mac"
   ;;
 
 "MINGW"*|"MSYS_NT"*)
   NINJA_OS="win"
-  BUILD_PLATFORM="Windows_x64"
   PYTHON="python"
   LLVM_RELEASE_OS="Windows"
   CMAKE_OPTIONS+=("-DCMAKE_C_COMPILER=cl.exe" "-DCMAKE_CXX_COMPILER=cl.exe")
@@ -107,7 +104,8 @@ mkdir -p dredd/bin
 cp "${BUILD_DIR}/src/dredd/dredd" dredd/bin/dredd
 mkdir -p "dredd/lib/clang/${DREDD_LLVM_TAG}"
 cp -r "third_party/clang+llvm/lib/clang/${DREDD_LLVM_TAG}/include" "dredd/lib/clang/${DREDD_LLVM_TAG}"
-zip -r dredd.zip dredd
+DREDD_ZIP_NAME="dredd-${LLVM_RELEASE_OS}-${CONFIG}.zip"
+zip -r "${DREDD_ZIP_NAME}" dredd
 
 # We do not use the GITHUB_TOKEN provided by GitHub Actions.
 # We cannot set enviroment variables or secrets that start with GITHUB_ in .yml files,
@@ -122,4 +120,4 @@ DESCRIPTION="$(echo -e "Automated build for dredd revision ${GITHUB_SHA}.")"
   --tag_name "0.1" \
   --target_commitish "${GITHUB_SHA}" \
   --body_string "${DESCRIPTION}" \
-  "dredd.zip"
+  "${DREDD_ZIP_NAME}"
