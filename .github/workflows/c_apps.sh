@@ -50,14 +50,16 @@ pushd "${HOME}/bin"
   ls
 popd
 
-# Install clang.
-CLANG_VERSION=clang+llvm-13.0.1-x86_64-linux-gnu-ubuntu-18.04
-curl -fsSL -o ${CLANG_VERSION}.tar.xz "https://github.com/llvm/llvm-project/releases/download/llvmorg-13.0.1/${CLANG_VERSION}.tar.xz"
-tar xf "${CLANG_VERSION}".tar.xz
-mv "${CLANG_VERSION}" ./third_party/clang+llvm-13.0.1
-rm ${CLANG_VERSION}.tar.xz
+DREDD_LLVM_TAG=$(./scripts/llvm_tag.sh)
 
-export PATH="./third_party/clang+llvm-13.0.1/bin:$PATH"
+# Install clang.
+pushd ./third_party/clang+llvm
+curl -fsSL -o clang+llvm.zip "https://github.com/mc-imperial/build-clang/releases/download/llvmorg-${DREDD_LLVM_TAG}/build-clang-llvmorg-${DREDD_LLVM_TAG}-Linux_x64_Release.zip"
+unzip clang+llvm.zip
+rm clang+llvm.zip
+popd
+
+export PATH="./third_party/clang+llvm/bin:$PATH"
 
 export CC=clang
 export CXX=clang++
@@ -73,8 +75,13 @@ pushd build
 popd
 
 # Check that dredd works on some projects
-DREDD_ROOT=`pwd`
-cp ${DREDD_ROOT}/build/src/dredd/dredd ${DREDD_ROOT}/third_party/clang+llvm-13.0.1/bin/dredd
+DREDD_ROOT=$(pwd)
+
+# TODO remove
+echo ${DREDD_ROOT}
+
+DREDD_EXECUTABLE="${DREDD_ROOT}/third_party/clang+llvm/bin/dredd"
+cp "${DREDD_ROOT}/build/src/dredd/dredd" "${DREDD_EXECUTABLE}"
 
 echo "Curl"
 date
@@ -86,12 +93,16 @@ pushd curl
   pushd build
     cmake -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ..
   popd
-  FILES=""
-  for f in `find src -name "*.c"`
+  FILES=()
+  for f in $(find src -name "*.c")
   do
-      FILES="${FILES} ${f}"
+      FILES+=("${f}")
   done
-  ${DREDD_ROOT}/third_party/clang+llvm-13.0.1/bin/dredd --mutation-info-file temp.json -p ${DREDD_ROOT}/curl/build/compile_commands.json ${FILES}
+
+  # TODO remove
+  echo ${DREDD_ROOT}
+
+  "${DREDD_EXECUTABLE}" --mutation-info-file temp.json -p "build/compile_commands.json" ${FILES}
   pushd build
     ninja
     # TODO: run some tests
@@ -115,12 +126,12 @@ pushd zstd
   cp ./programs/zstd tocompress
   ./zstd tocompress -o normal
   # Mutate all the source files in the lib directory of zstd
-  FILES=""
-  for f in `find lib -name "*.c"`
+  FILES=()
+  for f in $(find lib -name "*.c")
   do
-    FILES="${FILES} ${f}"
+    FILES+=("${f}")
   done
-  ${DREDD_ROOT}/third_party/clang+llvm-13.0.1/bin/dredd --mutation-info-file temp.json -p ${DREDD_ROOT}/zstd/temp/compile_commands.json ${FILES}
+  "${DREDD_EXECUTABLE}" --mutation-info-file temp.json -p "zstd/temp/compile_commands.json" ${FILES}
   # Build mutated zstd
   make clean
   CFLAGS=-O0 make zstd-release

@@ -14,9 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+set -e
+set -u
+set -x
 
-for f in `ls ../math/src/*.cc`
-do
-    FILES="${FILES} ${f}"
-done
-../../../third_party/clang+llvm/bin/dredd --mutation-info-file mutation_info.json -p ./build/compile_commands.json ${FILES}
+echo "14.0.6"

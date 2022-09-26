@@ -42,12 +42,12 @@ void MutationIdTreeNode::ToJson(int indent, std::ostream& json_out) const {
   Indent(indent + kIndentationStep, json_out);
   json_out << "\"ids\": [ ";
   bool first = true;
-  for (int id : mutation_ids_) {
+  for (int mutation_id : mutation_ids_) {
     if (!first) {
       json_out << ", ";
     }
     first = false;
-    json_out << id;
+    json_out << mutation_id;
   }
   json_out << " ],\n";
   Indent(indent + kIndentationStep, json_out);
@@ -70,7 +70,9 @@ void MutationIdTreeNode::ToJson(int indent, std::ostream& json_out) const {
   json_out << "}";
 }
 
-void MutationIdTreeNode::AddId(int id) { mutation_ids_.insert(id); }
+void MutationIdTreeNode::AddMutationId(int mutation_id) {
+  mutation_ids_.insert(mutation_id);
+}
 
 void MutationIdTreeNode::AddChild(MutationIdTreeNode&& child) {
   children_.push_back(std::move(child));

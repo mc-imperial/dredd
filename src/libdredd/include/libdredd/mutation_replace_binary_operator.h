@@ -59,10 +59,11 @@ class MutationReplaceBinaryOperator : public Mutation {
                               clang::ASTContext& ast_context) const;
 
   [[nodiscard]] bool IsRedundantReplacementOperator(
-      clang::BinaryOperatorKind op, clang::ASTContext& ast_context) const;
+      clang::BinaryOperatorKind operator_kind,
+      clang::ASTContext& ast_context) const;
 
   [[nodiscard]] bool IsValidReplacementOperator(
-      clang::BinaryOperatorKind op) const;
+      clang::BinaryOperatorKind operator_kind) const;
 
   // This returns a string corresponding to the non-mutated expression.
   std::string GetExpr(clang::ASTContext& ast_context) const;

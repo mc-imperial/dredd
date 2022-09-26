@@ -41,7 +41,8 @@ class MutateFrontendAction : public clang::ASTFrontendAction {
         processed_files_(processed_files) {}
 
   std::unique_ptr<clang::ASTConsumer> CreateASTConsumer(
-      clang::CompilerInstance& ci, llvm::StringRef file) override;
+      clang::CompilerInstance& compiler_instance,
+      llvm::StringRef file) override;
 
   bool BeginInvocation(clang::CompilerInstance& compiler_instance) override {
     (void)compiler_instance;  // Not used.
@@ -100,10 +101,11 @@ NewMutateFrontendActionFactory(bool optimise_mutations, bool dump_asts,
 }
 
 std::unique_ptr<clang::ASTConsumer> MutateFrontendAction::CreateASTConsumer(
-    clang::CompilerInstance& ci, llvm::StringRef file) {
+    clang::CompilerInstance& compiler_instance, llvm::StringRef file) {
   (void)file;  // Unused
-  return std::make_unique<MutateAstConsumer>(
-      ci, optimise_mutations_, dump_asts_, mutation_id_, mutation_info_);
+  return std::make_unique<MutateAstConsumer>(compiler_instance,
+                                             optimise_mutations_, dump_asts_,
+                                             mutation_id_, mutation_info_);
 }
 
 }  // namespace dredd

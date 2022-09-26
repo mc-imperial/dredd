@@ -18,7 +18,7 @@ project(
   dredd
   VERSION 1.0
   DESCRIPTION "Dredd"
-  LANGUAGES CXX)
+  LANGUAGES C CXX)
 
 # Note: this is not an option; it is used to set the default value for some
 # options below. It is set to ON if Dredd is the root project being built, and
@@ -63,14 +63,13 @@ endif()
 
 # Third party targets.
 
-set(LLVM_DIR "${CMAKE_SOURCE_DIR}/third_party/clang+llvm-13.0.1/lib/cmake/llvm")
+set(LLVM_DIR "${CMAKE_SOURCE_DIR}/third_party/clang+llvm/lib/cmake/llvm")
 
 # Unfortunately this disables this warning entirely. At present, cmake-lint does
 # not support disabling just for the following line.
 
 # cmake-lint: disable=C0103
-set(Clang_DIR
-    "${CMAKE_SOURCE_DIR}/third_party/clang+llvm-13.0.1/lib/cmake/clang")
+set(Clang_DIR "${CMAKE_SOURCE_DIR}/third_party/clang+llvm/lib/cmake/clang")
 
 if(NOT EXISTS "${LLVM_DIR}/LLVMConfig.cmake")
   message(FATAL_ERROR "Could not find LLVMConfig.cmake under ${LLVM_DIR}. \

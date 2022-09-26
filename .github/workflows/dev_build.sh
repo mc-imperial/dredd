@@ -53,12 +53,14 @@ pushd "${HOME}/bin"
   ls
 popd
 
+DREDD_LLVM_TAG=$(./scripts/llvm_tag.sh)
+
 # Install clang.
-CLANG_VERSION=clang+llvm-13.0.1-x86_64-linux-gnu-ubuntu-18.04
-curl -fsSL -o ${CLANG_VERSION}.tar.xz "https://github.com/llvm/llvm-project/releases/download/llvmorg-13.0.1/${CLANG_VERSION}.tar.xz"
-tar xf "${CLANG_VERSION}".tar.xz
-mv "${CLANG_VERSION}" ./third_party/clang+llvm-13.0.1
-rm ${CLANG_VERSION}.tar.xz
+pushd ./third_party/clang+llvm
+curl -fsSL -o clang+llvm.zip "https://github.com/mc-imperial/build-clang/releases/download/llvmorg-${DREDD_LLVM_TAG}/build-clang-llvmorg-${DREDD_LLVM_TAG}-Linux_x64_Release.zip"
+unzip clang+llvm.zip
+rm clang+llvm.zip
+popd
 
 # Source the dev shell to download clang-tidy and other tools.
 # Developers should *run* the dev shell, but we want to continue executing this script.

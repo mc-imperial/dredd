@@ -1,5 +1,5 @@
 # The Clang/LLVM distribution one needs to download to use Dredd
-clang+llvm-13.0.1
+clang+llvm
 
 # Projects built by Dredd's CI, which it can be convenient to
 # check out locally.

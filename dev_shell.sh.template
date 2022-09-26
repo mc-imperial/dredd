@@ -27,7 +27,7 @@ DREDD_REPO_ROOT="$(pwd)"
 export DREDD_REPO_ROOT
 
 # Check that the Clang/LLVM release has been downloaded.
-CLANG_RELEASE=${DREDD_REPO_ROOT}/third_party/clang+llvm-13.0.1
+CLANG_RELEASE="${DREDD_REPO_ROOT}/third_party/clang+llvm"
 test -f ${CLANG_RELEASE}/bin/clang++
 
 # If DREDD_SKIP_COMPILER_SET is unset:
@@ -37,7 +37,7 @@ if test -z ${DREDD_SKIP_COMPILER_SET+x}; then
 fi
 
 # Ensure that the downloaded Clang/LLVM release is on the path
-PATH="${DREDD_REPO_ROOT}/third_party/clang+llvm-13.0.1/bin:${PATH}"
+PATH="${CLANG_RELEASE}/bin:${PATH}"
 export PATH
 
 cd temp/
@@ -83,7 +83,7 @@ export CPPLINT_PY
 
 # Get include what you use.
 
-IWYU_VERSION="0.17"
+IWYU_VERSION="0.18"
 IWYU_OUT="iwyu-${IWYU_VERSION}"
 
 if test ! -f "${IWYU_OUT}.touch"; then

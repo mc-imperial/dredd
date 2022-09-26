@@ -50,14 +50,16 @@ pushd "${HOME}/bin"
   ls
 popd
 
-# Install clang.
-CLANG_VERSION=clang+llvm-13.0.1-x86_64-linux-gnu-ubuntu-18.04
-curl -fsSL -o ${CLANG_VERSION}.tar.xz "https://github.com/llvm/llvm-project/releases/download/llvmorg-13.0.1/${CLANG_VERSION}.tar.xz"
-tar xf "${CLANG_VERSION}".tar.xz
-mv "${CLANG_VERSION}" ./third_party/clang+llvm-13.0.1
-rm ${CLANG_VERSION}.tar.xz
+DREDD_LLVM_TAG=$(./scripts/llvm_tag.sh)
 
-export PATH="./third_party/clang+llvm-13.0.1/bin:$PATH"
+# Install clang.
+pushd ./third_party/clang+llvm
+curl -fsSL -o clang+llvm.zip "https://github.com/mc-imperial/build-clang/releases/download/llvmorg-${DREDD_LLVM_TAG}/build-clang-llvmorg-${DREDD_LLVM_TAG}-Linux_x64_Release.zip"
+unzip clang+llvm.zip
+rm clang+llvm.zip
+popd
+
+export PATH="./third_party/clang+llvm/bin:$PATH"
 
 export CC=clang
 export CXX=clang++
@@ -73,13 +75,14 @@ pushd build
 popd
 
 # Check that dredd works on some projects
-DREDD_ROOT=`pwd`
-cp ${DREDD_ROOT}/build/src/dredd/dredd ${DREDD_ROOT}/third_party/clang+llvm-13.0.1/bin/dredd
+DREDD_ROOT=$(pwd)
+DREDD_EXECUTABLE="${DREDD_ROOT}/third_party/clang+llvm/bin/dredd"
+cp "${DREDD_ROOT}/build/src/dredd/dredd" "${DREDD_EXECUTABLE}"
 
 echo "examples/simple/pi.cc: check that we can build the simple example"
 date
 
-${DREDD_ROOT}/third_party/clang+llvm-13.0.1/bin/dredd --mutation-info-file temp.json examples/simple/pi.cc
+${DREDD_EXECUTABLE} --mutation-info-file temp.json examples/simple/pi.cc
 clang++ examples/simple/pi.cc -o examples/simple/pi
 diff <(./examples/simple/pi) <(echo "3.14159")
 
@@ -110,12 +113,13 @@ pushd SPIRV-Tools
     ninja SPIRV-Tools-static
   popd
 popd
-FILES=""
-for f in `ls SPIRV-Tools/source/val/*.cpp`
+FILES=()
+for f in SPIRV-Tools/source/val/*.cpp
 do
-    FILES="${FILES} ${DREDD_ROOT}/${f}"
+  [[ -e "$f" ]] || break
+  FILES+=("${DREDD_ROOT}/${f}")
 done
-${DREDD_ROOT}/third_party/clang+llvm-13.0.1/bin/dredd --mutation-info-file temp.json -p ${DREDD_ROOT}/SPIRV-Tools/build/compile_commands.json ${FILES}
+${DREDD_EXECUTABLE} --mutation-info-file temp.json -p "${DREDD_ROOT}/SPIRV-Tools/build/compile_commands.json" ${FILES}
 pushd SPIRV-Tools/build
   ninja test_val_abcde test_val_capability test_val_fghijklmnop test_val_limits test_val_stuvw
   ./test/val/test_val_abcde
@@ -136,12 +140,14 @@ pushd llvm-project
     ninja LLVMCore
   popd
 popd
-FILES=""
-for f in `ls llvm-project/llvm/lib/Transforms/InstCombine/*.cpp`
+
+FILES=()
+for f in llvm-project/llvm/lib/Transforms/InstCombine/*.cpp
 do
-    FILES="${FILES} ${DREDD_ROOT}/${f}"
+  [[ -e "$f" ]] || break
+  FILES+=("${DREDD_ROOT}/${f}")
 done
-${DREDD_ROOT}/third_party/clang+llvm-13.0.1/bin/dredd --mutation-info-file temp.json -p ${DREDD_ROOT}/llvm-project/build/compile_commands.json ${FILES}
+${DREDD_EXECUTABLE} --mutation-info-file temp.json -p "${DREDD_ROOT}/llvm-project/build/compile_commands.json" ${FILES}
 pushd llvm-project/build
   ninja LLVMInstCombine
 popd
