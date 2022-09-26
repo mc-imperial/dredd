@@ -145,6 +145,7 @@ if(DREDD_WARNING_SUPPRESSIONS)
               # 'enumeration' is not explicitly handled by a case label
       /wd4868 # warning C4868: compiler may not enforce left-to-right evaluation
               # order in braced initializer list
+      /wd4702 # warning C4702: unrachable code.
     )
   else()
     add_compile_options(
