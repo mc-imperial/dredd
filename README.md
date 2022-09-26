@@ -196,7 +196,6 @@ From the root of the repository, execute the following commands:
 
 ```
 DREDD_LLVM_TAG=$(./scripts/llvm_tag.sh)
-# Change Release to Debug if you plan to subsequently perform a debug build of Dredd
 # The release file is pretty large, so this download may take a while
 curl -Lo clang+llvm.zip https://github.com/mc-imperial/build-clang/releases/download/llvmorg-${DREDD_LLVM_TAG}/build-clang-llvmorg-${DREDD_LLVM_TAG}-Linux_x64_Release.zip
 unzip clang+llvm.zip -d third_party/clang+llvm
@@ -206,7 +205,7 @@ rm clang+llvm.zip
 ### Build steps
 
 From the root of the repository, execute the following commands.
-Change `Release` to `Debug` for a debug build.
+On Linux, you may change `Release` to `Debug` for a debug build; only a release build of Clang/LLVM is available, but linking against this with a Debug build of Dredd still works.
 
 ```
 mkdir build && cd build
