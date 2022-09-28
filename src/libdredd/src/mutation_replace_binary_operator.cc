@@ -22,7 +22,6 @@
 #include <unordered_set>
 #include <vector>
 
-#include "clang/AST/APValue.h"
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/Expr.h"
 #include "clang/AST/OperationKinds.h"
@@ -33,7 +32,6 @@
 #include "clang/Rewrite/Core/Rewriter.h"
 #include "libdredd/mutation_replace_expr.h"
 #include "libdredd/util.h"
-#include "llvm/ADT/APSInt.h"
 #include "llvm/ADT/StringRef.h"
 
 namespace dredd {
@@ -69,11 +67,11 @@ bool MutationReplaceBinaryOperator::IsRedundantReplacementOperator(
   if ((MutationReplaceExpr::ExprIsEquivalentToInt(*binary_operator_.getRHS(), 0,
                                                   ast_context) ||
        MutationReplaceExpr::ExprIsEquivalentToFloat(*binary_operator_.getRHS(),
-                                                    0, ast_context)) &&
+                                                    0.0, ast_context)) &&
       (MutationReplaceExpr::ExprIsEquivalentToInt(*binary_operator_.getRHS(), 0,
                                                   ast_context) ||
        MutationReplaceExpr::ExprIsEquivalentToFloat(*binary_operator_.getRHS(),
-                                                    0, ast_context))) {
+                                                    0.0, ast_context))) {
     if (operator_kind == clang::BO_Div) {
       return false;
     }
@@ -84,7 +82,7 @@ bool MutationReplaceBinaryOperator::IsRedundantReplacementOperator(
   if ((MutationReplaceExpr::ExprIsEquivalentToInt(*binary_operator_.getRHS(), 0,
                                                   ast_context) ||
        MutationReplaceExpr::ExprIsEquivalentToFloat(*binary_operator_.getRHS(),
-                                                    0, ast_context))) {
+                                                    0.0, ast_context))) {
     // When the right operand is 0: +, -, << and >> are all equivalent to
     // replacement with the right operand; * is equivalent to replacement with
     // the constant 0 and % is equivalent to replacement with / in that both
@@ -99,7 +97,7 @@ bool MutationReplaceBinaryOperator::IsRedundantReplacementOperator(
   if ((MutationReplaceExpr::ExprIsEquivalentToInt(*binary_operator_.getRHS(), 1,
                                                   ast_context) ||
        MutationReplaceExpr::ExprIsEquivalentToFloat(*binary_operator_.getRHS(),
-                                                    1, ast_context))) {
+                                                    1.0, ast_context))) {
     // When the right operand is 1: * and / are equivalent to replacement by
     // the left operand.
     if (operator_kind == clang::BO_Mul || operator_kind == clang::BO_Div) {
@@ -110,7 +108,7 @@ bool MutationReplaceBinaryOperator::IsRedundantReplacementOperator(
   if ((MutationReplaceExpr::ExprIsEquivalentToInt(*binary_operator_.getLHS(), 0,
                                                   ast_context) ||
        MutationReplaceExpr::ExprIsEquivalentToFloat(*binary_operator_.getLHS(),
-                                                    0, ast_context))) {
+                                                    0.0, ast_context))) {
     // When the left operand is 0: *, /, %, << and >> are equivalent to
     // replacement by the constant 0 and + is equivalent to replacement by the
     // right operand.
@@ -124,7 +122,7 @@ bool MutationReplaceBinaryOperator::IsRedundantReplacementOperator(
   if ((MutationReplaceExpr::ExprIsEquivalentToInt(*binary_operator_.getLHS(), 1,
                                                   ast_context) ||
        MutationReplaceExpr::ExprIsEquivalentToFloat(*binary_operator_.getLHS(),
-                                                    1, ast_context)) &&
+                                                    1.0, ast_context)) &&
       operator_kind == clang::BO_Mul) {
     // When the left operand is 1: * is equivalent to replacement by the right
     // operand.
@@ -289,34 +287,34 @@ std::string MutationReplaceBinaryOperator::GetFunctionName(
     if (MutationReplaceExpr::ExprIsEquivalentToInt(*binary_operator_.getRHS(),
                                                    0, ast_context) ||
         MutationReplaceExpr::ExprIsEquivalentToFloat(*binary_operator_.getRHS(),
-                                                     0, ast_context)) {
+                                                     0.0, ast_context)) {
       result += "_rhs_zero";
     } else if (MutationReplaceExpr::ExprIsEquivalentToInt(
                    *binary_operator_.getRHS(), 1, ast_context) ||
                MutationReplaceExpr::ExprIsEquivalentToFloat(
-                   *binary_operator_.getRHS(), 1, ast_context)) {
+                   *binary_operator_.getRHS(), 1.0, ast_context)) {
       result += "_rhs_one";
     } else if (MutationReplaceExpr::ExprIsEquivalentToInt(
                    *binary_operator_.getRHS(), -1, ast_context) ||
                MutationReplaceExpr::ExprIsEquivalentToFloat(
-                   *binary_operator_.getRHS(), -1, ast_context)) {
+                   *binary_operator_.getRHS(), -1.0, ast_context)) {
       result += "_rhs_minus_one";
     }
 
     if (MutationReplaceExpr::ExprIsEquivalentToInt(*binary_operator_.getLHS(),
                                                    0, ast_context) ||
         MutationReplaceExpr::ExprIsEquivalentToFloat(*binary_operator_.getLHS(),
-                                                     0, ast_context)) {
+                                                     0.0, ast_context)) {
       result += "_lhs_zero";
     } else if (MutationReplaceExpr::ExprIsEquivalentToInt(
                    *binary_operator_.getLHS(), 1, ast_context) ||
                MutationReplaceExpr::ExprIsEquivalentToFloat(
-                   *binary_operator_.getLHS(), 1, ast_context)) {
+                   *binary_operator_.getLHS(), 1.0, ast_context)) {
       result += "_lhs_one";
     } else if (MutationReplaceExpr::ExprIsEquivalentToInt(
                    *binary_operator_.getLHS(), -1, ast_context) ||
                MutationReplaceExpr::ExprIsEquivalentToFloat(
-                   *binary_operator_.getLHS(), -1, ast_context)) {
+                   *binary_operator_.getLHS(), -1.0, ast_context)) {
       result += "_lhs_minus_one";
     }
   }
@@ -339,16 +337,19 @@ void MutationReplaceBinaryOperator::GenerateArgumentReplacement(
   // LHS
   // These cases are equivalent to constant replacement with the respective
   // constants
-  clang::Expr::EvalResult lhs_eval_result;
-  bool lhs_is_int =
-      binary_operator_.getLHS()->EvaluateAsInt(lhs_eval_result, ast_context);
   if (!optimise_mutations ||
-      !(lhs_is_int && (llvm::APSInt::isSameValue(lhs_eval_result.Val.getInt(),
-                                                 llvm::APSInt::get(0)) ||
-                       llvm::APSInt::isSameValue(lhs_eval_result.Val.getInt(),
-                                                 llvm::APSInt::get(1)) ||
-                       llvm::APSInt::isSameValue(lhs_eval_result.Val.getInt(),
-                                                 llvm::APSInt::get(-1))))) {
+      !(MutationReplaceExpr::ExprIsEquivalentToInt(*binary_operator_.getLHS(),
+                                                   0, ast_context) ||
+        MutationReplaceExpr::ExprIsEquivalentToFloat(*binary_operator_.getLHS(),
+                                                     0.0, ast_context) ||
+        MutationReplaceExpr::ExprIsEquivalentToInt(*binary_operator_.getLHS(),
+                                                   1, ast_context) ||
+        MutationReplaceExpr::ExprIsEquivalentToFloat(*binary_operator_.getLHS(),
+                                                     1.0, ast_context) ||
+        MutationReplaceExpr::ExprIsEquivalentToInt(*binary_operator_.getLHS(),
+                                                   -1, ast_context) ||
+        MutationReplaceExpr::ExprIsEquivalentToFloat(*binary_operator_.getLHS(),
+                                                     -1.0, ast_context))) {
     new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
                  << mutant_offset << ")) return " << arg1_evaluated << ";\n";
     mutant_offset++;
@@ -357,16 +358,19 @@ void MutationReplaceBinaryOperator::GenerateArgumentReplacement(
   // RHS
   // These cases are equivalent to constant replacement with the respective
   // constants
-  clang::Expr::EvalResult rhs_eval_result;
-  bool rhs_is_int =
-      binary_operator_.getRHS()->EvaluateAsInt(rhs_eval_result, ast_context);
   if (!optimise_mutations ||
-      !(rhs_is_int && (llvm::APSInt::isSameValue(rhs_eval_result.Val.getInt(),
-                                                 llvm::APSInt::get(0)) ||
-                       llvm::APSInt::isSameValue(rhs_eval_result.Val.getInt(),
-                                                 llvm::APSInt::get(1)) ||
-                       llvm::APSInt::isSameValue(rhs_eval_result.Val.getInt(),
-                                                 llvm::APSInt::get(-1))))) {
+      !(MutationReplaceExpr::ExprIsEquivalentToInt(*binary_operator_.getRHS(),
+                                                   0, ast_context) ||
+        MutationReplaceExpr::ExprIsEquivalentToFloat(*binary_operator_.getRHS(),
+                                                     0.0, ast_context) ||
+        MutationReplaceExpr::ExprIsEquivalentToInt(*binary_operator_.getRHS(),
+                                                   1, ast_context) ||
+        MutationReplaceExpr::ExprIsEquivalentToFloat(*binary_operator_.getRHS(),
+                                                     1.0, ast_context) ||
+        MutationReplaceExpr::ExprIsEquivalentToInt(*binary_operator_.getRHS(),
+                                                   -1, ast_context) ||
+        MutationReplaceExpr::ExprIsEquivalentToFloat(*binary_operator_.getRHS(),
+                                                     -1.0, ast_context))) {
     new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
                  << mutant_offset << ")) return " << arg2_evaluated << ";\n";
     mutant_offset++;

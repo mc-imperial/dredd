@@ -258,6 +258,35 @@ bool MutateVisitor::HandleUnaryOperator(clang::UnaryOperator* unary_operator) {
     return true;
   }
 
+  // There is no useful way to mutate this expression.
+  if (optimise_mutations_) {
+    if (unary_operator->getOpcode() == clang::UO_Minus &&
+        (MutationReplaceExpr::ExprIsEquivalentToInt(
+             *unary_operator->getSubExpr(), 1,
+             compiler_instance_.getASTContext()) ||
+         MutationReplaceExpr::ExprIsEquivalentToFloat(
+             *unary_operator->getSubExpr(), 1.0,
+             compiler_instance_.getASTContext()))) {
+      return true;
+    }
+
+    if (unary_operator->getOpcode() == clang::UO_Not &&
+        (MutationReplaceExpr::ExprIsEquivalentToInt(
+             *unary_operator->getSubExpr(), 0,
+             compiler_instance_.getASTContext()) ||
+         MutationReplaceExpr::ExprIsEquivalentToFloat(
+             *unary_operator->getSubExpr(), 0.0,
+             compiler_instance_.getASTContext()) ||
+         MutationReplaceExpr::ExprIsEquivalentToInt(
+             *unary_operator->getSubExpr(), 1,
+             compiler_instance_.getASTContext()) ||
+         MutationReplaceExpr::ExprIsEquivalentToFloat(
+             *unary_operator->getSubExpr(), 1.0,
+             compiler_instance_.getASTContext()))) {
+      return true;
+    }
+  }
+
   mutation_tree_path_.back()->AddMutation(
       std::make_unique<MutationReplaceUnaryOperator>(*unary_operator));
   return true;
@@ -305,12 +334,12 @@ bool MutateVisitor::HandleBinaryOperator(
       (MutationReplaceExpr::ExprIsEquivalentToInt(
            *binary_operator->getLHS(), 0, compiler_instance_.getASTContext()) ||
        MutationReplaceExpr::ExprIsEquivalentToFloat(
-           *binary_operator->getLHS(), 0,
+           *binary_operator->getLHS(), 0.0,
            compiler_instance_.getASTContext())) &&
       (MutationReplaceExpr::ExprIsEquivalentToInt(
            *binary_operator->getRHS(), 1, compiler_instance_.getASTContext()) ||
        MutationReplaceExpr::ExprIsEquivalentToFloat(
-           *binary_operator->getRHS(), 1,
+           *binary_operator->getRHS(), 1.0,
            compiler_instance_.getASTContext()))) {
     return true;
   }

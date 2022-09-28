@@ -16,7 +16,7 @@ static int __dredd_enabled_mutation(int local_mutation_id) {
       while(token) {
         int value = atoi(token);
         int local_value = value - 0;
-        if (local_value >= 0 && local_value < 26) {
+        if (local_value >= 0 && local_value < 27) {
           enabled_bitset[local_value / 64] |= (1 << (local_value % 64));
           some_mutation_enabled = 1;
         }
@@ -30,15 +30,10 @@ static int __dredd_enabled_mutation(int local_mutation_id) {
   return enabled_bitset[local_mutation_id / 64] & (1 << (local_mutation_id % 64));
 }
 
-static int __dredd_replace_unary_operator_Not_int_zero(int arg, int local_mutation_id) {
+static int __dredd_replace_unary_operator_Not_int_minus_one(int arg, int local_mutation_id) {
   if (!__dredd_some_mutation_enabled) return ~arg;
-  if (__dredd_enabled_mutation(local_mutation_id + 0)) return arg;
-  return ~arg;
-}
-
-static int __dredd_replace_unary_operator_Not_int_one(int arg, int local_mutation_id) {
-  if (!__dredd_some_mutation_enabled) return ~arg;
-  if (__dredd_enabled_mutation(local_mutation_id + 0)) return arg;
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return !arg;
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg;
   return ~arg;
 }
 
@@ -78,7 +73,7 @@ static int __dredd_replace_expr_int(int arg, int local_mutation_id) {
 }
 
 int main() {
-  int x = __dredd_replace_expr_int_minus_one(__dredd_replace_unary_operator_Not_int_zero(__dredd_replace_expr_int_uoi_optimised_zero(0, 0), 3), 4);
-  int y = __dredd_replace_expr_int(__dredd_replace_unary_operator_Not_int_one(__dredd_replace_expr_int_uoi_optimised_one(1, 8), 11), 12);
-  int z = __dredd_replace_expr_int(__dredd_replace_unary_operator_Not_int_one(__dredd_replace_expr_int_uoi_optimised_one(1, 17), 20), 21);
+  int x = __dredd_replace_expr_int_minus_one(~__dredd_replace_expr_int_uoi_optimised_zero(0, 0), 3);
+  int y = __dredd_replace_expr_int(~__dredd_replace_expr_int_uoi_optimised_one(1, 7), 10);
+  int z = __dredd_replace_expr_int_uoi_optimised_zero(__dredd_replace_unary_operator_Not_int_minus_one((__dredd_replace_expr_int_minus_one(-__dredd_replace_expr_int_uoi_optimised_one(1, 15), 18)), 22), 24);
 }
