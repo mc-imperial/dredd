@@ -176,21 +176,21 @@ std::string MutationReplaceUnaryOperator::GetFunctionName(
     if (MutationReplaceExpr::ExprIsEquivalentToInt(
             *unary_operator_.getSubExpr(), 0, ast_context) ||
         MutationReplaceExpr::ExprIsEquivalentToFloat(
-            *unary_operator_.getSubExpr(), 0, ast_context)) {
+            *unary_operator_.getSubExpr(), 0.0, ast_context)) {
       result += "_zero";
     }
 
     if (MutationReplaceExpr::ExprIsEquivalentToInt(
             *unary_operator_.getSubExpr(), 1, ast_context) ||
         MutationReplaceExpr::ExprIsEquivalentToFloat(
-            *unary_operator_.getSubExpr(), 1, ast_context)) {
+            *unary_operator_.getSubExpr(), 1.0, ast_context)) {
       result += "_one";
     }
 
     if (MutationReplaceExpr::ExprIsEquivalentToInt(
             *unary_operator_.getSubExpr(), -1, ast_context) ||
         MutationReplaceExpr::ExprIsEquivalentToFloat(
-            *unary_operator_.getSubExpr(), -1, ast_context)) {
+            *unary_operator_.getSubExpr(), -1.0, ast_context)) {
       result += "_minus_one";
     }
   }
@@ -264,11 +264,11 @@ bool MutationReplaceUnaryOperator::IsRedundantReplacementOperator(
   if (MutationReplaceExpr::ExprIsEquivalentToInt(*unary_operator_.getSubExpr(),
                                                  0, ast_context) ||
       MutationReplaceExpr::ExprIsEquivalentToFloat(
-          *unary_operator_.getSubExpr(), 0, ast_context) ||
+          *unary_operator_.getSubExpr(), 0.0, ast_context) ||
       MutationReplaceExpr::ExprIsEquivalentToInt(*unary_operator_.getSubExpr(),
                                                  1, ast_context) ||
       MutationReplaceExpr::ExprIsEquivalentToFloat(
-          *unary_operator_.getSubExpr(), 1, ast_context)) {
+          *unary_operator_.getSubExpr(), 1.0, ast_context)) {
     if (operator_kind == clang::UO_Minus || operator_kind == clang::UO_LNot) {
       return true;
     }
@@ -278,7 +278,7 @@ bool MutationReplaceUnaryOperator::IsRedundantReplacementOperator(
   if ((MutationReplaceExpr::ExprIsEquivalentToInt(*unary_operator_.getSubExpr(),
                                                   -1, ast_context) ||
        MutationReplaceExpr::ExprIsEquivalentToFloat(
-           *unary_operator_.getSubExpr(), -1, ast_context)) &&
+           *unary_operator_.getSubExpr(), -1.0, ast_context)) &&
       operator_kind == clang::UO_Minus) {
     return true;
   }
@@ -317,15 +317,15 @@ void MutationReplaceUnaryOperator::GenerateUnaryOperatorReplacement(
       MutationReplaceExpr::ExprIsEquivalentToInt(*unary_operator_.getSubExpr(),
                                                  0, ast_context) ||
       MutationReplaceExpr::ExprIsEquivalentToFloat(
-          *unary_operator_.getSubExpr(), 0, ast_context) ||
+          *unary_operator_.getSubExpr(), 0.0, ast_context) ||
       MutationReplaceExpr::ExprIsEquivalentToInt(*unary_operator_.getSubExpr(),
                                                  1, ast_context) ||
       MutationReplaceExpr::ExprIsEquivalentToFloat(
-          *unary_operator_.getSubExpr(), 1, ast_context) ||
+          *unary_operator_.getSubExpr(), 1.0, ast_context) ||
       MutationReplaceExpr::ExprIsEquivalentToInt(*unary_operator_.getSubExpr(),
                                                  -1, ast_context) ||
       MutationReplaceExpr::ExprIsEquivalentToFloat(
-          *unary_operator_.getSubExpr(), -1, ast_context)) {
+          *unary_operator_.getSubExpr(), -1.0, ast_context)) {
     new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
                  << mutant_offset << ")) return " + arg_evaluated + ";\n";
     mutant_offset++;

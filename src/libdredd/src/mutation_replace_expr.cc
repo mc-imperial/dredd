@@ -85,13 +85,13 @@ void MutationReplaceExpr::AddOptimisationSpecifier(
   if ((expr_.getType()->isIntegerType() && !expr_.getType()->isBooleanType()) ||
       expr_.getType()->isFloatingType()) {
     if (ExprIsEquivalentToInt(expr_, 0, ast_context) ||
-        ExprIsEquivalentToFloat(expr_, 0, ast_context)) {
+        ExprIsEquivalentToFloat(expr_, 0.0, ast_context)) {
       function_name += "_zero";
     } else if (ExprIsEquivalentToInt(expr_, 1, ast_context) ||
-               ExprIsEquivalentToFloat(expr_, 1, ast_context)) {
+               ExprIsEquivalentToFloat(expr_, 1.0, ast_context)) {
       function_name += "_one";
     } else if (ExprIsEquivalentToInt(expr_, -1, ast_context) ||
-               ExprIsEquivalentToFloat(expr_, -1, ast_context)) {
+               ExprIsEquivalentToFloat(expr_, -1.0, ast_context)) {
       function_name += "_minus_one";
     }
   }
@@ -207,7 +207,7 @@ void MutationReplaceExpr::GenerateFloatConstantReplacement(
       *expr_.getType()->getAs<clang::BuiltinType>();
   if (exprType.isFloatingPoint()) {
     if (!optimise_mutations ||
-        !ExprIsEquivalentToFloat(expr_, 0, ast_context)) {
+        !ExprIsEquivalentToFloat(expr_, 0.0, ast_context)) {
       // Replace floating point expression with 0.0
       new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
                    << mutant_offset << ")) return 0.0;\n";
@@ -215,7 +215,7 @@ void MutationReplaceExpr::GenerateFloatConstantReplacement(
     }
 
     if (!optimise_mutations ||
-        !ExprIsEquivalentToFloat(expr_, 1, ast_context)) {
+        !ExprIsEquivalentToFloat(expr_, 1.0, ast_context)) {
       // Replace floating point expression with 1.0
       new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
                    << mutant_offset << ")) return 1.0;\n";
@@ -223,7 +223,7 @@ void MutationReplaceExpr::GenerateFloatConstantReplacement(
     }
 
     if (!optimise_mutations ||
-        !ExprIsEquivalentToFloat(expr_, -1, ast_context)) {
+        !ExprIsEquivalentToFloat(expr_, -1.0, ast_context)) {
       // Replace floating point expression with -1.0
       new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
                    << mutant_offset << ")) return -1.0;\n";
