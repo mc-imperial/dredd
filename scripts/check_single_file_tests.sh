@@ -23,10 +23,13 @@ then
   DREDD_INSTALLED_EXECUTABLE="${DREDD_REPO_ROOT}/third_party/clang+llvm/bin/dredd"
 
   cd "${DREDD_REPO_ROOT}"
-  
-  # Ensure that Dredd is in its installed location. This depends on a
-  # debug build being available
-  cp temp/build-Debug/src/dredd/dredd "${DREDD_INSTALLED_EXECUTABLE}"
+
+  if [ -z "${DREDD_SKIP_COPY_EXECUTABLE+x}" ]
+  then
+    # Ensure that Dredd is in its installed location. This depends on a
+    # debug build being available
+    cp build-Debug/src/dredd/dredd "${DREDD_INSTALLED_EXECUTABLE}"
+  fi
 
   # Avoid copying Dredd to its installed location when invoking the script that
   # checks a single test.

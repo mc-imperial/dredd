@@ -122,10 +122,14 @@ case "$(uname)" in
   check_compile_commands.sh build/compile_commands.json
   ;;
 
-"Darwin")
-  ;;
-
-"MINGW"*|"MSYS_NT"*)
+"Darwin"|"MINGW"*|"MSYS_NT"*)
+  # On Mac and Windows, run the single-file tests
+  cp build/src/dredd/dredd third_party/clang+llvm/bin/
+  export DREDD_REPO_ROOT=$(pwd)
+  export CC=${DREDD_REPO_ROOT}/third_party/clang+llvm/bin/clang
+  export CXX=${DREDD_REPO_ROOT}/third_party/clang+llvm/bin/clang++
+  export PATH=${PATH}:${DREDD_REPO_ROOT}/scripts
+  DREDD_SKIP_COPY_EXECUTABLE=1 ./scripts/check_single_file_tests.sh
   ;;
 
 *)
