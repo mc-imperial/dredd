@@ -126,9 +126,10 @@ case "$(uname)" in
   # On Mac and Windows, run the single-file tests
   cp build/src/dredd/dredd third_party/clang+llvm/bin/
   export DREDD_REPO_ROOT=$(pwd)
-  export CC=${DREDD_REPO_ROOT}/third_party/clang+llvm/bin/clang
-  export CXX=${DREDD_REPO_ROOT}/third_party/clang+llvm/bin/clang++
   export PATH=${PATH}:${DREDD_REPO_ROOT}/scripts
+  export PATH=${DREDD_REPO_ROOT}/third_party/clang+llvm/bin:${PATH}
+  export CC=clang
+  export CXX=clang++
   DREDD_SKIP_COPY_EXECUTABLE=1 ./scripts/check_single_file_tests.sh
   ;;
 
