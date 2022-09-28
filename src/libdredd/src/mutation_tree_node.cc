@@ -45,8 +45,16 @@ bool MutationTreeNode::IsEmpty() const {
 
 void MutationTreeNode::Compress() {
   while (mutations_.empty() && children_.size() == 1) {
-    mutations_ = std::move(children_[0]->mutations_);
-    children_ = std::move(children_[0]->children_);
+    std::vector<std::unique_ptr<Mutation>> child_mutations;
+    for (auto& child_mutation : children_[0]->mutations_) {
+      child_mutations.push_back(std::move(child_mutation));
+    }
+    std::vector<std::unique_ptr<MutationTreeNode>> child_children;
+    for (auto& child_child : children_[0]->children_) {
+      child_children.push_back(std::move(child_child));
+    }
+    mutations_ = std::move(child_mutations);
+    children_ = std::move(child_children);
   }
   for (auto& child : children_) {
     child->Compress();
