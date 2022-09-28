@@ -33,12 +33,10 @@ class MutationTreeNode {
   void AddMutation(std::unique_ptr<Mutation> mutation);
 
   // Moves the given subtree into this tree node as a child.
-  MutationTreeNode& AddChild(MutationTreeNode&& node);
+  void AddChild(std::unique_ptr<MutationTreeNode> node);
 
   // Yields the children of this tree node.
-  [[nodiscard]] const std::vector<MutationTreeNode>& GetChildren() const {
-    return children_;
-  }
+  [[nodiscard]] std::vector<const MutationTreeNode*> GetChildren() const;
 
   // Yields the mutations associated with this tree node.
   [[nodiscard]] const std::vector<std::unique_ptr<Mutation>>& GetMutations()
@@ -64,7 +62,7 @@ class MutationTreeNode {
   void PruneEmptySubtrees();
 
   std::vector<std::unique_ptr<Mutation>> mutations_;
-  std::vector<MutationTreeNode> children_;
+  std::vector<std::unique_ptr<MutationTreeNode>> children_;
 };
 
 }  // namespace dredd
