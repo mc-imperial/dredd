@@ -15,8 +15,10 @@
 #ifndef LIBDREDD_MUTATE_VISITOR_H
 #define LIBDREDD_MUTATE_VISITOR_H
 
+#include <memory>
 #include <set>
 #include <unordered_set>
+#include <utility>
 #include <vector>
 
 #include "clang/AST/Decl.h"
