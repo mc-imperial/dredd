@@ -15,8 +15,10 @@
 #ifndef LIBDREDD_MUTATE_VISITOR_H
 #define LIBDREDD_MUTATE_VISITOR_H
 
+#include <memory>
 #include <set>
 #include <unordered_set>
+#include <utility>
 #include <vector>
 
 #include "clang/AST/Decl.h"
@@ -113,10 +115,12 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
    public:
     explicit PushMutationTreeRAII(MutateVisitor& mutate_visitor)
         : mutate_visitor_(mutate_visitor) {
-      mutate_visitor_.mutation_tree_path_.push_back(
-          &mutate_visitor_.mutation_tree_path_.back()->AddChild(
-              MutationTreeNode()));
+      auto child = std::make_unique<MutationTreeNode>();
+      auto* child_ptr = child.get();
+      mutate_visitor_.mutation_tree_path_.back()->AddChild(std::move(child));
+      mutate_visitor_.mutation_tree_path_.push_back(child_ptr);
     }
+
     ~PushMutationTreeRAII() { mutate_visitor_.mutation_tree_path_.pop_back(); }
 
     PushMutationTreeRAII(const PushMutationTreeRAII&) = delete;

@@ -267,9 +267,9 @@ MutationIdTreeNode MutateAstConsumer::ApplyMutations(
          "The mutation tree should already be compressed.");
   MutationIdTreeNode result;
   for (const auto& child : mutation_tree_node.GetChildren()) {
-    assert(!child.IsEmpty() &&
+    assert(!child->IsEmpty() &&
            "The mutation tree should not have empty subtrees.");
-    result.AddChild(ApplyMutations(child, initial_mutation_id, context,
+    result.AddChild(ApplyMutations(*child, initial_mutation_id, context,
                                    dredd_declarations));
   }
   for (const auto& mutation : mutation_tree_node.GetMutations()) {

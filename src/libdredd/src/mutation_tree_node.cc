@@ -18,9 +18,8 @@
 
 namespace dredd {
 
-MutationTreeNode& MutationTreeNode::AddChild(MutationTreeNode&& node) {
+void MutationTreeNode::AddChild(std::unique_ptr<MutationTreeNode> node) {
   children_.push_back(std::move(node));
-  return children_.back();
 }
 
 void MutationTreeNode::AddMutation(std::unique_ptr<Mutation> mutation) {
@@ -37,7 +36,7 @@ bool MutationTreeNode::IsEmpty() const {
     return false;
   }
   for (const auto& child : children_) {
-    if (!child.IsEmpty()) {
+    if (!child->IsEmpty()) {
       return false;
     }
   }
@@ -46,24 +45,40 @@ bool MutationTreeNode::IsEmpty() const {
 
 void MutationTreeNode::Compress() {
   while (mutations_.empty() && children_.size() == 1) {
-    mutations_ = std::move(children_[0].mutations_);
-    children_ = std::move(children_[0].children_);
+    std::vector<std::unique_ptr<Mutation>> child_mutations;
+    for (auto& child_mutation : children_[0]->mutations_) {
+      child_mutations.push_back(std::move(child_mutation));
+    }
+    std::vector<std::unique_ptr<MutationTreeNode>> child_children;
+    for (auto& child_child : children_[0]->children_) {
+      child_children.push_back(std::move(child_child));
+    }
+    mutations_ = std::move(child_mutations);
+    children_ = std::move(child_children);
   }
   for (auto& child : children_) {
-    child.Compress();
+    child->Compress();
   }
 }
 
 void MutationTreeNode::PruneEmptySubtrees() {
   auto child_iterator = children_.begin();
   while (child_iterator != children_.end()) {
-    if (child_iterator->IsEmpty()) {
+    if ((*child_iterator)->IsEmpty()) {
       child_iterator = children_.erase(child_iterator);
     } else {
-      child_iterator->PruneEmptySubtrees();
+      (*child_iterator)->PruneEmptySubtrees();
       ++child_iterator;
     }
   }
+}
+
+std::vector<const MutationTreeNode*> MutationTreeNode::GetChildren() const {
+  std::vector<const MutationTreeNode*> result;
+  for (const auto& child : children_) {
+    result.push_back(child.get());
+  }
+  return result;
 }
 
 }  // namespace dredd
