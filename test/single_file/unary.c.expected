@@ -122,7 +122,7 @@ static float __dredd_replace_unary_operator_PostDec_float(float* arg, int local_
   return (*arg)--;
 }
 
-static double __dredd_replace_expr_double(double arg, int local_mutation_id) {
+static float __dredd_replace_expr_float(float arg, int local_mutation_id) {
   if (!__dredd_some_mutation_enabled) return arg;
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return 0.0;
   if (__dredd_enabled_mutation(local_mutation_id + 1)) return 1.0;
@@ -132,7 +132,7 @@ static double __dredd_replace_expr_double(double arg, int local_mutation_id) {
 
 int main() {
   int x = __dredd_replace_expr_int(3, 0);
-  float y = __dredd_replace_expr_double(3.532, 5);
+  float y = __dredd_replace_expr_float(3.532, 5);
   if (!__dredd_enabled_mutation(12)) { __dredd_replace_unary_operator_PostInc_int(&(x), 8); }
   if (!__dredd_enabled_mutation(16)) { __dredd_replace_unary_operator_PostInc_float(&(y), 13); }
   if (!__dredd_enabled_mutation(21)) { __dredd_replace_unary_operator_PreInc_int(&(x), 17); }

@@ -406,16 +406,20 @@ bool MutateVisitor::VisitExpr(clang::Expr* expr) {
   }
 
   if (optimise_mutations_) {
-    // Only mutate a cast expression if it changes an l-value to an r-value.
-    // This is because different mutations will be applied to the l-value
-    // and r-value forms. Otherwise it is highly likely that the applied
-    // mutations would have the same effect as one another; the possible
-    // differences arising due to a change of type are unlikely to be all
-    // that interesting, and r-value to r-value implicit casts are very
-    // common, e.g. occurring whenever a signed literal, such as `1`, is
-    // used in an unsigned context.
-    if (auto* cast_expr = llvm::dyn_cast<clang::CastExpr>(expr)) {
-      if (!cast_expr->getSubExpr()->isLValue() || cast_expr->isLValue()) {
+    // If an expression is the direct child of a cast expression, do not mutate
+    // it unless the cast is an l-value to r-value cast. In an l-value to
+    // r-value cast it is worth mutating the expression before and after casting
+    // since different mutations will arise. In a cast that does not change l/r-
+    // value status, it is highly likely that mutations on the inner cast will
+    // have the same effect as on the outer cast. The possible differences
+    // arising due to a change of type are unlikely to be all that interesting,
+    // and r-value to r-value implicit casts are very common, e.g. occurring
+    // whenever a signed literal, such as `1`, is used in an unsigned context.
+    for (const auto& parent :
+         compiler_instance_.getASTContext().getParents<clang::Expr>(*expr)) {
+      const auto* cast_parent = parent.get<clang::CastExpr>();
+      if (cast_parent != nullptr &&
+          cast_parent->isLValue() == expr->isLValue()) {
         return true;
       }
     }
