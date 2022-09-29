@@ -279,6 +279,7 @@ protobufs::MutationTreeNode MutateAstConsumer::ApplyMutations(
     assert(mutation_id_ > mutation_id_old &&
            "Every mutation should lead to the mutation id increasing by at "
            "least 1.");
+    (void)mutation_id_old;  // Keep release-mode compilers happy.
   }
   return result;
 }

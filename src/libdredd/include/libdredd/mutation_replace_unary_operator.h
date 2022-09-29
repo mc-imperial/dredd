@@ -27,6 +27,7 @@
 #include "clang/Rewrite/Core/Rewriter.h"
 #include "libdredd/mutation.h"
 #include "libdredd/protobufs/protobufs.h"
+#include "libdredd/util.h"
 
 namespace dredd {
 
@@ -73,6 +74,8 @@ class MutationReplaceUnaryOperator : public Mutation {
       std::stringstream& new_function, int& mutant_offset) const;
 
   const clang::UnaryOperator& unary_operator_;
+  const InfoForSourceRange info_for_overall_expr_;
+  const InfoForSourceRange info_for_sub_expr_;
 };
 
 }  // namespace dredd

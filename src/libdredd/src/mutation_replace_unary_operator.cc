@@ -36,10 +36,12 @@ MutationReplaceUnaryOperator::MutationReplaceUnaryOperator(
     const clang::UnaryOperator& unary_operator,
     const clang::Preprocessor& preprocessor,
     const clang::ASTContext& ast_context)
-    : unary_operator_(unary_operator) {
-  (void)preprocessor;  // TODO
-  (void)ast_context;   // TODO
-}
+    : unary_operator_(unary_operator),
+      info_for_overall_expr_(
+          GetSourceRangeInMainFile(preprocessor, unary_operator), ast_context),
+      info_for_sub_expr_(
+          GetSourceRangeInMainFile(preprocessor, *unary_operator.getSubExpr()),
+          ast_context) {}
 
 bool MutationReplaceUnaryOperator::IsPrefix(
     clang::UnaryOperatorKind operator_kind) {
@@ -345,6 +347,18 @@ protobufs::MutationGroup MutationReplaceUnaryOperator::Apply(
   // The protobuf object for the mutation, which will be wrapped in a
   // MutationGroup.
   protobufs::MutationReplaceUnaryOperator inner_result;
+  inner_result.mutable_expr_start()->set_line(
+      info_for_overall_expr_.start_line);
+  inner_result.mutable_expr_start()->set_column(
+      info_for_overall_expr_.start_column);
+  inner_result.mutable_expr_end()->set_line(info_for_overall_expr_.end_line);
+  inner_result.mutable_expr_end()->set_column(
+      info_for_overall_expr_.end_column);
+  inner_result.mutable_operand_start()->set_line(info_for_sub_expr_.start_line);
+  inner_result.mutable_operand_start()->set_column(
+      info_for_sub_expr_.start_column);
+  inner_result.mutable_operand_end()->set_line(info_for_sub_expr_.end_line);
+  inner_result.mutable_operand_end()->set_column(info_for_sub_expr_.end_column);
 
   std::string new_function_name =
       GetFunctionName(optimise_mutations, ast_context);

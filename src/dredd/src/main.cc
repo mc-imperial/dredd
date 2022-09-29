@@ -38,6 +38,7 @@
 #pragma clang diagnostic ignored "-Wsuggest-destructor-override"
 #elif defined(__GNUC__)
 #pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wreserved-id-macro"
 #elif defined(_MSC_VER)
 #pragma warning(push)
 #endif

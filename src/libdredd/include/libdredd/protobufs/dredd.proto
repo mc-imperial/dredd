@@ -115,12 +115,10 @@ message MutationReplaceUnaryOperator {
   }
   SourceLocation expr_start = 1;
   SourceLocation expr_end = 2;
-  SourceLocation operator_start = 3;
-  SourceLocation operator_end = 4;
-  SourceLocation operand_start = 5;
-  SourceLocation operand_end = 6;
-  string expr_snippet = 7;
-  string operand_snippet = 8;
-  UnaryOperator operator = 9;
-  repeated MutationReplaceUnaryOperatorInstance instances = 10;
+  SourceLocation operand_start = 3;
+  SourceLocation operand_end = 4;
+  string expr_snippet = 5;
+  string operand_snippet = 6;
+  UnaryOperator operator = 7;
+  repeated MutationReplaceUnaryOperatorInstance instances = 8;
 }
