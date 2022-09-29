@@ -27,6 +27,7 @@
 #include "clang/Basic/Diagnostic.h"
 #include "clang/Basic/SourceManager.h"
 #include "clang/Frontend/ASTUnit.h"
+#include "clang/Lex/Preprocessor.h"
 #include "clang/Rewrite/Core/RewriteBuffer.h"
 #include "clang/Rewrite/Core/Rewriter.h"
 #include "clang/Tooling/Tooling.h"
@@ -36,16 +37,17 @@
 namespace dredd {
 namespace {
 
-void TestRemoval(
-    const std::string& original, const std::string& expected,
-    std::function<MutationRemoveStmt(clang::ASTContext&)> mutation_supplier) {
+void TestRemoval(const std::string& original, const std::string& expected,
+                 std::function<MutationRemoveStmt(const clang::Preprocessor&,
+                                                  clang::ASTContext&)>
+                     mutation_supplier) {
   auto ast_unit = clang::tooling::buildASTFromCodeWithArgs(original, {"-w"});
   ASSERT_FALSE(ast_unit->getDiagnostics().hasErrorOccurred());
   clang::Rewriter rewriter(ast_unit->getSourceManager(),
                            ast_unit->getLangOpts());
   int mutation_id = 0;
   std::unordered_set<std::string> dredd_declarations;
-  mutation_supplier(ast_unit->getASTContext())
+  mutation_supplier(ast_unit->getPreprocessor(), ast_unit->getASTContext())
       .Apply(ast_unit->getASTContext(), ast_unit->getPreprocessor(), true, 0,
              mutation_id, rewriter, dredd_declarations);
   ASSERT_EQ(1, mutation_id);
@@ -60,13 +62,17 @@ TEST(MutationRemoveStmtTest, BasicTest) {
   std::string original = "void foo() { 1 + 2; }";
   std::string expected =
       R"(void foo() { if (!__dredd_enabled_mutation(0)) { 1 + 2; } })";
-  std::function<MutationRemoveStmt(clang::ASTContext&)> mutation_supplier =
-      [](clang::ASTContext& ast_context) -> MutationRemoveStmt {
+  std::function<MutationRemoveStmt(const clang::Preprocessor&,
+                                   clang::ASTContext&)>
+      mutation_supplier =
+          [](const clang::Preprocessor& preprocessor,
+             clang::ASTContext& ast_context) -> MutationRemoveStmt {
     auto statement = clang::ast_matchers::match(
         clang::ast_matchers::binaryOperator().bind("op"), ast_context);
     EXPECT_EQ(1, statement.size());
     return MutationRemoveStmt(
-        *statement[0].getNodeAs<clang::BinaryOperator>("op"));
+        *statement[0].getNodeAs<clang::BinaryOperator>("op"), preprocessor,
+        ast_context);
   };
   TestRemoval(original, expected, mutation_supplier);
 }
@@ -75,12 +81,16 @@ TEST(MutationRemoveStmtTest, RemoveIfStatement) {
   std::string original = "void foo() { if (true) { } }";
   std::string expected =
       R"(void foo() { if (!__dredd_enabled_mutation(0)) { if (true) { } } })";
-  std::function<MutationRemoveStmt(clang::ASTContext&)> mutation_supplier =
-      [](clang::ASTContext& ast_context) -> MutationRemoveStmt {
+  std::function<MutationRemoveStmt(const clang::Preprocessor&,
+                                   clang::ASTContext&)>
+      mutation_supplier =
+          [](const clang::Preprocessor& preprocessor,
+             clang::ASTContext& ast_context) -> MutationRemoveStmt {
     auto statement = clang::ast_matchers::match(
         clang::ast_matchers::ifStmt().bind("if"), ast_context);
     EXPECT_EQ(1, statement.size());
-    return MutationRemoveStmt(*statement[0].getNodeAs<clang::IfStmt>("if"));
+    return MutationRemoveStmt(*statement[0].getNodeAs<clang::IfStmt>("if"),
+                              preprocessor, ast_context);
   };
   TestRemoval(original, expected, mutation_supplier);
 }
@@ -89,12 +99,16 @@ TEST(MutationRemoveStmtTest, RemoveIfStatementWithTrailingSemi) {
   std::string original = "void foo() { if (true) { }; }";
   std::string expected =
       R"(void foo() { if (!__dredd_enabled_mutation(0)) { if (true) { }; } })";
-  std::function<MutationRemoveStmt(clang::ASTContext&)> mutation_supplier =
-      [](clang::ASTContext& ast_context) -> MutationRemoveStmt {
+  std::function<MutationRemoveStmt(const clang::Preprocessor&,
+                                   clang::ASTContext&)>
+      mutation_supplier =
+          [](const clang::Preprocessor& preprocessor,
+             clang::ASTContext& ast_context) -> MutationRemoveStmt {
     auto statement = clang::ast_matchers::match(
         clang::ast_matchers::ifStmt().bind("if"), ast_context);
     EXPECT_EQ(1, statement.size());
-    return MutationRemoveStmt(*statement[0].getNodeAs<clang::IfStmt>("if"));
+    return MutationRemoveStmt(*statement[0].getNodeAs<clang::IfStmt>("if"),
+                              preprocessor, ast_context);
   };
   TestRemoval(original, expected, mutation_supplier);
 }
@@ -103,12 +117,16 @@ TEST(MutationRemoveStmtTest, RemoveIfStatementWithTrailingSemis) {
   std::string original = "void foo() { if (true) { };; }";
   std::string expected =
       R"(void foo() { if (!__dredd_enabled_mutation(0)) { if (true) { }; }; })";
-  std::function<MutationRemoveStmt(clang::ASTContext&)> mutation_supplier =
-      [](clang::ASTContext& ast_context) -> MutationRemoveStmt {
+  std::function<MutationRemoveStmt(const clang::Preprocessor&,
+                                   clang::ASTContext&)>
+      mutation_supplier =
+          [](const clang::Preprocessor& preprocessor,
+             clang::ASTContext& ast_context) -> MutationRemoveStmt {
     auto statement = clang::ast_matchers::match(
         clang::ast_matchers::ifStmt().bind("if"), ast_context);
     EXPECT_EQ(1, statement.size());
-    return MutationRemoveStmt(*statement[0].getNodeAs<clang::IfStmt>("if"));
+    return MutationRemoveStmt(*statement[0].getNodeAs<clang::IfStmt>("if"),
+                              preprocessor, ast_context);
   };
   TestRemoval(original, expected, mutation_supplier);
 }
@@ -117,12 +135,16 @@ TEST(MutationRemoveStmtTest, RemoveIfStatementWithoutBraces) {
   std::string original = "void foo() { if (true) return; }";
   std::string expected =
       R"(void foo() { if (!__dredd_enabled_mutation(0)) { if (true) return; } })";
-  std::function<MutationRemoveStmt(clang::ASTContext&)> mutation_supplier =
-      [](clang::ASTContext& ast_context) -> MutationRemoveStmt {
+  std::function<MutationRemoveStmt(const clang::Preprocessor&,
+                                   clang::ASTContext&)>
+      mutation_supplier =
+          [](const clang::Preprocessor& preprocessor,
+             clang::ASTContext& ast_context) -> MutationRemoveStmt {
     auto statement = clang::ast_matchers::match(
         clang::ast_matchers::ifStmt().bind("if"), ast_context);
     EXPECT_EQ(1, statement.size());
-    return MutationRemoveStmt(*statement[0].getNodeAs<clang::IfStmt>("if"));
+    return MutationRemoveStmt(*statement[0].getNodeAs<clang::IfStmt>("if"),
+                              preprocessor, ast_context);
   };
   TestRemoval(original, expected, mutation_supplier);
 }
@@ -131,13 +153,17 @@ TEST(MutationRemoveStmtTest, RemoveReturnStmt) {
   std::string original = "void foo() { return; }";
   std::string expected =
       R"(void foo() { if (!__dredd_enabled_mutation(0)) { return; } })";
-  std::function<MutationRemoveStmt(clang::ASTContext&)> mutation_supplier =
-      [](clang::ASTContext& ast_context) -> MutationRemoveStmt {
+  std::function<MutationRemoveStmt(const clang::Preprocessor&,
+                                   clang::ASTContext&)>
+      mutation_supplier =
+          [](const clang::Preprocessor& preprocessor,
+             clang::ASTContext& ast_context) -> MutationRemoveStmt {
     auto statement = clang::ast_matchers::match(
         clang::ast_matchers::returnStmt().bind("return"), ast_context);
     EXPECT_EQ(1, statement.size());
     return MutationRemoveStmt(
-        *statement[0].getNodeAs<clang::ReturnStmt>("return"));
+        *statement[0].getNodeAs<clang::ReturnStmt>("return"), preprocessor,
+        ast_context);
   };
   TestRemoval(original, expected, mutation_supplier);
 }
@@ -146,13 +172,17 @@ TEST(MutationRemoveStmtTest, RemoveBreakStmt) {
   std::string original = "void foo() { while (true) { break; } }";
   std::string expected =
       R"(void foo() { while (true) { if (!__dredd_enabled_mutation(0)) { break; } } })";
-  std::function<MutationRemoveStmt(clang::ASTContext&)> mutation_supplier =
-      [](clang::ASTContext& ast_context) -> MutationRemoveStmt {
+  std::function<MutationRemoveStmt(const clang::Preprocessor&,
+                                   clang::ASTContext&)>
+      mutation_supplier =
+          [](const clang::Preprocessor& preprocessor,
+             clang::ASTContext& ast_context) -> MutationRemoveStmt {
     auto statement = clang::ast_matchers::match(
         clang::ast_matchers::breakStmt().bind("break"), ast_context);
     EXPECT_EQ(1, statement.size());
     return MutationRemoveStmt(
-        *statement[0].getNodeAs<clang::BreakStmt>("break"));
+        *statement[0].getNodeAs<clang::BreakStmt>("break"), preprocessor,
+        ast_context);
   };
   TestRemoval(original, expected, mutation_supplier);
 }
@@ -164,13 +194,17 @@ TEST(MutationRemoveStmtTest, RemoveMacroStmt) {
   std::string expected =
       R"(#define ASSIGN(A, B) A = B
 void foo() { int x; if (!__dredd_enabled_mutation(0)) { ASSIGN(x, 1); } })";
-  std::function<MutationRemoveStmt(clang::ASTContext&)> mutation_supplier =
-      [](clang::ASTContext& ast_context) -> MutationRemoveStmt {
+  std::function<MutationRemoveStmt(const clang::Preprocessor&,
+                                   clang::ASTContext&)>
+      mutation_supplier =
+          [](const clang::Preprocessor& preprocessor,
+             clang::ASTContext& ast_context) -> MutationRemoveStmt {
     auto statement = clang::ast_matchers::match(
         clang::ast_matchers::binaryOperator().bind("assign"), ast_context);
     EXPECT_EQ(1, statement.size());
     return MutationRemoveStmt(
-        *statement[0].getNodeAs<clang::BinaryOperator>("assign"));
+        *statement[0].getNodeAs<clang::BinaryOperator>("assign"), preprocessor,
+        ast_context);
   };
   TestRemoval(original, expected, mutation_supplier);
 }

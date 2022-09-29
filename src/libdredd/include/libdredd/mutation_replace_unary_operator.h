@@ -21,7 +21,7 @@
 #include <vector>
 
 #include "clang/AST/ASTContext.h"
-#include "clang/AST/ASTFwd.h"
+#include "clang/AST/Expr.h"
 #include "clang/AST/OperationKinds.h"
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Rewrite/Core/Rewriter.h"
@@ -32,8 +32,9 @@ namespace dredd {
 
 class MutationReplaceUnaryOperator : public Mutation {
  public:
-  explicit MutationReplaceUnaryOperator(
-      const clang::UnaryOperator& unary_operator);
+  MutationReplaceUnaryOperator(const clang::UnaryOperator& unary_operator,
+                               const clang::Preprocessor& preprocessor,
+                               const clang::ASTContext& ast_context);
 
   protobufs::MutationGroup Apply(
       clang::ASTContext& ast_context, const clang::Preprocessor& preprocessor,

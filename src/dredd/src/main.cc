@@ -19,14 +19,39 @@
 
 #include "clang/Tooling/CommonOptionsParser.h"
 #include "clang/Tooling/Tooling.h"
-#include "libdredd/mutation_info.h"
 #include "libdredd/new_mutate_frontend_action_factory.h"
+#include "libdredd/protobufs/protobufs.h"
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/Error.h"
 #include "llvm/Support/Signals.h"
 #include "llvm/Support/raw_ostream.h"
+
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunknown-warning-option"  // Must come first
+#pragma clang diagnostic ignored "-Wreserved-identifier"
+#pragma clang diagnostic ignored "-Wreserved-macro-identifier"
+#pragma clang diagnostic ignored "-Wweak-vtables"
+#pragma clang diagnostic ignored "-Winconsistent-missing-destructor-override"
+#pragma clang diagnostic ignored "-Wsuggest-destructor-override"
+#elif defined(__GNUC__)
+#pragma GCC diagnostic push
+#elif defined(_MSC_VER)
+#pragma warning(push)
+#endif
+
+#include "google/protobuf/stubs/status.h"
+#include "google/protobuf/util/json_util.h"
+
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#elif defined(__GNUC__)
+#pragma GCC diagnostic pop
+#elif defined(_MSC_VER)
+#pragma warning(pop)
+#endif
 
 #if defined(__clang__)
 #pragma clang diagnostic push
@@ -88,7 +113,7 @@ int main(int argc, const char** argv) {
 
   // Keeps track of the mutations that are applied to each source file,
   // including their hierarchical structure.
-  dredd::MutationInfo mutation_info;
+  dredd::protobufs::MutationInfo mutation_info;
 
   std::unique_ptr<clang::tooling::FrontendActionFactory> factory =
       dredd::NewMutateFrontendActionFactory(!no_mutation_opts, dump_asts,
@@ -99,8 +124,19 @@ int main(int argc, const char** argv) {
   if (return_code == 0) {
     // Application of mutations was successful, so write out the mutation info
     // in JSON format.
-    std::ofstream json_out(mutation_info_file);
-    mutation_info.ToJson(json_out);
+    std::string json_string;
+    auto json_options = google::protobuf::util::JsonOptions();
+    json_options.add_whitespace = true;
+    auto json_generation_status = google::protobuf::util::MessageToJsonString(
+        mutation_info, &json_string, json_options);
+    if (json_generation_status.ok()) {
+      std::ofstream transformations_json_file(mutation_info_file);
+      transformations_json_file << json_string;
+    } else {
+      llvm::errs() << "Error writing JSON data to " << mutation_info_file
+                   << "\n";
+      return 1;
+    }
   }
   return return_code;
 }

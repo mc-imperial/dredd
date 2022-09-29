@@ -17,11 +17,22 @@
 
 #include <string>
 
+#include "clang/AST/ASTContext.h"
 #include "clang/Basic/SourceLocation.h"
 #include "clang/Basic/SourceManager.h"
 #include "clang/Lex/Preprocessor.h"
 
 namespace dredd {
+
+struct InfoForSourceRange {
+  InfoForSourceRange(clang::SourceRange source_range,
+                     const clang::ASTContext& ast_context);
+  unsigned int start_line;
+  unsigned int start_column;
+  unsigned int end_line;
+  unsigned int end_column;
+  std::string snippet;
+};
 
 std::string SpaceToUnderscore(const std::string& input);
 

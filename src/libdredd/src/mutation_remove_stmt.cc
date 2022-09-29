@@ -29,7 +29,12 @@
 
 namespace dredd {
 
-MutationRemoveStmt::MutationRemoveStmt(const clang::Stmt& stmt) : stmt_(stmt) {}
+MutationRemoveStmt::MutationRemoveStmt(const clang::Stmt& stmt,
+                                       const clang::Preprocessor& preprocessor,
+                                       const clang::ASTContext& ast_context)
+    : stmt_(stmt),
+      info_for_source_range_(GetSourceRangeInMainFile(preprocessor, stmt),
+                             ast_context) {}
 
 protobufs::MutationGroup MutationRemoveStmt::Apply(
     clang::ASTContext& ast_context, const clang::Preprocessor& preprocessor,
@@ -42,6 +47,12 @@ protobufs::MutationGroup MutationRemoveStmt::Apply(
   // The protobuf object for the mutation, which will be wrapped in a
   // MutationGroup.
   protobufs::MutationRemoveStmt inner_result;
+  inner_result.set_mutation_id(mutation_id);
+  inner_result.mutable_start()->set_line(info_for_source_range_.start_line);
+  inner_result.mutable_start()->set_column(info_for_source_range_.start_column);
+  inner_result.mutable_end()->set_line(info_for_source_range_.end_line);
+  inner_result.mutable_end()->set_column(info_for_source_range_.end_column);
+  *inner_result.mutable_snippet() = info_for_source_range_.snippet;
 
   clang::CharSourceRange source_range = clang::CharSourceRange::getTokenRange(
       GetSourceRangeInMainFile(preprocessor, stmt_));
@@ -101,6 +112,7 @@ protobufs::MutationGroup MutationRemoveStmt::Apply(
           "}");
   assert(!rewriter_result && "Rewrite failed.\n");
   (void)rewriter_result;  // Keep release-mode compilers happy.
+
   mutation_id++;
 
   protobufs::MutationGroup result;

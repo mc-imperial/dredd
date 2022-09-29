@@ -35,7 +35,6 @@ add_custom_command(
 add_library(
   libdredd STATIC
   include/libdredd/mutation.h
-  include/libdredd/mutation_info.h
   include/libdredd/mutation_remove_stmt.h
   include/libdredd/mutation_replace_binary_operator.h
   include/libdredd/mutation_replace_expr.h
@@ -45,12 +44,11 @@ add_library(
   include_private/include/libdredd/mutate_ast_consumer.h
   include_private/include/libdredd/mutate_visitor.h
   include_private/include/libdredd/mutation_tree_node.h
-  include_private/include/libdredd/util.h
+  include/libdredd/util.h
   ${CMAKE_CURRENT_BINARY_DIR}/protobufs/dredd.pb.h
   src/mutate_ast_consumer.cc
   src/mutate_visitor.cc
   src/mutation.cc
-  src/mutation_info.cc
   src/mutation_remove_stmt.cc
   src/mutation_replace_binary_operator.cc
   src/mutation_replace_expr.cc

@@ -37,8 +37,13 @@
 namespace dredd {
 
 MutationReplaceBinaryOperator::MutationReplaceBinaryOperator(
-    const clang::BinaryOperator& binary_operator)
-    : binary_operator_(binary_operator) {}
+    const clang::BinaryOperator& binary_operator,
+    const clang::Preprocessor& preprocessor,
+    const clang::ASTContext& ast_context)
+    : binary_operator_(binary_operator) {
+  (void)preprocessor;  // TODO
+  (void)ast_context;   // TODO
+}
 
 std::string MutationReplaceBinaryOperator::GetExpr(
     clang::ASTContext& ast_context) const {

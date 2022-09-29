@@ -34,8 +34,12 @@
 #include "llvm/Support/Casting.h"
 
 namespace dredd {
-dredd::MutationReplaceExpr::MutationReplaceExpr(const clang::Expr& expr)
-    : expr_(expr) {}
+dredd::MutationReplaceExpr::MutationReplaceExpr(
+    const clang::Expr& expr, const clang::Preprocessor& preprocessor,
+    const clang::ASTContext& ast_context)
+    : expr_(expr),
+      info_for_source_range_(GetSourceRangeInMainFile(preprocessor, expr),
+                             ast_context) {}
 
 std::string MutationReplaceExpr::GetFunctionName(
     bool optimise_mutations, clang::ASTContext& ast_context) const {
@@ -154,55 +158,73 @@ bool MutationReplaceExpr::IsRedundantOperatorInsertion(
 
 void MutationReplaceExpr::GenerateUnaryOperatorInsertion(
     const std::string& arg_evaluated, clang::ASTContext& ast_context,
-    bool optimise_mutations, std::stringstream& new_function,
-    int& mutant_offset) const {
+    bool optimise_mutations, int mutation_id_base,
+    std::stringstream& new_function, int& mutation_id_offset,
+    protobufs::MutationReplaceExpr& protobuf_message) const {
   const clang::BuiltinType& exprType =
       *expr_.getType()->getAs<clang::BuiltinType>();
 
   if (expr_.isLValue() && CanMutateLValue(ast_context, expr_)) {
     new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
-                 << mutant_offset << ")) return ++(" << arg_evaluated << ");\n";
-    mutant_offset++;
+                 << mutation_id_offset << ")) return ++(" << arg_evaluated
+                 << ");\n";
+    protobuf_message.add_instances()->set_mutation_id(mutation_id_base +
+                                                      mutation_id_offset);
+    mutation_id_offset++;
 
     new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
-                 << mutant_offset << ")) return --(" << arg_evaluated << ");\n";
-    mutant_offset++;
+                 << mutation_id_offset << ")) return --(" << arg_evaluated
+                 << ");\n";
+    protobuf_message.add_instances()->set_mutation_id(mutation_id_base +
+                                                      mutation_id_offset);
+    mutation_id_offset++;
   }
 
   if (!expr_.isLValue() && (exprType.isBooleanType() || exprType.isInteger())) {
     if (!optimise_mutations ||
         !IsRedundantOperatorInsertion(expr_, ast_context)) {
       new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
-                   << mutant_offset << ")) return !(" << arg_evaluated
+                   << mutation_id_offset << ")) return !(" << arg_evaluated
                    << ");\n";
-      mutant_offset++;
+      protobuf_message.add_instances()->set_mutation_id(mutation_id_base +
+                                                        mutation_id_offset);
+      mutation_id_offset++;
     }
 
     if (!expr_.getType()->isBooleanType()) {
       new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
-                   << mutant_offset << ")) return ~(" << arg_evaluated
+                   << mutation_id_offset << ")) return ~(" << arg_evaluated
                    << ");\n";
-      mutant_offset++;
+      protobuf_message.add_instances()->set_mutation_id(mutation_id_base +
+                                                        mutation_id_offset);
+      mutation_id_offset++;
     }
   }
 }
 
 void MutationReplaceExpr::GenerateConstantReplacement(
     clang::ASTContext& ast_context, bool optimise_mutations,
-    std::stringstream& new_function, int& mutant_offset) const {
+    int mutation_id_base, std::stringstream& new_function,
+    int& mutation_id_offset,
+    protobufs::MutationReplaceExpr& protobuf_message) const {
   if (!expr_.isLValue()) {
     GenerateBooleanConstantReplacement(ast_context, optimise_mutations,
-                                       new_function, mutant_offset);
+                                       mutation_id_base, new_function,
+                                       mutation_id_offset, protobuf_message);
     GenerateIntegerConstantReplacement(ast_context, optimise_mutations,
-                                       new_function, mutant_offset);
+                                       mutation_id_base, new_function,
+                                       mutation_id_offset, protobuf_message);
     GenerateFloatConstantReplacement(ast_context, optimise_mutations,
-                                     new_function, mutant_offset);
+                                     mutation_id_base, new_function,
+                                     mutation_id_offset, protobuf_message);
   }
 }
 
 void MutationReplaceExpr::GenerateFloatConstantReplacement(
     clang::ASTContext& ast_context, bool optimise_mutations,
-    std::stringstream& new_function, int& mutant_offset) const {
+    int mutation_id_base, std::stringstream& new_function,
+    int& mutation_id_offset,
+    protobufs::MutationReplaceExpr& protobuf_message) const {
   const clang::BuiltinType& exprType =
       *expr_.getType()->getAs<clang::BuiltinType>();
   if (exprType.isFloatingPoint()) {
@@ -210,45 +232,57 @@ void MutationReplaceExpr::GenerateFloatConstantReplacement(
         !ExprIsEquivalentToFloat(expr_, 0.0, ast_context)) {
       // Replace floating point expression with 0.0
       new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
-                   << mutant_offset << ")) return 0.0;\n";
-      mutant_offset++;
+                   << mutation_id_offset << ")) return 0.0;\n";
+      protobuf_message.add_instances()->set_mutation_id(mutation_id_base +
+                                                        mutation_id_offset);
+      mutation_id_offset++;
     }
 
     if (!optimise_mutations ||
         !ExprIsEquivalentToFloat(expr_, 1.0, ast_context)) {
       // Replace floating point expression with 1.0
       new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
-                   << mutant_offset << ")) return 1.0;\n";
-      mutant_offset++;
+                   << mutation_id_offset << ")) return 1.0;\n";
+      protobuf_message.add_instances()->set_mutation_id(mutation_id_base +
+                                                        mutation_id_offset);
+      mutation_id_offset++;
     }
 
     if (!optimise_mutations ||
         !ExprIsEquivalentToFloat(expr_, -1.0, ast_context)) {
       // Replace floating point expression with -1.0
       new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
-                   << mutant_offset << ")) return -1.0;\n";
-      mutant_offset++;
+                   << mutation_id_offset << ")) return -1.0;\n";
+      protobuf_message.add_instances()->set_mutation_id(mutation_id_base +
+                                                        mutation_id_offset);
+      mutation_id_offset++;
     }
   }
 }
 void MutationReplaceExpr::GenerateIntegerConstantReplacement(
     clang::ASTContext& ast_context, bool optimise_mutations,
-    std::stringstream& new_function, int& mutant_offset) const {
+    int mutation_id_base, std::stringstream& new_function,
+    int& mutation_id_offset,
+    protobufs::MutationReplaceExpr& protobuf_message) const {
   const clang::BuiltinType& exprType =
       *expr_.getType()->getAs<clang::BuiltinType>();
   if (exprType.isInteger() && !exprType.isBooleanType()) {
     if (!optimise_mutations || !ExprIsEquivalentToInt(expr_, 0, ast_context)) {
       // Replace expression with 0
       new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
-                   << mutant_offset << ")) return 0;\n";
-      mutant_offset++;
+                   << mutation_id_offset << ")) return 0;\n";
+      protobuf_message.add_instances()->set_mutation_id(mutation_id_base +
+                                                        mutation_id_offset);
+      mutation_id_offset++;
     }
 
     if (!optimise_mutations || !ExprIsEquivalentToInt(expr_, 1, ast_context)) {
       // Replace expression with 1
       new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
-                   << mutant_offset << ")) return 1;\n";
-      mutant_offset++;
+                   << mutation_id_offset << ")) return 1;\n";
+      protobuf_message.add_instances()->set_mutation_id(mutation_id_base +
+                                                        mutation_id_offset);
+      mutation_id_offset++;
     }
   }
 
@@ -256,14 +290,18 @@ void MutationReplaceExpr::GenerateIntegerConstantReplacement(
     if (!optimise_mutations || !ExprIsEquivalentToInt(expr_, -1, ast_context)) {
       // Replace signed integer expression with -1
       new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
-                   << mutant_offset << ")) return -1;\n";
-      mutant_offset++;
+                   << mutation_id_offset << ")) return -1;\n";
+      protobuf_message.add_instances()->set_mutation_id(mutation_id_base +
+                                                        mutation_id_offset);
+      mutation_id_offset++;
     }
   }
 }
 void MutationReplaceExpr::GenerateBooleanConstantReplacement(
     clang::ASTContext& ast_context, bool optimise_mutations,
-    std::stringstream& new_function, int& mutant_offset) const {
+    int mutation_id_base, std::stringstream& new_function,
+    int& mutation_id_offset,
+    protobufs::MutationReplaceExpr& protobuf_message) const {
   const clang::BuiltinType& exprType =
       *expr_.getType()->getAs<clang::BuiltinType>();
   if (exprType.isBooleanType()) {
@@ -271,20 +309,24 @@ void MutationReplaceExpr::GenerateBooleanConstantReplacement(
         !ExprIsEquivalentToBool(expr_, true, ast_context)) {
       // Replace expression with true
       new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
-                   << mutant_offset << ")) return "
+                   << mutation_id_offset << ")) return "
                    << (ast_context.getLangOpts().CPlusPlus ? "true" : "1")
                    << ";\n";
-      mutant_offset++;
+      protobuf_message.add_instances()->set_mutation_id(mutation_id_base +
+                                                        mutation_id_offset);
+      mutation_id_offset++;
     }
 
     if (!optimise_mutations ||
         !ExprIsEquivalentToBool(expr_, false, ast_context)) {
       // Replace expression with false
       new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
-                   << mutant_offset << ")) return "
+                   << mutation_id_offset << ")) return "
                    << (ast_context.getLangOpts().CPlusPlus ? "false" : "0")
                    << ";\n";
-      mutant_offset++;
+      protobuf_message.add_instances()->set_mutation_id(mutation_id_base +
+                                                        mutation_id_offset);
+      mutation_id_offset++;
     }
   }
 }
@@ -292,7 +334,8 @@ void MutationReplaceExpr::GenerateBooleanConstantReplacement(
 std::string MutationReplaceExpr::GenerateMutatorFunction(
     clang::ASTContext& ast_context, const std::string& function_name,
     const std::string& result_type, const std::string& input_type,
-    bool optimise_mutations, int& mutation_id) const {
+    bool optimise_mutations, int& mutation_id,
+    protobufs::MutationReplaceExpr& protobuf_message) const {
   std::stringstream new_function;
   new_function << "static " << result_type << " " << function_name << "(";
   if (ast_context.getLangOpts().CPlusPlus) {
@@ -314,17 +357,19 @@ std::string MutationReplaceExpr::GenerateMutatorFunction(
   new_function << "  if (!__dredd_some_mutation_enabled) return "
                << arg_evaluated << ";\n";
 
-  int mutant_offset = 0;
+  int mutation_id_offset = 0;
 
   GenerateUnaryOperatorInsertion(arg_evaluated, ast_context, optimise_mutations,
-                                 new_function, mutant_offset);
-  GenerateConstantReplacement(ast_context, optimise_mutations, new_function,
-                              mutant_offset);
+                                 mutation_id, new_function, mutation_id_offset,
+                                 protobuf_message);
+  GenerateConstantReplacement(ast_context, optimise_mutations, mutation_id,
+                              new_function, mutation_id_offset,
+                              protobuf_message);
 
   new_function << "  return " << arg_evaluated << ";\n";
   new_function << "}\n\n";
 
-  mutation_id += mutant_offset;
+  mutation_id += mutation_id_offset;
 
   return new_function.str();
 }
@@ -363,6 +408,11 @@ protobufs::MutationGroup MutationReplaceExpr::Apply(
   // The protobuf object for the mutation, which will be wrapped in a
   // MutationGroup.
   protobufs::MutationReplaceExpr inner_result;
+  inner_result.mutable_start()->set_line(info_for_source_range_.start_line);
+  inner_result.mutable_start()->set_column(info_for_source_range_.start_column);
+  inner_result.mutable_end()->set_line(info_for_source_range_.end_line);
+  inner_result.mutable_end()->set_column(info_for_source_range_.end_column);
+  *inner_result.mutable_snippet() = info_for_source_range_.snippet;
 
   std::string new_function_name =
       GetFunctionName(optimise_mutations, ast_context);
@@ -460,9 +510,9 @@ protobufs::MutationGroup MutationReplaceExpr::Apply(
   assert(!rewriter_result && "Rewrite failed.\n");
   (void)rewriter_result;  // Keep release mode compilers happy.
 
-  std::string new_function =
-      GenerateMutatorFunction(ast_context, new_function_name, result_type,
-                              input_type, optimise_mutations, mutation_id);
+  std::string new_function = GenerateMutatorFunction(
+      ast_context, new_function_name, result_type, input_type,
+      optimise_mutations, mutation_id, inner_result);
   assert(!new_function.empty() && "Unsupported expression.");
 
   dredd_declarations.insert(new_function);

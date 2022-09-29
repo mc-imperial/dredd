@@ -53,7 +53,8 @@ void TestReplacement(const std::string& original, const std::string& expected,
 
   ASSERT_LT(expression_to_replace, expression.size());
   MutationReplaceExpr mutation(
-      *expression[expression_to_replace].getNodeAs<clang::Expr>("expr"));
+      *expression[expression_to_replace].getNodeAs<clang::Expr>("expr"),
+      ast_unit->getPreprocessor(), ast_unit->getASTContext());
 
   clang::Rewriter rewriter(ast_unit->getSourceManager(),
                            ast_unit->getLangOpts());

@@ -33,8 +33,13 @@
 namespace dredd {
 
 MutationReplaceUnaryOperator::MutationReplaceUnaryOperator(
-    const clang::UnaryOperator& unary_operator)
-    : unary_operator_(unary_operator) {}
+    const clang::UnaryOperator& unary_operator,
+    const clang::Preprocessor& preprocessor,
+    const clang::ASTContext& ast_context)
+    : unary_operator_(unary_operator) {
+  (void)preprocessor;  // TODO
+  (void)ast_context;   // TODO
+}
 
 bool MutationReplaceUnaryOperator::IsPrefix(
     clang::UnaryOperatorKind operator_kind) {

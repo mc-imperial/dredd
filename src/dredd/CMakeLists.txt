@@ -14,4 +14,5 @@
 
 add_executable(dredd src/main.cc)
 target_include_directories(dredd PRIVATE include_private/include)
-target_link_libraries(dredd PRIVATE libdredd)
+target_include_directories(dredd SYSTEM PRIVATE ${CMAKE_BINARY_DIR}/src)
+target_link_libraries(dredd PRIVATE libdredd protobuf::libprotobuf)

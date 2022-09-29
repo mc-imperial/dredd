@@ -25,9 +25,8 @@ message MutationInfoForFile {
 }
 
 message MutationTreeNode {
-  repeated uint32 mutation_ids = 1;
-  repeated MutationGroup mutation_groups = 2;
-  repeated MutationTreeNode children = 3;
+  repeated MutationGroup mutation_groups = 1;
+  repeated MutationTreeNode children = 2;
 }
 
 message MutationGroup {
@@ -45,7 +44,7 @@ message SourceLocation {
 }
 
 message MutationRemoveStmt {
-  uint32 mutation_id = 1;
+  int32 mutation_id = 1;
   SourceLocation start = 2;
   SourceLocation end = 3;
   string snippet = 4;
@@ -65,7 +64,7 @@ message MutationReplaceExprInstance {
     INSERT_UOP_LNot = 9;
   }
   MutationReplaceExprAction action = 1;
-  uint32 mutation_id = 2;
+  int32 mutation_id = 2;
 }
 
 message MutationReplaceExpr {
@@ -80,7 +79,7 @@ message MutationReplaceBinaryOperatorInstance {
     REPLACE_WITH_Add = 0;
   }
   MutationReplaceBinaryOperatorAction action = 1;
-  uint32 mutation_id = 2;
+  int32 mutation_id = 2;
 }
 
 message MutationReplaceBinaryOperator {
@@ -107,7 +106,7 @@ message MutationReplaceUnaryOperatorInstance {
     REPLACE_WITH_Not = 0;
   }
   MutationReplaceUnaryOperatorAction action = 1;
-  uint32 mutation_id = 2;
+  int32 mutation_id = 2;
 }
 
 message MutationReplaceUnaryOperator {

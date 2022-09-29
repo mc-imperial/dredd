@@ -32,8 +32,9 @@ namespace dredd {
 
 class MutationReplaceBinaryOperator : public Mutation {
  public:
-  explicit MutationReplaceBinaryOperator(
-      const clang::BinaryOperator& binary_operator);
+  MutationReplaceBinaryOperator(const clang::BinaryOperator& binary_operator,
+                                const clang::Preprocessor& preprocessor,
+                                const clang::ASTContext& ast_context);
 
   protobufs::MutationGroup Apply(
       clang::ASTContext& ast_context, const clang::Preprocessor& preprocessor,

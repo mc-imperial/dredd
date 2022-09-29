@@ -24,12 +24,15 @@
 #include "clang/Rewrite/Core/Rewriter.h"
 #include "libdredd/mutation.h"
 #include "libdredd/protobufs/protobufs.h"
+#include "libdredd/util.h"
 
 namespace dredd {
 
 class MutationRemoveStmt : public Mutation {
  public:
-  explicit MutationRemoveStmt(const clang::Stmt& stmt);
+  MutationRemoveStmt(const clang::Stmt& stmt,
+                     const clang::Preprocessor& preprocessor,
+                     const clang::ASTContext& ast_context);
 
   protobufs::MutationGroup Apply(
       clang::ASTContext& ast_context, const clang::Preprocessor& preprocessor,
@@ -39,6 +42,7 @@ class MutationRemoveStmt : public Mutation {
 
  private:
   const clang::Stmt& stmt_;
+  const InfoForSourceRange info_for_source_range_;
 };
 
 }  // namespace dredd
