@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "libdredd/mutation_remove_statement.h"
+#include "libdredd/mutation_remove_stmt.h"
 
 #include <cassert>
 #include <string>
@@ -29,10 +29,9 @@
 
 namespace dredd {
 
-MutationRemoveStatement::MutationRemoveStatement(const clang::Stmt& statement)
-    : statement_(statement) {}
+MutationRemoveStmt::MutationRemoveStmt(const clang::Stmt& stmt) : stmt_(stmt) {}
 
-void MutationRemoveStatement::Apply(
+void MutationRemoveStmt::Apply(
     clang::ASTContext& ast_context, const clang::Preprocessor& preprocessor,
     bool optimise_mutations, int first_mutation_id_in_file, int& mutation_id,
     clang::Rewriter& rewriter,
@@ -40,7 +39,7 @@ void MutationRemoveStatement::Apply(
   (void)dredd_declarations;  // Unused.
   (void)optimise_mutations;  // Unused.
   clang::CharSourceRange source_range = clang::CharSourceRange::getTokenRange(
-      GetSourceRangeInMainFile(preprocessor, statement_));
+      GetSourceRangeInMainFile(preprocessor, stmt_));
 
   // If the statement is followed immediately by a semi-colon, possibly with
   // intervening comments, that semi-colon should be part of the code that is

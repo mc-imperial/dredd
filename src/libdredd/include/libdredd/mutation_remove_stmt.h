@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef LIBDREDD_MUTATION_REMOVE_STATEMENT_H
-#define LIBDREDD_MUTATION_REMOVE_STATEMENT_H
+#ifndef LIBDREDD_MUTATION_REMOVE_STMT_H
+#define LIBDREDD_MUTATION_REMOVE_STMT_H
 
 #include <string>
 #include <unordered_set>
@@ -26,9 +26,9 @@
 
 namespace dredd {
 
-class MutationRemoveStatement : public Mutation {
+class MutationRemoveStmt : public Mutation {
  public:
-  explicit MutationRemoveStatement(const clang::Stmt& statement);
+  explicit MutationRemoveStmt(const clang::Stmt& stmt);
 
   void Apply(
       clang::ASTContext& ast_context, const clang::Preprocessor& preprocessor,
@@ -37,9 +37,9 @@ class MutationRemoveStatement : public Mutation {
       std::unordered_set<std::string>& dredd_declarations) const override;
 
  private:
-  const clang::Stmt& statement_;
+  const clang::Stmt& stmt_;
 };
 
 }  // namespace dredd
 
-#endif  // LIBDREDD_MUTATION_REMOVE_STATEMENT_H
+#endif  // LIBDREDD_MUTATION_REMOVE_STMT_H
