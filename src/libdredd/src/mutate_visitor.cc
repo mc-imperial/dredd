@@ -38,7 +38,7 @@
 #include "clang/Basic/SourceManager.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "libdredd/mutation.h"
-#include "libdredd/mutation_remove_statement.h"
+#include "libdredd/mutation_remove_stmt.h"
 #include "libdredd/mutation_replace_binary_operator.h"
 #include "libdredd/mutation_replace_expr.h"
 #include "libdredd/mutation_replace_unary_operator.h"
@@ -483,7 +483,7 @@ bool MutateVisitor::TraverseCompoundStmt(clang::CompoundStmt* compound_stmt) {
            "Statements can only be removed if they are nested in some "
            "declaration.");
     mutation_tree_path_.back()->AddMutation(
-        std::make_unique<MutationRemoveStatement>(*stmt));
+        std::make_unique<MutationRemoveStmt>(*stmt));
   }
   return true;
 }

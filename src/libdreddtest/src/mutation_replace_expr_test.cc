@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "libdredd/mutation_replace_expr.h"
+
 #include <cstdint>
 #include <memory>
 #include <string>
@@ -27,7 +29,6 @@
 #include "clang/Rewrite/Core/RewriteBuffer.h"
 #include "clang/Rewrite/Core/Rewriter.h"
 #include "clang/Tooling/Tooling.h"
-#include "libdredd/mutation_replace_expr.h"
 #include "libdreddtest/gtest.h"
 #include "llvm/ADT/SmallVector.h"
 
@@ -70,7 +71,7 @@ void TestReplacement(const std::string& original, const std::string& expected,
   ASSERT_EQ(expected, rewritten_text);
 }
 
-TEST(MutationReplaceExpressionTest, MutateSignedConstants) {
+TEST(MutationReplaceExprTest, MutateSignedConstants) {
   std::string original = "void foo() { 2; }";
   std::string expected =
       "void foo() { __dredd_replace_expr_int([&]() -> int { "
@@ -92,7 +93,7 @@ TEST(MutationReplaceExpressionTest, MutateSignedConstants) {
                   expected_dredd_declaration, 0);
 }
 
-TEST(MutationReplaceExpressionTest, MutateUnsignedConstants) {
+TEST(MutationReplaceExprTest, MutateUnsignedConstants) {
   std::string original = "void foo() { unsigned int x = 2; }";
   std::string expected =
       "void foo() { unsigned int x = __dredd_replace_expr_unsigned_int([&]() "
@@ -114,7 +115,7 @@ TEST(MutationReplaceExpressionTest, MutateUnsignedConstants) {
                   expected_dredd_declaration, 0);
 }
 
-TEST(MutationReplaceExpressionTest, MutateFloatConstants) {
+TEST(MutationReplaceExprTest, MutateFloatConstants) {
   std::string original = "void foo() { 2.523; }";
   std::string expected =
       "void foo() { __dredd_replace_expr_double([&]() -> double { "
@@ -134,7 +135,7 @@ TEST(MutationReplaceExpressionTest, MutateFloatConstants) {
                   expected_dredd_declaration, 0);
 }
 
-TEST(MutationReplaceExpressionTest, MutateLValues) {
+TEST(MutationReplaceExprTest, MutateLValues) {
   std::string original =
       R"(void foo() {
   int x;
@@ -161,7 +162,7 @@ TEST(MutationReplaceExpressionTest, MutateLValues) {
                   expected_dredd_declaration, 2);
 }
 
-TEST(MutationReplaceExpressionTest, MutateFunctionArgs) {
+TEST(MutationReplaceExprTest, MutateFunctionArgs) {
   std::string original =
       R"(
 int neg(int x);
