@@ -27,6 +27,7 @@
 #include "clang/Rewrite/Core/Rewriter.h"
 #include "libdredd/mutation.h"
 #include "libdredd/protobufs/protobufs.h"
+#include "libdredd/util.h"
 
 namespace dredd {
 
@@ -47,8 +48,8 @@ class MutationReplaceBinaryOperator : public Mutation {
       clang::ASTContext& ast_context, const std::string& function_name,
       const std::string& result_type, const std::string& lhs_type,
       const std::string& rhs_type, bool optimise_mutations,
-      const std::vector<clang::BinaryOperatorKind>& operators,
-      int& mutation_id) const;
+      const std::vector<clang::BinaryOperatorKind>& operators, int& mutation_id,
+      protobufs::MutationReplaceBinaryOperator& protobuf_message) const;
 
   void ReplaceOperator(const std::string& lhs_type, const std::string& rhs_type,
                        const std::string& new_function_name,
@@ -71,19 +72,21 @@ class MutationReplaceBinaryOperator : public Mutation {
   std::string GetExpr(clang::ASTContext& ast_context) const;
 
   // Replaces binary expressions with either the left or right operand.
-  void GenerateArgumentReplacement(const std::string& arg1_evaluated,
-                                   const std::string& arg2_evaluated,
-                                   clang::ASTContext& ast_context,
-                                   bool optimise_mutations,
-                                   std::stringstream& new_function,
-                                   int& mutant_offset) const;
+  void GenerateArgumentReplacement(
+      const std::string& arg1_evaluated, const std::string& arg2_evaluated,
+      clang::ASTContext& ast_context, bool optimise_mutations,
+      int mutation_id_base, std::stringstream& new_function,
+      int& mutation_id_offset,
+      protobufs::MutationReplaceBinaryOperator& protobuf_message) const;
 
   // Replaces binary operators with other valid binary operators.
   void GenerateBinaryOperatorReplacement(
       const std::vector<clang::BinaryOperatorKind>& operators,
       const std::string& arg1_evaluated, const std::string& arg2_evaluated,
       clang::ASTContext& ast_context, bool optimise_mutations,
-      std::stringstream& new_function, int& mutant_offset) const;
+      int mutation_id_base, std::stringstream& new_function,
+      int& mutation_id_offset,
+      protobufs::MutationReplaceBinaryOperator& protobuf_message) const;
 
   // The && and || operators in C require special treatment: due to
   // short-circuit evaluation their arguments must not be prematurely evaluated.
@@ -107,6 +110,9 @@ class MutationReplaceBinaryOperator : public Mutation {
       std::unordered_set<std::string>& dredd_declarations) const;
 
   const clang::BinaryOperator& binary_operator_;
+  const InfoForSourceRange info_for_overall_expr_;
+  const InfoForSourceRange info_for_lhs_;
+  const InfoForSourceRange info_for_rhs_;
 };
 
 }  // namespace dredd

@@ -40,10 +40,15 @@ MutationReplaceBinaryOperator::MutationReplaceBinaryOperator(
     const clang::BinaryOperator& binary_operator,
     const clang::Preprocessor& preprocessor,
     const clang::ASTContext& ast_context)
-    : binary_operator_(binary_operator) {
-  (void)preprocessor;  // TODO
-  (void)ast_context;   // TODO
-}
+    : binary_operator_(binary_operator),
+      info_for_overall_expr_(
+          GetSourceRangeInMainFile(preprocessor, binary_operator), ast_context),
+      info_for_lhs_(
+          GetSourceRangeInMainFile(preprocessor, *binary_operator.getLHS()),
+          ast_context),
+      info_for_rhs_(
+          GetSourceRangeInMainFile(preprocessor, *binary_operator.getRHS()),
+          ast_context) {}
 
 std::string MutationReplaceBinaryOperator::GetExpr(
     clang::ASTContext& ast_context) const {
@@ -330,7 +335,9 @@ std::string MutationReplaceBinaryOperator::GetFunctionName(
 void MutationReplaceBinaryOperator::GenerateArgumentReplacement(
     const std::string& arg1_evaluated, const std::string& arg2_evaluated,
     clang::ASTContext& ast_context, bool optimise_mutations,
-    std::stringstream& new_function, int& mutant_offset) const {
+    int mutation_id_base, std::stringstream& new_function,
+    int& mutation_id_offset,
+    protobufs::MutationReplaceBinaryOperator& protobuf_message) const {
   if (binary_operator_.isAssignmentOp()) {
     // It would be possible to replace an assignment operator, such as `x = y`,
     // with its LHS. However, since the most common case is for such expressions
@@ -356,8 +363,11 @@ void MutationReplaceBinaryOperator::GenerateArgumentReplacement(
         MutationReplaceExpr::ExprIsEquivalentToFloat(*binary_operator_.getLHS(),
                                                      -1.0, ast_context))) {
     new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
-                 << mutant_offset << ")) return " << arg1_evaluated << ";\n";
-    mutant_offset++;
+                 << mutation_id_offset << ")) return " << arg1_evaluated
+                 << ";\n";
+    protobuf_message.add_instances()->set_mutation_id(mutation_id_base +
+                                                      mutation_id_offset);
+    mutation_id_offset++;
   }
 
   // RHS
@@ -377,8 +387,11 @@ void MutationReplaceBinaryOperator::GenerateArgumentReplacement(
         MutationReplaceExpr::ExprIsEquivalentToFloat(*binary_operator_.getRHS(),
                                                      -1.0, ast_context))) {
     new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
-                 << mutant_offset << ")) return " << arg2_evaluated << ";\n";
-    mutant_offset++;
+                 << mutation_id_offset << ")) return " << arg2_evaluated
+                 << ";\n";
+    protobuf_message.add_instances()->set_mutation_id(mutation_id_base +
+                                                      mutation_id_offset);
+    mutation_id_offset++;
   }
 }
 
@@ -386,7 +399,9 @@ void MutationReplaceBinaryOperator::GenerateBinaryOperatorReplacement(
     const std::vector<clang::BinaryOperatorKind>& operators,
     const std::string& arg1_evaluated, const std::string& arg2_evaluated,
     clang::ASTContext& ast_context, bool optimise_mutations,
-    std::stringstream& new_function, int& mutant_offset) const {
+    int mutation_id_base, std::stringstream& new_function,
+    int& mutation_id_offset,
+    protobufs::MutationReplaceBinaryOperator& protobuf_message) const {
   for (auto operator_kind : operators) {
     if (operator_kind == binary_operator_.getOpcode() ||
         !IsValidReplacementOperator(operator_kind) ||
@@ -395,10 +410,12 @@ void MutationReplaceBinaryOperator::GenerateBinaryOperatorReplacement(
       continue;
     }
     new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
-                 << mutant_offset << ")) return " << arg1_evaluated << " "
+                 << mutation_id_offset << ")) return " << arg1_evaluated << " "
                  << clang::BinaryOperator::getOpcodeStr(operator_kind).str()
                  << " " << arg2_evaluated << ";\n";
-    mutant_offset++;
+    protobuf_message.add_instances()->set_mutation_id(mutation_id_base +
+                                                      mutation_id_offset);
+    mutation_id_offset++;
   }
 }
 
@@ -406,8 +423,8 @@ std::string MutationReplaceBinaryOperator::GenerateMutatorFunction(
     clang::ASTContext& ast_context, const std::string& function_name,
     const std::string& result_type, const std::string& lhs_type,
     const std::string& rhs_type, bool optimise_mutations,
-    const std::vector<clang::BinaryOperatorKind>& operators,
-    int& mutation_id) const {
+    const std::vector<clang::BinaryOperatorKind>& operators, int& mutation_id,
+    protobufs::MutationReplaceBinaryOperator& protobuf_message) const {
   std::stringstream new_function;
   new_function << "static " << result_type << " " << function_name << "(";
 
@@ -426,7 +443,7 @@ std::string MutationReplaceBinaryOperator::GenerateMutatorFunction(
 
   new_function << " arg2, int local_mutation_id) {\n";
 
-  int mutant_offset = 0;
+  int mutation_id_offset = 0;
 
   std::string arg1_evaluated("arg1");
   std::string arg2_evaluated("arg2");
@@ -449,16 +466,18 @@ std::string MutationReplaceBinaryOperator::GenerateMutatorFunction(
 
   GenerateBinaryOperatorReplacement(operators, arg1_evaluated, arg2_evaluated,
                                     ast_context, optimise_mutations,
-                                    new_function, mutant_offset);
+                                    mutation_id, new_function,
+                                    mutation_id_offset, protobuf_message);
   GenerateArgumentReplacement(arg1_evaluated, arg2_evaluated, ast_context,
-                              optimise_mutations, new_function, mutant_offset);
+                              optimise_mutations, mutation_id, new_function,
+                              mutation_id_offset, protobuf_message);
 
   new_function << "  return " << GetExpr(ast_context) << ";\n";
   new_function << "}\n\n";
 
-  // The function captures |mutant_offset| different mutations, so bump up
+  // The function captures |mutation_id_offset| different mutations, so bump up
   // the mutation id accordingly.
-  mutation_id += mutant_offset;
+  mutation_id += mutation_id_offset;
 
   return new_function.str();
 }
@@ -471,6 +490,27 @@ protobufs::MutationGroup MutationReplaceBinaryOperator::Apply(
   // The protobuf object for the mutation, which will be wrapped in a
   // MutationGroup.
   protobufs::MutationReplaceBinaryOperator inner_result;
+
+  inner_result.mutable_expr_start()->set_line(
+      info_for_overall_expr_.start_line);
+  inner_result.mutable_expr_start()->set_column(
+      info_for_overall_expr_.start_column);
+  inner_result.mutable_expr_end()->set_line(info_for_overall_expr_.end_line);
+  inner_result.mutable_expr_end()->set_column(
+      info_for_overall_expr_.end_column);
+  *inner_result.mutable_expr_snippet() = info_for_overall_expr_.snippet;
+
+  inner_result.mutable_lhs_start()->set_line(info_for_lhs_.start_line);
+  inner_result.mutable_lhs_start()->set_column(info_for_lhs_.start_column);
+  inner_result.mutable_lhs_end()->set_line(info_for_lhs_.end_line);
+  inner_result.mutable_lhs_end()->set_column(info_for_lhs_.end_column);
+  *inner_result.mutable_lhs_snippet() = info_for_lhs_.snippet;
+
+  inner_result.mutable_rhs_start()->set_line(info_for_rhs_.start_line);
+  inner_result.mutable_rhs_start()->set_column(info_for_rhs_.start_column);
+  inner_result.mutable_rhs_end()->set_line(info_for_rhs_.end_line);
+  inner_result.mutable_rhs_end()->set_column(info_for_rhs_.end_column);
+  *inner_result.mutable_rhs_snippet() = info_for_rhs_.snippet;
 
   std::string new_function_name =
       GetFunctionName(optimise_mutations, ast_context);
@@ -566,7 +606,7 @@ protobufs::MutationGroup MutationReplaceBinaryOperator::Apply(
                   binary_operator_.getOpcode()) != operators.end()) {
       new_function = GenerateMutatorFunction(
           ast_context, new_function_name, result_type, lhs_type, rhs_type,
-          optimise_mutations, operators, mutation_id);
+          optimise_mutations, operators, mutation_id, inner_result);
       break;
     }
   }

@@ -41,6 +41,8 @@
 #pragma GCC diagnostic push
 #elif defined(_MSC_VER)
 #pragma warning(push)
+#pragma warning(disable : 4623)
+#pragma warning(disable : 4946)
 #endif
 
 #include "google/protobuf/stubs/status.h"

@@ -39,6 +39,7 @@ InfoForSourceRange::InfoForSourceRange(clang::SourceRange source_range,
   const auto& source_manager = ast_context.getSourceManager();
   auto char_source_range = clang::CharSourceRange::getTokenRange(source_range);
   assert(char_source_range.isTokenRange() && "Expected a token range.");
+  (void)char_source_range;  // Keep release-mode compilers happy.
   unsigned int final_token_length = clang::Lexer::MeasureTokenLength(
       source_range.getEnd(), source_manager, ast_context.getLangOpts());
 

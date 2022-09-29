@@ -88,17 +88,15 @@ message MutationReplaceBinaryOperator {
   }
   SourceLocation expr_start = 1;
   SourceLocation expr_end = 2;
-  SourceLocation operator_start = 3;
-  SourceLocation operator_end = 4;
-  SourceLocation lhs_start = 5;
-  SourceLocation lhs_end = 6;
-  SourceLocation rhs_start = 7;
-  SourceLocation rhs_end = 8;
-  string expr_snippet = 9;
-  string lhs_snippet = 10;
-  string rhs_snippet = 11;
-  BinaryOperator operator = 12;
-  repeated MutationReplaceBinaryOperatorInstance instances = 13;
+  SourceLocation lhs_start = 3;
+  SourceLocation lhs_end = 4;
+  SourceLocation rhs_start = 5;
+  SourceLocation rhs_end = 6;
+  string expr_snippet = 7;
+  string lhs_snippet = 8;
+  string rhs_snippet = 9;
+  BinaryOperator operator = 10;
+  repeated MutationReplaceBinaryOperatorInstance instances = 11;
 }
 
 message MutationReplaceUnaryOperatorInstance {
