@@ -22,6 +22,6 @@
   { include: ["<gtest/gtest-test-part.h>", "private", "\"gtest/gtest.h\"", "public"] },
 
   # Protobuf
-  { include: ["\"libdredd/protobufs/dredd.pb.h\"", "private", "\"libdredd/protobufs/protobufs.h\"", "public"] },
+  { include: ["<libdredd/protobufs/dredd.pb.h>", "private", "\"libdredd/protobufs/protobufs.h\"", "public"] },
 
 ]
