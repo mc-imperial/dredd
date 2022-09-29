@@ -11,7 +11,6 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-
 syntax = "proto3";
 
 package dredd.protobufs;
@@ -27,11 +26,11 @@ message MutationInfoForFile {
 
 message MutationTreeNode {
   repeated uint32 mutation_ids = 1;
-  repeated MutationTreeGroup mutation_groups = 2;
+  repeated MutationGroup mutation_groups = 2;
   repeated MutationTreeNode children = 3;
 }
 
-message MutationTreeGroup {
+message MutationGroup {
   oneof group {
     MutationRemoveStmt remove_stmt = 1;
     MutationReplaceExpr replace_expr = 2;

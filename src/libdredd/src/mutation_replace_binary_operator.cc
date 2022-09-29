@@ -458,11 +458,15 @@ std::string MutationReplaceBinaryOperator::GenerateMutatorFunction(
   return new_function.str();
 }
 
-void MutationReplaceBinaryOperator::Apply(
+protobufs::MutationGroup MutationReplaceBinaryOperator::Apply(
     clang::ASTContext& ast_context, const clang::Preprocessor& preprocessor,
     bool optimise_mutations, int first_mutation_id_in_file, int& mutation_id,
     clang::Rewriter& rewriter,
     std::unordered_set<std::string>& dredd_declarations) const {
+  // The protobuf object for the mutation, which will be wrapped in a
+  // MutationGroup.
+  protobufs::MutationReplaceBinaryOperator inner_result;
+
   std::string new_function_name =
       GetFunctionName(optimise_mutations, ast_context);
   std::string result_type = binary_operator_.getType()
@@ -488,7 +492,10 @@ void MutationReplaceBinaryOperator::Apply(
     HandleCLogicalOperator(preprocessor, new_function_name, result_type,
                            lhs_type, rhs_type, first_mutation_id_in_file,
                            mutation_id, rewriter, dredd_declarations);
-    return;
+
+    protobufs::MutationGroup result;
+    *result.mutable_replace_binary_operator() = inner_result;
+    return result;
   }
 
   if (binary_operator_.isAssignmentOp()) {
@@ -563,6 +570,10 @@ void MutationReplaceBinaryOperator::Apply(
   // Add the mutation function to the set of Dredd declarations - there may
   // already be a matching function, in which case duplication will be avoided.
   dredd_declarations.insert(new_function);
+
+  protobufs::MutationGroup result;
+  *result.mutable_replace_binary_operator() = inner_result;
+  return result;
 }
 
 void MutationReplaceBinaryOperator::ReplaceOperator(

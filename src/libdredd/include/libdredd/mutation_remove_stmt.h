@@ -23,6 +23,7 @@
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Rewrite/Core/Rewriter.h"
 #include "libdredd/mutation.h"
+#include "libdredd/protobufs/dredd.pb.h"
 
 namespace dredd {
 
@@ -30,7 +31,7 @@ class MutationRemoveStmt : public Mutation {
  public:
   explicit MutationRemoveStmt(const clang::Stmt& stmt);
 
-  void Apply(
+  protobufs::MutationGroup Apply(
       clang::ASTContext& ast_context, const clang::Preprocessor& preprocessor,
       bool optimise_mutations, int first_mutation_id_in_file, int& mutation_id,
       clang::Rewriter& rewriter,

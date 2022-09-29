@@ -332,11 +332,16 @@ void MutationReplaceUnaryOperator::GenerateUnaryOperatorReplacement(
   }
 }
 
-void MutationReplaceUnaryOperator::Apply(
+protobufs::MutationGroup MutationReplaceUnaryOperator::Apply(
     clang::ASTContext& ast_context, const clang::Preprocessor& preprocessor,
     bool optimise_mutations, int first_mutation_id_in_file, int& mutation_id,
     clang::Rewriter& rewriter,
     std::unordered_set<std::string>& dredd_declarations) const {
+
+  // The protobuf object for the mutation, which will be wrapped in a
+  // MutationGroup.
+  protobufs::MutationReplaceUnaryOperator inner_result;
+
   std::string new_function_name =
       GetFunctionName(optimise_mutations, ast_context);
   std::string result_type = unary_operator_.getType()
@@ -422,6 +427,10 @@ void MutationReplaceUnaryOperator::Apply(
   assert(!new_function.empty() && "Unsupported opcode.");
 
   dredd_declarations.insert(new_function);
+
+  protobufs::MutationGroup result;
+  *result.mutable_replace_unary_operator() = inner_result;
+  return result;
 }
 
 }  // namespace dredd

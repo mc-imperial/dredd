@@ -355,11 +355,16 @@ void MutationReplaceExpr::ApplyCTypeModifiers(const clang::Expr* expr,
   }
 }
 
-void MutationReplaceExpr::Apply(
+protobufs::MutationGroup MutationReplaceExpr::Apply(
     clang::ASTContext& ast_context, const clang::Preprocessor& preprocessor,
     bool optimise_mutations, int first_mutation_id_in_file, int& mutation_id,
     clang::Rewriter& rewriter,
     std::unordered_set<std::string>& dredd_declarations) const {
+
+  // The protobuf object for the mutation, which will be wrapped in a
+  // MutationGroup.
+  protobufs::MutationReplaceExpr inner_result;
+
   std::string new_function_name =
       GetFunctionName(optimise_mutations, ast_context);
   std::string result_type = expr_.getType()
@@ -448,13 +453,13 @@ void MutationReplaceExpr::Apply(
     suffix.append(")");
   }
 
-  bool result = rewriter.InsertTextBefore(
+  bool rewriter_result = rewriter.InsertTextBefore(
       expr_source_range_in_main_file.getBegin(), prefix);
-  assert(!result && "Rewrite failed.\n");
-  result = rewriter.InsertTextAfterToken(
+  assert(!rewriter_result && "Rewrite failed.\n");
+  rewriter_result = rewriter.InsertTextAfterToken(
       expr_source_range_in_main_file.getEnd(), suffix);
-  assert(!result && "Rewrite failed.\n");
-  (void)result;  // Keep release mode compilers happy.
+  assert(!rewriter_result && "Rewrite failed.\n");
+  (void)rewriter_result;  // Keep release mode compilers happy.
 
   std::string new_function =
       GenerateMutatorFunction(ast_context, new_function_name, result_type,
@@ -462,6 +467,10 @@ void MutationReplaceExpr::Apply(
   assert(!new_function.empty() && "Unsupported expression.");
 
   dredd_declarations.insert(new_function);
+
+  protobufs::MutationGroup result;
+  *result.mutable_replace_expr() = inner_result;
+  return result;
 }
 
 bool MutationReplaceExpr::CanMutateLValue(clang::ASTContext& ast_context,
