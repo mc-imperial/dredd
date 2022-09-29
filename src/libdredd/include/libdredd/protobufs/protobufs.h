@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef LIBDREDD_PROTOBUF_H
-#define LIBDREDD_PROTOBUF_H
+#ifndef LIBDREDD_PROTOBUFS_PROTOBUFS_H
+#define LIBDREDD_PROTOBUFS_PROTOBUFS_H
 
 #if defined(__clang__)
 #pragma clang diagnostic push
@@ -60,4 +60,4 @@
 #pragma warning(pop)
 #endif
 
-#endif  // LIBDREDD_PROTOBUF_H
+#endif  // LIBDREDD_PROTOBUFS_PROTOBUFS_H

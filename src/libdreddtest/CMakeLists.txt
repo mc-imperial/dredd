@@ -28,7 +28,8 @@ add_executable(
 
 target_link_libraries(libdreddtest PRIVATE libdredd gtest_main
                                            protobuf::libprotobuf)
-target_include_directories(libdreddtest PRIVATE include_private/include
-                                                ${CMAKE_BINARY_DIR}/src)
+target_include_directories(libdreddtest PRIVATE include_private/include)
+
+target_include_directories(libdreddtest SYSTEM PRIVATE ${CMAKE_BINARY_DIR}/src)
 
 add_test(NAME libdreddtest COMMAND libdreddtest)

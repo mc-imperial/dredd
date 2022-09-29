@@ -73,7 +73,9 @@ endif()
 target_include_directories(
   libdredd
   PUBLIC include
-  PRIVATE include_private/include ${CMAKE_BINARY_DIR}/src)
+  PRIVATE include_private/include)
+
+target_include_directories(libdredd SYSTEM PRIVATE ${CMAKE_BINARY_DIR}/src)
 
 set(CLANG_LIBS clangTooling clangTransformer)
 
