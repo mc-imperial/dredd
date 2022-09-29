@@ -360,7 +360,6 @@ protobufs::MutationGroup MutationReplaceExpr::Apply(
     bool optimise_mutations, int first_mutation_id_in_file, int& mutation_id,
     clang::Rewriter& rewriter,
     std::unordered_set<std::string>& dredd_declarations) const {
-
   // The protobuf object for the mutation, which will be wrapped in a
   // MutationGroup.
   protobufs::MutationReplaceExpr inner_result;

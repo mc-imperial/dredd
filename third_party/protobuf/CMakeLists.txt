@@ -15,9 +15,9 @@
 cmake_minimum_required(VERSION 3.13)
 
 #
-# Project: protobuf-distribution
+# Project: protobuf
 #
-# Provides targets: protobuf.
+# Provides targets: protobuf::protoc, protobuf::libprotobuf.
 #
 if(NOT TARGET protobuf)
   if(NOT IS_DIRECTORY ${DREDD_PROTOBUF_REPO_DIR})
@@ -26,6 +26,7 @@ if(NOT TARGET protobuf)
                   "Try fetching submodules or set DREDD_PROTOBUF_REPO_DIR.")
   endif()
 
+  # cmake-lint: disable=C0103
   set(protobuf_BUILD_TESTS
       OFF
       CACHE BOOL "Disable protobuf tests")

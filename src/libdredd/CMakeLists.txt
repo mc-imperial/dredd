@@ -20,10 +20,8 @@ set(PROTOBUF_SOURCE ${CMAKE_CURRENT_SOURCE_DIR}/src/dredd.proto)
 
 set(DREDD_PROTOC_COMMAND
     "protobuf::protoc"
-    CACHE
-      STRING
-      "The command to invoke the protobuf compiler (protoc). By default it is the protobufs::protoc CMake target."
-)
+    CACHE STRING "The command to invoke the protobuf compiler (protoc). \
+By default it is the protobufs::protoc CMake target.")
 
 add_custom_command(
   OUTPUT protobufs/dredd.pb.cc protobufs/dredd.pb.h
@@ -72,8 +70,7 @@ endif()
 target_include_directories(
   libdredd
   PUBLIC include
-  PRIVATE include_private/include
-  PRIVATE ${CMAKE_BINARY_DIR}/src)
+  PRIVATE include_private/include ${CMAKE_BINARY_DIR}/src)
 
 set(CLANG_LIBS clangTooling clangTransformer)
 
