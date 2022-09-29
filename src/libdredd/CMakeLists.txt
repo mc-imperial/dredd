@@ -16,7 +16,8 @@ cmake_minimum_required(VERSION 3.13)
 
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/protobufs)
 
-set(PROTOBUF_SOURCE_PREFIX ${CMAKE_CURRENT_SOURCE_DIR}/include/libdredd/protobufs)
+set(PROTOBUF_SOURCE_PREFIX
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/libdredd/protobufs)
 set(PROTOBUF_SOURCE ${PROTOBUF_SOURCE_PREFIX}/dredd.proto)
 
 set(DREDD_PROTOC_COMMAND

@@ -36,9 +36,12 @@
 #pragma GCC diagnostic ignored "-Wconversion"
 #pragma GCC diagnostic ignored "-Wshadow"
 #pragma GCC diagnostic ignored "-Wunused-parameter"
+#pragma GCC diagnostic ignored "-Wpedantic"
 #elif defined(_MSC_VER)
 #pragma warning(push)
 #pragma warning(disable : 4244)
+#pragma warning(disable : 4365)
+#pragma warning(disable : 4668)
 #endif
 
 // The following should be the only place in the project where protobuf files
@@ -56,4 +59,3 @@
 #endif
 
 #endif  // LIBDREDD_PROTOBUF_H
-
