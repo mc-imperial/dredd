@@ -34,6 +34,10 @@ set(DREDD_GOOGLETEST_REPO_DIR
     ${CMAKE_CURRENT_SOURCE_DIR}/third_party/googletest/googletest
     CACHE PATH "Path to a https://github.com/google/googletest repo.")
 
+set(DREDD_PROTOBUF_REPO_DIR
+    ${CMAKE_CURRENT_SOURCE_DIR}/third_party/protobuf/protobuf
+    CACHE PATH "Path to a https://github.com/protocolbuffers/protobuf repo.")
+
 option(DREDD_WARNINGS_AS_ERRORS "Enable warnings as errors for Dredd targets."
        ${DREDD_PROJECT_IS_ROOT})
 
@@ -91,6 +95,8 @@ add_definitions(${LLVM_DEFINITIONS})
 if(DREDD_BUILD_TESTING)
   add_subdirectory(third_party/googletest)
 endif()
+
+add_subdirectory(third_party/protobuf)
 
 # The targets that follow are all Dredd targets. We now conditionally set some
 # compile options related to warnings. Most of these will only be set if Dredd

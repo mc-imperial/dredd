@@ -23,3 +23,4 @@ test -d src/
 find ./src/ -iname 'CMakeLists.txt' -print
 echo ./CMakeLists.txt
 echo ./third_party/googletest/CMakeLists.txt
+echo ./third_party/protobuf/CMakeLists.txt

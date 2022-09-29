@@ -14,6 +14,24 @@
 
 cmake_minimum_required(VERSION 3.13)
 
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/protobufs)
+
+set(PROTOBUF_SOURCE ${CMAKE_CURRENT_SOURCE_DIR}/src/dredd.proto)
+
+set(DREDD_PROTOC_COMMAND
+    "protobuf::protoc"
+    CACHE
+      STRING
+      "The command to invoke the protobuf compiler (protoc). By default it is the protobufs::protoc CMake target."
+)
+
+add_custom_command(
+  OUTPUT protobufs/dredd.pb.cc protobufs/dredd.pb.h
+  COMMAND "${DREDD_PROTOC_COMMAND}" -I=${CMAKE_CURRENT_SOURCE_DIR}/src
+          --cpp_out=protobufs ${PROTOBUF_SOURCE}
+  DEPENDS ${PROTOBUF_SOURCE}
+  COMMENT "Generate protobuf sources from proto definition file.")
+
 add_library(
   libdredd STATIC
   include/libdredd/mutation.h
@@ -27,6 +45,7 @@ add_library(
   include_private/include/libdredd/mutate_visitor.h
   include_private/include/libdredd/mutation_tree_node.h
   include_private/include/libdredd/util.h
+  ${CMAKE_CURRENT_BINARY_DIR}/protobufs/dredd.pb.h
   src/mutate_ast_consumer.cc
   src/mutate_visitor.cc
   src/mutation.cc
@@ -37,12 +56,24 @@ add_library(
   src/mutation_replace_unary_operator.cc
   src/mutation_tree_node.cc
   src/new_mutate_frontend_action_factory.cc
-  src/util.cc)
+  src/util.cc
+  ${CMAKE_CURRENT_BINARY_DIR}/protobufs/dredd.pb.cc)
+
+# Compilation of the auto-generated protobuf source file will yield warnings,
+# which should be ignored.
+if(MSVC)
+  set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/protobufs/dredd.pb.cc
+                              PROPERTIES COMPILE_FLAGS /w)
+else()
+  set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/protobufs/dredd.pb.cc
+                              PROPERTIES COMPILE_FLAGS -w)
+endif()
 
 target_include_directories(
   libdredd
   PUBLIC include
-  PRIVATE include_private/include)
+  PRIVATE include_private/include
+  PRIVATE ${CMAKE_BINARY_DIR})
 
 set(CLANG_LIBS clangTooling clangTransformer)
 
@@ -52,6 +83,6 @@ foreach(clang_target ${CLANG_LIBS})
   endif()
 endforeach()
 
-target_link_libraries(libdredd PRIVATE ${CLANG_LIBS})
+target_link_libraries(libdredd PRIVATE ${CLANG_LIBS} protobuf::libprotobuf)
 
 target_compile_features(libdredd PUBLIC cxx_std_20)

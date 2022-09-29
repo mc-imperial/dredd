@@ -1,0 +1,128 @@
+// Copyright 2022 The Dredd Project Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package dredd.protobufs;
+
+message MutationInfo {
+  repeated MutationInfoForFile info_for_files = 1;
+}
+
+message MutationInfoForFile {
+  string filename = 1;
+  MutationTreeNode mutation_tree_root = 2;
+}
+
+message MutationTreeNode {
+  repeated uint32 mutation_ids = 1;
+  repeated MutationTreeGroup mutation_groups = 2;
+  repeated MutationTreeNode children = 3;
+}
+
+message MutationTreeGroup {
+  oneof group {
+    MutationRemoveStmt remove_stmt = 1;
+    MutationReplaceExpr replace_expr = 2;
+    MutationReplaceBinaryOperator replace_binary_operator = 3;
+    MutationReplaceUnaryOperator replace_unary_operator = 4;
+  }
+}
+
+message SourceLocation {
+  uint32 line = 1;
+  uint32 column = 2;
+}
+
+message MutationRemoveStmt {
+  uint32 mutation_id = 1;
+  SourceLocation start = 2;
+  SourceLocation end = 3;
+  string snippet = 4;
+}
+
+message MutationReplaceExprInstance {
+  enum MutationReplaceExprAction {
+    REPLACE_WITH_0 = 0;
+    REPLACE_WITH_1 = 1;
+    REPLACE_WITH_MINUS_1 = 2;
+    REPLACE_WITH_0_FLOAT = 3;
+    REPLACE_WITH_1_FLOAT = 4;
+    REPLACE_WITH_MINUS_1_FLOAT = 5;
+    INSERT_UOP_PreInc = 6;
+    INSERT_UOP_PreDec = 7;
+    INSERT_UOP_Not = 8;
+    INSERT_UOP_LNot = 9;
+  }
+  MutationReplaceExprAction action = 1;
+  uint32 mutation_id = 2;
+}
+
+message MutationReplaceExpr {
+  SourceLocation start = 1;
+  SourceLocation end = 2;
+  string snippet = 3;
+  repeated MutationReplaceExprInstance instances = 4;
+}
+
+message MutationReplaceBinaryOperatorInstance {
+  enum MutationReplaceBinaryOperatorAction {
+    REPLACE_WITH_Add = 0;
+  }
+  MutationReplaceBinaryOperatorAction action = 1;
+  uint32 mutation_id = 2;
+}
+
+message MutationReplaceBinaryOperator {
+  enum BinaryOperator {
+    Add = 0;
+  }
+  SourceLocation expr_start = 1;
+  SourceLocation expr_end = 2;
+  SourceLocation operator_start = 3;
+  SourceLocation operator_end = 4;
+  SourceLocation lhs_start = 5;
+  SourceLocation lhs_end = 6;
+  SourceLocation rhs_start = 7;
+  SourceLocation rhs_end = 8;
+  string expr_snippet = 9;
+  string lhs_snippet = 10;
+  string rhs_snippet = 11;
+  BinaryOperator operator = 12;
+  repeated MutationReplaceBinaryOperatorInstance instances = 13;
+}
+
+message MutationReplaceUnaryOperatorInstance {
+  enum MutationReplaceUnaryOperatorAction {
+    REPLACE_WITH_Not = 0;
+  }
+  MutationReplaceUnaryOperatorAction action = 1;
+  uint32 mutation_id = 2;
+}
+
+message MutationReplaceUnaryOperator {
+  enum UnaryOperator {
+    Not = 0;
+  }
+  SourceLocation expr_start = 1;
+  SourceLocation expr_end = 2;
+  SourceLocation operator_start = 3;
+  SourceLocation operator_end = 4;
+  SourceLocation operand_start = 5;
+  SourceLocation operand_end = 6;
+  string expr_snippet = 7;
+  string operand_snippet = 8;
+  UnaryOperator operator = 9;
+  repeated MutationReplaceUnaryOperatorInstance instances = 10;
+}
