@@ -410,13 +410,13 @@ void MutationReplaceUnaryOperator::Apply(
     suffix.append(", " + std::to_string(local_mutation_id) + ")");
   }
   // The prefix and suffix are ready, so make the relevant insertions.
-  bool result = rewriter.InsertTextBefore(
+  bool rewriter_result = rewriter.InsertTextBefore(
       unary_operator_source_range_in_main_file.getBegin(), prefix);
-  assert(!result && "Rewrite failed.\n");
-  result = rewriter.InsertTextAfterToken(
+  assert(!rewriter_result && "Rewrite failed.\n");
+  rewriter_result = rewriter.InsertTextAfterToken(
       unary_operator_source_range_in_main_file.getEnd(), suffix);
-  assert(!result && "Rewrite failed.\n");
-  (void)result;  // Keep release-mode compilers happy.
+  assert(!rewriter_result && "Rewrite failed.\n");
+  (void)rewriter_result;  // Keep release-mode compilers happy.
 
   std::string new_function =
       GenerateMutatorFunction(ast_context, new_function_name, result_type,

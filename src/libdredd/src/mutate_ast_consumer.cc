@@ -100,24 +100,24 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
   sorted_dredd_declarations.insert(dredd_declarations.begin(),
                                    dredd_declarations.end());
   for (const auto& decl : sorted_dredd_declarations) {
-    bool result = rewriter_.InsertTextBefore(
+    bool rewriter_result = rewriter_.InsertTextBefore(
         start_location_of_first_decl_in_source_file, decl);
-    (void)result;  // Keep release-mode compilers happy.
-    assert(!result && "Rewrite failed.\n");
+    (void)rewriter_result;  // Keep release-mode compilers happy.
+    assert(!rewriter_result && "Rewrite failed.\n");
   }
 
   std::string dredd_prelude = compiler_instance_.getLangOpts().CPlusPlus
                                   ? GetDreddPreludeCpp(initial_mutation_id)
                                   : GetDreddPreludeC(initial_mutation_id);
 
-  bool result = rewriter_.InsertTextBefore(
+  bool rewriter_result = rewriter_.InsertTextBefore(
       visitor_->GetStartLocationOfFirstDeclInSourceFile(), dredd_prelude);
-  (void)result;  // Keep release-mode compilers happy.
-  assert(!result && "Rewrite failed.\n");
+  (void)rewriter_result;  // Keep release-mode compilers happy.
+  assert(!rewriter_result && "Rewrite failed.\n");
 
-  result = rewriter_.overwriteChangedFiles();
-  (void)result;  // Keep release mode compilers happy
-  assert(!result && "Something went wrong emitting rewritten files.");
+  rewriter_result = rewriter_.overwriteChangedFiles();
+  (void)rewriter_result;  // Keep release mode compilers happy
+  assert(!rewriter_result && "Something went wrong emitting rewritten files.");
 }
 
 std::string MutateAstConsumer::GetDreddPreludeCpp(

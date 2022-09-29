@@ -624,19 +624,19 @@ void MutationReplaceBinaryOperator::ReplaceOperator(
     rhs_suffix = ", " + std::to_string(local_mutation_id) + ")";
   }
   // The prefixes and suffixes are ready, so make the relevant insertions.
-  bool result = rewriter.InsertTextBefore(
+  bool rewriter_result = rewriter.InsertTextBefore(
       lhs_source_range_in_main_file.getBegin(), lhs_prefix);
-  assert(!result && "Rewrite failed.\n");
-  result = rewriter.InsertTextAfterToken(lhs_source_range_in_main_file.getEnd(),
-                                         lhs_suffix);
-  assert(!result && "Rewrite failed.\n");
-  result = rewriter.InsertTextBefore(rhs_source_range_in_main_file.getBegin(),
-                                     rhs_prefix);
-  assert(!result && "Rewrite failed.\n");
-  result = rewriter.InsertTextAfterToken(rhs_source_range_in_main_file.getEnd(),
-                                         rhs_suffix);
-  assert(!result && "Rewrite failed.\n");
-  (void)result;  // Keep release-mode compilers happy.
+  assert(!rewriter_result && "Rewrite failed.\n");
+  rewriter_result = rewriter.InsertTextAfterToken(
+      lhs_source_range_in_main_file.getEnd(), lhs_suffix);
+  assert(!rewriter_result && "Rewrite failed.\n");
+  rewriter_result = rewriter.InsertTextBefore(
+      rhs_source_range_in_main_file.getBegin(), rhs_prefix);
+  assert(!rewriter_result && "Rewrite failed.\n");
+  rewriter_result = rewriter.InsertTextAfterToken(
+      rhs_source_range_in_main_file.getEnd(), rhs_suffix);
+  assert(!rewriter_result && "Rewrite failed.\n");
+  (void)rewriter_result;  // Keep release-mode compilers happy.
 }
 
 void MutationReplaceBinaryOperator::HandleCLogicalOperator(
