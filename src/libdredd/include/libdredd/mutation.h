@@ -21,7 +21,7 @@
 #include "clang/AST/ASTContext.h"
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Rewrite/Core/Rewriter.h"
-#include "libdredd/protobufs/dredd.pb.h"
+#include "libdredd/protobufs/protobufs.h"
 
 namespace dredd {
 

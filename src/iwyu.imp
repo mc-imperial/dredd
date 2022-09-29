@@ -20,4 +20,8 @@
   # Googletest "gtest/gtest.h"
   { include: ["<gtest/gtest-message.h>", "private", "\"gtest/gtest.h\"", "public"] },
   { include: ["<gtest/gtest-test-part.h>", "private", "\"gtest/gtest.h\"", "public"] },
+
+  # Protobuf
+  { include: ["\"libdredd/protobufs/dredd.pb.h\"", "private", "\"libdredd/protobufs/protobufs.h\"", "public"] },
+
 ]

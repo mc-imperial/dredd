@@ -16,7 +16,8 @@ cmake_minimum_required(VERSION 3.13)
 
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/protobufs)
 
-set(PROTOBUF_SOURCE ${CMAKE_CURRENT_SOURCE_DIR}/src/dredd.proto)
+set(PROTOBUF_SOURCE_PREFIX ${CMAKE_CURRENT_SOURCE_DIR}/include/libdredd/protobufs)
+set(PROTOBUF_SOURCE ${PROTOBUF_SOURCE_PREFIX}/dredd.proto)
 
 set(DREDD_PROTOC_COMMAND
     "protobuf::protoc"
@@ -25,7 +26,7 @@ By default it is the protobufs::protoc CMake target.")
 
 add_custom_command(
   OUTPUT protobufs/dredd.pb.cc protobufs/dredd.pb.h
-  COMMAND "${DREDD_PROTOC_COMMAND}" -I=${CMAKE_CURRENT_SOURCE_DIR}/src
+  COMMAND "${DREDD_PROTOC_COMMAND}" -I=${PROTOBUF_SOURCE_PREFIX}
           --cpp_out=protobufs ${PROTOBUF_SOURCE}
   DEPENDS ${PROTOBUF_SOURCE}
   COMMENT "Generate protobuf sources from proto definition file.")
@@ -39,6 +40,7 @@ add_library(
   include/libdredd/mutation_replace_expr.h
   include/libdredd/mutation_replace_unary_operator.h
   include/libdredd/new_mutate_frontend_action_factory.h
+  include/libdredd/protobufs/protobufs.h
   include_private/include/libdredd/mutate_ast_consumer.h
   include_private/include/libdredd/mutate_visitor.h
   include_private/include/libdredd/mutation_tree_node.h
