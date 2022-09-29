@@ -31,6 +31,7 @@
 #pragma clang diagnostic ignored "-Winconsistent-missing-destructor-override"
 #pragma clang diagnostic ignored "-Wdeprecated-dynamic-exception-spec"
 #pragma clang diagnostic ignored "-Wconditional-uninitialized"
+#pragma clang diagnostic ignored "-Wreserved-id-macro"
 #elif defined(__GNUC__)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wconversion"
@@ -42,6 +43,7 @@
 #pragma warning(disable : 4244)
 #pragma warning(disable : 4365)
 #pragma warning(disable : 4668)
+#pragma warning(disable : 4946)
 #endif
 
 // The following should be the only place in the project where protobuf files
