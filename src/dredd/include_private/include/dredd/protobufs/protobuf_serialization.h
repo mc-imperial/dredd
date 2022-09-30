@@ -12,45 +12,31 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef LIBDREDD_PROTOBUFS_PROTOBUFS_H
-#define LIBDREDD_PROTOBUFS_PROTOBUFS_H
+#ifndef DREDD_PROTOBUFS_PROTOBUF_SERIALIZATION_H
+#define DREDD_PROTOBUFS_PROTOBUF_SERIALIZATION_H
 
 #if defined(__clang__)
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wunknown-warning-option"  // Must come first
 #pragma clang diagnostic ignored "-Wreserved-identifier"
-#pragma clang diagnostic ignored "-Wshadow"
-#pragma clang diagnostic ignored "-Wsuggest-destructor-override"
-#pragma clang diagnostic ignored "-Wunused-parameter"
-#pragma clang diagnostic ignored "-Wzero-as-null-pointer-constant"
-#pragma clang diagnostic ignored "-Wsign-conversion"
-#pragma clang diagnostic ignored "-Wshorten-64-to-32"
-#pragma clang diagnostic ignored "-Wextra-semi-stmt"
+#pragma clang diagnostic ignored "-Wreserved-macro-identifier"
 #pragma clang diagnostic ignored "-Wweak-vtables"
-#pragma clang diagnostic ignored "-Wundef"
 #pragma clang diagnostic ignored "-Winconsistent-missing-destructor-override"
-#pragma clang diagnostic ignored "-Wdeprecated-dynamic-exception-spec"
-#pragma clang diagnostic ignored "-Wconditional-uninitialized"
+#pragma clang diagnostic ignored "-Wsuggest-destructor-override"
 #pragma clang diagnostic ignored "-Wreserved-id-macro"
 #elif defined(__GNUC__)
 #pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wconversion"
-#pragma GCC diagnostic ignored "-Wshadow"
-#pragma GCC diagnostic ignored "-Wunused-parameter"
-#pragma GCC diagnostic ignored "-Wpedantic"
 #elif defined(_MSC_VER)
 #pragma warning(push)
-#pragma warning(disable : 4244)
-#pragma warning(disable : 4365)
-#pragma warning(disable : 4668)
+#pragma warning(disable : 4623)
 #pragma warning(disable : 4946)
 #endif
 
 // The following should be the only place in the project where protobuf files
-// are directly included. This is so that they can be compiled in a manner where
-// warnings are ignored.
-
-#include "libdredd/protobufs/dredd.pb.h"
+// related to serialization are are directly included. This is so that they can
+// be compiled in a manner where warnings are ignored.
+#include "google/protobuf/stubs/status.h"
+#include "google/protobuf/util/json_util.h"
 
 #if defined(__clang__)
 #pragma clang diagnostic pop
@@ -60,4 +46,14 @@
 #pragma warning(pop)
 #endif
 
-#endif  // LIBDREDD_PROTOBUFS_PROTOBUFS_H
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wexit-time-destructors"
+#pragma clang diagnostic ignored "-Wglobal-constructors"
+#elif defined(__GNUC__)
+#pragma GCC diagnostic push
+#elif defined(_MSC_VER)
+#pragma warning(push)
+#endif
+
+#endif  // DREDD_PROTOBUFS_PROTOBUF_SERIALIZATION_H

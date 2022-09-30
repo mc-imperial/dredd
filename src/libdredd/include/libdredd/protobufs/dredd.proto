@@ -15,9 +15,7 @@ syntax = "proto3";
 
 package dredd.protobufs;
 
-message MutationInfo {
-  repeated MutationInfoForFile info_for_files = 1;
-}
+message MutationInfo { repeated MutationInfoForFile info_for_files = 1; }
 
 message MutationInfoForFile {
   string filename = 1;
@@ -51,18 +49,7 @@ message MutationRemoveStmt {
 }
 
 message MutationReplaceExprInstance {
-  enum MutationReplaceExprAction {
-    REPLACE_WITH_0 = 0;
-    REPLACE_WITH_1 = 1;
-    REPLACE_WITH_MINUS_1 = 2;
-    REPLACE_WITH_0_FLOAT = 3;
-    REPLACE_WITH_1_FLOAT = 4;
-    REPLACE_WITH_MINUS_1_FLOAT = 5;
-    INSERT_UOP_PreInc = 6;
-    INSERT_UOP_PreDec = 7;
-    INSERT_UOP_Not = 8;
-    INSERT_UOP_LNot = 9;
-  }
+  enum MutationReplaceExprAction { PLACEHOLDER = 0; }
   MutationReplaceExprAction action = 1;
   int32 mutation_id = 2;
 }
@@ -75,17 +62,13 @@ message MutationReplaceExpr {
 }
 
 message MutationReplaceBinaryOperatorInstance {
-  enum MutationReplaceBinaryOperatorAction {
-    REPLACE_WITH_Add = 0;
-  }
+  enum MutationReplaceBinaryOperatorAction { PLACEHOLDER = 0; }
   MutationReplaceBinaryOperatorAction action = 1;
   int32 mutation_id = 2;
 }
 
 message MutationReplaceBinaryOperator {
-  enum BinaryOperator {
-    Add = 0;
-  }
+  enum BinaryOperator { PLACEHOLDER = 0; }
   SourceLocation expr_start = 1;
   SourceLocation expr_end = 2;
   SourceLocation lhs_start = 3;
@@ -100,17 +83,13 @@ message MutationReplaceBinaryOperator {
 }
 
 message MutationReplaceUnaryOperatorInstance {
-  enum MutationReplaceUnaryOperatorAction {
-    REPLACE_WITH_Not = 0;
-  }
+  enum MutationReplaceUnaryOperatorAction { PLACEHOLDER = 0; }
   MutationReplaceUnaryOperatorAction action = 1;
   int32 mutation_id = 2;
 }
 
 message MutationReplaceUnaryOperator {
-  enum UnaryOperator {
-    Not = 0;
-  }
+  enum UnaryOperator { PLACEHOLDER = 0; }
   SourceLocation expr_start = 1;
   SourceLocation expr_end = 2;
   SourceLocation operand_start = 3;

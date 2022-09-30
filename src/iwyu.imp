@@ -22,6 +22,8 @@
   { include: ["<gtest/gtest-test-part.h>", "private", "\"gtest/gtest.h\"", "public"] },
 
   # Protobuf
-  { include: ["<libdredd/protobufs/dredd.pb.h>", "private", "\"libdredd/protobufs/protobufs.h\"", "public"] },
+  { include: ["<libdredd/protobufs/dredd.pb.h>", "private", "\"libdredd/protobufs/dredd_protobufs.h\"", "public"] },
+  { include: ["<google/protobuf/stubs/status.h>", "private", "\"dredd/protobufs/protobuf_serialization.h\"", "public"] },
+  { include: ["<google/protobuf/util/json_util.h>", "private", "\"dredd/protobufs/protobuf_serialization.h\"", "public"] },
 
 ]

@@ -18,7 +18,7 @@
 #include <memory>
 
 #include "clang/Tooling/Tooling.h"
-#include "libdredd/protobufs/protobufs.h"
+#include "libdredd/protobufs/dredd_protobufs.h"
 
 namespace dredd {
 

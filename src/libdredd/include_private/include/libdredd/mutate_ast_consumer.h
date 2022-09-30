@@ -25,7 +25,7 @@
 #include "clang/Rewrite/Core/Rewriter.h"
 #include "libdredd/mutate_visitor.h"
 #include "libdredd/mutation_tree_node.h"
-#include "libdredd/protobufs/protobufs.h"
+#include "libdredd/protobufs/dredd_protobufs.h"
 
 namespace dredd {
 

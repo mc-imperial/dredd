@@ -40,11 +40,11 @@ add_library(
   include/libdredd/mutation_replace_expr.h
   include/libdredd/mutation_replace_unary_operator.h
   include/libdredd/new_mutate_frontend_action_factory.h
-  include/libdredd/protobufs/protobufs.h
+  include/libdredd/protobufs/dredd_protobufs.h
+  include/libdredd/util.h
   include_private/include/libdredd/mutate_ast_consumer.h
   include_private/include/libdredd/mutate_visitor.h
   include_private/include/libdredd/mutation_tree_node.h
-  include/libdredd/util.h
   ${CMAKE_CURRENT_BINARY_DIR}/protobufs/dredd.pb.h
   src/mutate_ast_consumer.cc
   src/mutate_visitor.cc

@@ -19,52 +19,15 @@
 
 #include "clang/Tooling/CommonOptionsParser.h"
 #include "clang/Tooling/Tooling.h"
+#include "dredd/protobufs/protobuf_serialization.h"
 #include "libdredd/new_mutate_frontend_action_factory.h"
-#include "libdredd/protobufs/protobufs.h"
+#include "libdredd/protobufs/dredd_protobufs.h"
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/Error.h"
 #include "llvm/Support/Signals.h"
 #include "llvm/Support/raw_ostream.h"
-
-#if defined(__clang__)
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wunknown-warning-option"  // Must come first
-#pragma clang diagnostic ignored "-Wreserved-identifier"
-#pragma clang diagnostic ignored "-Wreserved-macro-identifier"
-#pragma clang diagnostic ignored "-Wweak-vtables"
-#pragma clang diagnostic ignored "-Winconsistent-missing-destructor-override"
-#pragma clang diagnostic ignored "-Wsuggest-destructor-override"
-#pragma clang diagnostic ignored "-Wreserved-id-macro"
-#elif defined(__GNUC__)
-#pragma GCC diagnostic push
-#elif defined(_MSC_VER)
-#pragma warning(push)
-#pragma warning(disable : 4623)
-#pragma warning(disable : 4946)
-#endif
-
-#include "google/protobuf/stubs/status.h"
-#include "google/protobuf/util/json_util.h"
-
-#if defined(__clang__)
-#pragma clang diagnostic pop
-#elif defined(__GNUC__)
-#pragma GCC diagnostic pop
-#elif defined(_MSC_VER)
-#pragma warning(pop)
-#endif
-
-#if defined(__clang__)
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wexit-time-destructors"
-#pragma clang diagnostic ignored "-Wglobal-constructors"
-#elif defined(__GNUC__)
-#pragma GCC diagnostic push
-#elif defined(_MSC_VER)
-#pragma warning(push)
-#endif
 
 // Set up the command line options
 // NOLINTNEXTLINE
