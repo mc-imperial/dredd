@@ -131,6 +131,10 @@ case "$(uname)" in
   rm test/single_file/add_type_aliases.cc.noopt.expected
   rm test/single_file/add_type_aliases.c.expected
   rm test/single_file/add_type_aliases.c.noopt.expected
+  rm test/single_file/positive_int_as_minus_one.cc.expected
+  rm test/single_file/positive_int_as_minus_one.cc.noopt.expected
+  rm test/single_file/positive_int_as_minus_one.c.expected
+  rm test/single_file/positive_int_as_minus_one.c.noopt.expected
   ;;
 
 *)
