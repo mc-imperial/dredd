@@ -117,6 +117,22 @@ popd
 
 
 case "$(uname)" in
+"MINGW"*|"MSYS_NT"*)
+  # The following single-file tests give different expected results on Windows
+  # due to differences in how certain builtin types, such as size_t and
+  # uint64_t, expand. For simplicity, remove them before running single-file
+  # tests on Windows.
+  rm test/single_file/initializer_list.cc.*
+  rm test/single_file/add_type_aliases.cc.*
+  rm test/single_file/add_type_aliases.c.*
+  ;;
+
+*)
+  ;;
+esac
+
+
+case "$(uname)" in
 "Linux")
   # On Linux, run a few extra analyzes using the compile_commands.json file.
   check_compile_commands.sh build/compile_commands.json
