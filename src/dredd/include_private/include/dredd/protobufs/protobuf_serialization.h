@@ -46,14 +46,4 @@
 #pragma warning(pop)
 #endif
 
-#if defined(__clang__)
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wexit-time-destructors"
-#pragma clang diagnostic ignored "-Wglobal-constructors"
-#elif defined(__GNUC__)
-#pragma GCC diagnostic push
-#elif defined(_MSC_VER)
-#pragma warning(push)
-#endif
-
 #endif  // DREDD_PROTOBUFS_PROTOBUF_SERIALIZATION_H
