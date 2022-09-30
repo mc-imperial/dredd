@@ -20,17 +20,22 @@
 #include <unordered_set>
 
 #include "clang/AST/ASTContext.h"
+#include "clang/AST/Expr.h"
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Rewrite/Core/Rewriter.h"
 #include "libdredd/mutation.h"
+#include "libdredd/protobufs/dredd_protobufs.h"
+#include "libdredd/util.h"
 
 namespace dredd {
 
 class MutationReplaceExpr : public Mutation {
  public:
-  explicit MutationReplaceExpr(const clang::Expr& expr);
+  MutationReplaceExpr(const clang::Expr& expr,
+                      const clang::Preprocessor& preprocessor,
+                      const clang::ASTContext& ast_context);
 
-  void Apply(
+  protobufs::MutationGroup Apply(
       clang::ASTContext& ast_context, const clang::Preprocessor& preprocessor,
       bool optimise_mutations, int first_mutation_id_in_file, int& mutation_id,
       clang::Rewriter& rewriter,
@@ -67,44 +72,48 @@ class MutationReplaceExpr : public Mutation {
                                 std::string& function_name) const;
 
   // Replace expressions with constants.
-  void GenerateConstantReplacement(clang::ASTContext& ast_context,
-                                   bool optimise_mutations,
-                                   std::stringstream& new_function,
-                                   int& mutant_offset) const;
+  void GenerateConstantReplacement(
+      clang::ASTContext& ast_context, bool optimise_mutations,
+      int mutation_id_base, std::stringstream& new_function,
+      int& mutation_id_offset,
+      protobufs::MutationReplaceExpr& protobuf_message) const;
 
-  void GenerateBooleanConstantReplacement(clang::ASTContext& ast_context,
-                                          bool optimise_mutations,
-                                          std::stringstream& new_function,
-                                          int& mutant_offset) const;
+  void GenerateBooleanConstantReplacement(
+      clang::ASTContext& ast_context, bool optimise_mutations,
+      int mutation_id_base, std::stringstream& new_function,
+      int& mutation_id_offset,
+      protobufs::MutationReplaceExpr& protobuf_message) const;
 
-  void GenerateIntegerConstantReplacement(clang::ASTContext& ast_context,
-                                          bool optimise_mutations,
-                                          std::stringstream& new_function,
-                                          int& mutant_offset) const;
+  void GenerateIntegerConstantReplacement(
+      clang::ASTContext& ast_context, bool optimise_mutations,
+      int mutation_id_base, std::stringstream& new_function,
+      int& mutation_id_offset,
+      protobufs::MutationReplaceExpr& protobuf_message) const;
 
-  void GenerateFloatConstantReplacement(clang::ASTContext& ast_context,
-                                        bool optimise_mutations,
-                                        std::stringstream& new_function,
-                                        int& mutant_offset) const;
+  void GenerateFloatConstantReplacement(
+      clang::ASTContext& ast_context, bool optimise_mutations,
+      int mutation_id_base, std::stringstream& new_function,
+      int& mutation_id_offset,
+      protobufs::MutationReplaceExpr& protobuf_message) const;
 
   // Insert valid unary operators such as !, ~, ++ and --.
-  void GenerateUnaryOperatorInsertion(const std::string& arg_evaluated,
-                                      clang::ASTContext& ast_context,
-                                      bool optimise_mutations,
-                                      std::stringstream& new_function,
-                                      int& mutant_offset) const;
+  void GenerateUnaryOperatorInsertion(
+      const std::string& arg_evaluated, clang::ASTContext& ast_context,
+      bool optimise_mutations, int mutation_id_base,
+      std::stringstream& new_function, int& mutation_id_offset,
+      protobufs::MutationReplaceExpr& protobuf_message) const;
 
-  std::string GenerateMutatorFunction(clang::ASTContext& ast_context,
-                                      const std::string& function_name,
-                                      const std::string& result_type,
-                                      const std::string& input_type,
-                                      bool optimise_mutations,
-                                      int& mutation_id) const;
+  std::string GenerateMutatorFunction(
+      clang::ASTContext& ast_context, const std::string& function_name,
+      const std::string& result_type, const std::string& input_type,
+      bool optimise_mutations, int& mutation_id,
+      protobufs::MutationReplaceExpr& protobuf_message) const;
 
   [[nodiscard]] std::string GetFunctionName(
       bool optimise_mutations, clang::ASTContext& ast_context) const;
 
   const clang::Expr& expr_;
+  const InfoForSourceRange info_for_source_range_;
 };
 
 }  // namespace dredd

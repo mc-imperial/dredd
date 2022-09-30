@@ -29,15 +29,32 @@
 
 namespace dredd {
 
-MutationRemoveStmt::MutationRemoveStmt(const clang::Stmt& stmt) : stmt_(stmt) {}
+MutationRemoveStmt::MutationRemoveStmt(const clang::Stmt& stmt,
+                                       const clang::Preprocessor& preprocessor,
+                                       const clang::ASTContext& ast_context)
+    : stmt_(stmt),
+      info_for_source_range_(GetSourceRangeInMainFile(preprocessor, stmt),
+                             ast_context) {}
 
-void MutationRemoveStmt::Apply(
+protobufs::MutationGroup MutationRemoveStmt::Apply(
     clang::ASTContext& ast_context, const clang::Preprocessor& preprocessor,
     bool optimise_mutations, int first_mutation_id_in_file, int& mutation_id,
     clang::Rewriter& rewriter,
     std::unordered_set<std::string>& dredd_declarations) const {
   (void)dredd_declarations;  // Unused.
   (void)optimise_mutations;  // Unused.
+
+  // The protobuf object for the mutation, which will be wrapped in a
+  // MutationGroup.
+  protobufs::MutationRemoveStmt inner_result;
+  inner_result.set_mutation_id(mutation_id);
+  inner_result.mutable_start()->set_line(info_for_source_range_.GetStartLine());
+  inner_result.mutable_start()->set_column(
+      info_for_source_range_.GetStartColumn());
+  inner_result.mutable_end()->set_line(info_for_source_range_.GetEndLine());
+  inner_result.mutable_end()->set_column(info_for_source_range_.GetEndColumn());
+  *inner_result.mutable_snippet() = info_for_source_range_.GetSnippet();
+
   clang::CharSourceRange source_range = clang::CharSourceRange::getTokenRange(
       GetSourceRangeInMainFile(preprocessor, stmt_));
 
@@ -96,7 +113,12 @@ void MutationRemoveStmt::Apply(
           "}");
   assert(!rewriter_result && "Rewrite failed.\n");
   (void)rewriter_result;  // Keep release-mode compilers happy.
+
   mutation_id++;
+
+  protobufs::MutationGroup result;
+  *result.mutable_remove_stmt() = inner_result;
+  return result;
 }
 
 }  // namespace dredd

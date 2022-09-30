@@ -21,6 +21,7 @@
 #include "clang/AST/ASTContext.h"
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Rewrite/Core/Rewriter.h"
+#include "libdredd/protobufs/dredd_protobufs.h"
 
 namespace dredd {
 
@@ -47,7 +48,7 @@ class Mutation {
   // The |dredd_declarations| argument provides a set of declarations that will
   // be added to the start of the source file being mutated. This allows
   // avoiding redundant repeat declarations.
-  virtual void Apply(
+  virtual protobufs::MutationGroup Apply(
       clang::ASTContext& ast_context, const clang::Preprocessor& preprocessor,
       bool optimise_mutations, int first_mutation_id_in_file, int& mutation_id,
       clang::Rewriter& rewriter,

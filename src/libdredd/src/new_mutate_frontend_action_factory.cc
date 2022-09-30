@@ -32,7 +32,7 @@ namespace dredd {
 class MutateFrontendAction : public clang::ASTFrontendAction {
  public:
   MutateFrontendAction(bool optimise_mutations, bool dump_asts,
-                       int& mutation_id, MutationInfo& mutation_info,
+                       int& mutation_id, protobufs::MutationInfo& mutation_info,
                        std::set<std::string>& processed_files)
       : optimise_mutations_(optimise_mutations),
         dump_asts_(dump_asts),
@@ -62,18 +62,20 @@ class MutateFrontendAction : public clang::ASTFrontendAction {
   const bool optimise_mutations_;
   const bool dump_asts_;
   int& mutation_id_;
-  MutationInfo& mutation_info_;
+  protobufs::MutationInfo& mutation_info_;
   std::set<std::string>& processed_files_;
 };
 
 std::unique_ptr<clang::tooling::FrontendActionFactory>
 NewMutateFrontendActionFactory(bool optimise_mutations, bool dump_asts,
-                               int& mutation_id, MutationInfo& mutation_info) {
+                               int& mutation_id,
+                               protobufs::MutationInfo& mutation_info) {
   class MutateFrontendActionFactory
       : public clang::tooling::FrontendActionFactory {
    public:
     MutateFrontendActionFactory(bool optimise_mutations, bool dump_asts,
-                                int& mutation_id, MutationInfo& mutation_info)
+                                int& mutation_id,
+                                protobufs::MutationInfo& mutation_info)
         : optimise_mutations_(optimise_mutations),
           dump_asts_(dump_asts),
           mutation_id_(mutation_id),
@@ -89,7 +91,7 @@ NewMutateFrontendActionFactory(bool optimise_mutations, bool dump_asts,
     const bool optimise_mutations_;
     const bool dump_asts_;
     int& mutation_id_;
-    MutationInfo& mutation_info_;
+    protobufs::MutationInfo& mutation_info_;
 
     // Stores the ids of the files that have been processed so far, to avoid
     // processing a file multiple times.

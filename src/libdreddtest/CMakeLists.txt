@@ -26,7 +26,10 @@ add_executable(
   src/mutation_replace_binary_operator_test.cc
   src/mutation_replace_expr_test.cc src/mutation_replace_unary_operator_test.cc)
 
-target_link_libraries(libdreddtest PRIVATE libdredd gtest_main)
+target_link_libraries(libdreddtest PRIVATE libdredd gtest_main
+                                           protobuf::libprotobuf)
 target_include_directories(libdreddtest PRIVATE include_private/include)
+
+target_include_directories(libdreddtest SYSTEM PRIVATE ${CMAKE_BINARY_DIR}/src)
 
 add_test(NAME libdreddtest COMMAND libdreddtest)

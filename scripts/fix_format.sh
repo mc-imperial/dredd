@@ -31,3 +31,5 @@ for f in $(examples_cmake_files.sh)
 do
     cmake-format --first-comment-is-literal TRUE -i "$f"
 done
+
+clang-format -i ./src/libdredd/include/libdredd/protobufs/dredd.proto

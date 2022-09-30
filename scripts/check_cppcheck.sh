@@ -34,4 +34,5 @@ cppcheck \
   --suppress=missingInclude \
   --suppress=unmatchedSuppression \
   --suppress=syntaxError \
-  --suppress=useStlAlgorithm
+  --suppress=useStlAlgorithm \
+  --suppress=preprocessorErrorDirective

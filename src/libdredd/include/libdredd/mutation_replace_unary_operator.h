@@ -21,32 +21,34 @@
 #include <vector>
 
 #include "clang/AST/ASTContext.h"
-#include "clang/AST/ASTFwd.h"
+#include "clang/AST/Expr.h"
 #include "clang/AST/OperationKinds.h"
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Rewrite/Core/Rewriter.h"
 #include "libdredd/mutation.h"
+#include "libdredd/protobufs/dredd_protobufs.h"
+#include "libdredd/util.h"
 
 namespace dredd {
 
 class MutationReplaceUnaryOperator : public Mutation {
  public:
-  explicit MutationReplaceUnaryOperator(
-      const clang::UnaryOperator& unary_operator);
+  MutationReplaceUnaryOperator(const clang::UnaryOperator& unary_operator,
+                               const clang::Preprocessor& preprocessor,
+                               const clang::ASTContext& ast_context);
 
-  void Apply(
+  protobufs::MutationGroup Apply(
       clang::ASTContext& ast_context, const clang::Preprocessor& preprocessor,
       bool optimise_mutations, int first_mutation_id_in_file, int& mutation_id,
       clang::Rewriter& rewriter,
       std::unordered_set<std::string>& dredd_declarations) const override;
 
  private:
-  std::string GenerateMutatorFunction(clang::ASTContext& ast_context,
-                                      const std::string& function_name,
-                                      const std::string& result_type,
-                                      const std::string& input_type,
-                                      bool optimise_mutations,
-                                      int& mutation_id) const;
+  std::string GenerateMutatorFunction(
+      clang::ASTContext& ast_context, const std::string& function_name,
+      const std::string& result_type, const std::string& input_type,
+      bool optimise_mutations, int& mutation_id,
+      protobufs::MutationReplaceUnaryOperator& protobuf_message) const;
 
   [[nodiscard]] static bool IsPrefix(clang::UnaryOperatorKind operator_kind);
 
@@ -66,11 +68,14 @@ class MutationReplaceUnaryOperator : public Mutation {
   // Replaces unary operators with other valid unary operators.
   void GenerateUnaryOperatorReplacement(
       const std::string& arg_evaluated, clang::ASTContext& ast_context,
-      bool optimise_mutations,
+      bool optimise_mutations, int mutation_id_base,
       const std::vector<clang::UnaryOperatorKind>& operators,
-      std::stringstream& new_function, int& mutant_offset) const;
+      std::stringstream& new_function, int& mutation_id_offset,
+      protobufs::MutationReplaceUnaryOperator& protobuf_message) const;
 
   const clang::UnaryOperator& unary_operator_;
+  const InfoForSourceRange info_for_overall_expr_;
+  const InfoForSourceRange info_for_sub_expr_;
 };
 
 }  // namespace dredd

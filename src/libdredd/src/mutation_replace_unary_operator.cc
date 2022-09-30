@@ -33,8 +33,15 @@
 namespace dredd {
 
 MutationReplaceUnaryOperator::MutationReplaceUnaryOperator(
-    const clang::UnaryOperator& unary_operator)
-    : unary_operator_(unary_operator) {}
+    const clang::UnaryOperator& unary_operator,
+    const clang::Preprocessor& preprocessor,
+    const clang::ASTContext& ast_context)
+    : unary_operator_(unary_operator),
+      info_for_overall_expr_(
+          GetSourceRangeInMainFile(preprocessor, unary_operator), ast_context),
+      info_for_sub_expr_(
+          GetSourceRangeInMainFile(preprocessor, *unary_operator.getSubExpr()),
+          ast_context) {}
 
 bool MutationReplaceUnaryOperator::IsPrefix(
     clang::UnaryOperatorKind operator_kind) {
@@ -201,7 +208,8 @@ std::string MutationReplaceUnaryOperator::GetFunctionName(
 std::string MutationReplaceUnaryOperator::GenerateMutatorFunction(
     clang::ASTContext& ast_context, const std::string& function_name,
     const std::string& result_type, const std::string& input_type,
-    bool optimise_mutations, int& mutation_id) const {
+    bool optimise_mutations, int& mutation_id,
+    protobufs::MutationReplaceUnaryOperator& protobuf_message) const {
   std::stringstream new_function;
   new_function << "static " << result_type << " " << function_name << "(";
   if (ast_context.getLangOpts().CPlusPlus) {
@@ -234,23 +242,23 @@ std::string MutationReplaceUnaryOperator::GenerateMutatorFunction(
         << ";\n";
   }
 
-  int mutant_offset = 0;
+  int mutation_id_offset = 0;
   std::vector<clang::UnaryOperatorKind> operators = {
       clang::UnaryOperatorKind::UO_PreInc, clang::UnaryOperatorKind::UO_PostInc,
       clang::UnaryOperatorKind::UO_PreDec, clang::UnaryOperatorKind::UO_PostDec,
       clang::UnaryOperatorKind::UO_Not,    clang::UnaryOperatorKind::UO_Minus,
       clang::UnaryOperatorKind::UO_LNot};
 
-  GenerateUnaryOperatorReplacement(arg_evaluated, ast_context,
-                                   optimise_mutations, operators, new_function,
-                                   mutant_offset);
+  GenerateUnaryOperatorReplacement(
+      arg_evaluated, ast_context, optimise_mutations, mutation_id, operators,
+      new_function, mutation_id_offset, protobuf_message);
 
   new_function << "  return " << GetExpr(ast_context) << ";\n";
   new_function << "}\n\n";
 
-  // The function captures |mutant_offset| different mutations, so bump up
+  // The function captures |mutation_id_offset| different mutations, so bump up
   // the mutation id accordingly.
-  mutation_id += mutant_offset;
+  mutation_id += mutation_id_offset;
 
   return new_function.str();
 }
@@ -288,9 +296,10 @@ bool MutationReplaceUnaryOperator::IsRedundantReplacementOperator(
 
 void MutationReplaceUnaryOperator::GenerateUnaryOperatorReplacement(
     const std::string& arg_evaluated, clang::ASTContext& ast_context,
-    bool optimise_mutations,
+    bool optimise_mutations, int mutation_id_base,
     const std::vector<clang::UnaryOperatorKind>& operators,
-    std::stringstream& new_function, int& mutant_offset) const {
+    std::stringstream& new_function, int& mutation_id_offset,
+    protobufs::MutationReplaceUnaryOperator& protobuf_message) const {
   for (const auto operator_kind : operators) {
     if (operator_kind == unary_operator_.getOpcode() ||
         !IsValidReplacementOperator(operator_kind) ||
@@ -299,7 +308,7 @@ void MutationReplaceUnaryOperator::GenerateUnaryOperatorReplacement(
       continue;
     }
     new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
-                 << mutant_offset << ")) return ";
+                 << mutation_id_offset << ")) return ";
     if (IsPrefix(operator_kind)) {
       new_function << clang::UnaryOperator::getOpcodeStr(operator_kind).str()
                    << arg_evaluated + ";\n";
@@ -308,7 +317,9 @@ void MutationReplaceUnaryOperator::GenerateUnaryOperatorReplacement(
                    << clang::UnaryOperator::getOpcodeStr(operator_kind).str()
                    << ";\n";
     }
-    mutant_offset++;
+    protobuf_message.add_instances()->set_mutation_id(mutation_id_base +
+                                                      mutation_id_offset);
+    mutation_id_offset++;
   }
 
   // In these cases, replacement with the argument is equivalent to replacement
@@ -327,16 +338,41 @@ void MutationReplaceUnaryOperator::GenerateUnaryOperatorReplacement(
       MutationReplaceExpr::ExprIsEquivalentToFloat(
           *unary_operator_.getSubExpr(), -1.0, ast_context)) {
     new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
-                 << mutant_offset << ")) return " + arg_evaluated + ";\n";
-    mutant_offset++;
+                 << mutation_id_offset << ")) return " + arg_evaluated + ";\n";
+    protobuf_message.add_instances()->set_mutation_id(mutation_id_base +
+                                                      mutation_id_offset);
+    mutation_id_offset++;
   }
 }
 
-void MutationReplaceUnaryOperator::Apply(
+protobufs::MutationGroup MutationReplaceUnaryOperator::Apply(
     clang::ASTContext& ast_context, const clang::Preprocessor& preprocessor,
     bool optimise_mutations, int first_mutation_id_in_file, int& mutation_id,
     clang::Rewriter& rewriter,
     std::unordered_set<std::string>& dredd_declarations) const {
+  // The protobuf object for the mutation, which will be wrapped in a
+  // MutationGroup.
+  protobufs::MutationReplaceUnaryOperator inner_result;
+
+  inner_result.mutable_expr_start()->set_line(
+      info_for_overall_expr_.GetStartLine());
+  inner_result.mutable_expr_start()->set_column(
+      info_for_overall_expr_.GetStartColumn());
+  inner_result.mutable_expr_end()->set_line(
+      info_for_overall_expr_.GetEndLine());
+  inner_result.mutable_expr_end()->set_column(
+      info_for_overall_expr_.GetEndColumn());
+  *inner_result.mutable_expr_snippet() = info_for_overall_expr_.GetSnippet();
+
+  inner_result.mutable_operand_start()->set_line(
+      info_for_sub_expr_.GetStartLine());
+  inner_result.mutable_operand_start()->set_column(
+      info_for_sub_expr_.GetStartColumn());
+  inner_result.mutable_operand_end()->set_line(info_for_sub_expr_.GetEndLine());
+  inner_result.mutable_operand_end()->set_column(
+      info_for_sub_expr_.GetEndColumn());
+  *inner_result.mutable_operand_snippet() = info_for_sub_expr_.GetSnippet();
+
   std::string new_function_name =
       GetFunctionName(optimise_mutations, ast_context);
   std::string result_type = unary_operator_.getType()
@@ -416,12 +452,16 @@ void MutationReplaceUnaryOperator::Apply(
   assert(!rewriter_result && "Rewrite failed.\n");
   (void)rewriter_result;  // Keep release-mode compilers happy.
 
-  std::string new_function =
-      GenerateMutatorFunction(ast_context, new_function_name, result_type,
-                              input_type, optimise_mutations, mutation_id);
+  std::string new_function = GenerateMutatorFunction(
+      ast_context, new_function_name, result_type, input_type,
+      optimise_mutations, mutation_id, inner_result);
   assert(!new_function.empty() && "Unsupported opcode.");
 
   dredd_declarations.insert(new_function);
+
+  protobufs::MutationGroup result;
+  *result.mutable_replace_unary_operator() = inner_result;
+  return result;
 }
 
 }  // namespace dredd

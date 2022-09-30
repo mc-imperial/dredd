@@ -19,8 +19,9 @@
 
 #include "clang/Tooling/CommonOptionsParser.h"
 #include "clang/Tooling/Tooling.h"
-#include "libdredd/mutation_info.h"
+#include "dredd/protobufs/protobuf_serialization.h"
 #include "libdredd/new_mutate_frontend_action_factory.h"
+#include "libdredd/protobufs/dredd_protobufs.h"
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/Support/CommandLine.h"
@@ -88,7 +89,7 @@ int main(int argc, const char** argv) {
 
   // Keeps track of the mutations that are applied to each source file,
   // including their hierarchical structure.
-  dredd::MutationInfo mutation_info;
+  dredd::protobufs::MutationInfo mutation_info;
 
   std::unique_ptr<clang::tooling::FrontendActionFactory> factory =
       dredd::NewMutateFrontendActionFactory(!no_mutation_opts, dump_asts,
@@ -99,8 +100,19 @@ int main(int argc, const char** argv) {
   if (return_code == 0) {
     // Application of mutations was successful, so write out the mutation info
     // in JSON format.
-    std::ofstream json_out(mutation_info_file);
-    mutation_info.ToJson(json_out);
+    std::string json_string;
+    auto json_options = google::protobuf::util::JsonOptions();
+    json_options.add_whitespace = true;
+    auto json_generation_status = google::protobuf::util::MessageToJsonString(
+        mutation_info, &json_string, json_options);
+    if (json_generation_status.ok()) {
+      std::ofstream transformations_json_file(mutation_info_file);
+      transformations_json_file << json_string;
+    } else {
+      llvm::errs() << "Error writing JSON data to " << mutation_info_file
+                   << "\n";
+      return 1;
+    }
   }
   return return_code;
 }

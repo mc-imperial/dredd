@@ -288,7 +288,9 @@ bool MutateVisitor::HandleUnaryOperator(clang::UnaryOperator* unary_operator) {
   }
 
   mutation_tree_path_.back()->AddMutation(
-      std::make_unique<MutationReplaceUnaryOperator>(*unary_operator));
+      std::make_unique<MutationReplaceUnaryOperator>(
+          *unary_operator, compiler_instance_.getPreprocessor(),
+          compiler_instance_.getASTContext()));
   return true;
 }
 
@@ -345,7 +347,9 @@ bool MutateVisitor::HandleBinaryOperator(
   }
 
   mutation_tree_path_.back()->AddMutation(
-      std::make_unique<MutationReplaceBinaryOperator>(*binary_operator));
+      std::make_unique<MutationReplaceBinaryOperator>(
+          *binary_operator, compiler_instance_.getPreprocessor(),
+          compiler_instance_.getASTContext()));
   return true;
 }
 
@@ -440,8 +444,9 @@ bool MutateVisitor::VisitExpr(clang::Expr* expr) {
     }
   }
 
-  mutation_tree_path_.back()->AddMutation(
-      std::make_unique<MutationReplaceExpr>(*expr));
+  mutation_tree_path_.back()->AddMutation(std::make_unique<MutationReplaceExpr>(
+      *expr, compiler_instance_.getPreprocessor(),
+      compiler_instance_.getASTContext()));
 
   return true;
 }
@@ -483,7 +488,9 @@ bool MutateVisitor::TraverseCompoundStmt(clang::CompoundStmt* compound_stmt) {
            "Statements can only be removed if they are nested in some "
            "declaration.");
     mutation_tree_path_.back()->AddMutation(
-        std::make_unique<MutationRemoveStmt>(*stmt));
+        std::make_unique<MutationRemoveStmt>(
+            *stmt, compiler_instance_.getPreprocessor(),
+            compiler_instance_.getASTContext()));
   }
   return true;
 }

@@ -50,7 +50,8 @@ void TestReplacement(const std::string& original, const std::string& expected,
   ASSERT_EQ(1, unary_operator.size());
 
   MutationReplaceUnaryOperator mutation(
-      *unary_operator[0].getNodeAs<clang::UnaryOperator>("op"));
+      *unary_operator[0].getNodeAs<clang::UnaryOperator>("op"),
+      ast_unit->getPreprocessor(), ast_unit->getASTContext());
 
   clang::Rewriter rewriter(ast_unit->getSourceManager(),
                            ast_unit->getLangOpts());
