@@ -29,6 +29,16 @@
 #include "llvm/Support/Signals.h"
 #include "llvm/Support/raw_ostream.h"
 
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wexit-time-destructors"
+#pragma clang diagnostic ignored "-Wglobal-constructors"
+#elif defined(__GNUC__)
+#pragma GCC diagnostic push
+#elif defined(_MSC_VER)
+#pragma warning(push)
+#endif
+
 // Set up the command line options
 // NOLINTNEXTLINE
 static llvm::cl::extrahelp common_help(
