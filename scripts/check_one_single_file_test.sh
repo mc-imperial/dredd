@@ -61,7 +61,7 @@ do
   if [ -z "${DREDD_REGENERATE_TEST_CASE+x}" ]
   then
     # Check that the mutated test case is as expected
-    diff "${copy_of_f}" "${DREDD_EXPECTED_FILE}"
+    diff --strip-trailing-cr "${copy_of_f}" "${DREDD_EXPECTED_FILE}"
   fi
 
   # Check that the mutated file compiles
