@@ -28,7 +28,7 @@ then
   then
     # Ensure that Dredd is in its installed location. This depends on a
     # debug build being available
-    cp build-Debug/src/dredd/dredd "${DREDD_INSTALLED_EXECUTABLE}"
+    cp temp/build-Debug/src/dredd/dredd "${DREDD_INSTALLED_EXECUTABLE}"
   fi
 
   # Avoid copying Dredd to its installed location when invoking the script that
