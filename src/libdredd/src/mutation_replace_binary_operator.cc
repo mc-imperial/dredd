@@ -492,25 +492,26 @@ protobufs::MutationGroup MutationReplaceBinaryOperator::Apply(
   protobufs::MutationReplaceBinaryOperator inner_result;
 
   inner_result.mutable_expr_start()->set_line(
-      info_for_overall_expr_.start_line);
+      info_for_overall_expr_.GetStartLine());
   inner_result.mutable_expr_start()->set_column(
-      info_for_overall_expr_.start_column);
-  inner_result.mutable_expr_end()->set_line(info_for_overall_expr_.end_line);
+      info_for_overall_expr_.GetStartColumn());
+  inner_result.mutable_expr_end()->set_line(
+      info_for_overall_expr_.GetEndLine());
   inner_result.mutable_expr_end()->set_column(
-      info_for_overall_expr_.end_column);
-  *inner_result.mutable_expr_snippet() = info_for_overall_expr_.snippet;
+      info_for_overall_expr_.GetEndColumn());
+  *inner_result.mutable_expr_snippet() = info_for_overall_expr_.GetSnippet();
 
-  inner_result.mutable_lhs_start()->set_line(info_for_lhs_.start_line);
-  inner_result.mutable_lhs_start()->set_column(info_for_lhs_.start_column);
-  inner_result.mutable_lhs_end()->set_line(info_for_lhs_.end_line);
-  inner_result.mutable_lhs_end()->set_column(info_for_lhs_.end_column);
-  *inner_result.mutable_lhs_snippet() = info_for_lhs_.snippet;
+  inner_result.mutable_lhs_start()->set_line(info_for_lhs_.GetStartLine());
+  inner_result.mutable_lhs_start()->set_column(info_for_lhs_.GetStartColumn());
+  inner_result.mutable_lhs_end()->set_line(info_for_lhs_.GetEndLine());
+  inner_result.mutable_lhs_end()->set_column(info_for_lhs_.GetEndColumn());
+  *inner_result.mutable_lhs_snippet() = info_for_lhs_.GetSnippet();
 
-  inner_result.mutable_rhs_start()->set_line(info_for_rhs_.start_line);
-  inner_result.mutable_rhs_start()->set_column(info_for_rhs_.start_column);
-  inner_result.mutable_rhs_end()->set_line(info_for_rhs_.end_line);
-  inner_result.mutable_rhs_end()->set_column(info_for_rhs_.end_column);
-  *inner_result.mutable_rhs_snippet() = info_for_rhs_.snippet;
+  inner_result.mutable_rhs_start()->set_line(info_for_rhs_.GetStartLine());
+  inner_result.mutable_rhs_start()->set_column(info_for_rhs_.GetStartColumn());
+  inner_result.mutable_rhs_end()->set_line(info_for_rhs_.GetEndLine());
+  inner_result.mutable_rhs_end()->set_column(info_for_rhs_.GetEndColumn());
+  *inner_result.mutable_rhs_snippet() = info_for_rhs_.GetSnippet();
 
   std::string new_function_name =
       GetFunctionName(optimise_mutations, ast_context);

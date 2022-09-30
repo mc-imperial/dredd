@@ -49,23 +49,32 @@ InfoForSourceRange::InfoForSourceRange(clang::SourceRange source_range,
       source_manager.getDecomposedLoc(source_range.getEnd());
   auto buffer_data = source_manager.getBufferData(start_loc_decomposed.first);
 
-  start_line = source_manager.getSpellingLineNumber(source_range.getBegin());
-  start_column =
+  start_line_ = source_manager.getSpellingLineNumber(source_range.getBegin());
+  start_column_ =
       source_manager.getSpellingColumnNumber(source_range.getBegin());
-  end_line = source_manager.getSpellingLineNumber(source_range.getEnd());
-  end_column = source_manager.getSpellingColumnNumber(source_range.getEnd()) +
-               final_token_length;
+  end_line_ = source_manager.getSpellingLineNumber(source_range.getEnd());
+  end_column_ = source_manager.getSpellingColumnNumber(source_range.getEnd()) +
+                final_token_length;
 
   unsigned int length = end_loc_decomposed.second -
                         start_loc_decomposed.second + final_token_length;
 
-  if (length <= 36) {
-    snippet = buffer_data.substr(start_loc_decomposed.second, length).str();
+  const std::string kSnipText(" ... [snip] ... ");
+  const unsigned int kSnippetLengthEachSide = 10;
+  const unsigned int kMinSnippedLength =
+      static_cast<unsigned int>(kSnipText.size()) + 2 * kSnippetLengthEachSide;
+  if (length <= kMinSnippedLength) {
+    snippet_ = buffer_data.substr(start_loc_decomposed.second, length).str();
   } else {
-    snippet =
-        buffer_data.substr(start_loc_decomposed.second, 10).str() +
-        " ... [snip] ... " +
-        buffer_data.substr(start_loc_decomposed.second + length - 10, 10).str();
+    snippet_ =
+        buffer_data.substr(start_loc_decomposed.second, kSnippetLengthEachSide)
+            .str() +
+        kSnipText +
+        buffer_data
+            .substr(
+                start_loc_decomposed.second + length - kSnippetLengthEachSide,
+                kSnippetLengthEachSide)
+            .str();
   }
 }
 

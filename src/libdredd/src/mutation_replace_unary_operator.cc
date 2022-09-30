@@ -355,20 +355,23 @@ protobufs::MutationGroup MutationReplaceUnaryOperator::Apply(
   protobufs::MutationReplaceUnaryOperator inner_result;
 
   inner_result.mutable_expr_start()->set_line(
-      info_for_overall_expr_.start_line);
+      info_for_overall_expr_.GetStartLine());
   inner_result.mutable_expr_start()->set_column(
-      info_for_overall_expr_.start_column);
-  inner_result.mutable_expr_end()->set_line(info_for_overall_expr_.end_line);
+      info_for_overall_expr_.GetStartColumn());
+  inner_result.mutable_expr_end()->set_line(
+      info_for_overall_expr_.GetEndLine());
   inner_result.mutable_expr_end()->set_column(
-      info_for_overall_expr_.end_column);
-  *inner_result.mutable_expr_snippet() = info_for_overall_expr_.snippet;
+      info_for_overall_expr_.GetEndColumn());
+  *inner_result.mutable_expr_snippet() = info_for_overall_expr_.GetSnippet();
 
-  inner_result.mutable_operand_start()->set_line(info_for_sub_expr_.start_line);
+  inner_result.mutable_operand_start()->set_line(
+      info_for_sub_expr_.GetStartLine());
   inner_result.mutable_operand_start()->set_column(
-      info_for_sub_expr_.start_column);
-  inner_result.mutable_operand_end()->set_line(info_for_sub_expr_.end_line);
-  inner_result.mutable_operand_end()->set_column(info_for_sub_expr_.end_column);
-  *inner_result.mutable_operand_snippet() = info_for_sub_expr_.snippet;
+      info_for_sub_expr_.GetStartColumn());
+  inner_result.mutable_operand_end()->set_line(info_for_sub_expr_.GetEndLine());
+  inner_result.mutable_operand_end()->set_column(
+      info_for_sub_expr_.GetEndColumn());
+  *inner_result.mutable_operand_snippet() = info_for_sub_expr_.GetSnippet();
 
   std::string new_function_name =
       GetFunctionName(optimise_mutations, ast_context);

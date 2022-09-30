@@ -70,9 +70,8 @@ TEST(MutationRemoveStmtTest, BasicTest) {
     auto statement = clang::ast_matchers::match(
         clang::ast_matchers::binaryOperator().bind("op"), ast_context);
     EXPECT_EQ(1, statement.size());
-    return MutationRemoveStmt(
-        *statement[0].getNodeAs<clang::BinaryOperator>("op"), preprocessor,
-        ast_context);
+    return {*statement[0].getNodeAs<clang::BinaryOperator>("op"), preprocessor,
+            ast_context};
   };
   TestRemoval(original, expected, mutation_supplier);
 }
@@ -89,8 +88,8 @@ TEST(MutationRemoveStmtTest, RemoveIfStatement) {
     auto statement = clang::ast_matchers::match(
         clang::ast_matchers::ifStmt().bind("if"), ast_context);
     EXPECT_EQ(1, statement.size());
-    return MutationRemoveStmt(*statement[0].getNodeAs<clang::IfStmt>("if"),
-                              preprocessor, ast_context);
+    return {*statement[0].getNodeAs<clang::IfStmt>("if"), preprocessor,
+            ast_context};
   };
   TestRemoval(original, expected, mutation_supplier);
 }
@@ -107,8 +106,8 @@ TEST(MutationRemoveStmtTest, RemoveIfStatementWithTrailingSemi) {
     auto statement = clang::ast_matchers::match(
         clang::ast_matchers::ifStmt().bind("if"), ast_context);
     EXPECT_EQ(1, statement.size());
-    return MutationRemoveStmt(*statement[0].getNodeAs<clang::IfStmt>("if"),
-                              preprocessor, ast_context);
+    return {*statement[0].getNodeAs<clang::IfStmt>("if"), preprocessor,
+            ast_context};
   };
   TestRemoval(original, expected, mutation_supplier);
 }
@@ -125,8 +124,8 @@ TEST(MutationRemoveStmtTest, RemoveIfStatementWithTrailingSemis) {
     auto statement = clang::ast_matchers::match(
         clang::ast_matchers::ifStmt().bind("if"), ast_context);
     EXPECT_EQ(1, statement.size());
-    return MutationRemoveStmt(*statement[0].getNodeAs<clang::IfStmt>("if"),
-                              preprocessor, ast_context);
+    return {*statement[0].getNodeAs<clang::IfStmt>("if"), preprocessor,
+            ast_context};
   };
   TestRemoval(original, expected, mutation_supplier);
 }
@@ -143,8 +142,8 @@ TEST(MutationRemoveStmtTest, RemoveIfStatementWithoutBraces) {
     auto statement = clang::ast_matchers::match(
         clang::ast_matchers::ifStmt().bind("if"), ast_context);
     EXPECT_EQ(1, statement.size());
-    return MutationRemoveStmt(*statement[0].getNodeAs<clang::IfStmt>("if"),
-                              preprocessor, ast_context);
+    return {*statement[0].getNodeAs<clang::IfStmt>("if"), preprocessor,
+            ast_context};
   };
   TestRemoval(original, expected, mutation_supplier);
 }
@@ -161,9 +160,8 @@ TEST(MutationRemoveStmtTest, RemoveReturnStmt) {
     auto statement = clang::ast_matchers::match(
         clang::ast_matchers::returnStmt().bind("return"), ast_context);
     EXPECT_EQ(1, statement.size());
-    return MutationRemoveStmt(
-        *statement[0].getNodeAs<clang::ReturnStmt>("return"), preprocessor,
-        ast_context);
+    return {*statement[0].getNodeAs<clang::ReturnStmt>("return"), preprocessor,
+            ast_context};
   };
   TestRemoval(original, expected, mutation_supplier);
 }
@@ -180,9 +178,8 @@ TEST(MutationRemoveStmtTest, RemoveBreakStmt) {
     auto statement = clang::ast_matchers::match(
         clang::ast_matchers::breakStmt().bind("break"), ast_context);
     EXPECT_EQ(1, statement.size());
-    return MutationRemoveStmt(
-        *statement[0].getNodeAs<clang::BreakStmt>("break"), preprocessor,
-        ast_context);
+    return {*statement[0].getNodeAs<clang::BreakStmt>("break"), preprocessor,
+            ast_context};
   };
   TestRemoval(original, expected, mutation_supplier);
 }
@@ -202,9 +199,8 @@ void foo() { int x; if (!__dredd_enabled_mutation(0)) { ASSIGN(x, 1); } })";
     auto statement = clang::ast_matchers::match(
         clang::ast_matchers::binaryOperator().bind("assign"), ast_context);
     EXPECT_EQ(1, statement.size());
-    return MutationRemoveStmt(
-        *statement[0].getNodeAs<clang::BinaryOperator>("assign"), preprocessor,
-        ast_context);
+    return {*statement[0].getNodeAs<clang::BinaryOperator>("assign"),
+            preprocessor, ast_context};
   };
   TestRemoval(original, expected, mutation_supplier);
 }

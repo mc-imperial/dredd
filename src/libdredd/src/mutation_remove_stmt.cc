@@ -48,11 +48,12 @@ protobufs::MutationGroup MutationRemoveStmt::Apply(
   // MutationGroup.
   protobufs::MutationRemoveStmt inner_result;
   inner_result.set_mutation_id(mutation_id);
-  inner_result.mutable_start()->set_line(info_for_source_range_.start_line);
-  inner_result.mutable_start()->set_column(info_for_source_range_.start_column);
-  inner_result.mutable_end()->set_line(info_for_source_range_.end_line);
-  inner_result.mutable_end()->set_column(info_for_source_range_.end_column);
-  *inner_result.mutable_snippet() = info_for_source_range_.snippet;
+  inner_result.mutable_start()->set_line(info_for_source_range_.GetStartLine());
+  inner_result.mutable_start()->set_column(
+      info_for_source_range_.GetStartColumn());
+  inner_result.mutable_end()->set_line(info_for_source_range_.GetEndLine());
+  inner_result.mutable_end()->set_column(info_for_source_range_.GetEndColumn());
+  *inner_result.mutable_snippet() = info_for_source_range_.GetSnippet();
 
   clang::CharSourceRange source_range = clang::CharSourceRange::getTokenRange(
       GetSourceRangeInMainFile(preprocessor, stmt_));

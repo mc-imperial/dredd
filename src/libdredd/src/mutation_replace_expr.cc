@@ -408,11 +408,12 @@ protobufs::MutationGroup MutationReplaceExpr::Apply(
   // The protobuf object for the mutation, which will be wrapped in a
   // MutationGroup.
   protobufs::MutationReplaceExpr inner_result;
-  inner_result.mutable_start()->set_line(info_for_source_range_.start_line);
-  inner_result.mutable_start()->set_column(info_for_source_range_.start_column);
-  inner_result.mutable_end()->set_line(info_for_source_range_.end_line);
-  inner_result.mutable_end()->set_column(info_for_source_range_.end_column);
-  *inner_result.mutable_snippet() = info_for_source_range_.snippet;
+  inner_result.mutable_start()->set_line(info_for_source_range_.GetStartLine());
+  inner_result.mutable_start()->set_column(
+      info_for_source_range_.GetStartColumn());
+  inner_result.mutable_end()->set_line(info_for_source_range_.GetEndLine());
+  inner_result.mutable_end()->set_column(info_for_source_range_.GetEndColumn());
+  *inner_result.mutable_snippet() = info_for_source_range_.GetSnippet();
 
   std::string new_function_name =
       GetFunctionName(optimise_mutations, ast_context);
