@@ -32,6 +32,8 @@ case "$(uname)" in
   NINJA_OS="linux"
   PYTHON="python3"
   LLVM_RELEASE_OS="${OS}"
+  export CC=clang
+  export CXX=clang++
   # Free up some space
   df -h
   sudo apt clean
@@ -68,7 +70,7 @@ unzip clang+llvm.zip
 rm clang+llvm.zip
 popd
 
-export PATH="${HOME}/bin:$PATH"
+export PATH="$(pwd)/third_party/clang+llvm/bin:${HOME}/bin:$PATH"
 
 mkdir -p "${HOME}/bin"
 
