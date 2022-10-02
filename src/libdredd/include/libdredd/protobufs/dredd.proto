@@ -48,8 +48,22 @@ message MutationRemoveStmt {
   string snippet = 4;
 }
 
+enum MutationReplaceExprAction {
+  InsertPreInc = 0;
+  InsertPreDec = 1;
+  InsertLNot = 2;
+  InsertNot = 3;
+  ReplaceWithZeroFloat = 4;
+  ReplaceWithOneFloat = 5;
+  ReplaceWithMinusOneFloat = 6;
+  ReplaceWithZeroInt = 7;
+  ReplaceWithOneInt = 8;
+  ReplaceWithMinusOneInt = 9;
+  ReplaceWithTrue = 10;
+  ReplaceWithFalse = 11;
+}
+
 message MutationReplaceExprInstance {
-  enum MutationReplaceExprAction { PLACEHOLDER = 0; }
   MutationReplaceExprAction action = 1;
   int32 mutation_id = 2;
 }
@@ -61,8 +75,41 @@ message MutationReplaceExpr {
   repeated MutationReplaceExprInstance instances = 4;
 }
 
+enum MutationReplaceBinaryOperatorAction {
+  ReplaceWithLHS = 0;
+  ReplaceWithRHS = 1;
+  ReplaceWithAdd = 2;
+  ReplaceWithDiv = 3;
+  ReplaceWithMul = 4;
+  ReplaceWithRem = 5;
+  ReplaceWithSub = 6;
+  ReplaceWithAddAssign = 7;
+  ReplaceWithAndAssign = 8;
+  ReplaceWithAssign = 9;
+  ReplaceWithDivAssign = 10;
+  ReplaceWithMulAssign = 11;
+  ReplaceWithOrAssign = 12;
+  ReplaceWithRemAssign = 13;
+  ReplaceWithShlAssign = 14;
+  ReplaceWithShrAssign = 15;
+  ReplaceWithSubAssign = 16;
+  ReplaceWithXorAssign = 17;
+  ReplaceWithAnd = 18;
+  ReplaceWithOr = 19;
+  ReplaceWithXor = 20;
+  ReplaceWithLAnd = 21;
+  ReplaceWithLOr = 22;
+  ReplaceWithEQ = 23;
+  ReplaceWithGE = 24;
+  ReplaceWithGT = 25;
+  ReplaceWithLE = 26;
+  ReplaceWithLT = 27;
+  ReplaceWithNE = 28;
+  ReplaceWithShl = 29;
+  ReplaceWithShr = 30;
+}
+
 message MutationReplaceBinaryOperatorInstance {
-  enum MutationReplaceBinaryOperatorAction { PLACEHOLDER = 0; }
   MutationReplaceBinaryOperatorAction action = 1;
   int32 mutation_id = 2;
 }
@@ -82,8 +129,18 @@ message MutationReplaceBinaryOperator {
   repeated MutationReplaceBinaryOperatorInstance instances = 11;
 }
 
+enum MutationReplaceUnaryOperatorAction {
+  ReplaceWithOperand = 0;
+  ReplaceWithMinus = 1;
+  ReplaceWithNot = 2;
+  ReplaceWithPreDec = 3;
+  ReplaceWithPostDec = 4;
+  ReplaceWithPreInc = 5;
+  ReplaceWithPostInc = 6;
+  ReplaceWithLNot = 7;
+}
+
 message MutationReplaceUnaryOperatorInstance {
-  enum MutationReplaceUnaryOperatorAction { PLACEHOLDER = 0; }
   MutationReplaceUnaryOperatorAction action = 1;
   int32 mutation_id = 2;
 }

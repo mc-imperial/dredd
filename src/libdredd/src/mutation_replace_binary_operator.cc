@@ -365,9 +365,10 @@ void MutationReplaceBinaryOperator::GenerateArgumentReplacement(
     new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
                  << mutation_id_offset << ")) return " << arg1_evaluated
                  << ";\n";
-    protobuf_message.add_instances()->set_mutation_id(mutation_id_base +
-                                                      mutation_id_offset);
-    mutation_id_offset++;
+    AddMutationInstance(
+        mutation_id_base,
+        protobufs::MutationReplaceBinaryOperatorAction::ReplaceWithLHS,
+        mutation_id_offset, protobuf_message);
   }
 
   // RHS
@@ -389,9 +390,10 @@ void MutationReplaceBinaryOperator::GenerateArgumentReplacement(
     new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
                  << mutation_id_offset << ")) return " << arg2_evaluated
                  << ";\n";
-    protobuf_message.add_instances()->set_mutation_id(mutation_id_base +
-                                                      mutation_id_offset);
-    mutation_id_offset++;
+    AddMutationInstance(
+        mutation_id_base,
+        protobufs::MutationReplaceBinaryOperatorAction::ReplaceWithRHS,
+        mutation_id_offset, protobuf_message);
   }
 }
 
@@ -413,9 +415,8 @@ void MutationReplaceBinaryOperator::GenerateBinaryOperatorReplacement(
                  << mutation_id_offset << ")) return " << arg1_evaluated << " "
                  << clang::BinaryOperator::getOpcodeStr(operator_kind).str()
                  << " " << arg2_evaluated << ";\n";
-    protobuf_message.add_instances()->set_mutation_id(mutation_id_base +
-                                                      mutation_id_offset);
-    mutation_id_offset++;
+    AddMutationInstance(mutation_id_base, OperatorKindToAction(operator_kind),
+                        mutation_id_offset, protobuf_message);
   }
 }
 
@@ -837,6 +838,98 @@ void MutationReplaceBinaryOperator::HandleCLogicalOperator(
   // - Replacing with LHS
   // - Replacing with RHS
   mutation_id += 3;
+}
+
+void MutationReplaceBinaryOperator::AddMutationInstance(
+    int mutation_id_base, protobufs::MutationReplaceBinaryOperatorAction action,
+    int& mutation_id_offset,
+    protobufs::MutationReplaceBinaryOperator& protobuf_message) {
+  protobufs::MutationReplaceBinaryOperatorInstance instance;
+  instance.set_mutation_id(mutation_id_base + mutation_id_offset);
+  instance.set_action(action);
+  *protobuf_message.add_instances() = instance;
+  mutation_id_offset++;
+}
+
+protobufs::MutationReplaceBinaryOperatorAction
+MutationReplaceBinaryOperator::OperatorKindToAction(
+    clang::BinaryOperatorKind operator_kind) {
+  assert(false);
+  return protobufs::MutationReplaceBinaryOperatorAction::
+      MutationReplaceBinaryOperatorAction_INT_MIN_SENTINEL_DO_NOT_USE_;
+  switch (operator_kind) {
+    case clang::BinaryOperatorKind::BO_Add:
+      return protobufs::MutationReplaceBinaryOperatorAction::ReplaceWithAdd;
+    case clang::BinaryOperatorKind::BO_Div:
+      return protobufs::MutationReplaceBinaryOperatorAction::ReplaceWithDiv;
+    case clang::BinaryOperatorKind::BO_Mul:
+      return protobufs::MutationReplaceBinaryOperatorAction::ReplaceWithMul;
+    case clang::BinaryOperatorKind::BO_Rem:
+      return protobufs::MutationReplaceBinaryOperatorAction::ReplaceWithRem;
+    case clang::BinaryOperatorKind::BO_Sub:
+      return protobufs::MutationReplaceBinaryOperatorAction::ReplaceWithSub;
+    case clang::BinaryOperatorKind::BO_AddAssign:
+      return protobufs::MutationReplaceBinaryOperatorAction::
+          ReplaceWithAddAssign;
+    case clang::BinaryOperatorKind::BO_AndAssign:
+      return protobufs::MutationReplaceBinaryOperatorAction::
+          ReplaceWithAndAssign;
+    case clang::BinaryOperatorKind::BO_Assign:
+      return protobufs::MutationReplaceBinaryOperatorAction::ReplaceWithAssign;
+    case clang::BinaryOperatorKind::BO_DivAssign:
+      return protobufs::MutationReplaceBinaryOperatorAction::
+          ReplaceWithDivAssign;
+    case clang::BinaryOperatorKind::BO_MulAssign:
+      return protobufs::MutationReplaceBinaryOperatorAction::
+          ReplaceWithMulAssign;
+    case clang::BinaryOperatorKind::BO_OrAssign:
+      return protobufs::MutationReplaceBinaryOperatorAction::
+          ReplaceWithOrAssign;
+    case clang::BinaryOperatorKind::BO_RemAssign:
+      return protobufs::MutationReplaceBinaryOperatorAction::
+          ReplaceWithRemAssign;
+    case clang::BinaryOperatorKind::BO_ShlAssign:
+      return protobufs::MutationReplaceBinaryOperatorAction::
+          ReplaceWithShlAssign;
+    case clang::BinaryOperatorKind::BO_ShrAssign:
+      return protobufs::MutationReplaceBinaryOperatorAction::
+          ReplaceWithShrAssign;
+    case clang::BinaryOperatorKind::BO_SubAssign:
+      return protobufs::MutationReplaceBinaryOperatorAction::
+          ReplaceWithSubAssign;
+    case clang::BinaryOperatorKind::BO_XorAssign:
+      return protobufs::MutationReplaceBinaryOperatorAction::
+          ReplaceWithXorAssign;
+    case clang::BinaryOperatorKind::BO_And:
+      return protobufs::MutationReplaceBinaryOperatorAction::ReplaceWithAnd;
+    case clang::BinaryOperatorKind::BO_Or:
+      return protobufs::MutationReplaceBinaryOperatorAction::ReplaceWithOr;
+    case clang::BinaryOperatorKind::BO_Xor:
+      return protobufs::MutationReplaceBinaryOperatorAction::ReplaceWithXor;
+    case clang::BinaryOperatorKind::BO_LAnd:
+      return protobufs::MutationReplaceBinaryOperatorAction::ReplaceWithLAnd;
+    case clang::BinaryOperatorKind::BO_LOr:
+      return protobufs::MutationReplaceBinaryOperatorAction::ReplaceWithLOr;
+    case clang::BinaryOperatorKind::BO_EQ:
+      return protobufs::MutationReplaceBinaryOperatorAction::ReplaceWithEQ;
+    case clang::BinaryOperatorKind::BO_GE:
+      return protobufs::MutationReplaceBinaryOperatorAction::ReplaceWithGE;
+    case clang::BinaryOperatorKind::BO_GT:
+      return protobufs::MutationReplaceBinaryOperatorAction::ReplaceWithGT;
+    case clang::BinaryOperatorKind::BO_LE:
+      return protobufs::MutationReplaceBinaryOperatorAction::ReplaceWithLE;
+    case clang::BinaryOperatorKind::BO_LT:
+      return protobufs::MutationReplaceBinaryOperatorAction::ReplaceWithLT;
+    case clang::BinaryOperatorKind::BO_NE:
+      return protobufs::MutationReplaceBinaryOperatorAction::ReplaceWithNE;
+    case clang::BinaryOperatorKind::BO_Shl:
+      return protobufs::MutationReplaceBinaryOperatorAction::ReplaceWithShl;
+    case clang::BinaryOperatorKind::BO_Shr:
+      return protobufs::MutationReplaceBinaryOperatorAction::ReplaceWithShr;
+    default:
+      assert(false && "Unknown operator kind.");
+      return protobufs::MutationReplaceBinaryOperatorAction_MAX;
+  }
 }
 
 }  // namespace dredd
