@@ -24,20 +24,15 @@ jobs:
         os:
           - windows-latest
           - macOS-latest
+          - ubuntu-18.04
+          - ubuntu-20.04
+          - ubuntu-22.04
         config:
           - Release
-        # Manually specify the Linux configuration.
-        include:
-          # clang-12
-          - os: ubuntu-latest
-            config: Release
-            linux_cc: clang-12
-            linux_cxx: clang++-12
     runs-on: ${{ matrix.os }}
     env:
+      OS: ${{ matrix.os }}
       CONFIG: ${{ matrix.config }}
-      LINUX_CC: ${{ matrix.linux_cc }}
-      LINUX_CXX: ${{ matrix.linux_cxx }}
       GH_TOKEN: ${{ secrets.GH_TOKEN }}
     steps:
 

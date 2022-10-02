@@ -31,10 +31,7 @@ case "$(uname)" in
 "Linux")
   NINJA_OS="linux"
   PYTHON="python3"
-  LLVM_RELEASE_OS="Linux"
-  # Provided by build.yml.
-  export CC="${LINUX_CC}"
-  export CXX="${LINUX_CXX}"
+  LLVM_RELEASE_OS="${OS}"
   # Free up some space
   df -h
   sudo apt clean
