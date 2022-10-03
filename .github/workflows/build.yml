@@ -52,6 +52,7 @@ jobs:
 
     runs-on: ${{ matrix.os }}
     env:
+      OS: ${{ matrix.os }}
       CONFIG: ${{ matrix.config }}
       LINUX_CC: ${{ matrix.linux_cc }}
       LINUX_CXX: ${{ matrix.linux_cxx }}

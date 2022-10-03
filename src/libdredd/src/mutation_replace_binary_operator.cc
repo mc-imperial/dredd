@@ -854,9 +854,6 @@ void MutationReplaceBinaryOperator::AddMutationInstance(
 protobufs::MutationReplaceBinaryOperatorAction
 MutationReplaceBinaryOperator::OperatorKindToAction(
     clang::BinaryOperatorKind operator_kind) {
-  assert(false);
-  return protobufs::MutationReplaceBinaryOperatorAction::
-      MutationReplaceBinaryOperatorAction_INT_MIN_SENTINEL_DO_NOT_USE_;
   switch (operator_kind) {
     case clang::BinaryOperatorKind::BO_Add:
       return protobufs::MutationReplaceBinaryOperatorAction::ReplaceWithAdd;

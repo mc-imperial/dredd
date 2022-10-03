@@ -30,7 +30,7 @@ DREDD_LLVM_TAG=$(./scripts/llvm_tag.sh)
 case "$(uname)" in
 "Linux")
   NINJA_OS="linux"
-  LLVM_RELEASE_OS="Linux"
+  LLVM_RELEASE_OS="${OS}"
   # Provided by build.yml.
   export CC="${LINUX_CC}"
   export CXX="${LINUX_CXX}"
