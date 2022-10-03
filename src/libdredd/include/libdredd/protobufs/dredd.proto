@@ -114,8 +114,39 @@ message MutationReplaceBinaryOperatorInstance {
   int32 mutation_id = 2;
 }
 
+enum BinaryOperator {
+  Mul = 0;
+  Div = 1;
+  Rem = 2;
+  Add = 3;
+  Sub = 4;
+  Shl = 5;
+  Shr = 6;
+  LT = 7;
+  GT = 8;
+  LE = 9;
+  GE = 10;
+  EQ = 11;
+  NE = 12;
+  And = 13;
+  Xor = 14;
+  Or = 15;
+  LAnd = 16;
+  LOr = 17;
+  Assign = 18;
+  MulAssign = 19;
+  DivAssign = 20;
+  RemAssign = 21;
+  AddAssign = 22;
+  SubAssign = 23;
+  ShlAssign = 24;
+  ShrAssign = 25;
+  AndAssign = 26;
+  XorAssign = 27;
+  OrAssign = 28;
+}
+
 message MutationReplaceBinaryOperator {
-  enum BinaryOperator { PLACEHOLDER = 0; }
   SourceLocation expr_start = 1;
   SourceLocation expr_end = 2;
   SourceLocation lhs_start = 3;
@@ -145,8 +176,17 @@ message MutationReplaceUnaryOperatorInstance {
   int32 mutation_id = 2;
 }
 
+enum UnaryOperator {
+  PostInc = 0;
+  PostDec = 1;
+  PreInc = 2;
+  PreDec = 3;
+  Minus = 4;
+  Not = 5;
+  LNot = 6;
+}
+
 message MutationReplaceUnaryOperator {
-  enum UnaryOperator { PLACEHOLDER = 0; }
   SourceLocation expr_start = 1;
   SourceLocation expr_end = 2;
   SourceLocation operand_start = 3;

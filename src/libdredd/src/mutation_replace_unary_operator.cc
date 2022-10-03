@@ -351,6 +351,9 @@ protobufs::MutationGroup MutationReplaceUnaryOperator::Apply(
   // MutationGroup.
   protobufs::MutationReplaceUnaryOperator inner_result;
 
+  inner_result.set_operator_(
+      ClangOperatorKindToProtobufOperatorKind(unary_operator_.getOpcode()));
+
   inner_result.mutable_expr_start()->set_line(
       info_for_overall_expr_.GetStartLine());
   inner_result.mutable_expr_start()->set_column(
@@ -492,6 +495,30 @@ MutationReplaceUnaryOperator::OperatorKindToAction(
       return protobufs::MutationReplaceUnaryOperatorAction::ReplaceWithLNot;
     default:
       return protobufs::MutationReplaceUnaryOperatorAction_MAX;
+  }
+}
+
+protobufs::UnaryOperator
+MutationReplaceUnaryOperator::ClangOperatorKindToProtobufOperatorKind(
+    clang::UnaryOperatorKind operator_kind) {
+  switch (operator_kind) {
+    case clang::UnaryOperatorKind::UO_PostInc:
+      return protobufs::UnaryOperator::PostInc;
+    case clang::UnaryOperatorKind::UO_PostDec:
+      return protobufs::UnaryOperator::PostDec;
+    case clang::UnaryOperatorKind::UO_PreInc:
+      return protobufs::UnaryOperator::PreInc;
+    case clang::UnaryOperatorKind::UO_PreDec:
+      return protobufs::UnaryOperator::PreDec;
+    case clang::UnaryOperatorKind::UO_Minus:
+      return protobufs::UnaryOperator::Minus;
+    case clang::UnaryOperatorKind::UO_Not:
+      return protobufs::UnaryOperator::Not;
+    case clang::UnaryOperatorKind::UO_LNot:
+      return protobufs::UnaryOperator::LNot;
+    default:
+      assert(false && "Unknown operator.");
+      return protobufs::UnaryOperator_MAX;
   }
 }
 

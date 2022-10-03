@@ -492,6 +492,9 @@ protobufs::MutationGroup MutationReplaceBinaryOperator::Apply(
   // MutationGroup.
   protobufs::MutationReplaceBinaryOperator inner_result;
 
+  inner_result.set_operator_(
+      ClangOperatorKindToProtobufOperatorKind(binary_operator_.getOpcode()));
+
   inner_result.mutable_expr_start()->set_line(
       info_for_overall_expr_.GetStartLine());
   inner_result.mutable_expr_start()->set_column(
@@ -926,6 +929,74 @@ MutationReplaceBinaryOperator::OperatorKindToAction(
     default:
       assert(false && "Unknown operator kind.");
       return protobufs::MutationReplaceBinaryOperatorAction_MAX;
+  }
+}
+
+protobufs::BinaryOperator
+MutationReplaceBinaryOperator::ClangOperatorKindToProtobufOperatorKind(
+    clang::BinaryOperatorKind operator_kind) {
+  switch (operator_kind) {
+    case clang::BinaryOperatorKind::BO_Mul:
+      return protobufs::BinaryOperator::Mul;
+    case clang::BinaryOperatorKind::BO_Div:
+      return protobufs::BinaryOperator::Div;
+    case clang::BinaryOperatorKind::BO_Rem:
+      return protobufs::BinaryOperator::Rem;
+    case clang::BinaryOperatorKind::BO_Add:
+      return protobufs::BinaryOperator::Add;
+    case clang::BinaryOperatorKind::BO_Sub:
+      return protobufs::BinaryOperator::Sub;
+    case clang::BinaryOperatorKind::BO_Shl:
+      return protobufs::BinaryOperator::Shl;
+    case clang::BinaryOperatorKind::BO_Shr:
+      return protobufs::BinaryOperator::Shr;
+    case clang::BinaryOperatorKind::BO_LT:
+      return protobufs::BinaryOperator::LT;
+    case clang::BinaryOperatorKind::BO_GT:
+      return protobufs::BinaryOperator::GT;
+    case clang::BinaryOperatorKind::BO_LE:
+      return protobufs::BinaryOperator::LE;
+    case clang::BinaryOperatorKind::BO_GE:
+      return protobufs::BinaryOperator::GE;
+    case clang::BinaryOperatorKind::BO_EQ:
+      return protobufs::BinaryOperator::EQ;
+    case clang::BinaryOperatorKind::BO_NE:
+      return protobufs::BinaryOperator::NE;
+    case clang::BinaryOperatorKind::BO_And:
+      return protobufs::BinaryOperator::And;
+    case clang::BinaryOperatorKind::BO_Xor:
+      return protobufs::BinaryOperator::Xor;
+    case clang::BinaryOperatorKind::BO_Or:
+      return protobufs::BinaryOperator::Or;
+    case clang::BinaryOperatorKind::BO_LAnd:
+      return protobufs::BinaryOperator::LAnd;
+    case clang::BinaryOperatorKind::BO_LOr:
+      return protobufs::BinaryOperator::LOr;
+    case clang::BinaryOperatorKind::BO_Assign:
+      return protobufs::BinaryOperator::Assign;
+    case clang::BinaryOperatorKind::BO_MulAssign:
+      return protobufs::BinaryOperator::MulAssign;
+    case clang::BinaryOperatorKind::BO_DivAssign:
+      return protobufs::BinaryOperator::DivAssign;
+    case clang::BinaryOperatorKind::BO_RemAssign:
+      return protobufs::BinaryOperator::RemAssign;
+    case clang::BinaryOperatorKind::BO_AddAssign:
+      return protobufs::BinaryOperator::AddAssign;
+    case clang::BinaryOperatorKind::BO_SubAssign:
+      return protobufs::BinaryOperator::SubAssign;
+    case clang::BinaryOperatorKind::BO_ShlAssign:
+      return protobufs::BinaryOperator::ShlAssign;
+    case clang::BinaryOperatorKind::BO_ShrAssign:
+      return protobufs::BinaryOperator::ShrAssign;
+    case clang::BinaryOperatorKind::BO_AndAssign:
+      return protobufs::BinaryOperator::AndAssign;
+    case clang::BinaryOperatorKind::BO_XorAssign:
+      return protobufs::BinaryOperator::XorAssign;
+    case clang::BinaryOperatorKind::BO_OrAssign:
+      return protobufs::BinaryOperator::OrAssign;
+    default:
+      assert(false && "Unknown operator.");
+      return protobufs::BinaryOperator_MAX;
   }
 }
 
