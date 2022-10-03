@@ -35,10 +35,10 @@ static bool __dredd_enabled_mutation(int local_mutation_id) {
   return (enabled_bitset[local_mutation_id / 64] & (1 << (local_mutation_id % 64))) != 0;
 }
 
-static int __dredd_replace_expr_int(std::function<int()> arg, int local_mutation_id) {
+static int __dredd_replace_expr_int_constant(std::function<int()> arg, int local_mutation_id) {
   if (!__dredd_some_mutation_enabled) return arg();
-  if (__dredd_enabled_mutation(local_mutation_id + 0)) return !(arg());
-  if (__dredd_enabled_mutation(local_mutation_id + 1)) return ~(arg());
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return ~(arg());
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return -(arg());
   if (__dredd_enabled_mutation(local_mutation_id + 2)) return 0;
   if (__dredd_enabled_mutation(local_mutation_id + 3)) return 1;
   if (__dredd_enabled_mutation(local_mutation_id + 4)) return -1;
@@ -46,6 +46,6 @@ static int __dredd_replace_expr_int(std::function<int()> arg, int local_mutation
 }
 
 void foo() {
-  volatile int x = __dredd_replace_expr_int([&]() -> int { return 5; }, 0);
+  volatile int x = __dredd_replace_expr_int_constant([&]() -> int { return 5; }, 0);
   int A[x + x];
 }

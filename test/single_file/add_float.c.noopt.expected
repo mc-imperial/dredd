@@ -16,7 +16,7 @@ static int __dredd_enabled_mutation(int local_mutation_id) {
       while(token) {
         int value = atoi(token);
         int local_value = value - 0;
-        if (local_value >= 0 && local_value < 44) {
+        if (local_value >= 0 && local_value < 53) {
           enabled_bitset[local_value / 64] |= (1 << (local_value % 64));
           some_mutation_enabled = 1;
         }
@@ -34,9 +34,10 @@ static int __dredd_replace_expr_int(int arg, int local_mutation_id) {
   if (!__dredd_some_mutation_enabled) return arg;
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return !(arg);
   if (__dredd_enabled_mutation(local_mutation_id + 1)) return ~(arg);
-  if (__dredd_enabled_mutation(local_mutation_id + 2)) return 0;
-  if (__dredd_enabled_mutation(local_mutation_id + 3)) return 1;
-  if (__dredd_enabled_mutation(local_mutation_id + 4)) return -1;
+  if (__dredd_enabled_mutation(local_mutation_id + 2)) return -(arg);
+  if (__dredd_enabled_mutation(local_mutation_id + 3)) return 0;
+  if (__dredd_enabled_mutation(local_mutation_id + 4)) return 1;
+  if (__dredd_enabled_mutation(local_mutation_id + 5)) return -1;
   return arg;
 }
 
@@ -49,9 +50,10 @@ static float __dredd_replace_expr_float_lvalue(float* arg, int local_mutation_id
 
 static float __dredd_replace_expr_float(float arg, int local_mutation_id) {
   if (!__dredd_some_mutation_enabled) return arg;
-  if (__dredd_enabled_mutation(local_mutation_id + 0)) return 0.0;
-  if (__dredd_enabled_mutation(local_mutation_id + 1)) return 1.0;
-  if (__dredd_enabled_mutation(local_mutation_id + 2)) return -1.0;
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return -(arg);
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return 0.0;
+  if (__dredd_enabled_mutation(local_mutation_id + 2)) return 1.0;
+  if (__dredd_enabled_mutation(local_mutation_id + 3)) return -1.0;
   return arg;
 }
 
@@ -76,16 +78,17 @@ static float __dredd_replace_binary_operator_Add_float_float(float arg1, float a
 
 static double __dredd_replace_expr_double(double arg, int local_mutation_id) {
   if (!__dredd_some_mutation_enabled) return arg;
-  if (__dredd_enabled_mutation(local_mutation_id + 0)) return 0.0;
-  if (__dredd_enabled_mutation(local_mutation_id + 1)) return 1.0;
-  if (__dredd_enabled_mutation(local_mutation_id + 2)) return -1.0;
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return -(arg);
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return 0.0;
+  if (__dredd_enabled_mutation(local_mutation_id + 2)) return 1.0;
+  if (__dredd_enabled_mutation(local_mutation_id + 3)) return -1.0;
   return arg;
 }
 
 int main() {
-  float x = __dredd_replace_expr_float(__dredd_replace_expr_double(5.235, 0), 3);
-  float y = __dredd_replace_expr_float(__dredd_replace_expr_double(754.34623, 6), 9);
+  float x = __dredd_replace_expr_float(__dredd_replace_expr_double(5.235, 0), 4);
+  float y = __dredd_replace_expr_float(__dredd_replace_expr_double(754.34623, 8), 12);
   float z;
-  if (!__dredd_enabled_mutation(37)) { __dredd_replace_expr_float(__dredd_replace_binary_operator_Assign_float_float(&(z) , __dredd_replace_expr_float(__dredd_replace_binary_operator_Add_float_float(__dredd_replace_expr_float(__dredd_replace_expr_float_lvalue(&(x), 12), 14) , __dredd_replace_expr_float(__dredd_replace_expr_float_lvalue(&(y), 17), 19), 22), 27), 30), 34); }
-  if (!__dredd_enabled_mutation(43)) { return __dredd_replace_expr_int(0, 38); }
+  if (!__dredd_enabled_mutation(45)) { __dredd_replace_expr_float(__dredd_replace_binary_operator_Assign_float_float(&(z) , __dredd_replace_expr_float(__dredd_replace_binary_operator_Add_float_float(__dredd_replace_expr_float(__dredd_replace_expr_float_lvalue(&(x), 16), 18) , __dredd_replace_expr_float(__dredd_replace_expr_float_lvalue(&(y), 22), 24), 28), 33), 37), 41); }
+  if (!__dredd_enabled_mutation(52)) { return __dredd_replace_expr_int(0, 46); }
 }

@@ -21,6 +21,7 @@
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/ASTTypeTraits.h"
 #include "clang/AST/Expr.h"
+#include "clang/AST/OperationKinds.h"
 #include "clang/AST/ParentMapContext.h"
 #include "clang/AST/Type.h"
 #include "clang/Basic/LangOptions.h"
@@ -75,17 +76,8 @@ std::string MutationReplaceExpr::GetFunctionName(
 }
 
 void MutationReplaceExpr::AddOptimisationSpecifier(
-    clang::ASTContext& ast_context,
-    std::string& function_name)
-    const {  // This is sufficient to prevent name clashes as this is the
-             // only unary operator insertion optimisation that depends on the
-             // input expression. ~ is omitted for all boolean expressions
-             // so the type that is included in the function name will be enough
-             // in that case.
-  if (IsRedundantOperatorInsertion(expr_, ast_context)) {
-    function_name += "_uoi_optimised";
-  }
-
+    clang::ASTContext& ast_context, std::string& function_name) const {
+  clang::Expr::EvalResult unused_eval_result;
   if ((expr_.getType()->isIntegerType() && !expr_.getType()->isBooleanType()) ||
       expr_.getType()->isFloatingType()) {
     if (ExprIsEquivalentToInt(expr_, 0, ast_context) ||
@@ -97,6 +89,8 @@ void MutationReplaceExpr::AddOptimisationSpecifier(
     } else if (ExprIsEquivalentToInt(expr_, -1, ast_context) ||
                ExprIsEquivalentToFloat(expr_, -1.0, ast_context)) {
       function_name += "_minus_one";
+    } else if (expr_.EvaluateAsInt(unused_eval_result, ast_context)) {
+      function_name += "_constant";
     }
   }
 
@@ -144,16 +138,73 @@ bool MutationReplaceExpr::ExprIsEquivalentToBool(
 }
 
 bool MutationReplaceExpr::IsRedundantOperatorInsertion(
-    const clang::Expr& expr, clang::ASTContext& ast_context) {
-  // We use this value to capture the value that the expression evaluates
-  // to if it does indeed evaluate to a constant, but we do not use this value
-  // because either way, operator insertion would be redundant.
-  bool unused_bool_value;
-  return (expr.getType()->isBooleanType() &&
-          expr.EvaluateAsBooleanCondition(unused_bool_value, ast_context)) ||
-         (expr.getType()->isIntegerType() &&
-          (ExprIsEquivalentToInt(expr, 0, ast_context) ||
-           ExprIsEquivalentToInt(expr, 1, ast_context)));
+    clang::ASTContext& ast_context,
+    clang::UnaryOperatorKind operator_kind) const {
+  switch (operator_kind) {
+    case clang::UO_Minus:
+      // It never makes sense to insert '-' before 0 as this would lead to an
+      // equivalent mutant. (Technically this may not be true for floating-point
+      // due to two values of 0, but the mutant is likely to be equivalent.)
+      if (ExprIsEquivalentToInt(expr_, 0, ast_context) ||
+          ExprIsEquivalentToFloat(expr_, 0.0, ast_context)) {
+        return true;
+      }
+
+      // If the expression is signed or floating-point, it does not make sense
+      // to insert '-' before 1 or -1, as these cases are captured by
+      // replacement with -1 and 1, respectively.
+      if (expr_.getType()->isSignedIntegerType() &&
+          (ExprIsEquivalentToInt(expr_, 1, ast_context) ||
+           ExprIsEquivalentToInt(expr_, -1, ast_context))) {
+        return true;
+      }
+      if (ExprIsEquivalentToFloat(expr_, 1.0, ast_context) ||
+          ExprIsEquivalentToFloat(expr_, -1.0, ast_context)) {
+        return true;
+      }
+      return false;
+    case clang::UO_Not:
+      // If the expression is signed, it does not make sense to insert '~'
+      // before 0 or -1, as these cases are captured by replacement with -1 and
+      // 0, respectively.
+      if (expr_.getType()->isSignedIntegerType() &&
+          (ExprIsEquivalentToInt(expr_, 0, ast_context) ||
+           ExprIsEquivalentToInt(expr_, -1, ast_context))) {
+        return true;
+      }
+      return false;
+    case clang::UO_LNot: {
+      // If the expression is a boolean constant, it does not make sense to
+      // insert '!' because this is captured by replacement with the other
+      // boolean constant.
+
+      // We use this value to capture the value that the expression evaluates
+      // to if it does indeed evaluate to a constant, but we do not use this
+      // value because either way, operator insertion would be redundant.
+      bool unused_bool_value;
+      if (expr_.getType()->isBooleanType() &&
+          expr_.EvaluateAsBooleanCondition(unused_bool_value, ast_context)) {
+        return true;
+      }
+
+      // If the expression is an integer constant, it does not make sense to
+      // insert '!' as the result will either be 0 or 1, which is captured by
+      // constant replacement.
+
+      // Similarly, this value is not used as it does not matter which constant
+      // integer the expression evaluates to.
+      clang::Expr::EvalResult unused_result_value;
+      if (expr_.EvaluateAsInt(unused_result_value, ast_context)) {
+        return true;
+      }
+
+      return false;
+    }
+
+    default:
+      assert(false && "Unknown operator.");
+      return false;
+  }
 }
 
 void MutationReplaceExpr::GenerateUnaryOperatorInsertion(
@@ -180,26 +231,44 @@ void MutationReplaceExpr::GenerateUnaryOperatorInsertion(
                         mutation_id_offset, protobuf_message);
   }
 
-  if (!expr_.isLValue() && (exprType.isBooleanType() || exprType.isInteger())) {
-    if (!optimise_mutations ||
-        !IsRedundantOperatorInsertion(expr_, ast_context)) {
-      new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
-                   << mutation_id_offset << ")) return !(" << arg_evaluated
-                   << ");\n";
-      AddMutationInstance(mutation_id_base,
-                          protobufs::MutationReplaceExprAction::InsertLNot,
-                          mutation_id_offset, protobuf_message);
+  if (!expr_.isLValue()) {
+    // Insert '!'
+    if (exprType.isBooleanType() || exprType.isInteger()) {
+      if (!optimise_mutations ||
+          !IsRedundantOperatorInsertion(ast_context, clang::UO_LNot)) {
+        new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
+                     << mutation_id_offset << ")) return !(" << arg_evaluated
+                     << ");\n";
+        AddMutationInstance(mutation_id_base,
+                            protobufs::MutationReplaceExprAction::InsertLNot,
+                            mutation_id_offset, protobuf_message);
+      }
     }
 
-    if (!expr_.getType()->isBooleanType()) {
-      new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
-                   << mutation_id_offset << ")) return ~(" << arg_evaluated
-                   << ");\n";
-      protobuf_message.add_instances()->set_mutation_id(mutation_id_base +
-                                                        mutation_id_offset);
-      AddMutationInstance(mutation_id_base,
-                          protobufs::MutationReplaceExprAction::InsertNot,
-                          mutation_id_offset, protobuf_message);
+    // Insert '~'
+    if (exprType.isInteger() && !exprType.isBooleanType()) {
+      if (!optimise_mutations ||
+          !IsRedundantOperatorInsertion(ast_context, clang::UO_Not)) {
+        new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
+                     << mutation_id_offset << ")) return ~(" << arg_evaluated
+                     << ");\n";
+        AddMutationInstance(mutation_id_base,
+                            protobufs::MutationReplaceExprAction::InsertNot,
+                            mutation_id_offset, protobuf_message);
+      }
+    }
+
+    // Insert '-'
+    if (exprType.isSignedInteger() || exprType.isFloatingPoint()) {
+      if (!optimise_mutations ||
+          !IsRedundantOperatorInsertion(ast_context, clang::UO_Minus)) {
+        new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
+                     << mutation_id_offset << ")) return -(" << arg_evaluated
+                     << ");\n";
+        AddMutationInstance(mutation_id_base,
+                            protobufs::MutationReplaceExprAction::InsertMinus,
+                            mutation_id_offset, protobuf_message);
+      }
     }
   }
 }

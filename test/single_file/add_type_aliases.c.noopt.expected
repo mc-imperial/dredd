@@ -19,7 +19,7 @@ static int __dredd_enabled_mutation(int local_mutation_id) {
       while(token) {
         int value = atoi(token);
         int local_value = value - 0;
-        if (local_value >= 0 && local_value < 219) {
+        if (local_value >= 0 && local_value < 231) {
           enabled_bitset[local_value / 64] |= (1 << (local_value % 64));
           some_mutation_enabled = 1;
         }
@@ -98,9 +98,10 @@ static long __dredd_replace_expr_long(long arg, int local_mutation_id) {
   if (!__dredd_some_mutation_enabled) return arg;
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return !(arg);
   if (__dredd_enabled_mutation(local_mutation_id + 1)) return ~(arg);
-  if (__dredd_enabled_mutation(local_mutation_id + 2)) return 0;
-  if (__dredd_enabled_mutation(local_mutation_id + 3)) return 1;
-  if (__dredd_enabled_mutation(local_mutation_id + 4)) return -1;
+  if (__dredd_enabled_mutation(local_mutation_id + 2)) return -(arg);
+  if (__dredd_enabled_mutation(local_mutation_id + 3)) return 0;
+  if (__dredd_enabled_mutation(local_mutation_id + 4)) return 1;
+  if (__dredd_enabled_mutation(local_mutation_id + 5)) return -1;
   return arg;
 }
 
@@ -126,9 +127,10 @@ static int __dredd_replace_expr_int(int arg, int local_mutation_id) {
   if (!__dredd_some_mutation_enabled) return arg;
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return !(arg);
   if (__dredd_enabled_mutation(local_mutation_id + 1)) return ~(arg);
-  if (__dredd_enabled_mutation(local_mutation_id + 2)) return 0;
-  if (__dredd_enabled_mutation(local_mutation_id + 3)) return 1;
-  if (__dredd_enabled_mutation(local_mutation_id + 4)) return -1;
+  if (__dredd_enabled_mutation(local_mutation_id + 2)) return -(arg);
+  if (__dredd_enabled_mutation(local_mutation_id + 3)) return 0;
+  if (__dredd_enabled_mutation(local_mutation_id + 4)) return 1;
+  if (__dredd_enabled_mutation(local_mutation_id + 5)) return -1;
   return arg;
 }
 
@@ -156,11 +158,11 @@ int main() {
 
   if (!__dredd_enabled_mutation(22)) { __dredd_replace_expr_unsigned_int(__dredd_replace_binary_operator_Add_unsigned_int_unsigned_int(__dredd_replace_expr_unsigned_int(__dredd_replace_expr_unsigned_int_lvalue(&(a), 0), 2) , __dredd_replace_expr_unsigned_int(__dredd_replace_expr_unsigned_int_lvalue(&(a), 6), 8), 12), 18); }
   if (!__dredd_enabled_mutation(45)) { __dredd_replace_expr_unsigned_int(__dredd_replace_binary_operator_Add_unsigned_int_unsigned_int(__dredd_replace_expr_unsigned_int(__dredd_replace_expr_unsigned_int_lvalue(&(b), 23), 25) , __dredd_replace_expr_unsigned_int(__dredd_replace_expr_unsigned_int_lvalue(&(b), 29), 31), 35), 41); }
-  if (!__dredd_enabled_mutation(71)) { __dredd_replace_expr_int(__dredd_replace_binary_operator_Add_int_int(__dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(&(c), 46), 48) , __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(&(c), 53), 55), 60), 66); }
-  if (!__dredd_enabled_mutation(97)) { __dredd_replace_expr_int(__dredd_replace_binary_operator_Add_int_int(__dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(&(d), 72), 74) , __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(&(d), 79), 81), 86), 92); }
-  if (!__dredd_enabled_mutation(120)) { __dredd_replace_expr_unsigned_long(__dredd_replace_binary_operator_Add_unsigned_long_unsigned_long(__dredd_replace_expr_unsigned_long(__dredd_replace_expr_unsigned_long_lvalue(&(e), 98), 100) , __dredd_replace_expr_unsigned_long(__dredd_replace_expr_unsigned_long_lvalue(&(e), 104), 106), 110), 116); }
-  if (!__dredd_enabled_mutation(143)) { __dredd_replace_expr_unsigned_long(__dredd_replace_binary_operator_Add_unsigned_long_unsigned_long(__dredd_replace_expr_unsigned_long(__dredd_replace_expr_unsigned_long_lvalue(&(f), 121), 123) , __dredd_replace_expr_unsigned_long(__dredd_replace_expr_unsigned_long_lvalue(&(f), 127), 129), 133), 139); }
-  if (!__dredd_enabled_mutation(169)) { __dredd_replace_expr_long(__dredd_replace_binary_operator_Add_long_long(__dredd_replace_expr_long(__dredd_replace_expr_long_lvalue(&(g), 144), 146) , __dredd_replace_expr_long(__dredd_replace_expr_long_lvalue(&(g), 151), 153), 158), 164); }
-  if (!__dredd_enabled_mutation(195)) { __dredd_replace_expr_long(__dredd_replace_binary_operator_Add_long_long(__dredd_replace_expr_long(__dredd_replace_expr_long_lvalue(&(h), 170), 172) , __dredd_replace_expr_long(__dredd_replace_expr_long_lvalue(&(h), 177), 179), 184), 190); }
-  if (!__dredd_enabled_mutation(218)) { __dredd_replace_expr_unsigned_long(__dredd_replace_binary_operator_Add_unsigned_long_unsigned_long(__dredd_replace_expr_unsigned_long(__dredd_replace_expr_unsigned_long_lvalue(&(i), 196), 198) , __dredd_replace_expr_unsigned_long(__dredd_replace_expr_unsigned_long_lvalue(&(i), 202), 204), 208), 214); }
+  if (!__dredd_enabled_mutation(74)) { __dredd_replace_expr_int(__dredd_replace_binary_operator_Add_int_int(__dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(&(c), 46), 48) , __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(&(c), 54), 56), 62), 68); }
+  if (!__dredd_enabled_mutation(103)) { __dredd_replace_expr_int(__dredd_replace_binary_operator_Add_int_int(__dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(&(d), 75), 77) , __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(&(d), 83), 85), 91), 97); }
+  if (!__dredd_enabled_mutation(126)) { __dredd_replace_expr_unsigned_long(__dredd_replace_binary_operator_Add_unsigned_long_unsigned_long(__dredd_replace_expr_unsigned_long(__dredd_replace_expr_unsigned_long_lvalue(&(e), 104), 106) , __dredd_replace_expr_unsigned_long(__dredd_replace_expr_unsigned_long_lvalue(&(e), 110), 112), 116), 122); }
+  if (!__dredd_enabled_mutation(149)) { __dredd_replace_expr_unsigned_long(__dredd_replace_binary_operator_Add_unsigned_long_unsigned_long(__dredd_replace_expr_unsigned_long(__dredd_replace_expr_unsigned_long_lvalue(&(f), 127), 129) , __dredd_replace_expr_unsigned_long(__dredd_replace_expr_unsigned_long_lvalue(&(f), 133), 135), 139), 145); }
+  if (!__dredd_enabled_mutation(178)) { __dredd_replace_expr_long(__dredd_replace_binary_operator_Add_long_long(__dredd_replace_expr_long(__dredd_replace_expr_long_lvalue(&(g), 150), 152) , __dredd_replace_expr_long(__dredd_replace_expr_long_lvalue(&(g), 158), 160), 166), 172); }
+  if (!__dredd_enabled_mutation(207)) { __dredd_replace_expr_long(__dredd_replace_binary_operator_Add_long_long(__dredd_replace_expr_long(__dredd_replace_expr_long_lvalue(&(h), 179), 181) , __dredd_replace_expr_long(__dredd_replace_expr_long_lvalue(&(h), 187), 189), 195), 201); }
+  if (!__dredd_enabled_mutation(230)) { __dredd_replace_expr_unsigned_long(__dredd_replace_binary_operator_Add_unsigned_long_unsigned_long(__dredd_replace_expr_unsigned_long(__dredd_replace_expr_unsigned_long_lvalue(&(i), 208), 210) , __dredd_replace_expr_unsigned_long(__dredd_replace_expr_unsigned_long_lvalue(&(i), 214), 216), 220), 226); }
 }

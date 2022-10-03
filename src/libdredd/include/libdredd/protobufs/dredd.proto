@@ -53,14 +53,15 @@ enum MutationReplaceExprAction {
   InsertPreDec = 1;
   InsertLNot = 2;
   InsertNot = 3;
-  ReplaceWithZeroFloat = 4;
-  ReplaceWithOneFloat = 5;
-  ReplaceWithMinusOneFloat = 6;
-  ReplaceWithZeroInt = 7;
-  ReplaceWithOneInt = 8;
-  ReplaceWithMinusOneInt = 9;
-  ReplaceWithTrue = 10;
-  ReplaceWithFalse = 11;
+  InsertMinus = 4;
+  ReplaceWithZeroFloat = 5;
+  ReplaceWithOneFloat = 6;
+  ReplaceWithMinusOneFloat = 7;
+  ReplaceWithZeroInt = 8;
+  ReplaceWithOneInt = 9;
+  ReplaceWithMinusOneInt = 10;
+  ReplaceWithTrue = 11;
+  ReplaceWithFalse = 12;
 }
 
 message MutationReplaceExprInstance {
