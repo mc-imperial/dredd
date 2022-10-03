@@ -118,6 +118,10 @@ class MutationReplaceBinaryOperator : public Mutation {
   [[nodiscard]] static protobufs::MutationReplaceBinaryOperatorAction
   OperatorKindToAction(clang::BinaryOperatorKind operator_kind);
 
+  [[nodiscard]] static protobufs::BinaryOperator
+  ClangOperatorKindToProtobufOperatorKind(
+      clang::BinaryOperatorKind operator_kind);
+
   const clang::BinaryOperator& binary_operator_;
   const InfoForSourceRange info_for_overall_expr_;
   const InfoForSourceRange info_for_lhs_;
