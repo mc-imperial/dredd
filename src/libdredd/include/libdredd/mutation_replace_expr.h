@@ -21,6 +21,7 @@
 
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/Expr.h"
+#include "clang/AST/OperationKinds.h"
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Rewrite/Core/Rewriter.h"
 #include "libdredd/mutation.h"
@@ -65,8 +66,9 @@ class MutationReplaceExpr : public Mutation {
                               const clang::Expr& expr);
 
  private:
-  static bool IsRedundantOperatorInsertion(const clang::Expr& expr,
-                                           clang::ASTContext& ast_context);
+  [[nodiscard]] bool IsRedundantOperatorInsertion(
+      clang::ASTContext& ast_context,
+      clang::UnaryOperatorKind operator_kind) const;
 
   void AddOptimisationSpecifier(clang::ASTContext& ast_context,
                                 std::string& function_name) const;

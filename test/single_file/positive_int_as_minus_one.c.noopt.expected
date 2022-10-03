@@ -16,7 +16,7 @@ static int __dredd_enabled_mutation(int local_mutation_id) {
       while(token) {
         int value = atoi(token);
         int local_value = value - 0;
-        if (local_value >= 0 && local_value < 39) {
+        if (local_value >= 0 && local_value < 42) {
           enabled_bitset[local_value / 64] |= (1 << (local_value % 64));
           some_mutation_enabled = 1;
         }
@@ -61,9 +61,10 @@ static long __dredd_replace_expr_long(long arg, int local_mutation_id) {
   if (!__dredd_some_mutation_enabled) return arg;
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return !(arg);
   if (__dredd_enabled_mutation(local_mutation_id + 1)) return ~(arg);
-  if (__dredd_enabled_mutation(local_mutation_id + 2)) return 0;
-  if (__dredd_enabled_mutation(local_mutation_id + 3)) return 1;
-  if (__dredd_enabled_mutation(local_mutation_id + 4)) return -1;
+  if (__dredd_enabled_mutation(local_mutation_id + 2)) return -(arg);
+  if (__dredd_enabled_mutation(local_mutation_id + 3)) return 0;
+  if (__dredd_enabled_mutation(local_mutation_id + 4)) return 1;
+  if (__dredd_enabled_mutation(local_mutation_id + 5)) return -1;
   return arg;
 }
 
@@ -71,13 +72,14 @@ static int __dredd_replace_expr_int(int arg, int local_mutation_id) {
   if (!__dredd_some_mutation_enabled) return arg;
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return !(arg);
   if (__dredd_enabled_mutation(local_mutation_id + 1)) return ~(arg);
-  if (__dredd_enabled_mutation(local_mutation_id + 2)) return 0;
-  if (__dredd_enabled_mutation(local_mutation_id + 3)) return 1;
-  if (__dredd_enabled_mutation(local_mutation_id + 4)) return -1;
+  if (__dredd_enabled_mutation(local_mutation_id + 2)) return -(arg);
+  if (__dredd_enabled_mutation(local_mutation_id + 3)) return 0;
+  if (__dredd_enabled_mutation(local_mutation_id + 4)) return 1;
+  if (__dredd_enabled_mutation(local_mutation_id + 5)) return -1;
   return arg;
 }
 
 int main() {
-  unsigned int x = __dredd_replace_expr_unsigned_int(__dredd_replace_expr_long(4294967295, 0), 5);
-  int y = __dredd_replace_expr_int(__dredd_replace_expr_unsigned_int(__dredd_replace_binary_operator_Sub_unsigned_int_unsigned_int(__dredd_replace_expr_unsigned_int(__dredd_replace_expr_unsigned_int_lvalue(&(x), 9), 11) , __dredd_replace_expr_unsigned_int(__dredd_replace_expr_int(20, 15), 20), 24), 30), 34);
+  unsigned int x = __dredd_replace_expr_unsigned_int(__dredd_replace_expr_long(4294967295, 0), 6);
+  int y = __dredd_replace_expr_int(__dredd_replace_expr_unsigned_int(__dredd_replace_binary_operator_Sub_unsigned_int_unsigned_int(__dredd_replace_expr_unsigned_int(__dredd_replace_expr_unsigned_int_lvalue(&(x), 10), 12) , __dredd_replace_expr_unsigned_int(__dredd_replace_expr_int(20, 16), 22), 26), 32), 36);
 }

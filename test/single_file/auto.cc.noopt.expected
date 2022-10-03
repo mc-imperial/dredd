@@ -18,7 +18,7 @@ static bool __dredd_enabled_mutation(int local_mutation_id) {
         if (!token.empty()) {
           int value = std::stoi(token);
           int local_value = value - 0;
-          if (local_value >= 0 && local_value < 22) {
+          if (local_value >= 0 && local_value < 25) {
             enabled_bitset[local_value / 64] |= (1 << (local_value % 64));
             some_mutation_enabled = true;
           }
@@ -46,16 +46,17 @@ static int __dredd_replace_expr_int(std::function<int()> arg, int local_mutation
   if (!__dredd_some_mutation_enabled) return arg();
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return !(arg());
   if (__dredd_enabled_mutation(local_mutation_id + 1)) return ~(arg());
-  if (__dredd_enabled_mutation(local_mutation_id + 2)) return 0;
-  if (__dredd_enabled_mutation(local_mutation_id + 3)) return 1;
-  if (__dredd_enabled_mutation(local_mutation_id + 4)) return -1;
+  if (__dredd_enabled_mutation(local_mutation_id + 2)) return -(arg());
+  if (__dredd_enabled_mutation(local_mutation_id + 3)) return 0;
+  if (__dredd_enabled_mutation(local_mutation_id + 4)) return 1;
+  if (__dredd_enabled_mutation(local_mutation_id + 5)) return -1;
   return arg();
 }
 
 int foo(int x) {
   // It is important that "y" is not mutated in "auto y"
-  if (!__dredd_enabled_mutation(15)) { if (auto y = __dredd_replace_expr_int([&]() -> int { return static_cast<int>(__dredd_replace_expr_int_lvalue([&]() -> int& { return static_cast<int&>(x); }, 0)); }, 2)) {
-    if (!__dredd_enabled_mutation(14)) { return __dredd_replace_expr_int([&]() -> int { return static_cast<int>(__dredd_replace_expr_int_lvalue([&]() -> int& { return static_cast<int&>(y); }, 7)); }, 9); }
+  if (!__dredd_enabled_mutation(17)) { if (auto y = __dredd_replace_expr_int([&]() -> int { return static_cast<int>(__dredd_replace_expr_int_lvalue([&]() -> int& { return static_cast<int&>(x); }, 0)); }, 2)) {
+    if (!__dredd_enabled_mutation(16)) { return __dredd_replace_expr_int([&]() -> int { return static_cast<int>(__dredd_replace_expr_int_lvalue([&]() -> int& { return static_cast<int&>(y); }, 8)); }, 10); }
   } }
-  if (!__dredd_enabled_mutation(21)) { return __dredd_replace_expr_int([&]() -> int { return 2; }, 16); }
+  if (!__dredd_enabled_mutation(24)) { return __dredd_replace_expr_int([&]() -> int { return 2; }, 18); }
 }

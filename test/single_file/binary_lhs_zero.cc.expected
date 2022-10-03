@@ -35,11 +35,10 @@ static bool __dredd_enabled_mutation(int local_mutation_id) {
   return (enabled_bitset[local_mutation_id / 64] & (1 << (local_mutation_id % 64))) != 0;
 }
 
-static int __dredd_replace_expr_int_uoi_optimised_zero(std::function<int()> arg, int local_mutation_id) {
+static int __dredd_replace_expr_int_zero(std::function<int()> arg, int local_mutation_id) {
   if (!__dredd_some_mutation_enabled) return arg();
-  if (__dredd_enabled_mutation(local_mutation_id + 0)) return ~(arg());
-  if (__dredd_enabled_mutation(local_mutation_id + 1)) return 1;
-  if (__dredd_enabled_mutation(local_mutation_id + 2)) return -1;
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return 1;
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return -1;
   return arg();
 }
 
@@ -50,13 +49,24 @@ static int __dredd_replace_expr_int_lvalue(std::function<int&()> arg, int local_
   return arg();
 }
 
+static int __dredd_replace_expr_int_constant(std::function<int()> arg, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return arg();
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return ~(arg());
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return -(arg());
+  if (__dredd_enabled_mutation(local_mutation_id + 2)) return 0;
+  if (__dredd_enabled_mutation(local_mutation_id + 3)) return 1;
+  if (__dredd_enabled_mutation(local_mutation_id + 4)) return -1;
+  return arg();
+}
+
 static int __dredd_replace_expr_int(std::function<int()> arg, int local_mutation_id) {
   if (!__dredd_some_mutation_enabled) return arg();
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return !(arg());
   if (__dredd_enabled_mutation(local_mutation_id + 1)) return ~(arg());
-  if (__dredd_enabled_mutation(local_mutation_id + 2)) return 0;
-  if (__dredd_enabled_mutation(local_mutation_id + 3)) return 1;
-  if (__dredd_enabled_mutation(local_mutation_id + 4)) return -1;
+  if (__dredd_enabled_mutation(local_mutation_id + 2)) return -(arg());
+  if (__dredd_enabled_mutation(local_mutation_id + 3)) return 0;
+  if (__dredd_enabled_mutation(local_mutation_id + 4)) return 1;
+  if (__dredd_enabled_mutation(local_mutation_id + 5)) return -1;
   return arg();
 }
 
@@ -68,6 +78,6 @@ static int __dredd_replace_binary_operator_Add_int_int_lhs_zero(std::function<in
 }
 
 int main() {
-  int x = __dredd_replace_expr_int([&]() -> int { return __dredd_replace_binary_operator_Add_int_int_lhs_zero([&]() -> int { return static_cast<int>(__dredd_replace_expr_int_uoi_optimised_zero([&]() -> int { return 0; }, 0)); } , [&]() -> int { return static_cast<int>(__dredd_replace_expr_int([&]() -> int { return 8; }, 3)); }, 8); }, 10);
-  if (!__dredd_enabled_mutation(22)) { return __dredd_replace_expr_int([&]() -> int { return static_cast<int>(__dredd_replace_expr_int_lvalue([&]() -> int& { return static_cast<int&>(x); }, 15)); }, 17); }
+  int x = __dredd_replace_expr_int_constant([&]() -> int { return __dredd_replace_binary_operator_Add_int_int_lhs_zero([&]() -> int { return static_cast<int>(__dredd_replace_expr_int_zero([&]() -> int { return 0; }, 0)); } , [&]() -> int { return static_cast<int>(__dredd_replace_expr_int_constant([&]() -> int { return 8; }, 2)); }, 7); }, 9);
+  if (!__dredd_enabled_mutation(22)) { return __dredd_replace_expr_int([&]() -> int { return static_cast<int>(__dredd_replace_expr_int_lvalue([&]() -> int& { return static_cast<int&>(x); }, 14)); }, 16); }
 }

@@ -35,19 +35,19 @@ static bool __dredd_enabled_mutation(int local_mutation_id) {
   return (enabled_bitset[local_mutation_id / 64] & (1 << (local_mutation_id % 64))) != 0;
 }
 
-static bool __dredd_replace_expr_bool_uoi_optimised_true(std::function<bool()> arg, int local_mutation_id) {
+static bool __dredd_replace_expr_bool_true(std::function<bool()> arg, int local_mutation_id) {
   if (!__dredd_some_mutation_enabled) return arg();
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return false;
   return arg();
 }
 
-static bool __dredd_replace_expr_bool_uoi_optimised_false(std::function<bool()> arg, int local_mutation_id) {
+static bool __dredd_replace_expr_bool_false(std::function<bool()> arg, int local_mutation_id) {
   if (!__dredd_some_mutation_enabled) return arg();
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return true;
   return arg();
 }
 
 int main() {
-  bool x = __dredd_replace_expr_bool_uoi_optimised_true([&]() -> bool { return true; }, 0);
-  bool y = __dredd_replace_expr_bool_uoi_optimised_false([&]() -> bool { return false; }, 1);
+  bool x = __dredd_replace_expr_bool_true([&]() -> bool { return true; }, 0);
+  bool y = __dredd_replace_expr_bool_false([&]() -> bool { return false; }, 1);
 }

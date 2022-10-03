@@ -16,7 +16,7 @@ static int __dredd_enabled_mutation(int local_mutation_id) {
       while(token) {
         int value = atoi(token);
         int local_value = value - 0;
-        if (local_value >= 0 && local_value < 52) {
+        if (local_value >= 0 && local_value < 60) {
           enabled_bitset[local_value / 64] |= (1 << (local_value % 64));
           some_mutation_enabled = 1;
         }
@@ -50,14 +50,15 @@ static int __dredd_replace_expr_int(int arg, int local_mutation_id) {
   if (!__dredd_some_mutation_enabled) return arg;
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return !(arg);
   if (__dredd_enabled_mutation(local_mutation_id + 1)) return ~(arg);
-  if (__dredd_enabled_mutation(local_mutation_id + 2)) return 0;
-  if (__dredd_enabled_mutation(local_mutation_id + 3)) return 1;
-  if (__dredd_enabled_mutation(local_mutation_id + 4)) return -1;
+  if (__dredd_enabled_mutation(local_mutation_id + 2)) return -(arg);
+  if (__dredd_enabled_mutation(local_mutation_id + 3)) return 0;
+  if (__dredd_enabled_mutation(local_mutation_id + 4)) return 1;
+  if (__dredd_enabled_mutation(local_mutation_id + 5)) return -1;
   return arg;
 }
 
 int main() {
-  int x = __dredd_replace_expr_int(__dredd_replace_unary_operator_Not_int(__dredd_replace_expr_int(0, 0), 5), 8);
-  int y = __dredd_replace_expr_int(__dredd_replace_unary_operator_Not_int(__dredd_replace_expr_int(1, 13), 18), 21);
-  int z = __dredd_replace_expr_int(__dredd_replace_unary_operator_Not_int(__dredd_replace_expr_int((__dredd_replace_expr_int(__dredd_replace_unary_operator_Minus_int(__dredd_replace_expr_int(1, 26), 31), 34)), 39), 44), 47);
+  int x = __dredd_replace_expr_int(__dredd_replace_unary_operator_Not_int(__dredd_replace_expr_int(0, 0), 6), 9);
+  int y = __dredd_replace_expr_int(__dredd_replace_unary_operator_Not_int(__dredd_replace_expr_int(1, 15), 21), 24);
+  int z = __dredd_replace_expr_int(__dredd_replace_unary_operator_Not_int(__dredd_replace_expr_int((__dredd_replace_expr_int(__dredd_replace_unary_operator_Minus_int(__dredd_replace_expr_int(1, 30), 36), 39)), 45), 51), 54);
 }

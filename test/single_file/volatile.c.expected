@@ -30,10 +30,10 @@ static int __dredd_enabled_mutation(int local_mutation_id) {
   return enabled_bitset[local_mutation_id / 64] & (1 << (local_mutation_id % 64));
 }
 
-static int __dredd_replace_expr_int(int arg, int local_mutation_id) {
+static int __dredd_replace_expr_int_constant(int arg, int local_mutation_id) {
   if (!__dredd_some_mutation_enabled) return arg;
-  if (__dredd_enabled_mutation(local_mutation_id + 0)) return !(arg);
-  if (__dredd_enabled_mutation(local_mutation_id + 1)) return ~(arg);
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return ~(arg);
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return -(arg);
   if (__dredd_enabled_mutation(local_mutation_id + 2)) return 0;
   if (__dredd_enabled_mutation(local_mutation_id + 3)) return 1;
   if (__dredd_enabled_mutation(local_mutation_id + 4)) return -1;
@@ -57,5 +57,5 @@ static int __dredd_replace_binary_operator_AddAssign_volatile_int_int(volatile i
 
 void foo() {
   volatile int a;
-  if (!__dredd_enabled_mutation(15)) { __dredd_replace_binary_operator_AddAssign_volatile_int_int(&(a) , __dredd_replace_expr_int(2, 0), 5); }
+  if (!__dredd_enabled_mutation(15)) { __dredd_replace_binary_operator_AddAssign_volatile_int_int(&(a) , __dredd_replace_expr_int_constant(2, 0), 5); }
 }
