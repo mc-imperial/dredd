@@ -73,6 +73,15 @@ class MutationReplaceUnaryOperator : public Mutation {
       std::stringstream& new_function, int& mutation_id_offset,
       protobufs::MutationReplaceUnaryOperator& protobuf_message) const;
 
+  static void AddMutationInstance(
+      int mutation_id_base,
+      protobufs::MutationReplaceUnaryOperatorAction action,
+      int& mutation_id_offset,
+      protobufs::MutationReplaceUnaryOperator& protobuf_message);
+
+  [[nodiscard]] static protobufs::MutationReplaceUnaryOperatorAction
+  OperatorKindToAction(clang::UnaryOperatorKind operator_kind);
+
   const clang::UnaryOperator& unary_operator_;
   const InfoForSourceRange info_for_overall_expr_;
   const InfoForSourceRange info_for_sub_expr_;

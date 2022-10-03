@@ -168,16 +168,16 @@ void MutationReplaceExpr::GenerateUnaryOperatorInsertion(
     new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
                  << mutation_id_offset << ")) return ++(" << arg_evaluated
                  << ");\n";
-    protobuf_message.add_instances()->set_mutation_id(mutation_id_base +
-                                                      mutation_id_offset);
-    mutation_id_offset++;
+    AddMutationInstance(mutation_id_base,
+                        protobufs::MutationReplaceExprAction::InsertPreInc,
+                        mutation_id_offset, protobuf_message);
 
     new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
                  << mutation_id_offset << ")) return --(" << arg_evaluated
                  << ");\n";
-    protobuf_message.add_instances()->set_mutation_id(mutation_id_base +
-                                                      mutation_id_offset);
-    mutation_id_offset++;
+    AddMutationInstance(mutation_id_base,
+                        protobufs::MutationReplaceExprAction::InsertPreDec,
+                        mutation_id_offset, protobuf_message);
   }
 
   if (!expr_.isLValue() && (exprType.isBooleanType() || exprType.isInteger())) {
@@ -186,9 +186,9 @@ void MutationReplaceExpr::GenerateUnaryOperatorInsertion(
       new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
                    << mutation_id_offset << ")) return !(" << arg_evaluated
                    << ");\n";
-      protobuf_message.add_instances()->set_mutation_id(mutation_id_base +
-                                                        mutation_id_offset);
-      mutation_id_offset++;
+      AddMutationInstance(mutation_id_base,
+                          protobufs::MutationReplaceExprAction::InsertLNot,
+                          mutation_id_offset, protobuf_message);
     }
 
     if (!expr_.getType()->isBooleanType()) {
@@ -197,7 +197,9 @@ void MutationReplaceExpr::GenerateUnaryOperatorInsertion(
                    << ");\n";
       protobuf_message.add_instances()->set_mutation_id(mutation_id_base +
                                                         mutation_id_offset);
-      mutation_id_offset++;
+      AddMutationInstance(mutation_id_base,
+                          protobufs::MutationReplaceExprAction::InsertNot,
+                          mutation_id_offset, protobuf_message);
     }
   }
 }
@@ -235,7 +237,10 @@ void MutationReplaceExpr::GenerateFloatConstantReplacement(
                    << mutation_id_offset << ")) return 0.0;\n";
       protobuf_message.add_instances()->set_mutation_id(mutation_id_base +
                                                         mutation_id_offset);
-      mutation_id_offset++;
+      AddMutationInstance(
+          mutation_id_base,
+          protobufs::MutationReplaceExprAction::ReplaceWithZeroFloat,
+          mutation_id_offset, protobuf_message);
     }
 
     if (!optimise_mutations ||
@@ -243,9 +248,10 @@ void MutationReplaceExpr::GenerateFloatConstantReplacement(
       // Replace floating point expression with 1.0
       new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
                    << mutation_id_offset << ")) return 1.0;\n";
-      protobuf_message.add_instances()->set_mutation_id(mutation_id_base +
-                                                        mutation_id_offset);
-      mutation_id_offset++;
+      AddMutationInstance(
+          mutation_id_base,
+          protobufs::MutationReplaceExprAction::ReplaceWithOneFloat,
+          mutation_id_offset, protobuf_message);
     }
 
     if (!optimise_mutations ||
@@ -253,9 +259,10 @@ void MutationReplaceExpr::GenerateFloatConstantReplacement(
       // Replace floating point expression with -1.0
       new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
                    << mutation_id_offset << ")) return -1.0;\n";
-      protobuf_message.add_instances()->set_mutation_id(mutation_id_base +
-                                                        mutation_id_offset);
-      mutation_id_offset++;
+      AddMutationInstance(
+          mutation_id_base,
+          protobufs::MutationReplaceExprAction::ReplaceWithMinusOneFloat,
+          mutation_id_offset, protobuf_message);
     }
   }
 }
@@ -273,16 +280,20 @@ void MutationReplaceExpr::GenerateIntegerConstantReplacement(
                    << mutation_id_offset << ")) return 0;\n";
       protobuf_message.add_instances()->set_mutation_id(mutation_id_base +
                                                         mutation_id_offset);
-      mutation_id_offset++;
+      AddMutationInstance(
+          mutation_id_base,
+          protobufs::MutationReplaceExprAction::ReplaceWithZeroInt,
+          mutation_id_offset, protobuf_message);
     }
 
     if (!optimise_mutations || !ExprIsEquivalentToInt(expr_, 1, ast_context)) {
       // Replace expression with 1
       new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
                    << mutation_id_offset << ")) return 1;\n";
-      protobuf_message.add_instances()->set_mutation_id(mutation_id_base +
-                                                        mutation_id_offset);
-      mutation_id_offset++;
+      AddMutationInstance(
+          mutation_id_base,
+          protobufs::MutationReplaceExprAction::ReplaceWithOneInt,
+          mutation_id_offset, protobuf_message);
     }
   }
 
@@ -291,9 +302,10 @@ void MutationReplaceExpr::GenerateIntegerConstantReplacement(
       // Replace signed integer expression with -1
       new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
                    << mutation_id_offset << ")) return -1;\n";
-      protobuf_message.add_instances()->set_mutation_id(mutation_id_base +
-                                                        mutation_id_offset);
-      mutation_id_offset++;
+      AddMutationInstance(
+          mutation_id_base,
+          protobufs::MutationReplaceExprAction::ReplaceWithMinusOneInt,
+          mutation_id_offset, protobuf_message);
     }
   }
 }
@@ -312,9 +324,9 @@ void MutationReplaceExpr::GenerateBooleanConstantReplacement(
                    << mutation_id_offset << ")) return "
                    << (ast_context.getLangOpts().CPlusPlus ? "true" : "1")
                    << ";\n";
-      protobuf_message.add_instances()->set_mutation_id(mutation_id_base +
-                                                        mutation_id_offset);
-      mutation_id_offset++;
+      AddMutationInstance(mutation_id_base,
+                          protobufs::MutationReplaceExprAction::ReplaceWithTrue,
+                          mutation_id_offset, protobuf_message);
     }
 
     if (!optimise_mutations ||
@@ -324,9 +336,10 @@ void MutationReplaceExpr::GenerateBooleanConstantReplacement(
                    << mutation_id_offset << ")) return "
                    << (ast_context.getLangOpts().CPlusPlus ? "false" : "0")
                    << ";\n";
-      protobuf_message.add_instances()->set_mutation_id(mutation_id_base +
-                                                        mutation_id_offset);
-      mutation_id_offset++;
+      AddMutationInstance(
+          mutation_id_base,
+          protobufs::MutationReplaceExprAction::ReplaceWithFalse,
+          mutation_id_offset, protobuf_message);
     }
   }
 }
@@ -541,6 +554,16 @@ bool MutationReplaceExpr::CanMutateLValue(clang::ASTContext& ast_context,
     return false;
   }
   return true;
+}
+
+void MutationReplaceExpr::AddMutationInstance(
+    int mutation_id_base, protobufs::MutationReplaceExprAction action,
+    int& mutation_id_offset, protobufs::MutationReplaceExpr& protobuf_message) {
+  protobufs::MutationReplaceExprInstance instance;
+  instance.set_mutation_id(mutation_id_base + mutation_id_offset);
+  instance.set_action(action);
+  *protobuf_message.add_instances() = instance;
+  mutation_id_offset++;
 }
 
 }  // namespace dredd

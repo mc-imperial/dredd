@@ -112,6 +112,11 @@ class MutationReplaceExpr : public Mutation {
   [[nodiscard]] std::string GetFunctionName(
       bool optimise_mutations, clang::ASTContext& ast_context) const;
 
+  static void AddMutationInstance(
+      int mutation_id_base, protobufs::MutationReplaceExprAction action,
+      int& mutation_id_offset,
+      protobufs::MutationReplaceExpr& protobuf_message);
+
   const clang::Expr& expr_;
   const InfoForSourceRange info_for_source_range_;
 };

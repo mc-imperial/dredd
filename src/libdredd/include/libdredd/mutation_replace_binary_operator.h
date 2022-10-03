@@ -109,6 +109,15 @@ class MutationReplaceBinaryOperator : public Mutation {
       clang::Rewriter& rewriter,
       std::unordered_set<std::string>& dredd_declarations) const;
 
+  static void AddMutationInstance(
+      int mutation_id_base,
+      protobufs::MutationReplaceBinaryOperatorAction action,
+      int& mutation_id_offset,
+      protobufs::MutationReplaceBinaryOperator& protobuf_message);
+
+  [[nodiscard]] static protobufs::MutationReplaceBinaryOperatorAction
+  OperatorKindToAction(clang::BinaryOperatorKind operator_kind);
+
   const clang::BinaryOperator& binary_operator_;
   const InfoForSourceRange info_for_overall_expr_;
   const InfoForSourceRange info_for_lhs_;

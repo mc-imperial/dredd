@@ -126,9 +126,6 @@ std::string MutationReplaceUnaryOperator::GetFunctionName(
   // mutation function, to differentiate mutation functions for different
   // operators
   switch (unary_operator_.getOpcode()) {
-    case clang::UnaryOperatorKind::UO_Plus:
-      result += "Plus";
-      break;
     case clang::UnaryOperatorKind::UO_Minus:
       result += "Minus";
       break;
@@ -317,9 +314,8 @@ void MutationReplaceUnaryOperator::GenerateUnaryOperatorReplacement(
                    << clang::UnaryOperator::getOpcodeStr(operator_kind).str()
                    << ";\n";
     }
-    protobuf_message.add_instances()->set_mutation_id(mutation_id_base +
-                                                      mutation_id_offset);
-    mutation_id_offset++;
+    AddMutationInstance(mutation_id_base, OperatorKindToAction(operator_kind),
+                        mutation_id_offset, protobuf_message);
   }
 
   // In these cases, replacement with the argument is equivalent to replacement
@@ -339,9 +335,10 @@ void MutationReplaceUnaryOperator::GenerateUnaryOperatorReplacement(
           *unary_operator_.getSubExpr(), -1.0, ast_context)) {
     new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
                  << mutation_id_offset << ")) return " + arg_evaluated + ";\n";
-    protobuf_message.add_instances()->set_mutation_id(mutation_id_base +
-                                                      mutation_id_offset);
-    mutation_id_offset++;
+    AddMutationInstance(
+        mutation_id_base,
+        protobufs::MutationReplaceUnaryOperatorAction::ReplaceWithOperand,
+        mutation_id_offset, protobuf_message);
   }
 }
 
@@ -462,6 +459,40 @@ protobufs::MutationGroup MutationReplaceUnaryOperator::Apply(
   protobufs::MutationGroup result;
   *result.mutable_replace_unary_operator() = inner_result;
   return result;
+}
+
+void MutationReplaceUnaryOperator::AddMutationInstance(
+    int mutation_id_base, protobufs::MutationReplaceUnaryOperatorAction action,
+    int& mutation_id_offset,
+    protobufs::MutationReplaceUnaryOperator& protobuf_message) {
+  protobufs::MutationReplaceUnaryOperatorInstance instance;
+  instance.set_mutation_id(mutation_id_base + mutation_id_offset);
+  instance.set_action(action);
+  *protobuf_message.add_instances() = instance;
+  mutation_id_offset++;
+}
+
+protobufs::MutationReplaceUnaryOperatorAction
+MutationReplaceUnaryOperator::OperatorKindToAction(
+    clang::UnaryOperatorKind operator_kind) {
+  switch (operator_kind) {
+    case clang::UnaryOperatorKind::UO_Minus:
+      return protobufs::MutationReplaceUnaryOperatorAction::ReplaceWithMinus;
+    case clang::UnaryOperatorKind::UO_Not:
+      return protobufs::MutationReplaceUnaryOperatorAction::ReplaceWithNot;
+    case clang::UnaryOperatorKind::UO_PreDec:
+      return protobufs::MutationReplaceUnaryOperatorAction::ReplaceWithPreDec;
+    case clang::UnaryOperatorKind::UO_PostDec:
+      return protobufs::MutationReplaceUnaryOperatorAction::ReplaceWithPostDec;
+    case clang::UnaryOperatorKind::UO_PreInc:
+      return protobufs::MutationReplaceUnaryOperatorAction::ReplaceWithPreInc;
+    case clang::UnaryOperatorKind::UO_PostInc:
+      return protobufs::MutationReplaceUnaryOperatorAction::ReplaceWithPostInc;
+    case clang::UnaryOperatorKind::UO_LNot:
+      return protobufs::MutationReplaceUnaryOperatorAction::ReplaceWithLNot;
+    default:
+      return protobufs::MutationReplaceUnaryOperatorAction_MAX;
+  }
 }
 
 }  // namespace dredd
