@@ -54,7 +54,7 @@ DREDD_LLVM_TAG=$(./scripts/llvm_tag.sh)
 
 # Install clang.
 pushd ./third_party/clang+llvm
-curl -fsSL -o clang+llvm.zip "https://github.com/mc-imperial/build-clang/releases/download/llvmorg-${DREDD_LLVM_TAG}/build-clang-llvmorg-${DREDD_LLVM_TAG}-Linux_x64_Release.zip"
+curl -fsSL -o clang+llvm.zip "https://github.com/mc-imperial/build-clang/releases/download/llvmorg-${DREDD_LLVM_TAG}/build-clang-llvmorg-${DREDD_LLVM_TAG}-ubuntu-20.04_x64_Release.zip"
 unzip clang+llvm.zip
 rm clang+llvm.zip
 popd
@@ -76,10 +76,6 @@ popd
 
 # Check that dredd works on some projects
 DREDD_ROOT=$(pwd)
-
-# TODO remove
-echo ${DREDD_ROOT}
-
 DREDD_EXECUTABLE="${DREDD_ROOT}/third_party/clang+llvm/bin/dredd"
 cp "${DREDD_ROOT}/build/src/dredd/dredd" "${DREDD_EXECUTABLE}"
 
