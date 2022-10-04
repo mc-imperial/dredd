@@ -195,11 +195,13 @@ Dredd builds against various Clang and LLVM libraries. Rather than including Cla
 From the root of the repository, execute the following commands:
 
 ```
-DREDD_LLVM_TAG=$(./scripts/llvm_tag.sh)
+cd third_party
 # The release file is pretty large, so this download may take a while
-curl -Lo clang+llvm.zip https://github.com/mc-imperial/build-clang/releases/download/llvmorg-${DREDD_LLVM_TAG}/build-clang-llvmorg-${DREDD_LLVM_TAG}-Linux_x64_Release.zip
-unzip clang+llvm.zip -d third_party/clang+llvm
-rm clang+llvm.zip
+curl -Lo clang+llvm.tar.xz https://github.com/llvm/llvm-project/releases/download/llvmorg-13.0.1/clang+llvm-13.0.1-x86_64-linux-gnu-ubuntu-18.04.tar.xz
+tar xf clang+llvm.tar.xz
+mv clang+llvm-13.0.1-x86_64-linux-gnu-ubuntu-18.04 clang+llvm
+rm clang+llvm.tar.xz
+cd ..
 ```
 
 ### Build steps
