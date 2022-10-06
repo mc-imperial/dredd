@@ -53,13 +53,13 @@ pushd "${HOME}/bin"
   ls
 popd
 
-DREDD_LLVM_TAG=$(./scripts/llvm_tag.sh)
-
 # Install clang.
 pushd ./third_party/clang+llvm
-curl -fsSL -o clang+llvm.zip "https://github.com/mc-imperial/build-clang/releases/download/llvmorg-${DREDD_LLVM_TAG}/build-clang-llvmorg-${DREDD_LLVM_TAG}-ubuntu-20.04_x64_Release.zip"
-unzip clang+llvm.zip
-rm clang+llvm.zip
+curl -Lo clang+llvm.tar.xz https://github.com/llvm/llvm-project/releases/download/llvmorg-13.0.1/clang+llvm-13.0.1-x86_64-linux-gnu-ubuntu-18.04.tar.xz
+tar xf clang+llvm.tar.xz
+mv clang+llvm-13.0.1-x86_64-linux-gnu-ubuntu-18.04/* .
+rmdir mv clang+llvm-13.0.1-x86_64-linux-gnu-ubuntu-18.04
+rm clang+llvm.tar.xz
 popd
 
 # Source the dev shell to download clang-tidy and other tools.

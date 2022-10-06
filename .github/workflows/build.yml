@@ -23,9 +23,6 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os:
-          - windows-latest
-          - macOS-latest
         config:
           - Release
         # Manually list various Linux configurations.
