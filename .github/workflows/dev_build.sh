@@ -58,7 +58,7 @@ popd
   curl -Lo clang+llvm.tar.xz https://github.com/llvm/llvm-project/releases/download/llvmorg-13.0.1/clang+llvm-13.0.1-x86_64-linux-gnu-ubuntu-18.04.tar.xz
   tar xf clang+llvm.tar.xz
   mv clang+llvm-13.0.1-x86_64-linux-gnu-ubuntu-18.04/* .
-  rmdir mv clang+llvm-13.0.1-x86_64-linux-gnu-ubuntu-18.04
+  rmdir clang+llvm-13.0.1-x86_64-linux-gnu-ubuntu-18.04
   rm clang+llvm.tar.xz
 popd
 
