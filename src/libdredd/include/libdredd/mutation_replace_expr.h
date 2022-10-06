@@ -70,6 +70,9 @@ class MutationReplaceExpr : public Mutation {
       clang::ASTContext& ast_context,
       clang::UnaryOperatorKind operator_kind) const;
 
+  [[nodiscard]] bool IsBooleanReplacementRedundantForBinaryOperator(
+      bool replacement_value) const;
+
   void AddOptimisationSpecifier(clang::ASTContext& ast_context,
                                 std::string& function_name) const;
 

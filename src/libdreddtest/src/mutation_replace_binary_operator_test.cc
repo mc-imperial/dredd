@@ -121,24 +121,20 @@ TEST(MutationReplaceBinaryOperatorTest, MutateAdd) {
                   expected_dredd_declaration_no_opt);
 }
 
-TEST(MutationReplaceBinaryOperatorTest, MutateAnd) {
-  std::string original = R"(void foo() {
-  int x = 1;
-  int y = 2;
-  int z = x && y;
+TEST(MutationReplaceBinaryOperatorTest, MutateLAnd) {
+  std::string original = R"(void foo(int x, int y) {
+  bool z = x && y;
 }
 )";
   std::string expected_opt =
-      R"(void foo() {
-  int x = 1;
-  int y = 2;
-  int z = __dredd_replace_binary_operator_LAnd_bool_bool([&]() -> bool { return static_cast<bool>(x); } , [&]() -> bool { return static_cast<bool>(y); }, 0);
+      R"(void foo(int x, int y) {
+  bool z = __dredd_replace_binary_operator_LAnd_bool_bool([&]() -> bool { return static_cast<bool>(x); } , [&]() -> bool { return static_cast<bool>(y); }, 0);
 }
 )";
   std::string expected_dredd_declaration_opt =
       R"(static bool __dredd_replace_binary_operator_LAnd_bool_bool(std::function<bool()> arg1, std::function<bool()> arg2, int local_mutation_id) {
   if (!__dredd_some_mutation_enabled) return arg1() && arg2();
-  if (__dredd_enabled_mutation(local_mutation_id + 0)) return arg1() || arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return arg1() == arg2();
   if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg1();
   if (__dredd_enabled_mutation(local_mutation_id + 2)) return arg2();
   return arg1() && arg2();
@@ -151,23 +147,365 @@ TEST(MutationReplaceBinaryOperatorTest, MutateAnd) {
                   expected_dredd_declaration_opt);
 
   std::string expected_no_opt =
-      R"(void foo() {
-  int x = 1;
-  int y = 2;
-  int z = __dredd_replace_binary_operator_LAnd_bool_bool([&]() -> bool { return static_cast<bool>(x); } , [&]() -> bool { return static_cast<bool>(y); }, 0);
+      R"(void foo(int x, int y) {
+  bool z = __dredd_replace_binary_operator_LAnd_bool_bool([&]() -> bool { return static_cast<bool>(x); } , [&]() -> bool { return static_cast<bool>(y); }, 0);
 }
 )";
   std::string expected_dredd_declaration_no_opt =
       R"(static bool __dredd_replace_binary_operator_LAnd_bool_bool(std::function<bool()> arg1, std::function<bool()> arg2, int local_mutation_id) {
   if (!__dredd_some_mutation_enabled) return arg1() && arg2();
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return arg1() || arg2();
-  if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg1();
-  if (__dredd_enabled_mutation(local_mutation_id + 2)) return arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg1() == arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 2)) return arg1() != arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 3)) return arg1();
+  if (__dredd_enabled_mutation(local_mutation_id + 4)) return arg2();
   return arg1() && arg2();
 }
 
 )";
-  const int kNumReplacementsNoOpt = 3;
+  const int kNumReplacementsNoOpt = 5;
+  // Test without optimisations enabled.
+  TestReplacement(original, expected_no_opt, kNumReplacementsNoOpt, false,
+                  expected_dredd_declaration_no_opt);
+}
+
+TEST(MutationReplaceBinaryOperatorTest, MutateLOr) {
+  std::string original = R"(void foo(int x, int y) {
+  bool z = x || y;
+}
+)";
+  std::string expected_opt =
+      R"(void foo(int x, int y) {
+  bool z = __dredd_replace_binary_operator_LOr_bool_bool([&]() -> bool { return static_cast<bool>(x); } , [&]() -> bool { return static_cast<bool>(y); }, 0);
+}
+)";
+  std::string expected_dredd_declaration_opt =
+      R"(static bool __dredd_replace_binary_operator_LOr_bool_bool(std::function<bool()> arg1, std::function<bool()> arg2, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return arg1() || arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return arg1() != arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg1();
+  if (__dredd_enabled_mutation(local_mutation_id + 2)) return arg2();
+  return arg1() || arg2();
+}
+
+)";
+  const int kNumReplacementsOpt = 3;
+  // Test with optimisations enabled.
+  TestReplacement(original, expected_opt, kNumReplacementsOpt, true,
+                  expected_dredd_declaration_opt);
+
+  std::string expected_no_opt =
+      R"(void foo(int x, int y) {
+  bool z = __dredd_replace_binary_operator_LOr_bool_bool([&]() -> bool { return static_cast<bool>(x); } , [&]() -> bool { return static_cast<bool>(y); }, 0);
+}
+)";
+  std::string expected_dredd_declaration_no_opt =
+      R"(static bool __dredd_replace_binary_operator_LOr_bool_bool(std::function<bool()> arg1, std::function<bool()> arg2, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return arg1() || arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return arg1() && arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg1() == arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 2)) return arg1() != arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 3)) return arg1();
+  if (__dredd_enabled_mutation(local_mutation_id + 4)) return arg2();
+  return arg1() || arg2();
+}
+
+)";
+  const int kNumReplacementsNoOpt = 5;
+  // Test without optimisations enabled.
+  TestReplacement(original, expected_no_opt, kNumReplacementsNoOpt, false,
+                  expected_dredd_declaration_no_opt);
+}
+
+TEST(MutationReplaceBinaryOperatorTest, MutateGT) {
+  std::string original = R"(void foo(int x, int y) {
+  bool z = x > y;
+}
+)";
+  std::string expected_opt =
+      R"(void foo(int x, int y) {
+  bool z = __dredd_replace_binary_operator_GT_int_int([&]() -> int { return static_cast<int>(x); } , [&]() -> int { return static_cast<int>(y); }, 0);
+}
+)";
+  std::string expected_dredd_declaration_opt =
+      R"(static bool __dredd_replace_binary_operator_GT_int_int(std::function<int()> arg1, std::function<int()> arg2, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return arg1() > arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return arg1() != arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg1() >= arg2();
+  return arg1() > arg2();
+}
+
+)";
+  const int kNumReplacementsOpt = 2;
+  // Test with optimisations enabled.
+  TestReplacement(original, expected_opt, kNumReplacementsOpt, true,
+                  expected_dredd_declaration_opt);
+
+  std::string expected_no_opt =
+      R"(void foo(int x, int y) {
+  bool z = __dredd_replace_binary_operator_GT_int_int([&]() -> int { return static_cast<int>(x); } , [&]() -> int { return static_cast<int>(y); }, 0);
+}
+)";
+  std::string expected_dredd_declaration_no_opt =
+      R"(static bool __dredd_replace_binary_operator_GT_int_int(std::function<int()> arg1, std::function<int()> arg2, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return arg1() > arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return arg1() == arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg1() != arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 2)) return arg1() >= arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 3)) return arg1() <= arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 4)) return arg1() < arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 5)) return arg1();
+  if (__dredd_enabled_mutation(local_mutation_id + 6)) return arg2();
+  return arg1() > arg2();
+}
+
+)";
+  const int kNumReplacementsNoOpt = 7;
+  // Test without optimisations enabled.
+  TestReplacement(original, expected_no_opt, kNumReplacementsNoOpt, false,
+                  expected_dredd_declaration_no_opt);
+}
+
+TEST(MutationReplaceBinaryOperatorTest, MutateLT) {
+  std::string original = R"(void foo(int x, int y) {
+  bool z = x < y;
+}
+)";
+  std::string expected_opt =
+      R"(void foo(int x, int y) {
+  bool z = __dredd_replace_binary_operator_LT_int_int([&]() -> int { return static_cast<int>(x); } , [&]() -> int { return static_cast<int>(y); }, 0);
+}
+)";
+  std::string expected_dredd_declaration_opt =
+      R"(static bool __dredd_replace_binary_operator_LT_int_int(std::function<int()> arg1, std::function<int()> arg2, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return arg1() < arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return arg1() != arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg1() <= arg2();
+  return arg1() < arg2();
+}
+
+)";
+  const int kNumReplacementsOpt = 2;
+  // Test with optimisations enabled.
+  TestReplacement(original, expected_opt, kNumReplacementsOpt, true,
+                  expected_dredd_declaration_opt);
+
+  std::string expected_no_opt =
+      R"(void foo(int x, int y) {
+  bool z = __dredd_replace_binary_operator_LT_int_int([&]() -> int { return static_cast<int>(x); } , [&]() -> int { return static_cast<int>(y); }, 0);
+}
+)";
+  std::string expected_dredd_declaration_no_opt =
+      R"(static bool __dredd_replace_binary_operator_LT_int_int(std::function<int()> arg1, std::function<int()> arg2, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return arg1() < arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return arg1() == arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg1() != arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 2)) return arg1() >= arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 3)) return arg1() > arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 4)) return arg1() <= arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 5)) return arg1();
+  if (__dredd_enabled_mutation(local_mutation_id + 6)) return arg2();
+  return arg1() < arg2();
+}
+
+)";
+  const int kNumReplacementsNoOpt = 7;
+  // Test without optimisations enabled.
+  TestReplacement(original, expected_no_opt, kNumReplacementsNoOpt, false,
+                  expected_dredd_declaration_no_opt);
+}
+
+TEST(MutationReplaceBinaryOperatorTest, MutateEQ) {
+  std::string original = R"(void foo(int x, int y) {
+  bool z = x == y;
+}
+)";
+  std::string expected_opt =
+      R"(void foo(int x, int y) {
+  bool z = __dredd_replace_binary_operator_EQ_int_int([&]() -> int { return static_cast<int>(x); } , [&]() -> int { return static_cast<int>(y); }, 0);
+}
+)";
+  std::string expected_dredd_declaration_opt =
+      R"(static bool __dredd_replace_binary_operator_EQ_int_int(std::function<int()> arg1, std::function<int()> arg2, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return arg1() == arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return arg1() >= arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg1() <= arg2();
+  return arg1() == arg2();
+}
+
+)";
+  const int kNumReplacementsOpt = 2;
+  // Test with optimisations enabled.
+  TestReplacement(original, expected_opt, kNumReplacementsOpt, true,
+                  expected_dredd_declaration_opt);
+
+  std::string expected_no_opt =
+      R"(void foo(int x, int y) {
+  bool z = __dredd_replace_binary_operator_EQ_int_int([&]() -> int { return static_cast<int>(x); } , [&]() -> int { return static_cast<int>(y); }, 0);
+}
+)";
+  std::string expected_dredd_declaration_no_opt =
+      R"(static bool __dredd_replace_binary_operator_EQ_int_int(std::function<int()> arg1, std::function<int()> arg2, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return arg1() == arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return arg1() != arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg1() >= arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 2)) return arg1() > arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 3)) return arg1() <= arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 4)) return arg1() < arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 5)) return arg1();
+  if (__dredd_enabled_mutation(local_mutation_id + 6)) return arg2();
+  return arg1() == arg2();
+}
+
+)";
+  const int kNumReplacementsNoOpt = 7;
+  // Test without optimisations enabled.
+  TestReplacement(original, expected_no_opt, kNumReplacementsNoOpt, false,
+                  expected_dredd_declaration_no_opt);
+}
+
+TEST(MutationReplaceBinaryOperatorTest, MutateGE) {
+  std::string original = R"(void foo(int x, int y) {
+  bool z = x >= y;
+}
+)";
+  std::string expected_opt =
+      R"(void foo(int x, int y) {
+  bool z = __dredd_replace_binary_operator_GE_int_int([&]() -> int { return static_cast<int>(x); } , [&]() -> int { return static_cast<int>(y); }, 0);
+}
+)";
+  std::string expected_dredd_declaration_opt =
+      R"(static bool __dredd_replace_binary_operator_GE_int_int(std::function<int()> arg1, std::function<int()> arg2, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return arg1() >= arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return arg1() == arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg1() > arg2();
+  return arg1() >= arg2();
+}
+
+)";
+  const int kNumReplacementsOpt = 2;
+  // Test with optimisations enabled.
+  TestReplacement(original, expected_opt, kNumReplacementsOpt, true,
+                  expected_dredd_declaration_opt);
+
+  std::string expected_no_opt =
+      R"(void foo(int x, int y) {
+  bool z = __dredd_replace_binary_operator_GE_int_int([&]() -> int { return static_cast<int>(x); } , [&]() -> int { return static_cast<int>(y); }, 0);
+}
+)";
+  std::string expected_dredd_declaration_no_opt =
+      R"(static bool __dredd_replace_binary_operator_GE_int_int(std::function<int()> arg1, std::function<int()> arg2, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return arg1() >= arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return arg1() == arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg1() != arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 2)) return arg1() > arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 3)) return arg1() <= arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 4)) return arg1() < arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 5)) return arg1();
+  if (__dredd_enabled_mutation(local_mutation_id + 6)) return arg2();
+  return arg1() >= arg2();
+}
+
+)";
+  const int kNumReplacementsNoOpt = 7;
+  // Test without optimisations enabled.
+  TestReplacement(original, expected_no_opt, kNumReplacementsNoOpt, false,
+                  expected_dredd_declaration_no_opt);
+}
+
+TEST(MutationReplaceBinaryOperatorTest, MutateLE) {
+  std::string original = R"(void foo(int x, int y) {
+  bool z = x <= y;
+}
+)";
+  std::string expected_opt =
+      R"(void foo(int x, int y) {
+  bool z = __dredd_replace_binary_operator_LE_int_int([&]() -> int { return static_cast<int>(x); } , [&]() -> int { return static_cast<int>(y); }, 0);
+}
+)";
+  std::string expected_dredd_declaration_opt =
+      R"(static bool __dredd_replace_binary_operator_LE_int_int(std::function<int()> arg1, std::function<int()> arg2, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return arg1() <= arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return arg1() == arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg1() < arg2();
+  return arg1() <= arg2();
+}
+
+)";
+  const int kNumReplacementsOpt = 2;
+  // Test with optimisations enabled.
+  TestReplacement(original, expected_opt, kNumReplacementsOpt, true,
+                  expected_dredd_declaration_opt);
+
+  std::string expected_no_opt =
+      R"(void foo(int x, int y) {
+  bool z = __dredd_replace_binary_operator_LE_int_int([&]() -> int { return static_cast<int>(x); } , [&]() -> int { return static_cast<int>(y); }, 0);
+}
+)";
+  std::string expected_dredd_declaration_no_opt =
+      R"(static bool __dredd_replace_binary_operator_LE_int_int(std::function<int()> arg1, std::function<int()> arg2, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return arg1() <= arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return arg1() == arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg1() != arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 2)) return arg1() >= arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 3)) return arg1() > arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 4)) return arg1() < arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 5)) return arg1();
+  if (__dredd_enabled_mutation(local_mutation_id + 6)) return arg2();
+  return arg1() <= arg2();
+}
+
+)";
+  const int kNumReplacementsNoOpt = 7;
+  // Test without optimisations enabled.
+  TestReplacement(original, expected_no_opt, kNumReplacementsNoOpt, false,
+                  expected_dredd_declaration_no_opt);
+}
+
+TEST(MutationReplaceBinaryOperatorTest, MutateNE) {
+  std::string original = R"(void foo(int x, int y) {
+  bool z = x != y;
+}
+)";
+  std::string expected_opt =
+      R"(void foo(int x, int y) {
+  bool z = __dredd_replace_binary_operator_NE_int_int([&]() -> int { return static_cast<int>(x); } , [&]() -> int { return static_cast<int>(y); }, 0);
+}
+)";
+  std::string expected_dredd_declaration_opt =
+      R"(static bool __dredd_replace_binary_operator_NE_int_int(std::function<int()> arg1, std::function<int()> arg2, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return arg1() != arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return arg1() > arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg1() < arg2();
+  return arg1() != arg2();
+}
+
+)";
+  const int kNumReplacementsOpt = 2;
+  // Test with optimisations enabled.
+  TestReplacement(original, expected_opt, kNumReplacementsOpt, true,
+                  expected_dredd_declaration_opt);
+
+  std::string expected_no_opt =
+      R"(void foo(int x, int y) {
+  bool z = __dredd_replace_binary_operator_NE_int_int([&]() -> int { return static_cast<int>(x); } , [&]() -> int { return static_cast<int>(y); }, 0);
+}
+)";
+  std::string expected_dredd_declaration_no_opt =
+      R"(static bool __dredd_replace_binary_operator_NE_int_int(std::function<int()> arg1, std::function<int()> arg2, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return arg1() != arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return arg1() == arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg1() >= arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 2)) return arg1() > arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 3)) return arg1() <= arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 4)) return arg1() < arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 5)) return arg1();
+  if (__dredd_enabled_mutation(local_mutation_id + 6)) return arg2();
+  return arg1() != arg2();
+}
+
+)";
+  const int kNumReplacementsNoOpt = 7;
   // Test without optimisations enabled.
   TestReplacement(original, expected_no_opt, kNumReplacementsNoOpt, false,
                   expected_dredd_declaration_no_opt);

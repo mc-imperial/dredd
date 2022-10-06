@@ -140,6 +140,32 @@ bool MutationReplaceExpr::ExprIsEquivalentToBool(
 bool MutationReplaceExpr::IsRedundantOperatorInsertion(
     clang::ASTContext& ast_context,
     clang::UnaryOperatorKind operator_kind) const {
+  if (const auto* binary_operator =
+          llvm::dyn_cast<clang::BinaryOperator>(&expr_)) {
+    switch (binary_operator->getOpcode()) {
+        // From
+        // https://people.cs.umass.edu/~rjust/publ/non_redundant_mutants_jstvr_2014.pdf:
+        // Unary operator insertion is redundant when the expression being
+        // mutated is a && b or a || b.
+      case clang::BO_LAnd:
+      case clang::BO_LOr:
+        // In the following cases, unary operator insertion would be redundant
+        // as it is captured by a binary operator replacement.
+      case clang::BO_EQ:
+      case clang::BO_NE:
+      case clang::BO_GT:
+      case clang::BO_GE:
+      case clang::BO_LT:
+      case clang::BO_LE:
+        assert(!expr_.isLValue() &&
+               "The result of one of these binary operators should be an "
+               "r-value.");
+        return true;
+      default:
+        break;
+    }
+  }
+
   switch (operator_kind) {
     case clang::UO_Minus:
       // It never makes sense to insert '-' before 0 as this would lead to an
@@ -387,7 +413,8 @@ void MutationReplaceExpr::GenerateBooleanConstantReplacement(
       *expr_.getType()->getAs<clang::BuiltinType>();
   if (exprType.isBooleanType()) {
     if (!optimise_mutations ||
-        !ExprIsEquivalentToBool(expr_, true, ast_context)) {
+        !ExprIsEquivalentToBool(expr_, true, ast_context) ||
+        !IsBooleanReplacementRedundantForBinaryOperator(true)) {
       // Replace expression with true
       new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
                    << mutation_id_offset << ")) return "
@@ -399,7 +426,8 @@ void MutationReplaceExpr::GenerateBooleanConstantReplacement(
     }
 
     if (!optimise_mutations ||
-        !ExprIsEquivalentToBool(expr_, false, ast_context)) {
+        !ExprIsEquivalentToBool(expr_, false, ast_context) ||
+        !IsBooleanReplacementRedundantForBinaryOperator(false)) {
       // Replace expression with false
       new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
                    << mutation_id_offset << ")) return "
@@ -633,6 +661,32 @@ void MutationReplaceExpr::AddMutationInstance(
   instance.set_action(action);
   *protobuf_message.add_instances() = instance;
   mutation_id_offset++;
+}
+
+bool MutationReplaceExpr::IsBooleanReplacementRedundantForBinaryOperator(
+    bool replacement_value) const {
+  // From
+  // https://people.cs.umass.edu/~rjust/publ/non_redundant_mutants_jstvr_2014.pdf:
+  // Various cases of replacing a boolean-valued binary operator with a boolean
+  // constant are redundant.
+  if (const auto* binary_operator =
+          llvm::dyn_cast<clang::BinaryOperator>(&expr_)) {
+    switch (binary_operator->getOpcode()) {
+      case clang::BO_LAnd:
+      case clang::BO_GT:
+      case clang::BO_LT:
+      case clang::BO_EQ:
+        return !replacement_value;
+      case clang::BO_LOr:
+      case clang::BO_GE:
+      case clang::BO_LE:
+      case clang::BO_NE:
+        return replacement_value;
+      default:
+        return false;
+    }
+  }
+  return false;
 }
 
 }  // namespace dredd
