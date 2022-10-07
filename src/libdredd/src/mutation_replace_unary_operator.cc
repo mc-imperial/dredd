@@ -240,15 +240,9 @@ std::string MutationReplaceUnaryOperator::GenerateMutatorFunction(
   }
 
   int mutation_id_offset = 0;
-  std::vector<clang::UnaryOperatorKind> operators = {
-      clang::UnaryOperatorKind::UO_PreInc, clang::UnaryOperatorKind::UO_PostInc,
-      clang::UnaryOperatorKind::UO_PreDec, clang::UnaryOperatorKind::UO_PostDec,
-      clang::UnaryOperatorKind::UO_Not,    clang::UnaryOperatorKind::UO_Minus,
-      clang::UnaryOperatorKind::UO_LNot};
-
   GenerateUnaryOperatorReplacement(
-      arg_evaluated, ast_context, optimise_mutations, mutation_id, operators,
-      new_function, mutation_id_offset, protobuf_message);
+      arg_evaluated, ast_context, optimise_mutations, mutation_id, new_function,
+      mutation_id_offset, protobuf_message);
 
   new_function << "  return " << GetExpr(ast_context) << ";\n";
   new_function << "}\n\n";
@@ -294,10 +288,15 @@ bool MutationReplaceUnaryOperator::IsRedundantReplacementOperator(
 void MutationReplaceUnaryOperator::GenerateUnaryOperatorReplacement(
     const std::string& arg_evaluated, clang::ASTContext& ast_context,
     bool optimise_mutations, int mutation_id_base,
-    const std::vector<clang::UnaryOperatorKind>& operators,
     std::stringstream& new_function, int& mutation_id_offset,
     protobufs::MutationReplaceUnaryOperator& protobuf_message) const {
-  for (const auto operator_kind : operators) {
+  std::vector<clang::UnaryOperatorKind> candidate_replacement_operators = {
+      clang::UnaryOperatorKind::UO_PreInc, clang::UnaryOperatorKind::UO_PostInc,
+      clang::UnaryOperatorKind::UO_PreDec, clang::UnaryOperatorKind::UO_PostDec,
+      clang::UnaryOperatorKind::UO_Not,    clang::UnaryOperatorKind::UO_Minus,
+      clang::UnaryOperatorKind::UO_LNot};
+
+  for (const auto operator_kind : candidate_replacement_operators) {
     if (operator_kind == unary_operator_.getOpcode() ||
         !IsValidReplacementOperator(operator_kind) ||
         (optimise_mutations &&
@@ -318,21 +317,10 @@ void MutationReplaceUnaryOperator::GenerateUnaryOperatorReplacement(
                         mutation_id_offset, protobuf_message);
   }
 
-  // In these cases, replacement with the argument is equivalent to replacement
-  // with the respective constant.
-  if (!optimise_mutations ||
-      MutationReplaceExpr::ExprIsEquivalentToInt(*unary_operator_.getSubExpr(),
-                                                 0, ast_context) ||
-      MutationReplaceExpr::ExprIsEquivalentToFloat(
-          *unary_operator_.getSubExpr(), 0.0, ast_context) ||
-      MutationReplaceExpr::ExprIsEquivalentToInt(*unary_operator_.getSubExpr(),
-                                                 1, ast_context) ||
-      MutationReplaceExpr::ExprIsEquivalentToFloat(
-          *unary_operator_.getSubExpr(), 1.0, ast_context) ||
-      MutationReplaceExpr::ExprIsEquivalentToInt(*unary_operator_.getSubExpr(),
-                                                 -1, ast_context) ||
-      MutationReplaceExpr::ExprIsEquivalentToFloat(
-          *unary_operator_.getSubExpr(), -1.0, ast_context)) {
+  // Various operators are self-inverse, so that removing the operator is
+  // equivalent to inserting another occurrence of it, which will be done by
+  // another mutation.
+  if (!optimise_mutations || !IsOperatorSelfInverse()) {
     new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
                  << mutation_id_offset << ")) return " + arg_evaluated + ";\n";
     AddMutationInstance(
@@ -519,6 +507,17 @@ MutationReplaceUnaryOperator::ClangOperatorKindToProtobufOperatorKind(
     default:
       assert(false && "Unknown operator.");
       return protobufs::UnaryOperator_MAX;
+  }
+}
+
+bool MutationReplaceUnaryOperator::IsOperatorSelfInverse() const {
+  switch (unary_operator_.getOpcode()) {
+    case clang::UO_LNot:
+    case clang::UO_Minus:
+    case clang::UO_Not:
+      return true;
+    default:
+      return false;
   }
 }
 
