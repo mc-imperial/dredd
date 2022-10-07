@@ -105,6 +105,14 @@ void MutationReplaceExpr::AddOptimisationSpecifier(
   if (IsRedundantOperatorInsertionBeforeLogicalOperatorArgument(ast_context)) {
     function_name += "_before_logical_operator_argument";
   }
+
+  if (IsBooleanReplacementRedundantForBinaryOperator(true, ast_context)) {
+    function_name += "_omit_true";
+  }
+
+  if (IsBooleanReplacementRedundantForBinaryOperator(false, ast_context)) {
+    function_name += "_omit_false";
+  }
 }
 
 bool MutationReplaceExpr::ExprIsEquivalentToInt(

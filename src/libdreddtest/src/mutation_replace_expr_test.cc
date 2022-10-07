@@ -219,11 +219,11 @@ bool foo(bool a, bool b) {
   std::string expected =
       R"(
 bool foo(bool a, bool b) {
-  return __dredd_replace_expr_bool([&]() -> bool { return static_cast<bool>(a && b); }, 0);
+  return __dredd_replace_expr_bool_omit_true([&]() -> bool { return static_cast<bool>(a && b); }, 0);
 }
 )";
   std::string expected_dredd_declaration =
-      R"(static bool __dredd_replace_expr_bool(std::function<bool()> arg, int local_mutation_id) {
+      R"(static bool __dredd_replace_expr_bool_omit_true(std::function<bool()> arg, int local_mutation_id) {
   if (!__dredd_some_mutation_enabled) return arg();
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return false;
   return arg();
@@ -245,11 +245,11 @@ bool foo(bool a, bool b) {
   std::string expected =
       R"(
 bool foo(bool a, bool b) {
-  return __dredd_replace_expr_bool([&]() -> bool { return static_cast<bool>(a || b); }, 0);
+  return __dredd_replace_expr_bool_omit_false([&]() -> bool { return static_cast<bool>(a || b); }, 0);
 }
 )";
   std::string expected_dredd_declaration =
-      R"(static bool __dredd_replace_expr_bool(std::function<bool()> arg, int local_mutation_id) {
+      R"(static bool __dredd_replace_expr_bool_omit_false(std::function<bool()> arg, int local_mutation_id) {
   if (!__dredd_some_mutation_enabled) return arg();
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return true;
   return arg();
