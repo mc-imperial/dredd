@@ -209,5 +209,57 @@ int neg(int x) {
                   expected_dredd_declaration, 2);
 }
 
+TEST(MutationReplaceExprTest, MutateLAnd) {
+  std::string original =
+      R"(
+bool foo(bool a, bool b) {
+  return a && b;
+}
+)";
+  std::string expected =
+      R"(
+bool foo(bool a, bool b) {
+  return __dredd_replace_expr_bool([&]() -> bool { return static_cast<bool>(a && b); }, 0);
+}
+)";
+  std::string expected_dredd_declaration =
+      R"(static bool __dredd_replace_expr_bool(std::function<bool()> arg, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return arg();
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return false;
+  return arg();
+}
+
+)";
+  const int kNumReplacements = 1;
+  TestReplacement(original, expected, kNumReplacements,
+                  expected_dredd_declaration, 0);
+}
+
+TEST(MutationReplaceExprTest, MutateLOr) {
+  std::string original =
+      R"(
+bool foo(bool a, bool b) {
+  return a || b;
+}
+)";
+  std::string expected =
+      R"(
+bool foo(bool a, bool b) {
+  return __dredd_replace_expr_bool([&]() -> bool { return static_cast<bool>(a || b); }, 0);
+}
+)";
+  std::string expected_dredd_declaration =
+      R"(static bool __dredd_replace_expr_bool(std::function<bool()> arg, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return arg();
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return true;
+  return arg();
+}
+
+)";
+  const int kNumReplacements = 1;
+  TestReplacement(original, expected, kNumReplacements,
+                  expected_dredd_declaration, 0);
+}
+
 }  // namespace
 }  // namespace dredd

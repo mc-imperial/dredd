@@ -413,8 +413,8 @@ void MutationReplaceExpr::GenerateBooleanConstantReplacement(
       *expr_.getType()->getAs<clang::BuiltinType>();
   if (exprType.isBooleanType()) {
     if (!optimise_mutations ||
-        !ExprIsEquivalentToBool(expr_, true, ast_context) ||
-        !IsBooleanReplacementRedundantForBinaryOperator(true)) {
+        (!ExprIsEquivalentToBool(expr_, true, ast_context) &&
+        !IsBooleanReplacementRedundantForBinaryOperator(true))) {
       // Replace expression with true
       new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
                    << mutation_id_offset << ")) return "
@@ -426,8 +426,8 @@ void MutationReplaceExpr::GenerateBooleanConstantReplacement(
     }
 
     if (!optimise_mutations ||
-        !ExprIsEquivalentToBool(expr_, false, ast_context) ||
-        !IsBooleanReplacementRedundantForBinaryOperator(false)) {
+        (!ExprIsEquivalentToBool(expr_, false, ast_context) &&
+        !IsBooleanReplacementRedundantForBinaryOperator(false))) {
       // Replace expression with false
       new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
                    << mutation_id_offset << ")) return "
@@ -676,12 +676,12 @@ bool MutationReplaceExpr::IsBooleanReplacementRedundantForBinaryOperator(
       case clang::BO_GT:
       case clang::BO_LT:
       case clang::BO_EQ:
-        return !replacement_value;
+        return replacement_value;
       case clang::BO_LOr:
       case clang::BO_GE:
       case clang::BO_LE:
       case clang::BO_NE:
-        return replacement_value;
+        return !replacement_value;
       default:
         return false;
     }

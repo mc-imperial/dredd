@@ -801,7 +801,7 @@ void MutationReplaceBinaryOperator::HandleCLogicalOperator(
   //
   // to:
   //
-  //   __dred_fun_outer(__dredd_fun_lhs(a) op __dredd_fun_rhs(b))
+  //   __dredd_fun_outer(__dredd_fun_lhs(a) op __dredd_fun_rhs(b))
   //
   // These functions collectively handle three cases:
   //
