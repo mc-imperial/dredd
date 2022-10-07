@@ -356,10 +356,13 @@ bool MutateVisitor::HandleBinaryOperator(
     case clang::BO_LAnd:
     case clang::BO_LOr:
       bool temp;
-      if (binary_operator->EvaluateAsBooleanCondition(temp, compiler_instance_.getASTContext())) {
-        llvm::errs() << "Found constant evaluation of relational/logical expr:\n";
+      if (binary_operator->EvaluateAsBooleanCondition(
+              temp, compiler_instance_.getASTContext())) {
+        llvm::errs()
+            << "Found constant evaluation of relational/logical expr:\n";
         binary_operator->dump();
       }
+      break;
     default:
       break;
   }
