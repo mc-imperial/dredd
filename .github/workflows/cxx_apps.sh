@@ -59,7 +59,9 @@ pushd ./third_party/clang+llvm
   rm clang+llvm.tar.xz
 popd
 
-export PATH="./third_party/clang+llvm/bin:$PATH"
+DREDD_ROOT=$(pwd)
+
+export PATH="${DREDD_ROOT}/third_party/clang+llvm/bin:$PATH"
 
 export CC=clang
 export CXX=clang++
@@ -75,7 +77,6 @@ pushd build
 popd
 
 # Check that dredd works on some projects
-DREDD_ROOT=$(pwd)
 DREDD_EXECUTABLE="${DREDD_ROOT}/third_party/clang+llvm/bin/dredd"
 cp "${DREDD_ROOT}/build/src/dredd/dredd" "${DREDD_EXECUTABLE}"
 
