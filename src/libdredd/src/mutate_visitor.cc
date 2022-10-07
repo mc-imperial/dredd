@@ -346,6 +346,24 @@ bool MutateVisitor::HandleBinaryOperator(
     return true;
   }
 
+  switch (binary_operator->getOpcode()) {
+    case clang::BO_EQ:
+    case clang::BO_NE:
+    case clang::BO_LE:
+    case clang::BO_GE:
+    case clang::BO_LT:
+    case clang::BO_GT:
+    case clang::BO_LAnd:
+    case clang::BO_LOr:
+      bool temp;
+      if (binary_operator->EvaluateAsBooleanCondition(temp, compiler_instance_.getASTContext())) {
+        llvm::errs() << "Found constant evaluation of relational/logical expr:\n";
+        binary_operator->dump();
+      }
+    default:
+      break;
+  }
+
   mutation_tree_path_.back()->AddMutation(
       std::make_unique<MutationReplaceBinaryOperator>(
           *binary_operator, compiler_instance_.getPreprocessor(),
