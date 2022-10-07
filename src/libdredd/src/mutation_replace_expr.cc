@@ -101,6 +101,18 @@ void MutationReplaceExpr::AddOptimisationSpecifier(
       function_name += "_false";
     }
   }
+
+  if (IsRedundantOperatorInsertionBeforeLogicalOperatorArgument(ast_context)) {
+    function_name += "_before_logical_operator_argument";
+  }
+
+  if (IsBooleanReplacementRedundantForBinaryOperator(true, ast_context)) {
+    function_name += "_omit_true";
+  }
+
+  if (IsBooleanReplacementRedundantForBinaryOperator(false, ast_context)) {
+    function_name += "_omit_false";
+  }
 }
 
 bool MutationReplaceExpr::ExprIsEquivalentToInt(
@@ -140,67 +152,21 @@ bool MutationReplaceExpr::ExprIsEquivalentToBool(
 bool MutationReplaceExpr::IsRedundantOperatorInsertion(
     clang::ASTContext& ast_context,
     clang::UnaryOperatorKind operator_kind) const {
+  if (IsRedundantOperatorInsertionBeforeBinaryExpr(ast_context)) {
+    return true;
+  }
+
+  if (IsRedundantOperatorInsertionBeforeLogicalOperatorArgument(ast_context)) {
+    return true;
+  }
+
   switch (operator_kind) {
     case clang::UO_Minus:
-      // It never makes sense to insert '-' before 0 as this would lead to an
-      // equivalent mutant. (Technically this may not be true for floating-point
-      // due to two values of 0, but the mutant is likely to be equivalent.)
-      if (ExprIsEquivalentToInt(expr_, 0, ast_context) ||
-          ExprIsEquivalentToFloat(expr_, 0.0, ast_context)) {
-        return true;
-      }
-
-      // If the expression is signed or floating-point, it does not make sense
-      // to insert '-' before 1 or -1, as these cases are captured by
-      // replacement with -1 and 1, respectively.
-      if (expr_.getType()->isSignedIntegerType() &&
-          (ExprIsEquivalentToInt(expr_, 1, ast_context) ||
-           ExprIsEquivalentToInt(expr_, -1, ast_context))) {
-        return true;
-      }
-      if (ExprIsEquivalentToFloat(expr_, 1.0, ast_context) ||
-          ExprIsEquivalentToFloat(expr_, -1.0, ast_context)) {
-        return true;
-      }
-      return false;
+      return IsRedundantUnaryMinusInsertion(ast_context);
     case clang::UO_Not:
-      // If the expression is signed, it does not make sense to insert '~'
-      // before 0 or -1, as these cases are captured by replacement with -1 and
-      // 0, respectively.
-      if (expr_.getType()->isSignedIntegerType() &&
-          (ExprIsEquivalentToInt(expr_, 0, ast_context) ||
-           ExprIsEquivalentToInt(expr_, -1, ast_context))) {
-        return true;
-      }
-      return false;
-    case clang::UO_LNot: {
-      // If the expression is a boolean constant, it does not make sense to
-      // insert '!' because this is captured by replacement with the other
-      // boolean constant.
-
-      // We use this value to capture the value that the expression evaluates
-      // to if it does indeed evaluate to a constant, but we do not use this
-      // value because either way, operator insertion would be redundant.
-      bool unused_bool_value;
-      if (expr_.getType()->isBooleanType() &&
-          expr_.EvaluateAsBooleanCondition(unused_bool_value, ast_context)) {
-        return true;
-      }
-
-      // If the expression is an integer constant, it does not make sense to
-      // insert '!' as the result will either be 0 or 1, which is captured by
-      // constant replacement.
-
-      // Similarly, this value is not used as it does not matter which constant
-      // integer the expression evaluates to.
-      clang::Expr::EvalResult unused_result_value;
-      if (expr_.EvaluateAsInt(unused_result_value, ast_context)) {
-        return true;
-      }
-
-      return false;
-    }
-
+      return IsRedundantUnaryNotInsertion(ast_context);
+    case clang::UO_LNot:
+      return IsRedundantUnaryLogicalNotInsertion(ast_context);
     default:
       assert(false && "Unknown operator.");
       return false;
@@ -387,7 +353,8 @@ void MutationReplaceExpr::GenerateBooleanConstantReplacement(
       *expr_.getType()->getAs<clang::BuiltinType>();
   if (exprType.isBooleanType()) {
     if (!optimise_mutations ||
-        !ExprIsEquivalentToBool(expr_, true, ast_context)) {
+        (!ExprIsEquivalentToBool(expr_, true, ast_context) &&
+         !IsBooleanReplacementRedundantForBinaryOperator(true, ast_context))) {
       // Replace expression with true
       new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
                    << mutation_id_offset << ")) return "
@@ -399,7 +366,8 @@ void MutationReplaceExpr::GenerateBooleanConstantReplacement(
     }
 
     if (!optimise_mutations ||
-        !ExprIsEquivalentToBool(expr_, false, ast_context)) {
+        (!ExprIsEquivalentToBool(expr_, false, ast_context) &&
+         !IsBooleanReplacementRedundantForBinaryOperator(false, ast_context))) {
       // Replace expression with false
       new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
                    << mutation_id_offset << ")) return "
@@ -633,6 +601,169 @@ void MutationReplaceExpr::AddMutationInstance(
   instance.set_action(action);
   *protobuf_message.add_instances() = instance;
   mutation_id_offset++;
+}
+
+bool MutationReplaceExpr::IsBooleanReplacementRedundantForBinaryOperator(
+    bool replacement_value, const clang::ASTContext& ast_context) const {
+  // From
+  // https://people.cs.umass.edu/~rjust/publ/non_redundant_mutants_jstvr_2014.pdf:
+  // Various cases of replacing a boolean-valued binary operator with a boolean
+  // constant are redundant.
+  if (const auto* binary_operator =
+          llvm::dyn_cast<clang::BinaryOperator>(&expr_)) {
+    switch (binary_operator->getOpcode()) {
+      case clang::BO_LAnd:
+        // The optimisation only applies to logical operators when targeting
+        // C++, since when targeting C this operator cannot be mutated with full
+        // flexibility.
+        return ast_context.getLangOpts().CPlusPlus && replacement_value;
+      case clang::BO_LOr:
+        // Again, the optimisation only applies to logical operators when
+        // targeting C++.
+        return ast_context.getLangOpts().CPlusPlus && !replacement_value;
+      case clang::BO_GT:
+      case clang::BO_LT:
+      case clang::BO_EQ:
+        return replacement_value;
+      case clang::BO_GE:
+      case clang::BO_LE:
+      case clang::BO_NE:
+        return !replacement_value;
+      default:
+        return false;
+    }
+  }
+  return false;
+}
+
+bool MutationReplaceExpr::IsRedundantUnaryMinusInsertion(
+    clang::ASTContext& ast_context) const {
+  // It never makes sense to insert '-' before 0 as this would lead to an
+  // equivalent mutant. (Technically this may not be true for floating-point
+  // due to two values of 0, but the mutant is likely to be equivalent.)
+  if (ExprIsEquivalentToInt(expr_, 0, ast_context) ||
+      ExprIsEquivalentToFloat(expr_, 0.0, ast_context)) {
+    return true;
+  }
+
+  // If the expression is signed or floating-point, it does not make sense
+  // to insert '-' before 1 or -1, as these cases are captured by
+  // replacement with -1 and 1, respectively.
+  if (expr_.getType()->isSignedIntegerType() &&
+      (ExprIsEquivalentToInt(expr_, 1, ast_context) ||
+       ExprIsEquivalentToInt(expr_, -1, ast_context))) {
+    return true;
+  }
+  if (ExprIsEquivalentToFloat(expr_, 1.0, ast_context) ||
+      ExprIsEquivalentToFloat(expr_, -1.0, ast_context)) {
+    return true;
+  }
+  return false;
+}
+
+bool MutationReplaceExpr::IsRedundantUnaryNotInsertion(
+    clang::ASTContext& ast_context) const {
+  // If the expression is signed, it does not make sense to insert '~'
+  // before 0 or -1, as these cases are captured by replacement with -1 and
+  // 0, respectively.
+  if (expr_.getType()->isSignedIntegerType() &&
+      (ExprIsEquivalentToInt(expr_, 0, ast_context) ||
+       ExprIsEquivalentToInt(expr_, -1, ast_context))) {
+    return true;
+  }
+  return false;
+}
+
+bool MutationReplaceExpr::IsRedundantUnaryLogicalNotInsertion(
+    clang::ASTContext& ast_context) const {
+  // If the expression is a boolean constant, it does not make sense to
+  // insert '!' because this is captured by replacement with the other
+  // boolean constant.
+
+  // We use this value to capture the value that the expression evaluates
+  // to if it does indeed evaluate to a constant, but we do not use this
+  // value because either way, operator insertion would be redundant.
+  bool unused_bool_value;
+  if (expr_.getType()->isBooleanType() &&
+      expr_.EvaluateAsBooleanCondition(unused_bool_value, ast_context)) {
+    return true;
+  }
+
+  // If the expression is an integer constant, it does not make sense to
+  // insert '!' as the result will either be 0 or 1, which is captured by
+  // constant replacement.
+
+  // Similarly, this value is not used as it does not matter which constant
+  // integer the expression evaluates to.
+  clang::Expr::EvalResult unused_result_value;
+  if (expr_.EvaluateAsInt(unused_result_value, ast_context)) {
+    return true;
+  }
+
+  return false;
+}
+
+bool MutationReplaceExpr::IsRedundantOperatorInsertionBeforeBinaryExpr(
+    clang::ASTContext& ast_context) const {
+  if (const auto* binary_operator =
+          llvm::dyn_cast<clang::BinaryOperator>(&expr_)) {
+    switch (binary_operator->getOpcode()) {
+        // From
+        // https://people.cs.umass.edu/~rjust/publ/non_redundant_mutants_jstvr_2014.pdf:
+        // Unary operator insertion is redundant when the expression being
+        // mutated is a && b or a || b.
+      case clang::BO_LAnd:
+      case clang::BO_LOr:
+        assert(!expr_.isLValue() &&
+               "The result of one of these binary operators should be an "
+               "r-value.");
+        // In C, binary logical operators are not mutated with full flexibility,
+        // so the optimisation mentioned above cannot be applied.
+        return ast_context.getLangOpts().CPlusPlus != 0U;
+        // In the following cases, unary operator insertion would be redundant
+        // as it is captured by a binary operator replacement.
+      case clang::BO_EQ:
+      case clang::BO_NE:
+      case clang::BO_GT:
+      case clang::BO_GE:
+      case clang::BO_LT:
+      case clang::BO_LE:
+        assert(!expr_.isLValue() &&
+               "The result of one of these binary operators should be an "
+               "r-value.");
+        return true;
+      default:
+        return false;
+    }
+  }
+  return false;
+}
+
+bool MutationReplaceExpr::
+    IsRedundantOperatorInsertionBeforeLogicalOperatorArgument(
+        clang::ASTContext& ast_context) const {
+  // From
+  // https://people.cs.umass.edu/~rjust/publ/non_redundant_mutants_jstvr_2014.pdf:
+  // Do not replace `a && b` with `!a && b` or `a && !b`, similar for logical
+  // or.
+
+  if (!ast_context.getLangOpts().CPlusPlus) {
+    // The optimisation is not performed in C mode, since there is limited
+    // flexibility for mutating logical operators in C.
+    return false;
+  }
+
+  auto parents = ast_context.getParents<clang::Expr>(expr_);
+  for (const auto& parent : parents) {
+    if (const auto* binary_operator = parent.get<clang::BinaryOperator>()) {
+      if (binary_operator->isLogicalOp() &&
+          (binary_operator->getLHS() == &expr_ ||
+           binary_operator->getRHS() == &expr_)) {
+        return true;
+      }
+    }
+  }
+  return false;
 }
 
 }  // namespace dredd

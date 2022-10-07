@@ -47,8 +47,7 @@ class MutationReplaceBinaryOperator : public Mutation {
   std::string GenerateMutatorFunction(
       clang::ASTContext& ast_context, const std::string& function_name,
       const std::string& result_type, const std::string& lhs_type,
-      const std::string& rhs_type, bool optimise_mutations,
-      const std::vector<clang::BinaryOperatorKind>& operators, int& mutation_id,
+      const std::string& rhs_type, bool optimise_mutations, int& mutation_id,
       protobufs::MutationReplaceBinaryOperator& protobuf_message) const;
 
   void ReplaceOperator(const std::string& lhs_type, const std::string& rhs_type,
@@ -62,6 +61,13 @@ class MutationReplaceBinaryOperator : public Mutation {
                               clang::ASTContext& ast_context) const;
 
   [[nodiscard]] bool IsRedundantReplacementOperator(
+      clang::BinaryOperatorKind operator_kind,
+      clang::ASTContext& ast_context) const;
+
+  [[nodiscard]] bool IsRedundantReplacementForBooleanValuedOperator(
+      clang::BinaryOperatorKind operator_kind) const;
+
+  [[nodiscard]] bool IsRedundantReplacementForArithmeticOperator(
       clang::BinaryOperatorKind operator_kind,
       clang::ASTContext& ast_context) const;
 
@@ -81,12 +87,14 @@ class MutationReplaceBinaryOperator : public Mutation {
 
   // Replaces binary operators with other valid binary operators.
   void GenerateBinaryOperatorReplacement(
-      const std::vector<clang::BinaryOperatorKind>& operators,
       const std::string& arg1_evaluated, const std::string& arg2_evaluated,
       clang::ASTContext& ast_context, bool optimise_mutations,
       int mutation_id_base, std::stringstream& new_function,
       int& mutation_id_offset,
       protobufs::MutationReplaceBinaryOperator& protobuf_message) const;
+
+  [[nodiscard]] std::vector<clang::BinaryOperatorKind> GetReplacementOperators(
+      bool optimise_mutations, clang::ASTContext& ast_context) const;
 
   // The && and || operators in C require special treatment: due to
   // short-circuit evaluation their arguments must not be prematurely evaluated.
