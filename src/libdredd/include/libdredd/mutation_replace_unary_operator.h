@@ -59,6 +59,8 @@ class MutationReplaceUnaryOperator : public Mutation {
       clang::UnaryOperatorKind operator_kind,
       clang::ASTContext& ast_context) const;
 
+  [[nodiscard]] bool IsOperatorSelfInverse() const;
+
   // This returns a string corresponding to the non-mutated expression.
   std::string GetExpr(clang::ASTContext& ast_context) const;
 
@@ -69,7 +71,6 @@ class MutationReplaceUnaryOperator : public Mutation {
   void GenerateUnaryOperatorReplacement(
       const std::string& arg_evaluated, clang::ASTContext& ast_context,
       bool optimise_mutations, int mutation_id_base,
-      const std::vector<clang::UnaryOperatorKind>& operators,
       std::stringstream& new_function, int& mutation_id_offset,
       protobufs::MutationReplaceUnaryOperator& protobuf_message) const;
 

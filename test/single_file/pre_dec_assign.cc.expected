@@ -18,7 +18,7 @@ static bool __dredd_enabled_mutation(int local_mutation_id) {
         if (!token.empty()) {
           int value = std::stoi(token);
           int local_value = value - 0;
-          if (local_value >= 0 && local_value < 53) {
+          if (local_value >= 0 && local_value < 55) {
             enabled_bitset[local_value / 64] |= (1 << (local_value % 64));
             some_mutation_enabled = true;
           }
@@ -38,6 +38,7 @@ static bool __dredd_enabled_mutation(int local_mutation_id) {
 static volatile int& __dredd_replace_unary_operator_PreDec_volatile_int(std::function<volatile int&()> arg, int local_mutation_id) {
   if (!__dredd_some_mutation_enabled) return --arg();
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return ++arg();
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg();
   return --arg();
 }
 
@@ -59,6 +60,7 @@ static volatile int& __dredd_replace_binary_operator_Assign_volatile_int_int(std
 static int& __dredd_replace_unary_operator_PreDec_int(std::function<int&()> arg, int local_mutation_id) {
   if (!__dredd_some_mutation_enabled) return --arg();
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return ++arg();
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg();
   return --arg();
 }
 
@@ -107,8 +109,8 @@ static int __dredd_replace_expr_int(std::function<int()> arg, int local_mutation
 
 int main() {
   int x = __dredd_replace_expr_int_constant([&]() -> int { return 5; }, 0);
-  if (!__dredd_enabled_mutation(21)) { __dredd_replace_binary_operator_Assign_int_int([&]() -> int& { return static_cast<int&>(__dredd_replace_unary_operator_PreDec_int([&]() -> int& { return static_cast<int&>(x); }, 5)); } , [&]() -> int { return static_cast<int>(__dredd_replace_expr_int_constant([&]() -> int { return 2; }, 6)); }, 11); }
-  volatile int y = __dredd_replace_expr_int_constant([&]() -> int { return 8; }, 22);
-  if (!__dredd_enabled_mutation(43)) { __dredd_replace_binary_operator_Assign_volatile_int_int([&]() -> volatile int& { return static_cast<volatile int&>(__dredd_replace_unary_operator_PreDec_volatile_int([&]() -> volatile int& { return static_cast<volatile int&>(y); }, 27)); } , [&]() -> int { return static_cast<int>(__dredd_replace_expr_int_constant([&]() -> int { return 6; }, 28)); }, 33); }
-  if (!__dredd_enabled_mutation(52)) { return __dredd_replace_expr_int([&]() -> int { return static_cast<int>(__dredd_replace_expr_int_lvalue([&]() -> int& { return static_cast<int&>(x); }, 44)); }, 46); }
+  if (!__dredd_enabled_mutation(22)) { __dredd_replace_binary_operator_Assign_int_int([&]() -> int& { return static_cast<int&>(__dredd_replace_unary_operator_PreDec_int([&]() -> int& { return static_cast<int&>(x); }, 5)); } , [&]() -> int { return static_cast<int>(__dredd_replace_expr_int_constant([&]() -> int { return 2; }, 7)); }, 12); }
+  volatile int y = __dredd_replace_expr_int_constant([&]() -> int { return 8; }, 23);
+  if (!__dredd_enabled_mutation(45)) { __dredd_replace_binary_operator_Assign_volatile_int_int([&]() -> volatile int& { return static_cast<volatile int&>(__dredd_replace_unary_operator_PreDec_volatile_int([&]() -> volatile int& { return static_cast<volatile int&>(y); }, 28)); } , [&]() -> int { return static_cast<int>(__dredd_replace_expr_int_constant([&]() -> int { return 6; }, 30)); }, 35); }
+  if (!__dredd_enabled_mutation(54)) { return __dredd_replace_expr_int([&]() -> int { return static_cast<int>(__dredd_replace_expr_int_lvalue([&]() -> int& { return static_cast<int&>(x); }, 46)); }, 48); }
 }
