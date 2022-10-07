@@ -414,7 +414,7 @@ void MutationReplaceExpr::GenerateBooleanConstantReplacement(
   if (exprType.isBooleanType()) {
     if (!optimise_mutations ||
         (!ExprIsEquivalentToBool(expr_, true, ast_context) &&
-        !IsBooleanReplacementRedundantForBinaryOperator(true))) {
+         !IsBooleanReplacementRedundantForBinaryOperator(true))) {
       // Replace expression with true
       new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
                    << mutation_id_offset << ")) return "
@@ -427,7 +427,7 @@ void MutationReplaceExpr::GenerateBooleanConstantReplacement(
 
     if (!optimise_mutations ||
         (!ExprIsEquivalentToBool(expr_, false, ast_context) &&
-        !IsBooleanReplacementRedundantForBinaryOperator(false))) {
+         !IsBooleanReplacementRedundantForBinaryOperator(false))) {
       // Replace expression with false
       new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
                    << mutation_id_offset << ")) return "
