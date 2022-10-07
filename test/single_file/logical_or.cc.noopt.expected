@@ -18,7 +18,7 @@ static bool __dredd_enabled_mutation(int local_mutation_id) {
         if (!token.empty()) {
           int value = std::stoi(token);
           int local_value = value - 0;
-          if (local_value >= 0 && local_value < 37) {
+          if (local_value >= 0 && local_value < 40) {
             enabled_bitset[local_value / 64] |= (1 << (local_value % 64));
             some_mutation_enabled = true;
           }
@@ -72,5 +72,6 @@ static bool __dredd_replace_binary_operator_LOr_bool_bool(std::function<bool()> 
 }
 
 int foo(int a, int b) {
-  if (!__dredd_enabled_mutation(36)) { return __dredd_replace_expr_int([&]() -> int { return static_cast<int>(__dredd_replace_expr_bool([&]() -> bool { return static_cast<bool>(__dredd_replace_binary_operator_LOr_bool_bool([&]() -> bool { return static_cast<bool>(__dredd_replace_expr_bool([&]() -> bool { return static_cast<bool>(__dredd_replace_expr_int([&]() -> int { return static_cast<int>(__dredd_replace_expr_int_lvalue([&]() -> int& { return static_cast<int&>(a); }, 0)); }, 2)); }, 8)); } , [&]() -> bool { return static_cast<bool>(__dredd_replace_expr_bool([&]() -> bool { return static_cast<bool>(__dredd_replace_expr_int([&]() -> int { return static_cast<int>(__dredd_replace_expr_int_lvalue([&]() -> int& { return static_cast<int&>(b); }, 11)); }, 13)); }, 19)); }, 22)); }, 27)); }, 30); }
+  bool c = __dredd_replace_expr_bool([&]() -> bool { return static_cast<bool>(__dredd_replace_expr_int([&]() -> int { return static_cast<int>(__dredd_replace_expr_int_lvalue([&]() -> int& { return static_cast<int&>(a); }, 0)); }, 2)); }, 8);
+  if (!__dredd_enabled_mutation(39)) { return __dredd_replace_expr_int([&]() -> int { return static_cast<int>(__dredd_replace_expr_bool([&]() -> bool { return static_cast<bool>(__dredd_replace_binary_operator_LOr_bool_bool([&]() -> bool { return static_cast<bool>(__dredd_replace_expr_bool([&]() -> bool { return static_cast<bool>(c); }, 11)); } , [&]() -> bool { return static_cast<bool>(__dredd_replace_expr_bool([&]() -> bool { return static_cast<bool>(__dredd_replace_expr_int([&]() -> int { return static_cast<int>(__dredd_replace_expr_int_lvalue([&]() -> int& { return static_cast<int&>(b); }, 14)); }, 16)); }, 22)); }, 25)); }, 30)); }, 33); }
 }

@@ -76,6 +76,9 @@ class MutationReplaceExpr : public Mutation {
   [[nodiscard]] bool IsRedundantOperatorInsertionBeforeBinaryExpr(
       clang::ASTContext& ast_context) const;
 
+  [[nodiscard]] bool IsRedundantOperatorInsertionBeforeLogicalOperatorArgument(
+      clang::ASTContext& ast_context) const;
+
   [[nodiscard]] bool IsRedundantUnaryLogicalNotInsertion(
       clang::ASTContext& ast_context) const;
 

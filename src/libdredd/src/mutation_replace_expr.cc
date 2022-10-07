@@ -101,6 +101,10 @@ void MutationReplaceExpr::AddOptimisationSpecifier(
       function_name += "_false";
     }
   }
+
+  if (IsRedundantOperatorInsertionBeforeLogicalOperatorArgument(ast_context)) {
+    function_name += "_before_logical_operator_argument";
+  }
 }
 
 bool MutationReplaceExpr::ExprIsEquivalentToInt(
@@ -141,6 +145,10 @@ bool MutationReplaceExpr::IsRedundantOperatorInsertion(
     clang::ASTContext& ast_context,
     clang::UnaryOperatorKind operator_kind) const {
   if (IsRedundantOperatorInsertionBeforeBinaryExpr(ast_context)) {
+    return true;
+  }
+
+  if (IsRedundantOperatorInsertionBeforeLogicalOperatorArgument(ast_context)) {
     return true;
   }
 
@@ -718,6 +726,33 @@ bool MutationReplaceExpr::IsRedundantOperatorInsertionBeforeBinaryExpr(
         return true;
       default:
         return false;
+    }
+  }
+  return false;
+}
+
+bool MutationReplaceExpr::
+    IsRedundantOperatorInsertionBeforeLogicalOperatorArgument(
+        clang::ASTContext& ast_context) const {
+  // From
+  // https://people.cs.umass.edu/~rjust/publ/non_redundant_mutants_jstvr_2014.pdf:
+  // Do not replace `a && b` with `!a && b` or `a && !b`, similar for logical
+  // or.
+
+  if (!ast_context.getLangOpts().CPlusPlus) {
+    // The optimisation is not performed in C mode, since there is limited
+    // flexibility for mutating logical operators in C.
+    return false;
+  }
+
+  auto parents = ast_context.getParents<clang::Expr>(expr_);
+  for (const auto& parent : parents) {
+    if (const auto* binary_operator = parent.get<clang::BinaryOperator>()) {
+      if (binary_operator->isLogicalOp() &&
+          (binary_operator->getLHS() == &expr_ ||
+           binary_operator->getRHS() == &expr_)) {
+        return true;
+      }
     }
   }
   return false;

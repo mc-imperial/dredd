@@ -18,7 +18,7 @@ static bool __dredd_enabled_mutation(int local_mutation_id) {
         if (!token.empty()) {
           int value = std::stoi(token);
           int local_value = value - 0;
-          if (local_value >= 0 && local_value < 20) {
+          if (local_value >= 0 && local_value < 21) {
             enabled_bitset[local_value / 64] |= (1 << (local_value % 64));
             some_mutation_enabled = true;
           }
@@ -53,6 +53,13 @@ static int __dredd_replace_expr_int(std::function<int()> arg, int local_mutation
   return arg();
 }
 
+static bool __dredd_replace_expr_bool_before_logical_operator_argument(std::function<bool()> arg, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return arg();
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return true;
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return false;
+  return arg();
+}
+
 static bool __dredd_replace_expr_bool(std::function<bool()> arg, int local_mutation_id) {
   if (!__dredd_some_mutation_enabled) return arg();
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return !(arg());
@@ -70,5 +77,6 @@ static bool __dredd_replace_binary_operator_LAnd_bool_bool(std::function<bool()>
 }
 
 int foo(int a, int b) {
-  if (!__dredd_enabled_mutation(19)) { return __dredd_replace_expr_int([&]() -> int { return static_cast<int>(__dredd_replace_binary_operator_LAnd_bool_bool([&]() -> bool { return static_cast<bool>(__dredd_replace_expr_bool([&]() -> bool { return static_cast<bool>(__dredd_replace_expr_int_lvalue([&]() -> int& { return static_cast<int&>(a); }, 0)); }, 2)); } , [&]() -> bool { return static_cast<bool>(__dredd_replace_expr_bool([&]() -> bool { return static_cast<bool>(__dredd_replace_expr_int_lvalue([&]() -> int& { return static_cast<int&>(b); }, 5)); }, 7)); }, 10)); }, 13); }
+  bool c = __dredd_replace_expr_bool([&]() -> bool { return static_cast<bool>(__dredd_replace_expr_int_lvalue([&]() -> int& { return static_cast<int&>(a); }, 0)); }, 2);
+  if (!__dredd_enabled_mutation(20)) { return __dredd_replace_expr_int([&]() -> int { return static_cast<int>(__dredd_replace_binary_operator_LAnd_bool_bool([&]() -> bool { return static_cast<bool>(__dredd_replace_expr_bool_before_logical_operator_argument([&]() -> bool { return static_cast<bool>(c); }, 5)); } , [&]() -> bool { return static_cast<bool>(__dredd_replace_expr_bool_before_logical_operator_argument([&]() -> bool { return static_cast<bool>(__dredd_replace_expr_int_lvalue([&]() -> int& { return static_cast<int&>(b); }, 7)); }, 9)); }, 11)); }, 14); }
 }
