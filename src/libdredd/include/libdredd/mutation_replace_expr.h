@@ -71,7 +71,19 @@ class MutationReplaceExpr : public Mutation {
       clang::UnaryOperatorKind operator_kind) const;
 
   [[nodiscard]] bool IsBooleanReplacementRedundantForBinaryOperator(
-      bool replacement_value) const;
+      bool replacement_value, const clang::ASTContext& ast_context) const;
+
+  [[nodiscard]] bool IsRedundantOperatorInsertionBeforeBinaryExpr(
+      clang::ASTContext& ast_context) const;
+
+  [[nodiscard]] bool IsRedundantUnaryLogicalNotInsertion(
+      clang::ASTContext& ast_context) const;
+
+  [[nodiscard]] bool IsRedundantUnaryNotInsertion(
+      clang::ASTContext& ast_context) const;
+
+  [[nodiscard]] bool IsRedundantUnaryMinusInsertion(
+      clang::ASTContext& ast_context) const;
 
   void AddOptimisationSpecifier(clang::ASTContext& ast_context,
                                 std::string& function_name) const;
