@@ -59,7 +59,9 @@ pushd ./third_party/clang+llvm
   rm clang+llvm.tar.xz
 popd
 
-export PATH="./third_party/clang+llvm/bin:$PATH"
+DREDD_ROOT=$(pwd)
+
+export PATH="${DREDD_ROOT}/third_party/clang+llvm/bin:$PATH"
 
 export CC=clang
 export CXX=clang++
@@ -75,7 +77,6 @@ pushd build
 popd
 
 # Check that dredd works on some projects
-DREDD_ROOT=$(pwd)
 DREDD_EXECUTABLE="${DREDD_ROOT}/third_party/clang+llvm/bin/dredd"
 cp "${DREDD_ROOT}/build/src/dredd/dredd" "${DREDD_EXECUTABLE}"
 
@@ -95,10 +96,7 @@ pushd curl
       FILES+=("${f}")
   done
 
-  # TODO remove
-  echo ${DREDD_ROOT}
-
-  "${DREDD_EXECUTABLE}" --mutation-info-file temp.json -p "build/compile_commands.json" ${FILES}
+  "${DREDD_EXECUTABLE}" --mutation-info-file temp.json -p "build/compile_commands.json" "${FILES[@]}"
   pushd build
     ninja
     # TODO: run some tests
@@ -127,7 +125,7 @@ pushd zstd
   do
     FILES+=("${f}")
   done
-  "${DREDD_EXECUTABLE}" --mutation-info-file temp.json -p "zstd/temp/compile_commands.json" ${FILES}
+  "${DREDD_EXECUTABLE}" --mutation-info-file temp.json -p "temp/compile_commands.json" "${FILES[@]}"
   # Build mutated zstd
   make clean
   CFLAGS=-O0 make zstd-release
