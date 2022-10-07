@@ -119,7 +119,7 @@ do
   [[ -e "$f" ]] || break
   FILES+=("${DREDD_ROOT}/${f}")
 done
-${DREDD_EXECUTABLE} --mutation-info-file temp.json -p "${DREDD_ROOT}/SPIRV-Tools/build/compile_commands.json" ${FILES}
+${DREDD_EXECUTABLE} --mutation-info-file temp.json -p "${DREDD_ROOT}/SPIRV-Tools/build/compile_commands.json" "${FILES[@]}"
 pushd SPIRV-Tools/build
   ninja test_val_abcde test_val_capability test_val_fghijklmnop test_val_limits test_val_stuvw
   ./test/val/test_val_abcde
@@ -147,7 +147,7 @@ do
   [[ -e "$f" ]] || break
   FILES+=("${DREDD_ROOT}/${f}")
 done
-${DREDD_EXECUTABLE} --mutation-info-file temp.json -p "${DREDD_ROOT}/llvm-project/build/compile_commands.json" ${FILES}
+${DREDD_EXECUTABLE} --mutation-info-file temp.json -p "${DREDD_ROOT}/llvm-project/build/compile_commands.json" "${FILES[@]}"
 pushd llvm-project/build
   ninja LLVMInstCombine
 popd
