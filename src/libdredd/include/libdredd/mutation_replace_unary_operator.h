@@ -18,7 +18,6 @@
 #include <sstream>
 #include <string>
 #include <unordered_set>
-#include <vector>
 
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/Expr.h"
