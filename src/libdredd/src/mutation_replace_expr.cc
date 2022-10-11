@@ -270,8 +270,6 @@ void MutationReplaceExpr::GenerateFloatConstantReplacement(
       // Replace floating point expression with 0.0
       new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
                    << mutation_id_offset << ")) return 0.0;\n";
-      protobuf_message.add_instances()->set_mutation_id(mutation_id_base +
-                                                        mutation_id_offset);
       AddMutationInstance(
           mutation_id_base,
           protobufs::MutationReplaceExprAction::ReplaceWithZeroFloat,
@@ -313,8 +311,6 @@ void MutationReplaceExpr::GenerateIntegerConstantReplacement(
       // Replace expression with 0
       new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
                    << mutation_id_offset << ")) return 0;\n";
-      protobuf_message.add_instances()->set_mutation_id(mutation_id_base +
-                                                        mutation_id_offset);
       AddMutationInstance(
           mutation_id_base,
           protobufs::MutationReplaceExprAction::ReplaceWithZeroInt,
