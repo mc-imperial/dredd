@@ -51,7 +51,7 @@ case "$(uname)" in
   ;;
 
 *)
-  echo "Unknown OS: only Linux is supported for the dev_build workflow"
+  echo "Unknown OS"
   exit 1
   ;;
 esac
@@ -70,13 +70,27 @@ popd
 
 DREDD_ROOT=$(pwd)
 
-export PATH="${DREDD_ROOT}/third_party/clang+llvm/bin:$PATH"
+case "$(uname)" in
+"Linux")
+  # On Linux, build Dredd using the prebuilt version of Clang that has been downloaded
+  export PATH="${DREDD_ROOT}/third_party/clang+llvm/bin:$PATH"
+  export CC=clang
+  export CXX=clang++
+  which ${CC}
+  which ${CXX}
+  ;;
 
-export CC=clang
-export CXX=clang++
+"Darwin")
+  ;;
 
-which ${CC}
-which ${CXX}
+"MINGW"*|"MSYS_NT"*)
+  ;;
+
+*)
+  echo "Unknown OS"
+  exit 1
+  ;;
+esac
 
 mkdir -p build
 pushd build
