@@ -14,8 +14,32 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+set -x
 set -e
 set -u
-set -x
 
-echo "14.0.6"
+case "$(uname)" in
+"Linux")
+  LLVM_RELEASE_OS="${OS}"
+  ;;
+
+"Darwin")
+  LLVM_RELEASE_OS="Mac"
+  ;;
+
+"MINGW"*|"MSYS_NT"*)
+  LLVM_RELEASE_OS="Windows"
+  ;;
+
+*)
+  echo "Unknown OS"
+  exit 1
+  ;;
+esac
+
+DREDD_LLVM_TAG=$(./scripts/llvm_tag.sh)
+pushd ./third_party/clang+llvm
+  curl -fsSL -o clang+llvm.zip "https://github.com/mc-imperial/build-clang/releases/download/llvmorg-${DREDD_LLVM_TAG}/build-clang-llvmorg-${DREDD_LLVM_TAG}-${LLVM_RELEASE_OS}_x64_Release.zip"
+  unzip clang+llvm.zip
+  rm clang+llvm.zip
+popd
