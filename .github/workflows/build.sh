@@ -119,11 +119,44 @@ case "$(uname)" in
   check_compile_commands.sh build/compile_commands.json
   ;;
 
-"Darwin")
+"Darwin"*)
+  # On Mac, run the single-file tests
+  cp build/src/dredd/dredd third_party/clang+llvm/bin/
+  export DREDD_REPO_ROOT=$(pwd)
+  export PATH=${PATH}:${DREDD_REPO_ROOT}/scripts
+  export CC=clang
+  export CXX=clang++
+  DREDD_SKIP_COPY_EXECUTABLE=1 ./scripts/check_single_file_tests.sh
   ;;
 
 "MINGW"*|"MSYS_NT"*)
-  ;;
+  # On Windows, run the single-file tests
+  cp build/src/dredd/dredd third_party/clang+llvm/bin/
+  export DREDD_REPO_ROOT=$(pwd)
+  export PATH=${PATH}:${DREDD_REPO_ROOT}/scripts
+  export CC=cl.exe
+  export CXX=cl.exe
+
+  # The following single-file tests give different expected results on Windows
+  # due to differences in how certain builtin types, such as size_t and
+  # uint64_t, expand. For simplicity, remove them before running single-file
+  # tests on Windows.
+  #rm test/single_file/initializer_list.cc
+  #rm test/single_file/initializer_list.cc.expected
+  #rm test/single_file/initializer_list.cc.noopt.expected
+  #rm test/single_file/add_type_aliases.c
+  #rm test/single_file/add_type_aliases.c.expected
+  #rm test/single_file/add_type_aliases.c.noopt.expected
+  #rm test/single_file/add_type_aliases.cc
+  #rm test/single_file/add_type_aliases.cc.expected
+  #rm test/single_file/add_type_aliases.cc.noopt.expected
+  #rm test/single_file/positive_int_as_minus_one.c
+  #rm test/single_file/positive_int_as_minus_one.c.expected
+  #rm test/single_file/positive_int_as_minus_one.c.noopt.expected
+  #rm test/single_file/positive_int_as_minus_one.cc
+  #rm test/single_file/positive_int_as_minus_one.cc.expected
+  #rm test/single_file/positive_int_as_minus_one.cc.noopt.expected
+  DREDD_SKIP_COPY_EXECUTABLE=1 ./scripts/check_single_file_tests.sh
 
 *)
   echo "Unknown OS"
