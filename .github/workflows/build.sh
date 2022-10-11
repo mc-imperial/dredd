@@ -25,10 +25,13 @@ help | head
 
 uname
 
+export DREDD_LLVM_SUFFIX=""
+
 case "$(uname)" in
 "Linux")
   NINJA_OS="linux"
   LLVM_RELEASE_OS="${OS}"
+  export DREDD_LLVM_SUFFIX="-stock-clang"
   # Provided by build.yml.
   export CC="${LINUX_CC}"
   export CXX="${LINUX_CXX}"
@@ -60,13 +63,7 @@ case "$(uname)" in
 esac
 
 # Install clang.
-pushd ./third_party/clang+llvm
-  curl -Lo clang+llvm.tar.xz https://github.com/llvm/llvm-project/releases/download/llvmorg-13.0.1/clang+llvm-13.0.1-x86_64-linux-gnu-ubuntu-18.04.tar.xz
-  tar xf clang+llvm.tar.xz
-  mv clang+llvm-13.0.1-x86_64-linux-gnu-ubuntu-18.04/* .
-  rmdir clang+llvm-13.0.1-x86_64-linux-gnu-ubuntu-18.04
-  rm clang+llvm.tar.xz
-popd
+.github/workflows/install_clang.sh
 
 export PATH="${HOME}/bin:$PATH"
 

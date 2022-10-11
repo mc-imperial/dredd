@@ -20,7 +20,18 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-20.04
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-22.04
+        config:
+          - Release
+
+    runs-on: ${{ matrix.os }}
+    env:
+      OS: ${{ matrix.os }}
+      CONFIG: ${{ matrix.config }}
     steps:
 
       - name: cancel_previous

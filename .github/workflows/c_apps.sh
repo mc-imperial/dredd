@@ -23,9 +23,12 @@ help | head
 
 uname
 
+export DREDD_LLVM_SUFFIX=""
+
 case "$(uname)" in
 "Linux")
   NINJA_OS="linux"
+  export DREDD_LLVM_SUFFIX="-prebuilt-clang"
   df -h
   sudo swapoff -a
   sudo rm -f /swapfile
@@ -51,13 +54,7 @@ pushd "${HOME}/bin"
 popd
 
 # Install clang.
-pushd ./third_party/clang+llvm
-  curl -Lo clang+llvm.tar.xz https://github.com/llvm/llvm-project/releases/download/llvmorg-13.0.1/clang+llvm-13.0.1-x86_64-linux-gnu-ubuntu-18.04.tar.xz
-  tar xf clang+llvm.tar.xz
-  mv clang+llvm-13.0.1-x86_64-linux-gnu-ubuntu-18.04/* .
-  rmdir clang+llvm-13.0.1-x86_64-linux-gnu-ubuntu-18.04
-  rm clang+llvm.tar.xz
-popd
+.github/workflows/install_clang.sh
 
 DREDD_ROOT=$(pwd)
 

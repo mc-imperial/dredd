@@ -23,25 +23,28 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        os:
+          - macOS-latest
+          - windows-latest
         config:
           - Release
         # Manually list various Linux configurations.
         include:
           # gcc-10
-          - os: ubuntu-20.04
+          - os: ubuntu-22.04
             config: Debug
             linux_cc: gcc-10
             linux_cxx: g++-10
-          - os: ubuntu-20.04
+          - os: ubuntu-22.04
             config: Release
             linux_cc: gcc-10
             linux_cxx: g++-10
           # clang-12
-          - os: ubuntu-20.04
+          - os: ubuntu-22.04
             config: Debug
             linux_cc: clang-12
             linux_cxx: clang++-12
-          - os: ubuntu-20.04
+          - os: ubuntu-22.04
             config: Release
             linux_cc: clang-12
             linux_cxx: clang++-12
