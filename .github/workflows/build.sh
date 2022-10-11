@@ -157,6 +157,7 @@ case "$(uname)" in
   #rm test/single_file/positive_int_as_minus_one.cc.expected
   #rm test/single_file/positive_int_as_minus_one.cc.noopt.expected
   DREDD_SKIP_COPY_EXECUTABLE=1 ./scripts/check_single_file_tests.sh
+  ;;
 
 *)
   echo "Unknown OS"
