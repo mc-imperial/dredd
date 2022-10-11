@@ -18,6 +18,8 @@ set -x
 set -e
 set -u
 
+# Old bash versions can't expand empty arrays, so we always include at least this option.
+CMAKE_OPTIONS=("-DCMAKE_OSX_ARCHITECTURES=x86_64")
 
 help | head
 
@@ -36,6 +38,16 @@ case "$(uname)" in
   # shellcheck disable=SC2046
   docker rmi $(docker image ls -aq)
   df -h
+  ;;
+
+"Darwin")
+  NINJA_OS="mac"
+  ;;
+
+"MINGW"*|"MSYS_NT"*)
+  NINJA_OS="win"
+  CMAKE_OPTIONS+=("-DCMAKE_C_COMPILER=cl.exe" "-DCMAKE_CXX_COMPILER=cl.exe")
+  choco install zip
   ;;
 
 *)
@@ -68,9 +80,9 @@ which ${CXX}
 
 mkdir -p build
 pushd build
-  cmake -G Ninja .. -DCMAKE_BUILD_TYPE=Debug
-  cmake --build . --config Debug
-  cmake -DCMAKE_INSTALL_PREFIX=./install -DBUILD_TYPE=Debug -P cmake_install.cmake
+  cmake -G Ninja .. -DCMAKE_BUILD_TYPE=${CONFIG} "${CMAKE_OPTIONS[@]}"
+  cmake --build . --config ${CONFIG}
+  cmake -DCMAKE_INSTALL_PREFIX=./install -DBUILD_TYPE=${CONFIG} -P cmake_install.cmake
 popd
 
 # Check that dredd works on some projects

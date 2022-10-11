@@ -24,9 +24,13 @@ jobs:
       fail-fast: false
       matrix:
         os:
-          - ubuntu-22.04
+          - macOS-latest
+          - windows-latest
         config:
           - Release
+        include:
+          - os: ubuntu-22.04
+            config: Debug
 
     runs-on: ${{ matrix.os }}
     env:
