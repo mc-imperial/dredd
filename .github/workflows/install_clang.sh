@@ -39,7 +39,7 @@ esac
 
 DREDD_LLVM_TAG=$(./scripts/llvm_tag.sh)
 pushd ./third_party/clang+llvm
-  curl -fsSL -o clang+llvm.zip "https://github.com/mc-imperial/build-clang/releases/download/llvmorg-${DREDD_LLVM_TAG}/build-clang-llvmorg-${DREDD_LLVM_TAG}-${LLVM_RELEASE_OS}_x64_Release.zip"
+  curl -fsSL -o clang+llvm.zip "https://github.com/mc-imperial/build-clang/releases/download/llvmorg-${DREDD_LLVM_TAG}/build-clang-llvmorg-${DREDD_LLVM_TAG}-${LLVM_RELEASE_OS}_x64_Release${DREDD_LLVM_SUFFIX}.zip"
   unzip clang+llvm.zip
   rm clang+llvm.zip
 popd

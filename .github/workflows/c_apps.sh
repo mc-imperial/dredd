@@ -23,9 +23,12 @@ help | head
 
 uname
 
+export DREDD_LLVM_SUFFIX=""
+
 case "$(uname)" in
 "Linux")
   NINJA_OS="linux"
+  export DREDD_LLVM_SUFFIX="-prebuilt-clang"
   df -h
   sudo swapoff -a
   sudo rm -f /swapfile

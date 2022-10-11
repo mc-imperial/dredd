@@ -54,6 +54,7 @@ pushd "${HOME}/bin"
 popd
 
 # Install clang.
+export DREDD_LLVM_SUFFIX="-stock-clang"
 .github/workflows/install_clang.sh
 
 # Source the dev shell to download clang-tidy and other tools.

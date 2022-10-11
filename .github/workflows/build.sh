@@ -25,10 +25,13 @@ help | head
 
 uname
 
+export DREDD_LLVM_SUFFIX=""
+
 case "$(uname)" in
 "Linux")
   NINJA_OS="linux"
   LLVM_RELEASE_OS="${OS}"
+  export DREDD_LLVM_SUFFIX="-stock-clang"
   # Provided by build.yml.
   export CC="${LINUX_CC}"
   export CXX="${LINUX_CXX}"
