@@ -103,6 +103,7 @@ int main(int argc, const char** argv) {
     std::string json_string;
     auto json_options = google::protobuf::util::JsonOptions();
     json_options.add_whitespace = true;
+    json_options.always_print_primitive_fields = true;
     auto json_generation_status = google::protobuf::util::MessageToJsonString(
         mutation_info, &json_string, json_options);
     if (json_generation_status.ok()) {
