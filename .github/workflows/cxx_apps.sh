@@ -135,7 +135,8 @@ case "$(uname)" in
   ;;
 
 "MINGW"*|"MSYS_NT"*)
-  cl "examples\\simple\\pi.cc" /link /out:"examples\\simple\\pi.exe"
+  cl examples/simple/pi.cc
+  mv pi.exe examples/simple/    
   ;;
 
 *)
