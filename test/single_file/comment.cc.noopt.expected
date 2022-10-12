@@ -45,7 +45,7 @@ static bool __dredd_replace_expr_bool(std::function<bool()> arg, int local_mutat
 
 void g();
 
-int f()
+void f()
 {
   if (!__dredd_enabled_mutation(0)) { g() /* something */ ; }
   if (!__dredd_enabled_mutation(1)) { g() // something

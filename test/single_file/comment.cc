@@ -1,6 +1,6 @@
 void g();
 
-int f()
+void f()
 {
   g() /* something */ ;
   g() // something
