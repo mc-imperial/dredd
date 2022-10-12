@@ -61,13 +61,20 @@ do
   if [ -z "${DREDD_REGENERATE_TEST_CASE+x}" ]
   then
     # Check that the mutated test case is as expected
-    diff "${copy_of_f}" "${DREDD_EXPECTED_FILE}"
+    diff --strip-trailing-cr "${copy_of_f}" "${DREDD_EXPECTED_FILE}"
   fi
 
   # Check that the mutated file compiles
   if [[ $f == *.cc ]]
   then
-    ${CXX} -c "${copy_of_f}"
+    # Extra C++ arguments can be passed;
+    # this is needed on OSX to set an appropriate C++ standard.
+    if [ -z "${DREDD_EXTRA_CXX_ARGS+x}" ]
+    then
+      ${CXX} -c "${copy_of_f}"
+    else
+      ${CXX} "${DREDD_EXTRA_CXX_ARGS}" -c "${copy_of_f}"
+    fi
   else
     ${CC} -c "${copy_of_f}"
   fi
@@ -80,6 +87,8 @@ do
 
   # Clean up
   rm "${copy_of_f}"
-  rm "${copy_of_f%.*}".o
+  # Account for the fact that the script may be running under various OSes
+  rm -f "${copy_of_f%.*}".o
+  rm -f "${copy_of_f%.*}".obj
 
 done

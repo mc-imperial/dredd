@@ -1,5 +1,5 @@
 typedef struct S {
-
+  int x;
 } SomeS;
 
 void foo() {
