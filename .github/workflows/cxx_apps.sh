@@ -43,6 +43,7 @@ case "$(uname)" in
 "Darwin")
   NINJA_OS="mac"
   SDKROOT=$(xcrun --show-sdk-path)
+  export SDKROOT
   ;;
 
 "MINGW"*|"MSYS_NT"*)
@@ -109,7 +110,7 @@ date
 
 ${DREDD_EXECUTABLE} --mutation-info-file temp.json examples/simple/pi.cc
 clang++ examples/simple/pi.cc -o examples/simple/pi
-diff <(./examples/simple/pi) <(echo "3.14159")
+diff --strip-trailing-cr <(./examples/simple/pi) <(echo "3.14159")
 
 echo "examples/math: check that the tests pass after mutating the library"
 date
