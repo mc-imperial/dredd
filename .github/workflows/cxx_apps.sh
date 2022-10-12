@@ -107,18 +107,18 @@ cp "${DREDD_ROOT}/build/src/dredd/dredd" "${DREDD_EXECUTABLE}"
 
 case "$(uname)" in
 "Linux")
-  CXX_FLAGS_FOR_COMPILING_MUTATED_CODE="-w"
+  CMAKE_OPTIONS_FOR_COMPILING_MUTATED_CODE=("-DCMAKE_CXX_FLAGS=-w")
   ;;
 
 "MINGW"*|"MSYS_NT"*)
   # Dredd can lead to object files with many sections, which can be too much for MSVC's default settings.
   # The /bigobj switch enables a larger number of sections.
-  CXX_FLAGS_FOR_COMPILING_MUTATED_CODE="\"/w /bigobj\""
+  CMAKE_OPTIONS_FOR_COMPILING_MUTATED_CODE=("-DCMAKE_CXX_FLAGS=/w /bigobj")
   ;;
 
 "Darwin")
   # The Apple compiler does not use C++11 by default; Dredd requires at least this language version.
-  CXX_FLAGS_FOR_COMPILING_MUTATED_CODE="\"-w -std=c++11\""
+  CMAKE_OPTIONS_FOR_COMPILING_MUTATED_CODE=("-DCMAKE_CXX_FLAGS=-w -std=c++11")
   ;;
 
 *)
@@ -151,7 +151,7 @@ date
 pushd examples/math
   mkdir build
   pushd build
-    cmake -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_CXX_FLAGS="${CXX_FLAGS_FOR_COMPILING_MUTATED_CODE}" ..
+    cmake -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON "${CMAKE_OPTIONS_FOR_COMPILING_MUTATED_CODE[@]}" ..
     ../mutate.sh
     cmake --build .
     ./mathtest/mathtest
@@ -167,7 +167,7 @@ pushd SPIRV-Tools
   python3 utils/git-sync-deps
   mkdir build
   pushd build
-    cmake -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DSPIRV_WERROR=OFF -DCMAKE_CXX_FLAGS="${CXX_FLAGS_FOR_COMPILING_MUTATED_CODE}" ..
+    cmake -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DSPIRV_WERROR=OFF "${CMAKE_OPTIONS_FOR_COMPILING_MUTATED_CODE[@]}" ..
     # Build something minimal to ensure all header files get generated.
     ninja SPIRV-Tools-static
   popd
@@ -194,7 +194,7 @@ git clone --branch llvmorg-14.0.6 --depth 1 https://github.com/llvm/llvm-project
 pushd llvm-project
   mkdir build
   pushd build
-    cmake -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_CXX_FLAGS="${CXX_FLAGS_FOR_COMPILING_MUTATED_CODE}" ../llvm
+    cmake -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON "${CMAKE_OPTIONS_FOR_COMPILING_MUTATED_CODE[@]}" ../llvm
     # Build something minimal to ensure all header files get generated.
     ninja LLVMCore
   popd
