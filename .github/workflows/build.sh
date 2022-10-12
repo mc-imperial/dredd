@@ -118,8 +118,11 @@ case "$(uname)" in
 
 "Darwin"*)
   # On Mac, run the single-file tests
+  SDKROOT=$(xcrun --show-sdk-path)
+  export SDKROOT
   cp build/src/dredd/dredd third_party/clang+llvm/bin/
-  export DREDD_REPO_ROOT=$(pwd)
+  DREDD_REPO_ROOT=$(pwd)
+  export DREDD_REPO_ROOT
   export PATH=${PATH}:${DREDD_REPO_ROOT}/scripts
   export CC=clang
   export CXX=clang++
@@ -132,7 +135,8 @@ case "$(uname)" in
 "MINGW"*|"MSYS_NT"*)
   # On Windows, run the single-file tests
   cp build/src/dredd/dredd third_party/clang+llvm/bin/
-  export DREDD_REPO_ROOT=$(pwd)
+  DREDD_REPO_ROOT=$(pwd)
+  export DREDD_REPO_ROOT
   export PATH=${PATH}:${DREDD_REPO_ROOT}/scripts
   export CC=cl.exe
   export CXX=cl.exe
@@ -150,6 +154,9 @@ case "$(uname)" in
   rm test/single_file/add_type_aliases.cc
   rm test/single_file/add_type_aliases.cc.expected
   rm test/single_file/add_type_aliases.cc.noopt.expected
+  rm test/single_file/non_const_sized_array.cc
+  rm test/single_file/non_const_sized_array.cc.expected
+  rm test/single_file/non_const_sized_array.cc.noopt.expected
   rm test/single_file/positive_int_as_minus_one.c
   rm test/single_file/positive_int_as_minus_one.c.expected
   rm test/single_file/positive_int_as_minus_one.c.noopt.expected
