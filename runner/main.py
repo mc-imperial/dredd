@@ -6,35 +6,76 @@
 import argparse
 import functools
 import json
+import random
 
 from pathlib import Path
 from typing import Dict, List
 
-def get_max_mutation_id_for_mutation_group(mutation_group):
+class MutationTreeNode:
+    def __init__(self, mutation_ids, children):
+        self.children = children
+        self.mutation_ids = mutation_ids
+
+
+
+def get_mutation_ids_for_mutation_group(mutation_group):
     if "replaceExpr" in mutation_group:
-        return functools.reduce(max, [ instance["mutationId"] for instance in mutation_group["replaceExpr"]["instances"]])
+        return [ instance["mutationId"] for instance in mutation_group["replaceExpr"]["instances"]]
     if "replaceBinaryOperator" in mutation_group:
-        return functools.reduce(max,
-                                [instance["mutationId"] for instance in mutation_group["replaceBinaryOperator"]["instances"]])
+        return [instance["mutationId"] for instance in mutation_group["replaceBinaryOperator"]["instances"]]
     if "replaceUnaryOperator" in mutation_group:
-        return functools.reduce(max,
-                                [instance["mutationId"] for instance in
-                                 mutation_group["replaceUnaryOperator"]["instances"]])
+        return [instance["mutationId"] for instance in mutation_group["replaceUnaryOperator"]["instances"]]
     assert "removeStmt" in mutation_group
-    return mutation_group["removeStmt"]["mutationId"]
+    return [mutation_group["removeStmt"]["mutationId"]]
 
 
-def get_max_mutation_id_for_node(node):
-    assert "children" in node
-    result = functools.reduce(max, map(get_max_mutation_id_for_node, node["children"]), 0)
+def get_mutation_ids_for_json_node(node):
     assert "mutationGroups" in node
-    result = max(result, functools.reduce(max, map(get_max_mutation_id_for_mutation_group, node["mutationGroups"]), 0))
-    return result
+    return functools.reduce(lambda x, y: x + y, map(get_mutation_ids_for_mutation_group, node["mutationGroups"]), [])
 
 
-def get_mutation_count(mutation_info: Dict):
-    root_nodes: List = [ file["mutationTreeRoot"] for file in mutation_info["infoForFiles"]]
-    return functools.reduce(max, map(get_max_mutation_id_for_node, root_nodes))
+class MutationTree:
+    def __init__(self, json_data):
+
+        def populate(json_node, node_id):
+            children = []
+            for child_json_node in json_node["children"]:
+                child_node_id = self.num_nodes
+                children.append(child_node_id)
+                self.parent_map[child_node_id] = node_id
+                self.num_nodes += 1
+                populate(child_json_node, child_node_id)
+            self.nodes[node_id] = MutationTreeNode(get_mutation_ids_for_json_node(json_node), children)
+            self.num_mutations = max(self.num_mutations, functools.reduce(max, self.nodes[node_id].mutation_ids, 0))
+            for mutation_id in self.nodes[node_id].mutation_ids:
+                self.mutation_id_to_node_id[mutation_id] = node_id
+
+
+        self.nodes = {}
+        self.parent_map = {}
+        self.mutation_id_to_node_id = {}
+        self.num_mutations = 0
+        self.num_nodes = 0
+
+        for root_json_node in [file["mutationTreeRoot"] for file in json_data["infoForFiles"]]:
+            root_node_id = self.num_nodes
+            self.num_nodes += 1
+            populate(root_json_node, root_node_id)
+
+    def get_mutation_ids_for_subtree(self, node_id):
+        assert 0 <= node_id < self.num_nodes
+        return self.nodes[node_id].mutation_ids + functools.reduce(lambda x, y: x + y,
+                                                                   map(lambda x: self.get_mutation_ids_for_subtree(x), self.nodes[node_id].children), [])
+
+    def get_incompatible_mutation_ids(self, mutation_id):
+        assert 0 <= mutation_id < self.num_mutations
+        node_id = self.mutation_id_to_node_id[mutation_id]
+        result = self.get_mutation_ids_for_subtree(node_id)
+        while node_id in self.parent_map:
+            node_id = self.parent_map[node_id]
+            result += self.nodes[node_id].mutation_ids
+        return result
+
 
 def main():
     parser = argparse.ArgumentParser()
@@ -44,10 +85,19 @@ def main():
     args = parser.parse_args()
 
     with open(args.mutation_info_file, 'r') as json_input:
-        mutation_info = json.load(json_input)
+        tree = MutationTree(json.load(json_input))
 
-    print(get_mutation_count(mutation_info))
+    available_mutations = list(range(0, tree.num_mutations))
+    selected_mutations = []
+    while len(selected_mutations) < 40000:
+        index = random.randrange(0, len(available_mutations))
+        mutation = available_mutations[index]
+        selected_mutations.append(mutation)
+        available_set = set(available_mutations)
+        incompatible_set = set(tree.get_incompatible_mutation_ids(mutation))
+        available_mutations = list(available_set.difference(incompatible_set))
 
+    print(",".join([str(m) for m in selected_mutations]))
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
