@@ -30,7 +30,6 @@ export DREDD_LLVM_SUFFIX=""
 case "$(uname)" in
 "Linux")
   NINJA_OS="linux"
-  LLVM_RELEASE_OS="${OS}"
   export DREDD_LLVM_SUFFIX="-stock-clang"
   # Provided by build.yml.
   export CC="${LINUX_CC}"
@@ -46,12 +45,10 @@ case "$(uname)" in
 
 "Darwin")
   NINJA_OS="mac"
-  LLVM_RELEASE_OS="Mac"
   ;;
 
 "MINGW"*|"MSYS_NT"*)
   NINJA_OS="win"
-  LLVM_RELEASE_OS="Windows"
   CMAKE_OPTIONS+=("-DCMAKE_C_COMPILER=cl.exe" "-DCMAKE_CXX_COMPILER=cl.exe")
   choco install zip
   ;;
