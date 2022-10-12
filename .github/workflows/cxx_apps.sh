@@ -42,6 +42,7 @@ case "$(uname)" in
 
 "Darwin")
   NINJA_OS="mac"
+  SDKROOT=$(xcrun --show-sdk-path)
   ;;
 
 "MINGW"*|"MSYS_NT"*)
