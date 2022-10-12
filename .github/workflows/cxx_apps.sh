@@ -113,7 +113,7 @@ case "$(uname)" in
 "MINGW"*|"MSYS_NT"*)
   # Dredd can lead to object files with many sections, which can be too much for MSVC's default settings.
   # The /bigobj switch enables a larger number of sections.
-  CMAKE_OPTIONS_FOR_COMPILING_MUTATED_CODE=("-DCMAKE_CXX_FLAGS=\"/w /bigobj\"")
+  CMAKE_OPTIONS_FOR_COMPILING_MUTATED_CODE=("-DCMAKE_CXX_FLAGS=\"/w /bigobj /EHsc\"")
   ;;
 
 "Darwin")
