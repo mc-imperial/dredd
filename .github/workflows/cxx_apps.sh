@@ -113,12 +113,12 @@ case "$(uname)" in
 "MINGW"*|"MSYS_NT"*)
   # Dredd can lead to object files with many sections, which can be too much for MSVC's default settings.
   # The /bigobj switch enables a larger number of sections.
-  CXX_FLAGS_FOR_COMPILING_MUTATED_CODE="/w /bigobj"
+  CXX_FLAGS_FOR_COMPILING_MUTATED_CODE="\"/w /bigobj\""
   ;;
 
 "Darwin")
   # The Apple compiler does not use C++11 by default; Dredd requires at least this language version.
-  CXX_FLAGS_FOR_COMPILING_MUTATED_CODE="-w -std=c++11"
+  CXX_FLAGS_FOR_COMPILING_MUTATED_CODE="\"-w -std=c++11\""
   ;;
 
 *)
