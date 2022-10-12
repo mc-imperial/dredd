@@ -96,9 +96,9 @@ esac
 
 mkdir -p build
 pushd build
-  cmake -G Ninja .. -DCMAKE_BUILD_TYPE=${CONFIG} "${CMAKE_OPTIONS[@]}"
-  cmake --build . --config ${CONFIG}
-  cmake -DCMAKE_INSTALL_PREFIX=./install -DBUILD_TYPE=${CONFIG} -P cmake_install.cmake
+  cmake -G Ninja .. -DCMAKE_BUILD_TYPE="${CONFIG}" "${CMAKE_OPTIONS[@]}"
+  cmake --build . --config "${CONFIG}"
+  cmake -DCMAKE_INSTALL_PREFIX=./install -DBUILD_TYPE="${CONFIG}" -P cmake_install.cmake
 popd
 
 # Check that dredd works on some projects
@@ -107,7 +107,6 @@ cp "${DREDD_ROOT}/build/src/dredd/dredd" "${DREDD_EXECUTABLE}"
 
 case "$(uname)" in
 "Linux"|"MINGW"*|"MSYS_NT"*)
-  ;;
   echo "Curl"
   date
 
@@ -129,7 +128,8 @@ case "$(uname)" in
       ninja
       # TODO: run some tests
     popd
-popd
+  popd
+  ;;
 
 *)
   ;;

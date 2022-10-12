@@ -96,9 +96,9 @@ esac
 
 mkdir -p build
 pushd build
-  cmake -G Ninja .. -DCMAKE_BUILD_TYPE=${CONFIG} "${CMAKE_OPTIONS[@]}"
-  cmake --build . --config ${CONFIG}
-  cmake -DCMAKE_INSTALL_PREFIX=./install -DBUILD_TYPE=${CONFIG} -P cmake_install.cmake
+  cmake -G Ninja .. -DCMAKE_BUILD_TYPE="${CONFIG}" "${CMAKE_OPTIONS[@]}"
+  cmake --build . --config "${CONFIG}"
+  cmake -DCMAKE_INSTALL_PREFIX=./install -DBUILD_TYPE="${CONFIG}" -P cmake_install.cmake
 popd
 
 # Check that dredd works on some projects
@@ -111,6 +111,24 @@ date
 ${DREDD_EXECUTABLE} --mutation-info-file temp.json examples/simple/pi.cc
 clang++ examples/simple/pi.cc -o examples/simple/pi
 diff --strip-trailing-cr <(./examples/simple/pi) <(echo "3.14159")
+
+case "$(uname)" in
+"MINGW"*|"MSYS_NT"*)
+  # Dredd can lead to object files with many sections, which can be too much for MSVC's default settings.
+  # This switch enables a larger number of sections.
+  CXXFLAGS="/bigobj"
+  export CXXFLAGS
+  ;;
+
+"Darwin")
+  # The Apple compiler does not use C++11 by default; Dredd requires at least this language version.
+  CXXFLAGS="-std=c++11"
+  export CXXFLAGS
+  ;;
+
+*)
+  ;;
+esac
 
 echo "examples/math: check that the tests pass after mutating the library"
 date
