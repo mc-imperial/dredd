@@ -138,8 +138,6 @@ case "$(uname)" in
   cl /Fe"examples/simple/pi" examples/simple/pi.cc
   ;;
 
-)
-
 *)
   ;;
 esac
