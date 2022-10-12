@@ -80,6 +80,8 @@ do
 
   # Clean up
   rm "${copy_of_f}"
-  rm "${copy_of_f%.*}".o
+  # Account for the fact that the script may be running under various OSes
+  rm -f "${copy_of_f%.*}".o
+  rm -f "${copy_of_f%.*}".obj
 
 done
