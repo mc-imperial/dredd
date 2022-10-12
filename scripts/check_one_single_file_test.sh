@@ -20,6 +20,13 @@ set -x
 
 DREDD_INSTALLED_EXECUTABLE="${DREDD_REPO_ROOT}/third_party/clang+llvm/bin/dredd"
 
+# Extra C++ arguments can be passed;
+# this is needed on OSX to set an appropriate C++ standard.
+if [ -z ${DREDD_EXTRA_CXX_ARGS} ]
+  # Make sure this environment variable is set to an empty string.
+  DREDD_EXTRA_CXX_ARGS=""
+fi
+
 # Move to the temporary directory
 cd "${DREDD_REPO_ROOT}"
 cd temp/
@@ -67,7 +74,7 @@ do
   # Check that the mutated file compiles
   if [[ $f == *.cc ]]
   then
-    ${CXX} -c "${copy_of_f}"
+    ${CXX} ${DREDD_EXTRA_CXX_ARGS} -c "${copy_of_f}"
   else
     ${CC} -c "${copy_of_f}"
   fi
