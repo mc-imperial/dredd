@@ -105,30 +105,32 @@ popd
 DREDD_EXECUTABLE="${DREDD_ROOT}/third_party/clang+llvm/bin/dredd"
 cp "${DREDD_ROOT}/build/src/dredd/dredd" "${DREDD_EXECUTABLE}"
 
-echo "examples/simple/pi.cc: check that we can build the simple example"
-date
-
-${DREDD_EXECUTABLE} --mutation-info-file temp.json examples/simple/pi.cc
-clang++ examples/simple/pi.cc -o examples/simple/pi
-diff --strip-trailing-cr <(./examples/simple/pi) <(echo "3.14159")
-
 case "$(uname)" in
+"Linux")
+  CXX_FLAGS_FOR_COMPILING_MUTATED_CODE="-w"
+  ;;
+
 "MINGW"*|"MSYS_NT"*)
   # Dredd can lead to object files with many sections, which can be too much for MSVC's default settings.
-  # This switch enables a larger number of sections.
-  CXXFLAGS="/bigobj"
-  export CXXFLAGS
+  # The /bigobj switch enables a larger number of sections.
+  CXX_FLAGS_FOR_COMPILING_MUTATED_CODE="/w /bigobj"
   ;;
 
 "Darwin")
   # The Apple compiler does not use C++11 by default; Dredd requires at least this language version.
-  CXXFLAGS="-std=c++11"
-  export CXXFLAGS
+  CXX_FLAGS_FOR_COMPILING_MUTATED_CODE="-w -std=c++11"
   ;;
 
 *)
   ;;
 esac
+
+echo "examples/simple/pi.cc: check that we can build the simple example"
+date
+
+${DREDD_EXECUTABLE} --mutation-info-file temp.json examples/simple/pi.cc
+clang++ -std=c++11 examples/simple/pi.cc -o examples/simple/pi
+diff --strip-trailing-cr <(./examples/simple/pi) <(echo "3.14159")
 
 echo "examples/math: check that the tests pass after mutating the library"
 date
@@ -136,7 +138,7 @@ date
 pushd examples/math
   mkdir build
   pushd build
-    cmake -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ..
+    cmake -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_CXX_FLAGS="${CXX_FLAGS_FOR_COMPILING_MUTATED_CODE}" ..
     ../mutate.sh
     cmake --build .
     ./mathtest/mathtest
@@ -152,7 +154,7 @@ pushd SPIRV-Tools
   python3 utils/git-sync-deps
   mkdir build
   pushd build
-    cmake -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DSPIRV_WERROR=OFF  -DCMAKE_CXX_FLAGS="-w" ..
+    cmake -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DSPIRV_WERROR=OFF -DCMAKE_CXX_FLAGS="${CXX_FLAGS_FOR_COMPILING_MUTATED_CODE}" ..
     # Build something minimal to ensure all header files get generated.
     ninja SPIRV-Tools-static
   popd
@@ -179,7 +181,7 @@ git clone --branch llvmorg-14.0.6 --depth 1 https://github.com/llvm/llvm-project
 pushd llvm-project
   mkdir build
   pushd build
-    cmake -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_CXX_FLAGS="-w" ../llvm
+    cmake -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_CXX_FLAGS="${CXX_FLAGS_FOR_COMPILING_MUTATED_CODE}" ../llvm
     # Build something minimal to ensure all header files get generated.
     ninja LLVMCore
   popd
