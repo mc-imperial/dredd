@@ -5,11 +5,13 @@
 
 import argparse
 import functools
+import jinja2
 import json
 import hashlib
 import os
 import random
 import subprocess
+import sys
 import time
 
 from pathlib import Path
@@ -140,6 +142,25 @@ def generate_a_program(csmith_root: Path,
                                      executable_hash=hash_file('prog'))
 
 
+def remove_mutants(unkilled_mutants: Set[int], to_remove: List[int]) -> None:
+    for m in to_remove:
+        unkilled_mutants.remove(m)
+
+
+def generate_interestingness_test(selected_mutants: List[int]) -> None:
+    assert len(selected_mutants) > 0
+    test_script = "#!/bin/bash\n"
+    test_script += "# Enabled mutants: " + ",".join([str(m) for m in selected_mutants]) + "\n"
+    test_script += "# Check that program is free from certain kinds of compiler warning\n"
+    test_script += "# Compile program with non-mutated compiler\n"
+    test_script += "# Compile program with mutated compiler\n"
+    test_script += "# Diff binaries\n"
+    test_script += "# Check that results are different\n"
+    test_script += "# Use sanitizers to check that program is good\n"
+    print(test_script)
+    assert False
+
+
 def try_to_kill_mutants(csmith_root: Path,
                         compiler_executable: Path,
                         mutation_tree: MutationTree,
@@ -159,29 +180,48 @@ def try_to_kill_mutants(csmith_root: Path,
                           csmith_root / "build" / "runtime", "prog.c", "-o", "prog_mutated"]
         mutated_environment: Dict[str, str] = os.environ.copy()
         mutated_environment['DREDD_ENABLED_MUTATION'] = ",".join([str(m) for m in selected_mutants])
-        result = subprocess.run(cmd, timeout=5*program_stats.compile_time, capture_output=True,
+        result = subprocess.run(cmd, timeout=max(5.0, 5.0*program_stats.compile_time), capture_output=True,
                                 env=mutated_environment)
+    except subprocess.TimeoutExpired:
+        print("WEAK KILL: Compilation with mutated compiler timed out.")
+        remove_mutants(unkilled_mutants, selected_mutants)
+        return True
+
+    if result.returncode != 0:
+        print("WEAK KILL: Compilation with mutated compiler failed.")
+        remove_mutants(unkilled_mutants, selected_mutants)
+        return True
+
+    print("Compilation with mutated compiler succeeded")
+    if hash_file('prog_mutated') == program_stats.executable_hash:
+        print("Binaries are the same - not interesting")
+        return False
+
+    print("Different binaries!")
+    try:
+        cmd: List[str] = ["./prog_mutated"]
+        result = subprocess.run(cmd, timeout=max(5.0, 10.0*program_stats.execution_time), capture_output=True)
         if result.returncode != 0:
-            print("KILL: Compilation with mutated compiler failed.")
-            for m in selected_mutants:
-                unkilled_mutants.remove(m)
+            print("STRONG KILL: Execution of program compiled with mutated compiler failed.")
+            remove_mutants(unkilled_mutants, selected_mutants)
+            return True
+        if result.stdout.decode('utf-8') != program_stats.expected_output:
+            print("VERY STRONG KILL: Execution results from program compiled with mutated compiler are different!")
+            generate_interestingness_test(selected_mutants)
+            remove_mutants(unkilled_mutants, selected_mutants)
             return True
 
-        print("Compilation with mutated compiler succeeded")
-        if hash_file('prog_mutated') == program_stats.executable_hash:
-            print("Binaries are the same - not interesting")
-            return False
-        print("Different binaries!")
-        assert False
-
     except subprocess.TimeoutExpired:
-        print("KILL: Compilation with mutated compiler timed out.")
-        for m in selected_mutants:
-            unkilled_mutants.remove(m)
+        print("STRONG KILL: Execution of program compiled with mutated compiler timed out.")
+        remove_mutants(unkilled_mutants, selected_mutants)
         return True
+
+    print("Same execution results - not interesting")
+    return False
 
 
 def main():
+
     parser = argparse.ArgumentParser()
     parser.add_argument("mutation_info_file", help="File containing information about mutations.", type=Path)
     parser.add_argument("compiler_executable", help="Path to the executable for the Dredd-mutated compiler.", type=Path)
@@ -213,6 +253,7 @@ def main():
                                                 untried_mutants = untried_mutants,
                                                 program_stats = program_stats,
                                                 num_simultaneous_mutations = args.num_simultaneous_mutations)
+            sys.stdout.flush()
             if not success:
                 num_consecutive_failed_attempts_for_current_program += 1
             else:
