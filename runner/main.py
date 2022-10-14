@@ -187,7 +187,7 @@ def reduce_very_strong_kill(csmith_root: Path,
     killed = []
     for m in selected_mutants:
         generate_interestinngness_test(csmith_root=csmith_root, compiler_executable=compiler_executable, selected_mutants=[m])
-        if subprocess.run(['__interesting.py']).returncode == 0:
+        if subprocess.run(['./__interesting.py']).returncode == 0:
             print(f'Reduced file kills mutant {m}')
             killed.append(m)
             unkilled_mutants.remove(m)
