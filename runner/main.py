@@ -5,23 +5,28 @@
 
 import argparse
 import functools
+import shutil
+
 import jinja2
 import json
 import hashlib
 import os
 import random
+import stat
 import subprocess
 import sys
 import time
 
+import prepare_csmith_program
+
 from pathlib import Path
 from typing import Dict, List, Set
+
 
 class MutationTreeNode:
     def __init__(self, mutation_ids, children):
         self.children = children
         self.mutation_ids = mutation_ids
-
 
 
 def get_mutation_ids_for_mutation_group(mutation_group):
@@ -82,6 +87,7 @@ class MutationTree:
             result += self.nodes[node_id].mutation_ids
         return result
 
+
 class GeneratedProgramStats:
     def __init__(self, compile_time: float, execution_time: float, expected_output: str,
                  executable_hash: str):
@@ -103,7 +109,7 @@ def generate_a_program(csmith_root: Path,
         # TODO: cleanup
         try:
             # Run csmith until it yields a program
-            cmd: List[str] = [csmith_root / "build" / "src" / "csmith", "-o", "prog.c"]
+            cmd: List[str] = [csmith_root / "build" / "src" / "csmith", "-o", "__prog.c"]
             result = subprocess.run(cmd, timeout=10, capture_output=True)
             if result.returncode != 0:
                 print("csmith failed")
@@ -112,8 +118,11 @@ def generate_a_program(csmith_root: Path,
             print("csmith timed out")
             continue
 
+        # Inline some immediate header files into the Csmith-generated program
+        prepare_csmith_program.prepare(Path("__prog.c"), Path("__prog.c"), csmith_root)
+
         try:
-            cmd: List[str] = [compiler_executable, "-O3", "-I", csmith_root / "runtime", "-I", csmith_root / "build" / "runtime", "prog.c", "-o", "prog"]
+            cmd: List[str] = [compiler_executable, "-O3", "-I", csmith_root / "runtime", "-I", csmith_root / "build" / "runtime", "__prog.c", "-o", "prog"]
             compile_time_start: float = time.time()
             result = subprocess.run(cmd, timeout=10, capture_output=True)
             compile_time_end: float = time.time()
@@ -147,18 +156,47 @@ def remove_mutants(unkilled_mutants: Set[int], to_remove: List[int]) -> None:
         unkilled_mutants.remove(m)
 
 
-def generate_interestingness_test(selected_mutants: List[int]) -> None:
-    assert len(selected_mutants) > 0
-    test_script = "#!/bin/bash\n"
-    test_script += "# Enabled mutants: " + ",".join([str(m) for m in selected_mutants]) + "\n"
-    test_script += "# Check that program is free from certain kinds of compiler warning\n"
-    test_script += "# Compile program with non-mutated compiler\n"
-    test_script += "# Compile program with mutated compiler\n"
-    test_script += "# Diff binaries\n"
-    test_script += "# Check that results are different\n"
-    test_script += "# Use sanitizers to check that program is good\n"
-    print(test_script)
-    assert False
+def generate_interestinngness_test(csmith_root: Path,
+                            compiler_executable: Path,
+                            selected_mutants: List[int]) -> None:
+    template_loader = jinja2.FileSystemLoader(searchpath="./")
+    template_env = jinja2.Environment(loader=template_loader)
+    template = template_env.get_template("interesting.py.template")
+    open('__interesting.py', 'w').write(template.render(csmith_root=csmith_root,
+                                                        compiler_executable=compiler_executable,
+                                                        mutation_ids=','.join([str(m) for m in selected_mutants])))
+
+    # Make the interestingness test executable.
+    st = os.stat('__interesting.py')
+    os.chmod('__interesting.py', st.st_mode | stat.S_IEXEC)
+
+
+def reduce_very_strong_kill(csmith_root: Path,
+                            compiler_executable: Path,
+                            unkilled_mutants: Set[int], selected_mutants: List[int]) -> None:
+    generate_interestinngness_test(csmith_root=csmith_root, compiler_executable=compiler_executable, selected_mutants=selected_mutants)
+
+    creduce_environment = os.environ.copy()
+    creduce_environment['CREDUCE_INCLUDE_PATH'] = str(csmith_root / 'runtime') + ':' + str(csmith_root / 'build' / 'runtime')
+    creduce_result: subprocess.CompletedProcess = subprocess.run(['creduce', '__interesting.py', '__prog.c'], env=creduce_environment)
+    if creduce_result.returncode != 0:
+        print('creduce failed')
+        remove_mutants(unkilled_mutants, selected_mutants)
+        return
+
+    killed = []
+    for m in selected_mutants:
+        generate_interestinngness_test(csmith_root=csmith_root, compiler_executable=compiler_executable, selected_mutants=[m])
+        if subprocess.run(['__interesting.py']).returncode == 0:
+            print(f'Reduced file kills mutant {m}')
+            killed.append(m)
+            unkilled_mutants.remove(m)
+        else:
+            print(f'Reduced file does not kill mutant {m}')
+    if len(killed) == 0:
+        print('Reduced file kills combination of mutants but no individual mutant')
+    else:
+        shutil.move(src='__prog.c', dst=f'__kills_{"_".join([str(m) for m in killed])}.c')
 
 
 def try_to_kill_mutants(csmith_root: Path,
@@ -177,7 +215,7 @@ def try_to_kill_mutants(csmith_root: Path,
 
     try:
         cmd: List[str] = [compiler_executable, "-O3", "-I", csmith_root / "runtime", "-I",
-                          csmith_root / "build" / "runtime", "prog.c", "-o", "prog_mutated"]
+                          csmith_root / "build" / "runtime", "__prog.c", "-o", "prog_mutated"]
         mutated_environment: Dict[str, str] = os.environ.copy()
         mutated_environment['DREDD_ENABLED_MUTATION'] = ",".join([str(m) for m in selected_mutants])
         result = subprocess.run(cmd, timeout=max(5.0, 5.0*program_stats.compile_time), capture_output=True,
@@ -207,8 +245,7 @@ def try_to_kill_mutants(csmith_root: Path,
             return True
         if result.stdout.decode('utf-8') != program_stats.expected_output:
             print("VERY STRONG KILL: Execution results from program compiled with mutated compiler are different!")
-            generate_interestingness_test(selected_mutants)
-            remove_mutants(unkilled_mutants, selected_mutants)
+            reduce_very_strong_kill(csmith_root=csmith_root, compiler_executable=compiler_executable, unkilled_mutants=unkilled_mutants, selected_mutants=selected_mutants)
             return True
 
     except subprocess.TimeoutExpired:
