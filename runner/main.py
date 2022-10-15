@@ -153,11 +153,6 @@ def generate_a_program(csmith_root: Path,
                                      executable_hash=hash_file('prog'))
 
 
-def remove_mutants(unkilled_mutants: Set[int], to_remove: List[int]) -> None:
-    for m in to_remove:
-        unkilled_mutants.remove(m)
-
-
 def generate_interestingness_test(csmith_root: Path,
                                   compiler_executable: Path,
                                   mutant: int) -> None:
@@ -274,12 +269,15 @@ def consolodate_kill(mutant: int,
                      compiler_executable: Path,
                      program_stats: GeneratedProgramStats,
                      mutation_tree: MutationTree) -> Set[int]:
+    print("Consolodating kills")
     miscompilation_kills_to_reduce: List[int] = []
     result: Set[int] = set()
     if execution_status == ExecutionStatus.MISCOMPILATION_KILL:
         miscompilation_kills_to_reduce.append(mutant)
     else:
         result.add(mutant)
+
+    print(f"Found {len(result)} follow-on kills that are not miscompilations")
 
     for relative in mutation_tree.get_incompatible_mutation_ids(mutant):
         if relative == mutant:
@@ -289,6 +287,7 @@ def consolodate_kill(mutant: int,
                                                                    compiler_executable=compiler_executable,
                                                                    program_stats=program_stats,
                                                                    selected_mutants=[relative])
+        sys.stdout.flush()
         if result_for_relative == ExecutionStatus.NO_EFFECT or result_for_relative \
                 == ExecutionStatus.DIFFERENT_BINARIES_SAME_RESULT:
             continue
@@ -297,6 +296,7 @@ def consolodate_kill(mutant: int,
         else:
             result.add(relative)
 
+    print(f"Found {len(miscompilation_kills_to_reduce)} miscompilation inducing mutant(s) to reduce")
     while len(miscompilation_kills_to_reduce) > 0:
         mutant: int = miscompilation_kills_to_reduce.pop()
         if not reduce_very_strong_kill(csmith_root=csmith_root, compiler_executable=compiler_executable, mutant=mutant):
@@ -312,6 +312,7 @@ def consolodate_kill(mutant: int,
                 miscompilation_kills_to_reduce.pop(index)
             else:
                 index += 1
+        print(f"Found {len(killed_by_reduced_test_case)} miscompilation kills from a reduced test case")
         shutil.move(src='__prog.c', dst=f'__kills_{"_".join([str(m) for m in killed_by_reduced_test_case])}.c')
         for m in killed_by_reduced_test_case:
             result.add(m)
@@ -324,10 +325,12 @@ def search_for_kills_in_mutant_selection(csmith_root: Path,
                                          mutation_tree: MutationTree,
                                          selected_mutants: List[int]) -> Set[int]:
     assert len(selected_mutants) > 0
+    print(f"Searching for kills among {len(selected_mutants)} mutant(s)")
     execution_status: ExecutionStatus = try_to_kill_mutants(csmith_root=csmith_root,
                                                             compiler_executable=compiler_executable,
                                                             program_stats=program_stats,
                                                             selected_mutants=selected_mutants)
+    sys.stdout.flush()
     if execution_status == ExecutionStatus.NO_EFFECT or \
             execution_status == ExecutionStatus.DIFFERENT_BINARIES_SAME_RESULT:
         return set()
@@ -350,7 +353,8 @@ def search_for_kills_in_mutant_selection(csmith_root: Path,
                                                             mutation_tree=mutation_tree,
                                                             selected_mutants=selected_mutants_lhs)
     for m in result:
-        selected_mutants_rhs.remove(m)
+        if m in selected_mutants_rhs:
+            selected_mutants_rhs.remove(m)
 
     for m in search_for_kills_in_mutant_selection(csmith_root=csmith_root,
                                                   compiler_executable=compiler_executable,
@@ -358,6 +362,7 @@ def search_for_kills_in_mutant_selection(csmith_root: Path,
                                                   mutation_tree=mutation_tree,
                                                   selected_mutants=selected_mutants_rhs):
         result.add(m)
+    print(f"Finished searching for kills among {len(selected_mutants)} mutant(s)")
     return result
 
 
@@ -413,10 +418,13 @@ def main():
                                                                           program_stats=program_stats,
                                                                           mutation_tree=mutation_tree,
                                                                           selected_mutants=selected_mutants)
+            print(f"Found {len(newly_killed)} newly-killed mutant(s)")
             for m in newly_killed:
                 killed_mutants.add(m)
-                unkilled_mutants_already_tried.remove(m)
-                unkilled_mutants_not_yet_tried.remove(m)
+                if m in unkilled_mutants_already_tried:
+                    unkilled_mutants_already_tried.remove(m)
+                if m in unkilled_mutants_not_yet_tried:
+                    unkilled_mutants_not_yet_tried.remove(m)
             for m in selected_mutants:
                 if m in unkilled_mutants_not_yet_tried:
                     unkilled_mutants_not_yet_tried.remove(m)
