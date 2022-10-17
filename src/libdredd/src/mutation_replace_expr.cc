@@ -173,81 +173,103 @@ bool MutationReplaceExpr::IsRedundantOperatorInsertion(
   }
 }
 
+void MutationReplaceExpr::GenerateUnaryOperatorInsertionBeforeLValue(
+    const std::string& arg_evaluated, clang::ASTContext& ast_context,
+    bool only_track_mutant_coverage, int mutation_id_base,
+    std::stringstream& new_function, int& mutation_id_offset,
+    protobufs::MutationReplaceExpr& protobuf_message) const {
+  if (!expr_.isLValue() || !CanMutateLValue(ast_context, expr_)) {
+    return;
+  }
+  if (!only_track_mutant_coverage) {
+    new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
+                 << mutation_id_offset << ")) return ++(" << arg_evaluated
+                 << ");\n";
+  }
+  AddMutationInstance(mutation_id_base,
+                      protobufs::MutationReplaceExprAction::InsertPreInc,
+                      mutation_id_offset, protobuf_message);
+
+  if (!only_track_mutant_coverage) {
+    new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
+                 << mutation_id_offset << ")) return --(" << arg_evaluated
+                 << ");\n";
+  }
+  AddMutationInstance(mutation_id_base,
+                      protobufs::MutationReplaceExprAction::InsertPreDec,
+                      mutation_id_offset, protobuf_message);
+}
+
+void MutationReplaceExpr::GenerateUnaryOperatorInsertionBeforeNonLValue(
+    const std::string& arg_evaluated, clang::ASTContext& ast_context,
+    bool optimise_mutations, bool only_track_mutant_coverage,
+    int mutation_id_base, std::stringstream& new_function,
+    int& mutation_id_offset,
+    protobufs::MutationReplaceExpr& protobuf_message) const {
+  if (expr_.isLValue()) {
+    return;
+  }
+  const clang::BuiltinType& exprType =
+      *expr_.getType()->getAs<clang::BuiltinType>();
+  // Insert '!'
+  if (exprType.isBooleanType() || exprType.isInteger()) {
+    if (!optimise_mutations ||
+        !IsRedundantOperatorInsertion(ast_context, clang::UO_LNot)) {
+      if (!only_track_mutant_coverage) {
+        new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
+                     << mutation_id_offset << ")) return !(" << arg_evaluated
+                     << ");\n";
+      }
+      AddMutationInstance(mutation_id_base,
+                          protobufs::MutationReplaceExprAction::InsertLNot,
+                          mutation_id_offset, protobuf_message);
+    }
+  }
+
+  // Insert '~'
+  if (exprType.isInteger() && !exprType.isBooleanType()) {
+    if (!optimise_mutations ||
+        !IsRedundantOperatorInsertion(ast_context, clang::UO_Not)) {
+      if (!only_track_mutant_coverage) {
+        new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
+                     << mutation_id_offset << ")) return ~(" << arg_evaluated
+                     << ");\n";
+      }
+      AddMutationInstance(mutation_id_base,
+                          protobufs::MutationReplaceExprAction::InsertNot,
+                          mutation_id_offset, protobuf_message);
+    }
+  }
+
+  // Insert '-'
+  if (exprType.isSignedInteger() || exprType.isFloatingPoint()) {
+    if (!optimise_mutations ||
+        !IsRedundantOperatorInsertion(ast_context, clang::UO_Minus)) {
+      if (!only_track_mutant_coverage) {
+        new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
+                     << mutation_id_offset << ")) return -(" << arg_evaluated
+                     << ");\n";
+      }
+      AddMutationInstance(mutation_id_base,
+                          protobufs::MutationReplaceExprAction::InsertMinus,
+                          mutation_id_offset, protobuf_message);
+    }
+  }
+}
+
 void MutationReplaceExpr::GenerateUnaryOperatorInsertion(
     const std::string& arg_evaluated, clang::ASTContext& ast_context,
     bool optimise_mutations, bool only_track_mutant_coverage,
     int mutation_id_base, std::stringstream& new_function,
     int& mutation_id_offset,
     protobufs::MutationReplaceExpr& protobuf_message) const {
-  const clang::BuiltinType& exprType =
-      *expr_.getType()->getAs<clang::BuiltinType>();
-
-  if (expr_.isLValue() && CanMutateLValue(ast_context, expr_)) {
-    if (!only_track_mutant_coverage) {
-      new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
-                   << mutation_id_offset << ")) return ++(" << arg_evaluated
-                   << ");\n";
-    }
-    AddMutationInstance(mutation_id_base,
-                        protobufs::MutationReplaceExprAction::InsertPreInc,
-                        mutation_id_offset, protobuf_message);
-
-    if (!only_track_mutant_coverage) {
-      new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
-                   << mutation_id_offset << ")) return --(" << arg_evaluated
-                   << ");\n";
-    }
-    AddMutationInstance(mutation_id_base,
-                        protobufs::MutationReplaceExprAction::InsertPreDec,
-                        mutation_id_offset, protobuf_message);
-  }
-
-  if (!expr_.isLValue()) {
-    // Insert '!'
-    if (exprType.isBooleanType() || exprType.isInteger()) {
-      if (!optimise_mutations ||
-          !IsRedundantOperatorInsertion(ast_context, clang::UO_LNot)) {
-        if (!only_track_mutant_coverage) {
-          new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
-                       << mutation_id_offset << ")) return !(" << arg_evaluated
-                       << ");\n";
-        }
-        AddMutationInstance(mutation_id_base,
-                            protobufs::MutationReplaceExprAction::InsertLNot,
-                            mutation_id_offset, protobuf_message);
-      }
-    }
-
-    // Insert '~'
-    if (exprType.isInteger() && !exprType.isBooleanType()) {
-      if (!optimise_mutations ||
-          !IsRedundantOperatorInsertion(ast_context, clang::UO_Not)) {
-        if (!only_track_mutant_coverage) {
-          new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
-                       << mutation_id_offset << ")) return ~(" << arg_evaluated
-                       << ");\n";
-        }
-        AddMutationInstance(mutation_id_base,
-                            protobufs::MutationReplaceExprAction::InsertNot,
-                            mutation_id_offset, protobuf_message);
-      }
-    }
-
-    // Insert '-'
-    if (exprType.isSignedInteger() || exprType.isFloatingPoint()) {
-      if (!optimise_mutations ||
-          !IsRedundantOperatorInsertion(ast_context, clang::UO_Minus)) {
-        if (!only_track_mutant_coverage) {
-          new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
-                       << mutation_id_offset << ")) return -(" << arg_evaluated
-                       << ");\n";
-        }
-        AddMutationInstance(mutation_id_base,
-                            protobufs::MutationReplaceExprAction::InsertMinus,
-                            mutation_id_offset, protobuf_message);
-      }
-    }
-  }
+  GenerateUnaryOperatorInsertionBeforeLValue(
+      arg_evaluated, ast_context, only_track_mutant_coverage, mutation_id_base,
+      new_function, mutation_id_offset, protobuf_message);
+  GenerateUnaryOperatorInsertionBeforeNonLValue(
+      arg_evaluated, ast_context, optimise_mutations,
+      only_track_mutant_coverage, mutation_id_base, new_function,
+      mutation_id_offset, protobuf_message);
 }
 
 void MutationReplaceExpr::GenerateConstantReplacement(
