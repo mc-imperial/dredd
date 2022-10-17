@@ -124,7 +124,7 @@ std::string MutateAstConsumer::GetRegularDreddPreludeCpp(
   // The number of mutations applied to this file is known.
   const int num_mutations = mutation_id_ - initial_mutation_id;
 
-  // Whether mutants are enabled or not will be tracked using a a bitset,
+  // Whether mutants are enabled or not will be tracked using a bitset,
   // represented as an array of 64-bit integers. First, work out how large this
   // array will need to be, as ceiling(num_mutations / 64).
   const int kWordSize = 64;
@@ -209,13 +209,40 @@ std::string MutateAstConsumer::GetRegularDreddPreludeCpp(
 
 std::string MutateAstConsumer::GetMutantTrackingDreddPreludeCpp(
     int initial_mutation_id) const {
-  (void)initial_mutation_id;
+  // The number of mutations applied to this file is known.
+  const int num_mutations = mutation_id_ - initial_mutation_id;
+
+  // Whether coverage of mutants has been tracked or not will be recorded using
+  // a bitset, represented as an array of 64-bit integers. First, work out how
+  // large this array will need to be, as ceiling(num_mutations / 64).
+  const int kWordSize = 64;
+  const int num_64_bit_words_required =
+      (num_mutations + kWordSize - 1) / kWordSize;
+
   std::stringstream result;
   result << "#include <functional>\n";
+  result << "#include <fstream>\n";
+  result << "#include <iostream>\n";
   result << "\n";
   result << "static void __dredd_record_covered_mutants(int local_mutation_id, "
-            "int num_mutations) {\n"
-            "}\n\n";
+            "int num_mutations) {\n";
+  result << "  static uint64_t already_recorded_bitset["
+         << num_64_bit_words_required << "];\n";
+  result << "  if ((already_recorded_bitset[local_mutation_id / 64] & (1 << "
+            "(local_mutation_id % 64))) != 0) return;\n";
+  result << "  already_recorded_bitset[local_mutation_id / 64] |= (1 << "
+            "(local_mutation_id % 64));\n";
+  result << "  const char* dredd_tracking_environment_variable = "
+            "std::getenv(\"DREDD_MUTANT_TRACKING_FILE\");\n";
+  result << "  if (dredd_tracking_environment_variable == nullptr) return;\n";
+  result << "  std::ofstream output_file;\n";
+  result << "  output_file.open(dredd_tracking_environment_variable, "
+            "std::ios_base::app);\n";
+  result << "  for (int i = 0; i < num_mutations; i++) {\n";
+  result << "    output_file << (" << std::to_string(initial_mutation_id)
+         << " + local_mutation_id + i) << \"\\n\";\n";
+  result << "  }\n";
+  result << "}\n\n";
   return result.str();
 }
 
