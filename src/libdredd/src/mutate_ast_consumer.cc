@@ -220,9 +220,8 @@ std::string MutateAstConsumer::GetMutantTrackingDreddPreludeCpp(
       (num_mutations + kWordSize - 1) / kWordSize;
 
   std::stringstream result;
-  result << "#include <functional>\n";
   result << "#include <fstream>\n";
-  result << "#include <iostream>\n";
+  result << "#include <functional>\n";
   result << "\n";
   result << "static void __dredd_record_covered_mutants(int local_mutation_id, "
             "int num_mutations) {\n";
@@ -307,10 +306,37 @@ std::string MutateAstConsumer::GetRegularDreddPreludeC(
 
 std::string MutateAstConsumer::GetMutantTrackingDreddPreludeC(
     int initial_mutation_id) const {
-  (void)initial_mutation_id;
-  return "static void __dredd_record_covered_mutants(int local_mutation_id, "
-         "int num_mutations) {\n"
-         "}\n\n";
+  // See comments in GetMutantTrackingDreddPreludeCpp; this is a straightforward
+  // port to C.
+  const int num_mutations = mutation_id_ - initial_mutation_id;
+  const int kWordSize = 64;
+  const int num_64_bit_words_required =
+      (num_mutations + kWordSize - 1) / kWordSize;
+
+  std::stringstream result;
+  result << "#include <inttypes.h>\n";
+  result << "#include <stdio.h>\n";
+  result << "#include <stdlib.h>\n";
+  result << "\n";
+  result << "static void __dredd_record_covered_mutants(int local_mutation_id, "
+            "int num_mutations) {\n";
+  result << "  static uint64_t already_recorded_bitset["
+         << num_64_bit_words_required << "];\n";
+  result << "  if ((already_recorded_bitset[local_mutation_id / 64] & (1 << "
+            "(local_mutation_id % 64))) != 0) return;\n";
+  result << "  already_recorded_bitset[local_mutation_id / 64] |= (1 << "
+            "(local_mutation_id % 64));\n";
+  result << "  const char* dredd_tracking_environment_variable = "
+            "getenv(\"DREDD_MUTANT_TRACKING_FILE\");\n";
+  result << "  if (!dredd_tracking_environment_variable) return;\n";
+  result << "  FILE* fp = fopen(dredd_tracking_environment_variable, \"a\");\n";
+  result << "  for (int i = 0; i < num_mutations; i++) {\n";
+  result << R"(    fprintf(fp, "%d\n", )" + std::to_string(initial_mutation_id)
+         << " + local_mutation_id + i);\n";
+  result << "  }\n";
+  result << "  fclose(fp);\n";
+  result << "}\n\n";
+  return result.str();
 }
 
 std::string MutateAstConsumer::GetDreddPreludeC(int initial_mutation_id) const {
