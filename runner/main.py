@@ -130,7 +130,7 @@ class MutantKiller:
         self.max_consecutive_failed_attempts_per_program: int = max_consecutive_failed_attempts_per_program
         # Maps each unkilled mutant to the number of times it has been failed to be killed.
         self.unkilled_mutants: Dict[int, int] = {mutant: 0 for mutant in range(0, self.mutation_tree.num_mutations)}
-        self.killed_mutants: Set[int] = set()
+        self.killed_mutants: Dict[int, ExecutionStatus] = {}
         self.round = 0
 
     def generate_interestingness_test(self,
@@ -178,67 +178,74 @@ class MutantKiller:
                                     env=mutated_environment)
         except subprocess.TimeoutExpired:
             print("WEAK KILL: Compilation with mutated compiler timed out.")
+            sys.stdout.flush()
             return ExecutionStatus.COMPILE_TIMEOUT_KILL
 
         if result.returncode != 0:
             print("WEAK KILL: Compilation with mutated compiler failed.")
+            sys.stdout.flush()
             return ExecutionStatus.COMPILE_FAIL_KILL
 
         print("Compilation with mutated compiler succeeded")
+        sys.stdout.flush()
         if hash_file('prog_mutated') == program_stats.executable_hash:
             print("Binaries are the same - not interesting")
+            sys.stdout.flush()
             return ExecutionStatus.NO_EFFECT
 
         print("Different binaries!")
+        sys.stdout.flush()
         try:
             cmd: List[str] = ["./prog_mutated"]
             result = subprocess.run(cmd, timeout=max(5.0, 10.0 * program_stats.execution_time), capture_output=True)
             if result.returncode != 0:
                 print("STRONG KILL: Execution of program compiled with mutated compiler failed.")
+                sys.stdout.flush()
                 return ExecutionStatus.RUN_FAIL_KILL
             if result.stdout.decode('utf-8') != program_stats.expected_output:
                 print("VERY STRONG KILL: Execution results from program compiled with mutated compiler are different!")
+                sys.stdout.flush()
                 return ExecutionStatus.NO_EFFECT
                 #return ExecutionStatus.MISCOMPILATION_KILL
 
         except subprocess.TimeoutExpired:
             print("STRONG KILL: Execution of program compiled with mutated compiler timed out.")
+            sys.stdout.flush()
             return ExecutionStatus.RUN_TIMEOUT_KILL
 
         print("Same execution results - not interesting")
+        sys.stdout.flush()
         return ExecutionStatus.DIFFERENT_BINARIES_SAME_RESULT
 
     def consolodate_kill(self,
                          mutant: int,
                          execution_status: ExecutionStatus,
-                         program_stats: GeneratedProgramStats) -> Set[int]:
+                         program_stats: GeneratedProgramStats) -> None:
         relatives: List[int] = self.mutation_tree.get_incompatible_mutation_ids(mutant)
         print(f"Consolodating kills by trying {len(relatives) - 1} related mutants")
         miscompilation_kills_to_reduce: List[int] = []
-        result: Set[int] = set()
         if execution_status == ExecutionStatus.MISCOMPILATION_KILL:
             miscompilation_kills_to_reduce.append(mutant)
-        else:
-            result.add(mutant)
 
+        follow_on_kills: int = 0
         for relative in relatives:
             if relative == mutant or relative in self.killed_mutants:
                 continue
 
             result_for_relative: ExecutionStatus = self.try_to_kill_mutants(program_stats=program_stats,
                                                                             selected_mutants=[relative])
-            sys.stdout.flush()
             if result_for_relative == ExecutionStatus.NO_EFFECT or result_for_relative \
                     == ExecutionStatus.DIFFERENT_BINARIES_SAME_RESULT:
                 self.unkilled_mutants[relative] += 1
                 continue
+            self.unkilled_mutants.pop(relative)
+            self.killed_mutants[relative] = result_for_relative
+            follow_on_kills += 1
             if result_for_relative == ExecutionStatus.MISCOMPILATION_KILL:
                 miscompilation_kills_to_reduce.append(relative)
-            else:
-                result.add(relative)
 
-        print(f"Found {len(result)} follow-on kills that are not miscompilations")
-        print(f"Found {len(miscompilation_kills_to_reduce)} miscompilation inducing mutant(s) to reduce")
+        print(f"Found {follow_on_kills} follow-on kills, {len(miscompilation_kills_to_reduce)} of which are miscompilations")
+        sys.stdout.flush()
         while len(miscompilation_kills_to_reduce) > 0:
             mutant: int = miscompilation_kills_to_reduce.pop()
             if not self.reduce_very_strong_kill(mutant=mutant):
@@ -256,13 +263,10 @@ class MutantKiller:
                     index += 1
             print(f"Found {len(killed_by_reduced_test_case)} miscompilation kills from a reduced test case")
             shutil.move(src='__prog.c', dst=f'__kills_{"_".join([str(m) for m in killed_by_reduced_test_case])}.c')
-            for m in killed_by_reduced_test_case:
-                result.add(m)
-        return result
 
     def search_for_kills_in_mutant_selection(self,
                                              program_stats: GeneratedProgramStats,
-                                             selected_mutants: List[int]) -> Set[int]:
+                                             selected_mutants: List[int]) -> bool:
         assert len(selected_mutants) > 0
         print(f"Searching for kills among {len(selected_mutants)} mutant(s)")
         execution_status: ExecutionStatus = self.try_to_kill_mutants(program_stats=program_stats,
@@ -270,26 +274,25 @@ class MutantKiller:
         sys.stdout.flush()
         if execution_status == ExecutionStatus.NO_EFFECT or \
                 execution_status == ExecutionStatus.DIFFERENT_BINARIES_SAME_RESULT:
-            return set()
+            for m in selected_mutants:
+                self.unkilled_mutants[m] += 1
+            return False
 
         if len(selected_mutants) == 1:
-            return self.consolodate_kill(mutant=selected_mutants[0],
-                                         execution_status=execution_status,
-                                         program_stats=program_stats)
+            self.unkilled_mutants.pop(selected_mutants[0])
+            self.killed_mutants[selected_mutants[0]] = execution_status
+            self.consolodate_kill(mutant=selected_mutants[0],
+                                  execution_status=execution_status,
+                                  program_stats=program_stats)
+            return True
 
         midpoint: int = int(len(selected_mutants) / 2)
         selected_mutants_lhs: List[int] = selected_mutants[0:midpoint]
-        selected_mutants_rhs: List[int] = selected_mutants[midpoint:]
-
-        result: Set[int] = self.search_for_kills_in_mutant_selection(program_stats=program_stats,
-                                                                     selected_mutants=selected_mutants_lhs)
-        for m in result:
-            if m in selected_mutants_rhs:
-                selected_mutants_rhs.remove(m)
-
-        for m in self.search_for_kills_in_mutant_selection(program_stats=program_stats,
-                                                           selected_mutants=selected_mutants_rhs):
-            result.add(m)
+        result: bool = self.search_for_kills_in_mutant_selection(program_stats=program_stats,
+                                                                 selected_mutants=selected_mutants_lhs)
+        selected_mutants_rhs = [m for m in selected_mutants[midpoint:] if m not in self.killed_mutants]
+        result = result or self.search_for_kills_in_mutant_selection(program_stats=program_stats,
+                                                                     selected_mutants=selected_mutants_rhs)
         print(f"Finished searching for kills among {len(selected_mutants)} mutant(s)")
         return result
 
@@ -377,26 +380,14 @@ class MutantKiller:
                       f"{num_consecutive_failed_attempts_for_current_program}")
                 print(f"Total killed mutants: {len(self.killed_mutants)}")
                 print(f"Total remaining mutants: {len(self.unkilled_mutants)}")
-                selected_mutants = self.select_mutants()
-                newly_killed: Set[int] = self.search_for_kills_in_mutant_selection(selected_mutants=selected_mutants,
-                                                                                   program_stats=program_stats)
-                print(f"Found {len(newly_killed)} newly-killed mutant(s)")
-                for m in newly_killed:
-                    assert m in self.unkilled_mutants
-                    assert m not in self.killed_mutants
-                    self.unkilled_mutants.pop(m)
-                    self.killed_mutants.add(m)
-                for m in selected_mutants:
-                    if m in self.unkilled_mutants:
-                        self.unkilled_mutants[m] += 1
-                    else:
-                        assert m in self.killed_mutants
-                assert len(self.killed_mutants) + len(self.unkilled_mutants) == self.mutation_tree.num_mutations
+                print(f"Mutants still to be tried during round {self.round}: {len({m for m in self.unkilled_mutants if self.unkilled_mutants[m] == self.round}) }")
                 sys.stdout.flush()
-                if len(newly_killed) == 0:
-                    num_consecutive_failed_attempts_for_current_program += 1
-                else:
+                if self.search_for_kills_in_mutant_selection(selected_mutants=self.select_mutants(),
+                                                             program_stats=program_stats):
                     num_consecutive_failed_attempts_for_current_program = 0
+                else:
+                    num_consecutive_failed_attempts_for_current_program += 1
+                assert len(self.killed_mutants) + len(self.unkilled_mutants) == self.mutation_tree.num_mutations
                 num_attempts_for_current_program += 1
 
 
