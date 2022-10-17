@@ -171,7 +171,7 @@ class MutantKiller:
                             selected_mutants: List[int]) -> ExecutionStatus:
         try:
             cmd: List[str] = [self.compiler_executable, "-O3", "-I", self.csmith_root / "runtime", "-I",
-                              self.csmith_root / "build" / "runtime", "__prog.c", "-o", "prog_mutated"]
+                              self.csmith_root / "build" / "runtime", "__prog.c", "-o", "__prog_mutated"]
             mutated_environment: Dict[str, str] = os.environ.copy()
             mutated_environment['DREDD_ENABLED_MUTATION'] = ",".join([str(m) for m in selected_mutants])
             result = subprocess.run(cmd, timeout=max(5.0, 5.0 * program_stats.compile_time), capture_output=True,
@@ -188,7 +188,7 @@ class MutantKiller:
 
         print("Compilation with mutated compiler succeeded")
         sys.stdout.flush()
-        if hash_file('prog_mutated') == program_stats.executable_hash:
+        if hash_file('__prog_mutated') == program_stats.executable_hash:
             print("Binaries are the same - not interesting")
             sys.stdout.flush()
             return ExecutionStatus.NO_EFFECT
@@ -196,7 +196,7 @@ class MutantKiller:
         print("Different binaries!")
         sys.stdout.flush()
         try:
-            cmd: List[str] = ["./prog_mutated"]
+            cmd: List[str] = ["./__prog_mutated"]
             result = subprocess.run(cmd, timeout=max(5.0, 10.0 * program_stats.execution_time), capture_output=True)
             if result.returncode != 0:
                 print("STRONG KILL: Execution of program compiled with mutated compiler failed.")
@@ -336,7 +336,7 @@ class MutantKiller:
                                   self.csmith_root / "build" / "runtime",
                                   "__prog.c",
                                   "-o",
-                                  "prog"]
+                                  "__prog"]
                 compile_time_start: float = time.time()
                 result = subprocess.run(cmd, timeout=10, capture_output=True)
                 compile_time_end: float = time.time()
@@ -348,7 +348,7 @@ class MutantKiller:
                 continue
 
             try:
-                cmd: List[str] = ["./prog"]
+                cmd: List[str] = ["./__prog"]
                 execute_time_start: float = time.time()
                 result = subprocess.run(cmd, timeout=10, capture_output=True)
                 execute_time_end: float = time.time()
@@ -362,7 +362,7 @@ class MutantKiller:
             return GeneratedProgramStats(compile_time=compile_time_end - compile_time_start,
                                          execution_time=execute_time_end - execute_time_start,
                                          expected_output=result.stdout.decode('utf-8'),
-                                         executable_hash=hash_file('prog'))
+                                         executable_hash=hash_file('__prog'))
 
     def go(self):
         while True:
