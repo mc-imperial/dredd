@@ -274,8 +274,8 @@ std::string MutationReplaceBinaryOperator::GetFunctionName(
 void MutationReplaceBinaryOperator::GenerateArgumentReplacement(
     const std::string& arg1_evaluated, const std::string& arg2_evaluated,
     clang::ASTContext& ast_context, bool optimise_mutations,
-    int mutation_id_base, std::stringstream& new_function,
-    int& mutation_id_offset,
+    bool only_track_mutant_coverage, int mutation_id_base,
+    std::stringstream& new_function, int& mutation_id_offset,
     protobufs::MutationReplaceBinaryOperator& protobuf_message) const {
   if (optimise_mutations) {
     switch (binary_operator_.getOpcode()) {
@@ -318,9 +318,11 @@ void MutationReplaceBinaryOperator::GenerateArgumentReplacement(
                                                    -1, ast_context) ||
         MutationReplaceExpr::ExprIsEquivalentToFloat(*binary_operator_.getLHS(),
                                                      -1.0, ast_context))) {
-    new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
-                 << mutation_id_offset << ")) return " << arg1_evaluated
-                 << ";\n";
+    if (!only_track_mutant_coverage) {
+      new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
+                   << mutation_id_offset << ")) return " << arg1_evaluated
+                   << ";\n";
+    }
     AddMutationInstance(
         mutation_id_base,
         protobufs::MutationReplaceBinaryOperatorAction::ReplaceWithLHS,
@@ -343,9 +345,11 @@ void MutationReplaceBinaryOperator::GenerateArgumentReplacement(
                                                    -1, ast_context) ||
         MutationReplaceExpr::ExprIsEquivalentToFloat(*binary_operator_.getRHS(),
                                                      -1.0, ast_context))) {
-    new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
-                 << mutation_id_offset << ")) return " << arg2_evaluated
-                 << ";\n";
+    if (!only_track_mutant_coverage) {
+      new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
+                   << mutation_id_offset << ")) return " << arg2_evaluated
+                   << ";\n";
+    }
     AddMutationInstance(
         mutation_id_base,
         protobufs::MutationReplaceBinaryOperatorAction::ReplaceWithRHS,
@@ -356,17 +360,20 @@ void MutationReplaceBinaryOperator::GenerateArgumentReplacement(
 void MutationReplaceBinaryOperator::GenerateBinaryOperatorReplacement(
     const std::string& arg1_evaluated, const std::string& arg2_evaluated,
     clang::ASTContext& ast_context, bool optimise_mutations,
-    int mutation_id_base, std::stringstream& new_function,
-    int& mutation_id_offset,
+    bool only_track_mutant_coverage, int mutation_id_base,
+    std::stringstream& new_function, int& mutation_id_offset,
     protobufs::MutationReplaceBinaryOperator& protobuf_message) const {
   for (auto operator_kind :
        GetReplacementOperators(optimise_mutations, ast_context)) {
-    new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
-                 << mutation_id_offset << ")) return " << arg1_evaluated << " "
-                 << clang::BinaryOperator::getOpcodeStr(operator_kind).str()
-                 << " " << arg2_evaluated << ";\n";
-    AddMutationInstance(mutation_id_base, OperatorKindToAction(operator_kind),
-                        mutation_id_offset, protobuf_message);
+    if (!only_track_mutant_coverage) {
+      new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
+                   << mutation_id_offset << ")) return " << arg1_evaluated
+                   << " "
+                   << clang::BinaryOperator::getOpcodeStr(operator_kind).str()
+                   << " " << arg2_evaluated << ";\n";
+      AddMutationInstance(mutation_id_base, OperatorKindToAction(operator_kind),
+                          mutation_id_offset, protobuf_message);
+    }
   }
 }
 
@@ -447,7 +454,8 @@ MutationReplaceBinaryOperator::GetReplacementOperators(
 std::string MutationReplaceBinaryOperator::GenerateMutatorFunction(
     clang::ASTContext& ast_context, const std::string& function_name,
     const std::string& result_type, const std::string& lhs_type,
-    const std::string& rhs_type, bool optimise_mutations, int& mutation_id,
+    const std::string& rhs_type, bool optimise_mutations,
+    bool only_track_mutant_coverage, int& mutation_id,
     protobufs::MutationReplaceBinaryOperator& protobuf_message) const {
   std::stringstream new_function;
   new_function << "static " << result_type << " " << function_name << "(";
@@ -480,21 +488,30 @@ std::string MutationReplaceBinaryOperator::GenerateMutatorFunction(
     }
   }
 
-  // Quickly apply the original operator if no mutant is enabled (which will be
-  // the common case).
-  new_function
-      << "  if (!__dredd_some_mutation_enabled) return " << arg1_evaluated
-      << " "
-      << clang::BinaryOperator::getOpcodeStr(binary_operator_.getOpcode()).str()
-      << " " << arg2_evaluated << ";\n";
+  if (!only_track_mutant_coverage) {
+    // Quickly apply the original operator if no mutant is enabled (which will
+    // be the common case).
+    new_function << "  if (!__dredd_some_mutation_enabled) return "
+                 << arg1_evaluated << " "
+                 << clang::BinaryOperator::getOpcodeStr(
+                        binary_operator_.getOpcode())
+                        .str()
+                 << " " << arg2_evaluated << ";\n";
+  }
 
   GenerateBinaryOperatorReplacement(
       arg1_evaluated, arg2_evaluated, ast_context, optimise_mutations,
-      mutation_id, new_function, mutation_id_offset, protobuf_message);
+      only_track_mutant_coverage, mutation_id, new_function, mutation_id_offset,
+      protobuf_message);
   GenerateArgumentReplacement(arg1_evaluated, arg2_evaluated, ast_context,
-                              optimise_mutations, mutation_id, new_function,
-                              mutation_id_offset, protobuf_message);
+                              optimise_mutations, only_track_mutant_coverage,
+                              mutation_id, new_function, mutation_id_offset,
+                              protobuf_message);
 
+  if (only_track_mutant_coverage) {
+    new_function << "  __dredd_record_covered_mutants(local_mutation_id, " +
+                        std::to_string(mutation_id_offset) + ");\n";
+  }
   new_function << "  return " << GetExpr(ast_context) << ";\n";
   new_function << "}\n\n";
 
@@ -513,8 +530,6 @@ protobufs::MutationGroup MutationReplaceBinaryOperator::Apply(
   // The protobuf object for the mutation, which will be wrapped in a
   // MutationGroup.
   protobufs::MutationReplaceBinaryOperator inner_result;
-
-  (void)only_track_mutant_coverage;  // TODO use
 
   inner_result.set_operator_(
       ClangOperatorKindToProtobufOperatorKind(binary_operator_.getOpcode()));
@@ -564,8 +579,9 @@ protobufs::MutationGroup MutationReplaceBinaryOperator::Apply(
     // logic for handling other operators, it is simpler to handle this case
     // separately.
     HandleCLogicalOperator(preprocessor, new_function_name, result_type,
-                           lhs_type, rhs_type, first_mutation_id_in_file,
-                           mutation_id, rewriter, dredd_declarations);
+                           lhs_type, rhs_type, only_track_mutant_coverage,
+                           first_mutation_id_in_file, mutation_id, rewriter,
+                           dredd_declarations);
 
     protobufs::MutationGroup result;
     *result.mutable_replace_binary_operator() = inner_result;
@@ -596,7 +612,8 @@ protobufs::MutationGroup MutationReplaceBinaryOperator::Apply(
 
   std::string new_function = GenerateMutatorFunction(
       ast_context, new_function_name, result_type, lhs_type, rhs_type,
-      optimise_mutations, mutation_id, inner_result);
+      optimise_mutations, only_track_mutant_coverage, mutation_id,
+      inner_result);
   assert(!new_function.empty() && "Unsupported opcode.");
 
   // Add the mutation function to the set of Dredd declarations - there may
@@ -686,7 +703,8 @@ void MutationReplaceBinaryOperator::HandleCLogicalOperator(
     const clang::Preprocessor& preprocessor,
     const std::string& new_function_prefix, const std::string& result_type,
     const std::string& lhs_type, const std::string& rhs_type,
-    int first_mutation_id_in_file, int& mutation_id, clang::Rewriter& rewriter,
+    bool only_track_mutant_coverage, int first_mutation_id_in_file,
+    int& mutation_id, clang::Rewriter& rewriter,
     std::unordered_set<std::string>& dredd_declarations) const {
   // A C logical operator "op" is handled by transforming:
   //
@@ -709,7 +727,7 @@ void MutationReplaceBinaryOperator::HandleCLogicalOperator(
   //   and "rhs" functions do nothing, and the "lhs" function return either 0 or
   //   1, depending on the operator.
 
-  {
+  if (!only_track_mutant_coverage) {
     // Rewrite the LHS of the expression, and introduce the associated function.
     auto source_range_lhs =
         GetSourceRangeInMainFile(preprocessor, *binary_operator_.getLHS());
@@ -748,7 +766,7 @@ void MutationReplaceBinaryOperator::HandleCLogicalOperator(
     dredd_declarations.insert(lhs_function.str());
   }
 
-  {
+  if (!only_track_mutant_coverage) {
     // Rewrite the RHS of the expression, and introduce the associated function.
     auto source_range_rhs =
         GetSourceRangeInMainFile(preprocessor, *binary_operator_.getRHS());
@@ -802,17 +820,28 @@ void MutationReplaceBinaryOperator::HandleCLogicalOperator(
     std::stringstream outer_function;
     outer_function << "static " << result_type << " " << outer_function_name
                    << "(" << result_type << " arg, int local_mutation_id) {\n";
-    // Case 0: swapping the operator.
-    // Replacing && with || is achieved by negating the whole expression, and
-    // negating each of the LHS and RHS. The same holds for replacing || with
-    // &&. This case handles negating the whole expression.
-    outer_function << "  if (__dredd_enabled_mutation(local_mutation_id + 0)) "
-                      "return !arg;\n";
+    if (!only_track_mutant_coverage) {
+      // Case 0: swapping the operator.
+      // Replacing && with || is achieved by negating the whole expression, and
+      // negating each of the LHS and RHS. The same holds for replacing || with
+      // &&. This case handles negating the whole expression.
+      outer_function
+          << "  if (__dredd_enabled_mutation(local_mutation_id + 0)) "
+             "return !arg;\n";
 
-    // Case 1: replacing with LHS: no action is needed here.
+      // Case 1: replacing with LHS: no action is needed here.
 
-    // Case 2: replacing with RHS: no action is needed here.
-
+      // Case 2: replacing with RHS: no action is needed here.
+    }
+    if (only_track_mutant_coverage) {
+      // The fact that three mutants are covered is recorded, to reflect
+      // swapping the operator, replacing with LHS and replacing with RHS.
+      // It does not matter in which function this is recorded, but intuitively
+      // it seems most elegant for the function enclosing the whole expression
+      // to take care of it.
+      outer_function
+          << "  __dredd_record_covered_mutants(local_mutation_id, 3);\n";
+    }
     outer_function << "  return arg;\n";
     outer_function << "}\n";
     dredd_declarations.insert(outer_function.str());
