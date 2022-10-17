@@ -371,9 +371,9 @@ void MutationReplaceBinaryOperator::GenerateBinaryOperatorReplacement(
                    << " "
                    << clang::BinaryOperator::getOpcodeStr(operator_kind).str()
                    << " " << arg2_evaluated << ";\n";
-      AddMutationInstance(mutation_id_base, OperatorKindToAction(operator_kind),
-                          mutation_id_offset, protobuf_message);
     }
+    AddMutationInstance(mutation_id_base, OperatorKindToAction(operator_kind),
+                        mutation_id_offset, protobuf_message);
   }
 }
 

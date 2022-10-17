@@ -119,7 +119,7 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
   assert(!rewriter_result && "Something went wrong emitting rewritten files.");
 }
 
-std::string MutateAstConsumer::GetDreddPreludeCpp(
+std::string MutateAstConsumer::GetRegularDreddPreludeCpp(
     int initial_mutation_id) const {
   // The number of mutations applied to this file is known.
   const int num_mutations = mutation_id_ - initial_mutation_id;
@@ -207,9 +207,30 @@ std::string MutateAstConsumer::GetDreddPreludeCpp(
   return result.str();
 }
 
-std::string MutateAstConsumer::GetDreddPreludeC(int initial_mutation_id) const {
-  // See comments in GetDreddPreludeCpp - this C version is a straightforward
-  // port.
+std::string MutateAstConsumer::GetMutantTrackingDreddPreludeCpp(
+    int initial_mutation_id) const {
+  (void)initial_mutation_id;
+  std::stringstream result;
+  result << "#include <functional>\n";
+  result << "\n";
+  result << "static void __dredd_record_covered_mutants(int local_mutation_id, "
+            "int num_mutations) {\n"
+            "}\n\n";
+  return result.str();
+}
+
+std::string MutateAstConsumer::GetDreddPreludeCpp(
+    int initial_mutation_id) const {
+  if (only_track_mutant_coverage_) {
+    return GetMutantTrackingDreddPreludeCpp(initial_mutation_id);
+  }
+  return GetRegularDreddPreludeCpp(initial_mutation_id);
+}
+
+std::string MutateAstConsumer::GetRegularDreddPreludeC(
+    int initial_mutation_id) const {
+  // See comments in GetRegularDreddPreludeCpp - this C version is a
+  // straightforward port.
   const int num_mutations = mutation_id_ - initial_mutation_id;
   const int kWordSize = 64;
   const int num_64_bit_words_required =
@@ -255,6 +276,21 @@ std::string MutateAstConsumer::GetDreddPreludeC(int initial_mutation_id) const {
             "(local_mutation_id % 64));\n";
   result << "}\n\n";
   return result.str();
+}
+
+std::string MutateAstConsumer::GetMutantTrackingDreddPreludeC(
+    int initial_mutation_id) const {
+  (void)initial_mutation_id;
+  return "static void __dredd_record_covered_mutants(int local_mutation_id, "
+         "int num_mutations) {\n"
+         "}\n\n";
+}
+
+std::string MutateAstConsumer::GetDreddPreludeC(int initial_mutation_id) const {
+  if (only_track_mutant_coverage_) {
+    return GetMutantTrackingDreddPreludeC(initial_mutation_id);
+  }
+  return GetRegularDreddPreludeC(initial_mutation_id);
 }
 
 protobufs::MutationTreeNode MutateAstConsumer::ApplyMutations(

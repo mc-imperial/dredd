@@ -49,7 +49,19 @@ class MutateAstConsumer : public clang::ASTConsumer {
  private:
   [[nodiscard]] std::string GetDreddPreludeCpp(int initial_mutation_id) const;
 
+  [[nodiscard]] std::string GetRegularDreddPreludeCpp(
+      int initial_mutation_id) const;
+
+  [[nodiscard]] std::string GetMutantTrackingDreddPreludeCpp(
+      int initial_mutation_id) const;
+
   [[nodiscard]] std::string GetDreddPreludeC(int initial_mutation_id) const;
+
+  [[nodiscard]] std::string GetRegularDreddPreludeC(
+      int initial_mutation_id) const;
+
+  [[nodiscard]] std::string GetMutantTrackingDreddPreludeC(
+      int initial_mutation_id) const;
 
   protobufs::MutationTreeNode ApplyMutations(
       const MutationTreeNode& mutation_tree_node, int initial_mutation_id,

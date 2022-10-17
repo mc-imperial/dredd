@@ -101,7 +101,7 @@ protobufs::MutationGroup MutationRemoveStmt::Apply(
     bool rewriter_result = rewriter.InsertTextBefore(
         source_range.getBegin(), "__dredd_record_covered_mutants(" +
                                      std::to_string(local_mutation_id) +
-                                     "1); ");
+                                     ", 1); ");
     assert(!rewriter_result && "Rewrite failed.\n");
     (void)rewriter_result;  // Keep release-mode compilers happy.
   } else {
