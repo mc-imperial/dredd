@@ -119,12 +119,12 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
   assert(!rewriter_result && "Something went wrong emitting rewritten files.");
 }
 
-std::string MutateAstConsumer::GetDreddPreludeCpp(
+std::string MutateAstConsumer::GetRegularDreddPreludeCpp(
     int initial_mutation_id) const {
   // The number of mutations applied to this file is known.
   const int num_mutations = mutation_id_ - initial_mutation_id;
 
-  // Whether mutants are enabled or not will be tracked using a a bitset,
+  // Whether mutants are enabled or not will be tracked using a bitset,
   // represented as an array of 64-bit integers. First, work out how large this
   // array will need to be, as ceiling(num_mutations / 64).
   const int kWordSize = 64;
@@ -207,9 +207,56 @@ std::string MutateAstConsumer::GetDreddPreludeCpp(
   return result.str();
 }
 
-std::string MutateAstConsumer::GetDreddPreludeC(int initial_mutation_id) const {
-  // See comments in GetDreddPreludeCpp - this C version is a straightforward
-  // port.
+std::string MutateAstConsumer::GetMutantTrackingDreddPreludeCpp(
+    int initial_mutation_id) const {
+  // The number of mutations applied to this file is known.
+  const int num_mutations = mutation_id_ - initial_mutation_id;
+
+  // Whether coverage of mutants has been tracked or not will be recorded using
+  // a bitset, represented as an array of 64-bit integers. First, work out how
+  // large this array will need to be, as ceiling(num_mutations / 64).
+  const int kWordSize = 64;
+  const int num_64_bit_words_required =
+      (num_mutations + kWordSize - 1) / kWordSize;
+
+  std::stringstream result;
+  result << "#include <fstream>\n";
+  result << "#include <functional>\n";
+  result << "\n";
+  result << "static void __dredd_record_covered_mutants(int local_mutation_id, "
+            "int num_mutations) {\n";
+  result << "  static uint64_t already_recorded_bitset["
+         << num_64_bit_words_required << "];\n";
+  result << "  if ((already_recorded_bitset[local_mutation_id / 64] & (1 << "
+            "(local_mutation_id % 64))) != 0) return;\n";
+  result << "  already_recorded_bitset[local_mutation_id / 64] |= (1 << "
+            "(local_mutation_id % 64));\n";
+  result << "  const char* dredd_tracking_environment_variable = "
+            "std::getenv(\"DREDD_MUTANT_TRACKING_FILE\");\n";
+  result << "  if (dredd_tracking_environment_variable == nullptr) return;\n";
+  result << "  std::ofstream output_file;\n";
+  result << "  output_file.open(dredd_tracking_environment_variable, "
+            "std::ios_base::app);\n";
+  result << "  for (int i = 0; i < num_mutations; i++) {\n";
+  result << "    output_file << (" << std::to_string(initial_mutation_id)
+         << " + local_mutation_id + i) << \"\\n\";\n";
+  result << "  }\n";
+  result << "}\n\n";
+  return result.str();
+}
+
+std::string MutateAstConsumer::GetDreddPreludeCpp(
+    int initial_mutation_id) const {
+  if (only_track_mutant_coverage_) {
+    return GetMutantTrackingDreddPreludeCpp(initial_mutation_id);
+  }
+  return GetRegularDreddPreludeCpp(initial_mutation_id);
+}
+
+std::string MutateAstConsumer::GetRegularDreddPreludeC(
+    int initial_mutation_id) const {
+  // See comments in GetRegularDreddPreludeCpp - this C version is a
+  // straightforward port.
   const int num_mutations = mutation_id_ - initial_mutation_id;
   const int kWordSize = 64;
   const int num_64_bit_words_required =
@@ -257,6 +304,48 @@ std::string MutateAstConsumer::GetDreddPreludeC(int initial_mutation_id) const {
   return result.str();
 }
 
+std::string MutateAstConsumer::GetMutantTrackingDreddPreludeC(
+    int initial_mutation_id) const {
+  // See comments in GetMutantTrackingDreddPreludeCpp; this is a straightforward
+  // port to C.
+  const int num_mutations = mutation_id_ - initial_mutation_id;
+  const int kWordSize = 64;
+  const int num_64_bit_words_required =
+      (num_mutations + kWordSize - 1) / kWordSize;
+
+  std::stringstream result;
+  result << "#include <inttypes.h>\n";
+  result << "#include <stdio.h>\n";
+  result << "#include <stdlib.h>\n";
+  result << "\n";
+  result << "static void __dredd_record_covered_mutants(int local_mutation_id, "
+            "int num_mutations) {\n";
+  result << "  static uint64_t already_recorded_bitset["
+         << num_64_bit_words_required << "];\n";
+  result << "  if ((already_recorded_bitset[local_mutation_id / 64] & (1 << "
+            "(local_mutation_id % 64))) != 0) return;\n";
+  result << "  already_recorded_bitset[local_mutation_id / 64] |= (1 << "
+            "(local_mutation_id % 64));\n";
+  result << "  const char* dredd_tracking_environment_variable = "
+            "getenv(\"DREDD_MUTANT_TRACKING_FILE\");\n";
+  result << "  if (!dredd_tracking_environment_variable) return;\n";
+  result << "  FILE* fp = fopen(dredd_tracking_environment_variable, \"a\");\n";
+  result << "  for (int i = 0; i < num_mutations; i++) {\n";
+  result << R"(    fprintf(fp, "%d\n", )" + std::to_string(initial_mutation_id)
+         << " + local_mutation_id + i);\n";
+  result << "  }\n";
+  result << "  fclose(fp);\n";
+  result << "}\n\n";
+  return result.str();
+}
+
+std::string MutateAstConsumer::GetDreddPreludeC(int initial_mutation_id) const {
+  if (only_track_mutant_coverage_) {
+    return GetMutantTrackingDreddPreludeC(initial_mutation_id);
+  }
+  return GetRegularDreddPreludeC(initial_mutation_id);
+}
+
 protobufs::MutationTreeNode MutateAstConsumer::ApplyMutations(
     const MutationTreeNode& mutation_tree_node, int initial_mutation_id,
     clang::ASTContext& context,
@@ -275,7 +364,8 @@ protobufs::MutationTreeNode MutateAstConsumer::ApplyMutations(
     int mutation_id_old = mutation_id_;
     *result.add_mutation_groups() = mutation->Apply(
         context, compiler_instance_.getPreprocessor(), optimise_mutations_,
-        initial_mutation_id, mutation_id_, rewriter_, dredd_declarations);
+        only_track_mutant_coverage_, initial_mutation_id, mutation_id_,
+        rewriter_, dredd_declarations);
     assert(mutation_id_ > mutation_id_old &&
            "Every mutation should lead to the mutation id increasing by at "
            "least 1.");

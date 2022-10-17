@@ -205,7 +205,7 @@ std::string MutationReplaceUnaryOperator::GetFunctionName(
 std::string MutationReplaceUnaryOperator::GenerateMutatorFunction(
     clang::ASTContext& ast_context, const std::string& function_name,
     const std::string& result_type, const std::string& input_type,
-    bool optimise_mutations, int& mutation_id,
+    bool optimise_mutations, bool only_track_mutant_coverage, int& mutation_id,
     protobufs::MutationReplaceUnaryOperator& protobuf_message) const {
   std::stringstream new_function;
   new_function << "static " << result_type << " " << function_name << "(";
@@ -225,24 +225,34 @@ std::string MutationReplaceUnaryOperator::GenerateMutatorFunction(
     }
   }
 
-  // Quickly apply the original operator if no mutant is enabled (which will be
-  // the common case).
-  new_function << "  if (!__dredd_some_mutation_enabled) return ";
-  if (IsPrefix(unary_operator_.getOpcode())) {
-    new_function
-        << clang::UnaryOperator::getOpcodeStr(unary_operator_.getOpcode()).str()
-        << arg_evaluated + ";\n";
-  } else {
-    new_function
-        << arg_evaluated
-        << clang::UnaryOperator::getOpcodeStr(unary_operator_.getOpcode()).str()
-        << ";\n";
+  if (!only_track_mutant_coverage) {
+    // Quickly apply the original operator if no mutant is enabled (which will
+    // be the common case).
+    new_function << "  if (!__dredd_some_mutation_enabled) return ";
+    if (IsPrefix(unary_operator_.getOpcode())) {
+      new_function << clang::UnaryOperator::getOpcodeStr(
+                          unary_operator_.getOpcode())
+                          .str()
+                   << arg_evaluated + ";\n";
+    } else {
+      new_function << arg_evaluated
+                   << clang::UnaryOperator::getOpcodeStr(
+                          unary_operator_.getOpcode())
+                          .str()
+                   << ";\n";
+    }
   }
 
   int mutation_id_offset = 0;
   GenerateUnaryOperatorReplacement(
-      arg_evaluated, ast_context, optimise_mutations, mutation_id, new_function,
-      mutation_id_offset, protobuf_message);
+      arg_evaluated, ast_context, optimise_mutations,
+      only_track_mutant_coverage, mutation_id, new_function, mutation_id_offset,
+      protobuf_message);
+
+  if (only_track_mutant_coverage) {
+    new_function << "  __dredd_record_covered_mutants(local_mutation_id, " +
+                        std::to_string(mutation_id_offset) + ");\n";
+  }
 
   new_function << "  return " << GetExpr(ast_context) << ";\n";
   new_function << "}\n\n";
@@ -287,8 +297,9 @@ bool MutationReplaceUnaryOperator::IsRedundantReplacementOperator(
 
 void MutationReplaceUnaryOperator::GenerateUnaryOperatorReplacement(
     const std::string& arg_evaluated, clang::ASTContext& ast_context,
-    bool optimise_mutations, int mutation_id_base,
-    std::stringstream& new_function, int& mutation_id_offset,
+    bool optimise_mutations, bool only_track_mutant_coverage,
+    int mutation_id_base, std::stringstream& new_function,
+    int& mutation_id_offset,
     protobufs::MutationReplaceUnaryOperator& protobuf_message) const {
   std::vector<clang::UnaryOperatorKind> candidate_replacement_operators = {
       clang::UnaryOperatorKind::UO_PreInc, clang::UnaryOperatorKind::UO_PostInc,
@@ -303,15 +314,17 @@ void MutationReplaceUnaryOperator::GenerateUnaryOperatorReplacement(
          IsRedundantReplacementOperator(operator_kind, ast_context))) {
       continue;
     }
-    new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
-                 << mutation_id_offset << ")) return ";
-    if (IsPrefix(operator_kind)) {
-      new_function << clang::UnaryOperator::getOpcodeStr(operator_kind).str()
-                   << arg_evaluated + ";\n";
-    } else {
-      new_function << arg_evaluated
-                   << clang::UnaryOperator::getOpcodeStr(operator_kind).str()
-                   << ";\n";
+    if (!only_track_mutant_coverage) {
+      new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
+                   << mutation_id_offset << ")) return ";
+      if (IsPrefix(operator_kind)) {
+        new_function << clang::UnaryOperator::getOpcodeStr(operator_kind).str()
+                     << arg_evaluated + ";\n";
+      } else {
+        new_function << arg_evaluated
+                     << clang::UnaryOperator::getOpcodeStr(operator_kind).str()
+                     << ";\n";
+      }
     }
     AddMutationInstance(mutation_id_base, OperatorKindToAction(operator_kind),
                         mutation_id_offset, protobuf_message);
@@ -321,8 +334,11 @@ void MutationReplaceUnaryOperator::GenerateUnaryOperatorReplacement(
   // equivalent to inserting another occurrence of it, which will be done by
   // another mutation.
   if (!optimise_mutations || !IsOperatorSelfInverse()) {
-    new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
-                 << mutation_id_offset << ")) return " + arg_evaluated + ";\n";
+    if (!only_track_mutant_coverage) {
+      new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
+                   << mutation_id_offset
+                   << ")) return " + arg_evaluated + ";\n";
+    }
     AddMutationInstance(
         mutation_id_base,
         protobufs::MutationReplaceUnaryOperatorAction::ReplaceWithOperand,
@@ -332,8 +348,8 @@ void MutationReplaceUnaryOperator::GenerateUnaryOperatorReplacement(
 
 protobufs::MutationGroup MutationReplaceUnaryOperator::Apply(
     clang::ASTContext& ast_context, const clang::Preprocessor& preprocessor,
-    bool optimise_mutations, int first_mutation_id_in_file, int& mutation_id,
-    clang::Rewriter& rewriter,
+    bool optimise_mutations, bool only_track_mutant_coverage,
+    int first_mutation_id_in_file, int& mutation_id, clang::Rewriter& rewriter,
     std::unordered_set<std::string>& dredd_declarations) const {
   // The protobuf object for the mutation, which will be wrapped in a
   // MutationGroup.
@@ -442,7 +458,8 @@ protobufs::MutationGroup MutationReplaceUnaryOperator::Apply(
 
   std::string new_function = GenerateMutatorFunction(
       ast_context, new_function_name, result_type, input_type,
-      optimise_mutations, mutation_id, inner_result);
+      optimise_mutations, only_track_mutant_coverage, mutation_id,
+      inner_result);
   assert(!new_function.empty() && "Unsupported opcode.");
 
   dredd_declarations.insert(new_function);

@@ -38,8 +38,8 @@ MutationRemoveStmt::MutationRemoveStmt(const clang::Stmt& stmt,
 
 protobufs::MutationGroup MutationRemoveStmt::Apply(
     clang::ASTContext& ast_context, const clang::Preprocessor& preprocessor,
-    bool optimise_mutations, int first_mutation_id_in_file, int& mutation_id,
-    clang::Rewriter& rewriter,
+    bool optimise_mutations, bool only_track_mutant_coverage,
+    int first_mutation_id_in_file, int& mutation_id, clang::Rewriter& rewriter,
     std::unordered_set<std::string>& dredd_declarations) const {
   (void)dredd_declarations;  // Unused.
   (void)optimise_mutations;  // Unused.
@@ -96,23 +96,35 @@ protobufs::MutationGroup MutationRemoveStmt::Apply(
   // Subtracting |first_mutation_id_in_file| turns the global mutation id,
   // |mutation_id|, into a file-local mutation id.
   const int local_mutation_id = mutation_id - first_mutation_id_in_file;
-  bool rewriter_result = rewriter.InsertTextBefore(
-      source_range.getBegin(), "if (!__dredd_enabled_mutation(" +
-                                   std::to_string(local_mutation_id) + ")) { ");
-  assert(!rewriter_result && "Rewrite failed.\n");
-  rewriter_result = rewriter.InsertTextAfterToken(
-      source_range.getEnd(),
-      // If the source range was extended with a comment but not with a
-      // semi-colon, it is possible that the end of the source range is on
-      // the same line as a single-line comment, in which case it's
-      // important to take a new line (otherwise the closing brace will form
-      // part of the comment). It would be possible to always take a new
-      // line, but this would make mutated files harder to read.
-      std::string(
-          ((is_extended_with_comment && !is_extended_with_semi) ? "\n" : " ")) +
-          "}");
-  assert(!rewriter_result && "Rewrite failed.\n");
-  (void)rewriter_result;  // Keep release-mode compilers happy.
+
+  if (only_track_mutant_coverage) {
+    bool rewriter_result = rewriter.InsertTextBefore(
+        source_range.getBegin(), "__dredd_record_covered_mutants(" +
+                                     std::to_string(local_mutation_id) +
+                                     ", 1); ");
+    assert(!rewriter_result && "Rewrite failed.\n");
+    (void)rewriter_result;  // Keep release-mode compilers happy.
+  } else {
+    bool rewriter_result = rewriter.InsertTextBefore(
+        source_range.getBegin(), "if (!__dredd_enabled_mutation(" +
+                                     std::to_string(local_mutation_id) +
+                                     ")) { ");
+    assert(!rewriter_result && "Rewrite failed.\n");
+    rewriter_result = rewriter.InsertTextAfterToken(
+        source_range.getEnd(),
+        // If the source range was extended with a comment but not with a
+        // semi-colon, it is possible that the end of the source range is on
+        // the same line as a single-line comment, in which case it's
+        // important to take a new line (otherwise the closing brace will form
+        // part of the comment). It would be possible to always take a new
+        // line, but this would make mutated files harder to read.
+        std::string(((is_extended_with_comment && !is_extended_with_semi)
+                         ? "\n"
+                         : " ")) +
+            "}");
+    assert(!rewriter_result && "Rewrite failed.\n");
+    (void)rewriter_result;  // Keep release-mode compilers happy.
+  }
 
   mutation_id++;
 
