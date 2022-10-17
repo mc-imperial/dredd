@@ -50,6 +50,12 @@ static llvm::cl::opt<bool> no_mutation_opts(
     "no-mutation-opts", llvm::cl::desc("Disable Dredd's optimisations"),
     llvm::cl::cat(mutate_category));
 // NOLINTNEXTLINE
+static llvm::cl::opt<bool> only_track_mutant_coverage(
+    "only-track-mutant-coverage",
+    llvm::cl::desc("Add instrumentation to track which mutants are covered by "
+                   "an input, rather than actually applying any mutants."),
+    llvm::cl::cat(mutate_category));
+// NOLINTNEXTLINE
 static llvm::cl::opt<bool> dump_asts(
     "dump-asts",
     llvm::cl::desc("Dump each AST that is processed; useful for debugging"),
@@ -93,6 +99,7 @@ int main(int argc, const char** argv) {
 
   std::unique_ptr<clang::tooling::FrontendActionFactory> factory =
       dredd::NewMutateFrontendActionFactory(!no_mutation_opts, dump_asts,
+                                            only_track_mutant_coverage,
                                             mutation_id, mutation_info);
 
   const int return_code = Tool.run(factory.get());

@@ -32,11 +32,13 @@ namespace dredd {
 class MutateAstConsumer : public clang::ASTConsumer {
  public:
   MutateAstConsumer(clang::CompilerInstance& compiler_instance,
-                    bool optimise_mutations, bool dump_ast, int& mutation_id,
+                    bool optimise_mutations, bool dump_ast,
+                    bool only_track_mutant_coverage, int& mutation_id,
                     protobufs::MutationInfo& mutation_info)
       : compiler_instance_(compiler_instance),
         optimise_mutations_(optimise_mutations),
         dump_ast_(dump_ast),
+        only_track_mutant_coverage_(only_track_mutant_coverage),
         visitor_(std::make_unique<MutateVisitor>(compiler_instance,
                                                  optimise_mutations)),
         mutation_id_(mutation_id),
@@ -62,6 +64,8 @@ class MutateAstConsumer : public clang::ASTConsumer {
   // True if and only if the AST being consumed should be dumped; useful for
   // debugging.
   const bool dump_ast_;
+
+  const bool only_track_mutant_coverage_;
 
   std::unique_ptr<MutateVisitor> visitor_;
 

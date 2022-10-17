@@ -332,12 +332,14 @@ void MutationReplaceUnaryOperator::GenerateUnaryOperatorReplacement(
 
 protobufs::MutationGroup MutationReplaceUnaryOperator::Apply(
     clang::ASTContext& ast_context, const clang::Preprocessor& preprocessor,
-    bool optimise_mutations, int first_mutation_id_in_file, int& mutation_id,
-    clang::Rewriter& rewriter,
+    bool optimise_mutations, bool only_track_mutant_coverage,
+    int first_mutation_id_in_file, int& mutation_id, clang::Rewriter& rewriter,
     std::unordered_set<std::string>& dredd_declarations) const {
   // The protobuf object for the mutation, which will be wrapped in a
   // MutationGroup.
   protobufs::MutationReplaceUnaryOperator inner_result;
+
+  (void)only_track_mutant_coverage;  // TODO use
 
   inner_result.set_operator_(
       ClangOperatorKindToProtobufOperatorKind(unary_operator_.getOpcode()));

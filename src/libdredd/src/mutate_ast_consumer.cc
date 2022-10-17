@@ -275,7 +275,8 @@ protobufs::MutationTreeNode MutateAstConsumer::ApplyMutations(
     int mutation_id_old = mutation_id_;
     *result.add_mutation_groups() = mutation->Apply(
         context, compiler_instance_.getPreprocessor(), optimise_mutations_,
-        initial_mutation_id, mutation_id_, rewriter_, dredd_declarations);
+        only_track_mutant_coverage_, initial_mutation_id, mutation_id_,
+        rewriter_, dredd_declarations);
     assert(mutation_id_ > mutation_id_old &&
            "Every mutation should lead to the mutation id increasing by at "
            "least 1.");

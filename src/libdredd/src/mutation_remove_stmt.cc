@@ -38,11 +38,13 @@ MutationRemoveStmt::MutationRemoveStmt(const clang::Stmt& stmt,
 
 protobufs::MutationGroup MutationRemoveStmt::Apply(
     clang::ASTContext& ast_context, const clang::Preprocessor& preprocessor,
-    bool optimise_mutations, int first_mutation_id_in_file, int& mutation_id,
-    clang::Rewriter& rewriter,
+    bool optimise_mutations, bool only_track_mutant_coverage,
+    int first_mutation_id_in_file, int& mutation_id, clang::Rewriter& rewriter,
     std::unordered_set<std::string>& dredd_declarations) const {
   (void)dredd_declarations;  // Unused.
   (void)optimise_mutations;  // Unused.
+
+  (void)only_track_mutant_coverage;  // TODO use
 
   // The protobuf object for the mutation, which will be wrapped in a
   // MutationGroup.
