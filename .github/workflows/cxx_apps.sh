@@ -58,18 +58,18 @@ popd
 
 DREDD_ROOT=$(pwd)
 
+mkdir -p build
+pushd build
+  cmake -G Ninja .. -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_COMPILER="${DREDD_ROOT}/third_party/clang+llvm/bin/clang++" -DCMAKE_C_COMPILER="${DREDD_ROOT}/third_party/clang+llvm/bin/clang"
+  cmake --build . --config Debug
+  cmake -DCMAKE_INSTALL_PREFIX=./install -DBUILD_TYPE=Debug -P cmake_install.cmake
+popd
+
 export CC=clang
 export CXX=clang++
 
 which ${CC}
 which ${CXX}
-
-mkdir -p build
-pushd build
-  cmake -G Ninja .. -DCMAKE_BUILD_TYPE=Debug
-  cmake --build . --config Debug
-  cmake -DCMAKE_INSTALL_PREFIX=./install -DBUILD_TYPE=Debug -P cmake_install.cmake
-popd
 
 # Check that dredd works on some projects
 DREDD_EXECUTABLE="${DREDD_ROOT}/third_party/clang+llvm/bin/dredd"

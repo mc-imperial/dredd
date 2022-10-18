@@ -140,12 +140,12 @@ std::string MutateAstConsumer::GetRegularDreddPreludeCpp(
   // enabled. It is set to true initially so that __dredd_enabled_mutation gets
   // invoked the first time enabledness is queried. At that point it will get
   // set to false if no mutations are actually enabled.
-  result << "static thread_local bool __dredd_some_mutation_enabled = true;\n";
+  result << "static __thread bool __dredd_some_mutation_enabled = true;\n";
   result << "static bool __dredd_enabled_mutation(int local_mutation_id) {\n";
-  result << "  static thread_local bool initialized = false;\n";
+  result << "  static __thread bool initialized = false;\n";
   // Array of booleans, one per mutation in this file, determining whether they
   // are enabled.
-  result << "  static thread_local uint64_t enabled_bitset["
+  result << "  static __thread uint64_t enabled_bitset["
          << num_64_bit_words_required << "];\n";
   result << "  if (!initialized) {\n";
   // Record locally whether some mutation is enabled.
@@ -225,7 +225,7 @@ std::string MutateAstConsumer::GetMutantTrackingDreddPreludeCpp(
   result << "\n";
   result << "static void __dredd_record_covered_mutants(int local_mutation_id, "
             "int num_mutations) {\n";
-  result << "  static thread_local uint64_t already_recorded_bitset["
+  result << "  static __thread uint64_t already_recorded_bitset["
          << num_64_bit_words_required << "];\n";
   result << "  if ((already_recorded_bitset[local_mutation_id / 64] & (1 << "
             "(local_mutation_id % 64))) != 0) return;\n";
@@ -266,11 +266,10 @@ std::string MutateAstConsumer::GetRegularDreddPreludeC(
   result << "#include <inttypes.h>\n";
   result << "#include <stdlib.h>\n";
   result << "#include <string.h>\n";
-  result << "#include <threads.h>\n";
-  result << "static thread_local int __dredd_some_mutation_enabled = 1;\n";
+  result << "static __thread int __dredd_some_mutation_enabled = 1;\n";
   result << "static int __dredd_enabled_mutation(int local_mutation_id) {\n";
-  result << "  static thread_local int initialized = 0;\n";
-  result << "  static thread_local uint64_t enabled_bitset["
+  result << "  static __thread int initialized = 0;\n";
+  result << "  static __thread uint64_t enabled_bitset["
          << num_64_bit_words_required << "];\n";
   result << "  if (!initialized) {\n";
   result << "    int some_mutation_enabled = 0;\n";
@@ -321,7 +320,7 @@ std::string MutateAstConsumer::GetMutantTrackingDreddPreludeC(
   result << "\n";
   result << "static void __dredd_record_covered_mutants(int local_mutation_id, "
             "int num_mutations) {\n";
-  result << "  static thread_local uint64_t already_recorded_bitset["
+  result << "  static __thread uint64_t already_recorded_bitset["
          << num_64_bit_words_required << "];\n";
   result << "  if ((already_recorded_bitset[local_mutation_id / 64] & (1 << "
             "(local_mutation_id % 64))) != 0) return;\n";
