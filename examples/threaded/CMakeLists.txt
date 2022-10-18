@@ -14,13 +14,13 @@
 
 cmake_minimum_required(VERSION 3.13)
 
-project(threading)
+project(threaded)
 
 add_compile_options(-fsanitize=thread)
 add_link_options(-fsanitize=thread)
 
 add_executable(
-  threading
+  threaded
   include/consumer.h
   include/locked_queue.h
   include/producer.h
@@ -29,4 +29,4 @@ add_executable(
   src/main.cc
   src/producer.cc)
 
-target_include_directories(threading PRIVATE include)
+target_include_directories(threaded PRIVATE include)

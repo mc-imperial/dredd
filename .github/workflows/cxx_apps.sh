@@ -100,7 +100,7 @@ popd
 echo "examples/threading: check that the example gives the expected output after mutation"
 date
 
-pushd examples/threading
+pushd examples/threaded
   mkdir build
   pushd build
     cmake -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ..
@@ -111,10 +111,10 @@ pushd examples/threading
     [[ -e "$f" ]] || break
     FILES+=("${DREDD_ROOT}/${f}")
   done
-  ${DREDD_EXECUTABLE} --mutation-info-file temp.json -p "${DREDD_ROOT}/examples/threading/build/compile_commands.json" "${FILES[@]}"
+  ${DREDD_EXECUTABLE} --mutation-info-file temp.json -p "${DREDD_ROOT}/examples/threaded/build/compile_commands.json" "${FILES[@]}"
   pushd build
     ninja
-    diff <(./threading) <(echo "33550336")
+    diff <(./threaded) <(echo "33550336")
   popd
 popd
 
