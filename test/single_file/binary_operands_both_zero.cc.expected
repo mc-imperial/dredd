@@ -3,10 +3,10 @@
 #include <functional>
 #include <string>
 
-static bool __dredd_some_mutation_enabled = true;
+static thread_local bool __dredd_some_mutation_enabled = true;
 static bool __dredd_enabled_mutation(int local_mutation_id) {
-  static bool initialized = false;
-  static uint64_t enabled_bitset[3];
+  static thread_local bool initialized = false;
+  static thread_local uint64_t enabled_bitset[3];
   if (!initialized) {
     bool some_mutation_enabled = false;
     const char* dredd_environment_variable = std::getenv("DREDD_ENABLED_MUTATION");
