@@ -58,18 +58,20 @@ popd
 
 DREDD_ROOT=$(pwd)
 
-mkdir -p build
-pushd build
-  cmake -G Ninja .. -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_COMPILER="${DREDD_ROOT}/third_party/clang+llvm/bin/clang++" -DCMAKE_C_COMPILER="${DREDD_ROOT}/third_party/clang+llvm/bin/clang"
-  cmake --build . --config Debug
-  cmake -DCMAKE_INSTALL_PREFIX=./install -DBUILD_TYPE=Debug -P cmake_install.cmake
-popd
+export PATH="${DREDD_ROOT}/third_party/clang+llvm/bin:$PATH"
 
 export CC=clang
 export CXX=clang++
 
 which ${CC}
 which ${CXX}
+
+mkdir -p build
+pushd build
+  cmake -G Ninja .. -DCMAKE_BUILD_TYPE=Debug
+  cmake --build . --config Debug
+  cmake -DCMAKE_INSTALL_PREFIX=./install -DBUILD_TYPE=Debug -P cmake_install.cmake
+popd
 
 # Check that dredd works on some projects
 DREDD_EXECUTABLE="${DREDD_ROOT}/third_party/clang+llvm/bin/dredd"
@@ -93,27 +95,6 @@ pushd examples/math
     cmake --build .
     ./mathtest/mathtest
   popd
-popd
-
-echo "examples/threading: check that the example gives the expected output after mutation"
-date
-
-pushd examples/threaded
-  mkdir build
-  pushd build
-    cmake -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ..
-  popd
-popd
-FILES=()
-for f in examples/threaded/src/*.cc
-do
-  [[ -e "$f" ]] || break
-  FILES+=("${DREDD_ROOT}/${f}")
-done
-${DREDD_EXECUTABLE} --mutation-info-file temp.json -p "${DREDD_ROOT}/examples/threaded/build/compile_commands.json" "${FILES[@]}"
-pushd examples/threaded/build
-  ninja
-  diff <(./threaded) <(echo "33550336")
 popd
 
 echo "SPIRV-Tools validator: check that the tests pass after mutating the validator"
