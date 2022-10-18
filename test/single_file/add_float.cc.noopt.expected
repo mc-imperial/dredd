@@ -6,7 +6,7 @@
 
 #ifdef _MSC_VER
 #define thread_local __declspec(thread)
-#elsif __APPLE__
+#elif __APPLE__
 #define thread_local __thread
 #endif
 

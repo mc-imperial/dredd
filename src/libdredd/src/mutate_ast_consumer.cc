@@ -139,7 +139,7 @@ std::string MutateAstConsumer::GetRegularDreddPreludeCpp(
   result << "\n";
   result << "#ifdef _MSC_VER\n";
   result << "#define thread_local __declspec(thread)\n";
-  result << "#elsif __APPLE__\n";
+  result << "#elif __APPLE__\n";
   result << "#define thread_local __thread\n";
   result << "#endif\n";
   result << "\n";
@@ -232,7 +232,7 @@ std::string MutateAstConsumer::GetMutantTrackingDreddPreludeCpp(
   result << "\n";
   result << "#ifdef _MSC_VER\n";
   result << "#define thread_local __declspec(thread)\n";
-  result << "#elsif __APPLE__\n";
+  result << "#elif __APPLE__\n";
   result << "#define thread_local __thread\n";
   result << "#endif\n";
   result << "\n";
@@ -282,7 +282,7 @@ std::string MutateAstConsumer::GetRegularDreddPreludeC(
   result << "\n";
   result << "#ifdef _MSC_VER\n";
   result << "#define thread_local __declspec(thread)\n";
-  result << "#elsif __APPLE__\n";
+  result << "#elif __APPLE__\n";
   result << "#define thread_local __thread\n";
   result << "#else\n";
   result << "#include <threads.h>\n";
@@ -342,7 +342,7 @@ std::string MutateAstConsumer::GetMutantTrackingDreddPreludeC(
   result << "\n";
   result << "#ifdef _MSC_VER\n";
   result << "#define thread_local __declspec(thread)\n";
-  result << "#elsif __APPLE__\n";
+  result << "#elif __APPLE__\n";
   result << "#define thread_local __thread\n";
   result << "#else\n";
   result << "#include <threads.h>\n";
