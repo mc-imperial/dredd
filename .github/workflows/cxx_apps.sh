@@ -58,8 +58,6 @@ popd
 
 DREDD_ROOT=$(pwd)
 
-export PATH="${DREDD_ROOT}/third_party/clang+llvm/bin:$PATH"
-
 export CC=clang
 export CXX=clang++
 
