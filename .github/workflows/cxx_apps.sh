@@ -97,6 +97,27 @@ pushd examples/math
   popd
 popd
 
+echo "examples/threading: check that the example gives the expected output after mutation"
+date
+
+pushd examples/threading
+  mkdir build
+  pushd build
+    cmake -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ..
+  popd
+  FILES=()
+  for f in src/*.cc
+  do
+    [[ -e "$f" ]] || break
+    FILES+=("${DREDD_ROOT}/${f}")
+  done
+  ${DREDD_EXECUTABLE} --mutation-info-file temp.json -p "${DREDD_ROOT}/examples/threading/build/compile_commands.json" "${FILES[@]}"
+  pushd build
+    ninja
+    diff <(./threading) <(echo "33550336")
+  popd
+popd
+
 echo "SPIRV-Tools validator: check that the tests pass after mutating the validator"
 date
 
