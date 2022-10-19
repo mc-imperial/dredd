@@ -31,7 +31,6 @@ for warning in [ "incompatible redeclaration",
    "omitting the parameter name in a function definition is a C2x extension",
    "was not declared, defaulting to type",
    "is uninitialized when used here",
-   "to bit-field changes value from",
    "format string is not a string literal"]:
    if warning in output:
       sys.exit(2)
@@ -58,7 +57,6 @@ for warning in ["uninitialized",
                 "excess elements in struct initializer",
                 "comparison between pointer and integer",
                 "format .* expects a matching .* argument",
-                "overflow in conversion from",
                 "format not a string literal",
                 "no return statement in function returning non-void"]:
   if re.search(warning, output):
@@ -66,7 +64,7 @@ for warning in ["uninitialized",
 
 # Compile with the unmutated compiler, timing how long this takes
 compile_start = time.time()
-result = subprocess.run(["{{ compiler_executable }}", "-I" "{{ csmith_root }}/runtime", "-I" "{{ csmith_root }}/build/runtime", "-O3", "__prog.c", "-o", "__regular"], capture_output=True)
+result = subprocess.run(["{{ mutated_compiler_executable }}", "-I" "{{ csmith_root }}/runtime", "-I" "{{ csmith_root }}/build/runtime", "-O3", "__prog.c", "-o", "__regular"], capture_output=True)
 compile_end = time.time()
 
 # Compilation with the non-mutated compiler should succeed
@@ -77,7 +75,7 @@ if result.returncode != 0:
 try:
    dredd_environment = os.environ.copy()
    dredd_environment["DREDD_ENABLED_MUTATION"] = "{{ mutation_ids }}"
-   result = subprocess.run(["{{ compiler_executable }}", "-I" "{{ csmith_root }}/runtime", "-I" "{{ csmith_root }}/build/runtime", "-O3", "__prog.c", "-o", "__mutated"],
+   result = subprocess.run(["{{ mutated_compiler_executable }}", "-I" "{{ csmith_root }}/runtime", "-I" "{{ csmith_root }}/build/runtime", "-O3", "__prog.c", "-o", "__mutated"],
                            capture_output=True,
                            timeout=max(5.0, 5.0*(compile_end - compile_start)),
                            env=dredd_environment)
