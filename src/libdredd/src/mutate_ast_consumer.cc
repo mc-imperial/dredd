@@ -136,17 +136,24 @@ std::string MutateAstConsumer::GetRegularDreddPreludeCpp(
   result << "#include <cstddef>\n";
   result << "#include <functional>\n";
   result << "#include <string>\n\n";
+  result << "\n";
+  result << "#ifdef _MSC_VER\n";
+  result << "#define thread_local __declspec(thread)\n";
+  result << "#elif __APPLE__\n";
+  result << "#define thread_local __thread\n";
+  result << "#endif\n";
+  result << "\n";
   // This allows for fast checking that at least *some* mutation in the file is
   // enabled. It is set to true initially so that __dredd_enabled_mutation gets
   // invoked the first time enabledness is queried. At that point it will get
   // set to false if no mutations are actually enabled.
-  result << "static bool __dredd_some_mutation_enabled = true;\n";
+  result << "static thread_local bool __dredd_some_mutation_enabled = true;\n";
   result << "static bool __dredd_enabled_mutation(int local_mutation_id) {\n";
-  result << "  static bool initialized = false;\n";
+  result << "  static thread_local bool initialized = false;\n";
   // Array of booleans, one per mutation in this file, determining whether they
   // are enabled.
-  result << "  static uint64_t enabled_bitset[" << num_64_bit_words_required
-         << "];\n";
+  result << "  static thread_local uint64_t enabled_bitset["
+         << num_64_bit_words_required << "];\n";
   result << "  if (!initialized) {\n";
   // Record locally whether some mutation is enabled.
   result << "    bool some_mutation_enabled = false;\n";
@@ -212,25 +219,18 @@ std::string MutateAstConsumer::GetMutantTrackingDreddPreludeCpp(
   // The number of mutations applied to this file is known.
   const int num_mutations = mutation_id_ - initial_mutation_id;
 
-  // Whether coverage of mutants has been tracked or not will be recorded using
-  // a bitset, represented as an array of 64-bit integers. First, work out how
-  // large this array will need to be, as ceiling(num_mutations / 64).
-  const int kWordSize = 64;
-  const int num_64_bit_words_required =
-      (num_mutations + kWordSize - 1) / kWordSize;
-
   std::stringstream result;
+  result << "#include <atomic>\n";
   result << "#include <fstream>\n";
   result << "#include <functional>\n";
+  result << "#include <sstream>\n";
   result << "\n";
   result << "static void __dredd_record_covered_mutants(int local_mutation_id, "
             "int num_mutations) {\n";
-  result << "  static uint64_t already_recorded_bitset["
-         << num_64_bit_words_required << "];\n";
-  result << "  if ((already_recorded_bitset[local_mutation_id / 64] & (1 << "
-            "(local_mutation_id % 64))) != 0) return;\n";
-  result << "  already_recorded_bitset[local_mutation_id / 64] |= (1 << "
-            "(local_mutation_id % 64));\n";
+  result << "  static std::atomic<bool> already_recorded[" << num_mutations
+         << "];\n";
+  result
+      << "  if (already_recorded[local_mutation_id].exchange(true)) return;\n";
   result << "  const char* dredd_tracking_environment_variable = "
             "std::getenv(\"DREDD_MUTANT_TRACKING_FILE\");\n";
   result << "  if (dredd_tracking_environment_variable == nullptr) return;\n";
@@ -266,11 +266,20 @@ std::string MutateAstConsumer::GetRegularDreddPreludeC(
   result << "#include <inttypes.h>\n";
   result << "#include <stdlib.h>\n";
   result << "#include <string.h>\n";
-  result << "static int __dredd_some_mutation_enabled = 1;\n";
+  result << "\n";
+  result << "#ifdef _MSC_VER\n";
+  result << "#define thread_local __declspec(thread)\n";
+  result << "#elif __APPLE__\n";
+  result << "#define thread_local __thread\n";
+  result << "#else\n";
+  result << "#include <threads.h>\n";
+  result << "#endif\n";
+  result << "\n";
+  result << "static thread_local int __dredd_some_mutation_enabled = 1;\n";
   result << "static int __dredd_enabled_mutation(int local_mutation_id) {\n";
-  result << "  static int initialized = 0;\n";
-  result << "  static uint64_t enabled_bitset[" << num_64_bit_words_required
-         << "];\n";
+  result << "  static thread_local int initialized = 0;\n";
+  result << "  static thread_local uint64_t enabled_bitset["
+         << num_64_bit_words_required << "];\n";
   result << "  if (!initialized) {\n";
   result << "    int some_mutation_enabled = 0;\n";
   result << "    const char* dredd_environment_variable = "
@@ -309,23 +318,17 @@ std::string MutateAstConsumer::GetMutantTrackingDreddPreludeC(
   // See comments in GetMutantTrackingDreddPreludeCpp; this is a straightforward
   // port to C.
   const int num_mutations = mutation_id_ - initial_mutation_id;
-  const int kWordSize = 64;
-  const int num_64_bit_words_required =
-      (num_mutations + kWordSize - 1) / kWordSize;
-
   std::stringstream result;
   result << "#include <inttypes.h>\n";
+  result << "#include <stdatomic.h>\n";
   result << "#include <stdio.h>\n";
   result << "#include <stdlib.h>\n";
   result << "\n";
   result << "static void __dredd_record_covered_mutants(int local_mutation_id, "
             "int num_mutations) {\n";
-  result << "  static uint64_t already_recorded_bitset["
-         << num_64_bit_words_required << "];\n";
-  result << "  if ((already_recorded_bitset[local_mutation_id / 64] & (1 << "
-            "(local_mutation_id % 64))) != 0) return;\n";
-  result << "  already_recorded_bitset[local_mutation_id / 64] |= (1 << "
-            "(local_mutation_id % 64));\n";
+  result << "  static atomic_bool already_recorded[" << num_mutations << "];\n";
+  result << "  if (atomic_exchange(&already_recorded[local_mutation_id], 1)) "
+            "return;\n";
   result << "  const char* dredd_tracking_environment_variable = "
             "getenv(\"DREDD_MUTANT_TRACKING_FILE\");\n";
   result << "  if (!dredd_tracking_environment_variable) return;\n";

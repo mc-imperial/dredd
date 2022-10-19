@@ -3,10 +3,17 @@
 #include <functional>
 #include <string>
 
-static bool __dredd_some_mutation_enabled = true;
+
+#ifdef _MSC_VER
+#define thread_local __declspec(thread)
+#elif __APPLE__
+#define thread_local __thread
+#endif
+
+static thread_local bool __dredd_some_mutation_enabled = true;
 static bool __dredd_enabled_mutation(int local_mutation_id) {
-  static bool initialized = false;
-  static uint64_t enabled_bitset[2];
+  static thread_local bool initialized = false;
+  static thread_local uint64_t enabled_bitset[2];
   if (!initialized) {
     bool some_mutation_enabled = false;
     const char* dredd_environment_variable = std::getenv("DREDD_ENABLED_MUTATION");

@@ -76,7 +76,14 @@ do
       ${CXX} "${DREDD_EXTRA_CXX_ARGS}" -c "${copy_of_f}"
     fi
   else
-    ${CC} -c "${copy_of_f}"
+    # Extra C arguments can be passed;
+    # this is needed on Windows to set an appropriate C standard.
+    if [ -z "${DREDD_EXTRA_C_ARGS+x}" ]
+    then
+      ${CC} -c "${copy_of_f}"
+    else
+      ${CC} "${DREDD_EXTRA_C_ARGS}" -c "${copy_of_f}"
+    fi
   fi
 
   if [ "${DREDD_REGENERATE_TEST_CASE+x}" ]

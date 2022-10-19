@@ -1,10 +1,19 @@
 #include <inttypes.h>
 #include <stdlib.h>
 #include <string.h>
-static int __dredd_some_mutation_enabled = 1;
+
+#ifdef _MSC_VER
+#define thread_local __declspec(thread)
+#elif __APPLE__
+#define thread_local __thread
+#else
+#include <threads.h>
+#endif
+
+static thread_local int __dredd_some_mutation_enabled = 1;
 static int __dredd_enabled_mutation(int local_mutation_id) {
-  static int initialized = 0;
-  static uint64_t enabled_bitset[1];
+  static thread_local int initialized = 0;
+  static thread_local uint64_t enabled_bitset[1];
   if (!initialized) {
     int some_mutation_enabled = 0;
     const char* dredd_environment_variable = getenv("DREDD_ENABLED_MUTATION");
