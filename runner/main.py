@@ -209,8 +209,7 @@ class MutantKiller:
             if result.stdout.decode('utf-8') != program_stats.expected_output:
                 print("VERY STRONG KILL: Execution results from program compiled with mutated compiler are different!")
                 sys.stdout.flush()
-                return ExecutionStatus.NO_EFFECT
-                # return ExecutionStatus.MISCOMPILATION_KILL
+                return ExecutionStatus.MISCOMPILATION_KILL
 
         except subprocess.TimeoutExpired:
             print("STRONG KILL: Execution of program compiled with mutated compiler timed out.")
@@ -221,12 +220,12 @@ class MutantKiller:
         sys.stdout.flush()
         return ExecutionStatus.DIFFERENT_BINARIES_SAME_RESULT
 
-    def consolodate_kill(self,
+    def consolidate_kill(self,
                          mutant: int,
                          execution_status: ExecutionStatus,
                          program_stats: GeneratedProgramStats) -> None:
         relatives: List[int] = self.mutation_tree.get_incompatible_mutation_ids(mutant)
-        print(f"Consolodating kills by considering {len(relatives) - 1} related mutants")
+        print(f"Consolidating kills by considering {len(relatives) - 1} related mutants")
         miscompilation_kills_to_reduce: List[int] = []
         if execution_status == ExecutionStatus.MISCOMPILATION_KILL:
             miscompilation_kills_to_reduce.append(mutant)
@@ -257,7 +256,8 @@ class MutantKiller:
                 miscompilation_kills_to_reduce.append(relative)
 
         print(
-            f"Found {follow_on_kills} follow-on kills, {len(miscompilation_kills_to_reduce)} of which are miscompilations")
+            f"Found {follow_on_kills} follow-on kills, {len(miscompilation_kills_to_reduce)} of which are "
+            "miscompilations")
         sys.stdout.flush()
         while len(miscompilation_kills_to_reduce) > 0:
             mutant: int = miscompilation_kills_to_reduce.pop()
@@ -294,7 +294,7 @@ class MutantKiller:
         if len(selected_mutants) == 1:
             self.unkilled_mutants.pop(selected_mutants[0])
             self.killed_mutants[selected_mutants[0]] = execution_status
-            self.consolodate_kill(mutant=selected_mutants[0],
+            self.consolidate_kill(mutant=selected_mutants[0],
                                   execution_status=execution_status,
                                   program_stats=program_stats)
             return True
@@ -326,7 +326,6 @@ class MutantKiller:
 
     def generate_a_program(self) -> GeneratedProgramStats:
         while True:
-            # TODO: cleanup
             try:
                 # Run csmith until it yields a program
                 cmd: List[str] = [self.csmith_root / "build" / "src" / "csmith", "-o", "__prog.c"]
@@ -426,9 +425,11 @@ class MutantKiller:
                 print(f"Total killed mutants: {len(self.killed_mutants)}")
                 print(f"Total remaining mutants: {len(self.unkilled_mutants)}")
                 print(
-                    f"Mutants still to be tried during round {self.round}: {len({m for m in self.unkilled_mutants if self.unkilled_mutants[m] == self.round})}")
+                    f"Mutants still to be tried during round {self.round}: "
+                    f"{len({m for m in self.unkilled_mutants if self.unkilled_mutants[m] == self.round})}")
                 sys.stdout.flush()
-                if self.search_for_kills_in_mutant_selection(selected_mutants=self.select_mutants(mutants_covered_by_current_program=program_stats.covered_mutants),
+                if self.search_for_kills_in_mutant_selection(selected_mutants=self.select_mutants(
+                        mutants_covered_by_current_program=program_stats.covered_mutants),
                                                              program_stats=program_stats):
                     num_consecutive_failed_attempts_for_current_program = 0
                 else:
@@ -493,9 +494,11 @@ def main():
     mutant_killer: MutantKiller = MutantKiller(mutation_tree=mutation_tree,
                                                csmith_root=args.csmith_root,
                                                mutated_compiler_executable=args.mutated_compiler_executable,
-                                               mutant_tracking_compiler_executable=args.mutant_tracking_compiler_executable,
+                                               mutant_tracking_compiler_executable=
+                                               args.mutant_tracking_compiler_executable,
                                                max_attempts_per_program=args.max_attempts_per_program,
-                                               max_consecutive_failed_attempts_per_program=args.max_consecutive_failed_attempts_per_program,
+                                               max_consecutive_failed_attempts_per_program=
+                                               args.max_consecutive_failed_attempts_per_program,
                                                num_simultaneous_mutations=args.num_simultaneous_mutations)
     mutant_killer.go()
 
