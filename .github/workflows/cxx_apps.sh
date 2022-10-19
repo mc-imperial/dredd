@@ -58,17 +58,17 @@ popd
 
 DREDD_ROOT=$(pwd)
 
-#export PATH="${DREDD_ROOT}/third_party/clang+llvm/bin:$PATH"
+export PATH="${DREDD_ROOT}/third_party/clang+llvm/bin:$PATH"
 
-#export CC=clang
-#export CXX=clang++
+export CC=clang
+export CXX=clang++
 
-#which ${CC}
-#which ${CXX}
+which ${CC}
+which ${CXX}
 
 mkdir -p build
 pushd build
-  cmake -G Ninja .. -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_COMPILER="${DREDD_ROOT}/third_party/clang+llvm/bin/clang" -DCMAKE_CXX_COMPILER="${DREDD_ROOT}/third_party/clang+llvm/bin/clang++"
+  cmake -G Ninja .. -DCMAKE_BUILD_TYPE=Debug
   cmake --build . --config Debug
   cmake -DCMAKE_INSTALL_PREFIX=./install -DBUILD_TYPE=Debug -P cmake_install.cmake
 popd
