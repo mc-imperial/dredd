@@ -138,20 +138,20 @@ class MutantKiller:
         self.round = 0
 
     def generate_interestingness_test(self,
-                                      mutant: int) -> None:
+                                      mutants: List[int]) -> None:
         template_loader = jinja2.FileSystemLoader(searchpath="./")
         template_env = jinja2.Environment(loader=template_loader)
         template = template_env.get_template("interesting.py.template")
         open('__interesting.py', 'w').write(template.render(csmith_root=self.csmith_root,
                                                             mutated_compiler_executable=self.mutated_compiler_executable,
-                                                            mutation_ids=str(mutant)))
+                                                            mutation_ids=','.join([str(m) for m in mutants])))
         # Make the interestingness test executable.
         st = os.stat('__interesting.py')
         os.chmod('__interesting.py', st.st_mode | stat.S_IEXEC)
 
     def reduce_very_strong_kill(self,
                                 mutant: int) -> bool:
-        self.generate_interestingness_test(mutant=mutant)
+        self.generate_interestingness_test(mutants=[mutant])
         creduce_environment = os.environ.copy()
         creduce_environment['CREDUCE_INCLUDE_PATH'] = \
             str(self.csmith_root / 'runtime') + ':' + str(self.csmith_root / 'build' / 'runtime')
@@ -159,11 +159,12 @@ class MutantKiller:
                                                                      env=creduce_environment)
         if creduce_result.returncode != 0:
             print('creduce failed')
+            assert False
             return False
         return True
 
     def is_killed_by_reduced_test_case(self, mutant: int) -> bool:
-        self.generate_interestingness_test(mutant=mutant)
+        self.generate_interestingness_test(mutants=[mutant])
         if subprocess.run(['./__interesting.py']).returncode == 0:
             print(f'Reduced file kills mutant {mutant}')
             return True
@@ -209,6 +210,8 @@ class MutantKiller:
             if result.stdout.decode('utf-8') != program_stats.expected_output:
                 print("VERY STRONG KILL: Execution results from program compiled with mutated compiler are different!")
                 sys.stdout.flush()
+                self.generate_interestingness_test(selected_mutants)
+                assert subprocess.run(["./__interesting.py"]).returncode == 0
                 return ExecutionStatus.MISCOMPILATION_KILL
 
         except subprocess.TimeoutExpired:
@@ -326,6 +329,14 @@ class MutantKiller:
 
     def generate_a_program(self) -> GeneratedProgramStats:
         while True:
+            if os.path.exists("__prog.c"):
+                os.remove("__prog.c")
+            if os.path.exists("__prog"):
+                os.remove("__prog")
+            if os.path.exists("__dredd_covered_mutants"):
+                os.remove("__dredd_covered_mutants")
+            if os.path.exists("__prog_covered_mutants"):
+                os.remove("__prog_covered_mutants")
             try:
                 # Run csmith until it yields a program
                 cmd: List[str] = [self.csmith_root / "build" / "src" / "csmith", "-o", "__prog.c"]
@@ -372,9 +383,10 @@ class MutantKiller:
                 print("execution of generated program compiled with non-mutated compiler timed out")
                 continue
 
-            # Delete the covered mutants file if it exists
-            if os.path.exists("__dredd_covered_mutants"):
-                os.remove("__dredd_covered_mutants")
+            shutil.copy(src="__prog", dst="__temp_prog")
+            expected_output = result.stdout.decode('utf-8')
+            executable_hash = hash_file('__prog')
+
             # Compile the program with the mutant tracking compiler in an environment that writes to said file
             tracking_environment = os.environ.copy()
             tracking_environment["DREDD_MUTANT_TRACKING_FILE"] = "__dredd_covered_mutants"
@@ -386,20 +398,19 @@ class MutantKiller:
                                      self.csmith_root / "build" / "runtime",
                                      "__prog.c",
                                      "-o",
-                                     "__prog"], capture_output=True, env=tracking_environment)
+                                     "__prog_covered_mutants"], capture_output=True, env=tracking_environment)
             # The program compiled successfully, so it should still compile successfully when mutant tracking is
             # enabled.
             assert result.returncode == 0
+
             # Load file contents into a set
             covered_mutants: Set[int] = set([int(line.strip()) for line in
                                              open("__dredd_covered_mutants", 'r').readlines()])
-            # Delete covered mutants file
-            os.remove("__dredd_covered_mutants")
 
             return GeneratedProgramStats(compile_time=compile_time_end - compile_time_start,
                                          execution_time=execute_time_end - execute_time_start,
-                                         expected_output=result.stdout.decode('utf-8'),
-                                         executable_hash=hash_file('__prog'),
+                                         expected_output=expected_output,
+                                         executable_hash=executable_hash,
                                          covered_mutants=covered_mutants)
 
     def go(self):
