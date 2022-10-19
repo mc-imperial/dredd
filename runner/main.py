@@ -226,14 +226,22 @@ class MutantKiller:
                          execution_status: ExecutionStatus,
                          program_stats: GeneratedProgramStats) -> None:
         relatives: List[int] = self.mutation_tree.get_incompatible_mutation_ids(mutant)
-        print(f"Consolodating kills by trying {len(relatives) - 1} related mutants")
+        print(f"Consolodating kills by considering {len(relatives) - 1} related mutants")
         miscompilation_kills_to_reduce: List[int] = []
         if execution_status == ExecutionStatus.MISCOMPILATION_KILL:
             miscompilation_kills_to_reduce.append(mutant)
 
         follow_on_kills: int = 0
         for relative in relatives:
-            if relative == mutant or relative in self.killed_mutants:
+            if relative == mutant:
+                continue
+
+            if relative in self.killed_mutants:
+                print("Skipping relative: already killed")
+                continue
+
+            if relative not in program_stats.covered_mutants:
+                print("Skipping relative: not covered by current program")
                 continue
 
             result_for_relative: ExecutionStatus = self.try_to_kill_mutants(program_stats=program_stats,
@@ -296,8 +304,8 @@ class MutantKiller:
         result: bool = self.search_for_kills_in_mutant_selection(program_stats=program_stats,
                                                                  selected_mutants=selected_mutants_lhs)
         selected_mutants_rhs = [m for m in selected_mutants[midpoint:] if m not in self.killed_mutants]
-        result = result or self.search_for_kills_in_mutant_selection(program_stats=program_stats,
-                                                                     selected_mutants=selected_mutants_rhs)
+        result = self.search_for_kills_in_mutant_selection(program_stats=program_stats,
+                                                           selected_mutants=selected_mutants_rhs) or result
         print(f"Finished searching for kills among {len(selected_mutants)} mutant(s)")
         return result
 
