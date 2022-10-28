@@ -90,8 +90,9 @@ class MutationTree:
 
 
 class GeneratedProgramStats:
-    def __init__(self, compile_time: float, execution_time: float, expected_output: str,
+    def __init__(self, name: str, compile_time: float, execution_time: float, expected_output: str,
                  executable_hash: str, covered_mutants: Set[int]):
+        self.name = name
         self.compile_time = compile_time
         self.execution_time = execution_time
         self.expected_output = expected_output
@@ -159,12 +160,11 @@ class MutantKiller:
         creduce_environment = os.environ.copy()
         creduce_environment['CREDUCE_INCLUDE_PATH'] = \
             str(self.csmith_root / 'runtime') + ':' + str(self.csmith_root / 'build' / 'runtime')
-        creduce_result: subprocess.CompletedProcess = subprocess.run(['creduce', '__interesting.py', '__prog.c'],
+        creduce_result: subprocess.CompletedProcess = subprocess.run(['creduce', '__interesting.py', program_to_reduce],
                                                                      env=creduce_environment)
         if creduce_result.returncode != 0:
             print('creduce failed')
             assert False
-            return False
         return True
 
     def is_killed_by_reduced_test_case(self, reduced_test_case: str, mutant: int) -> bool:
@@ -178,9 +178,18 @@ class MutantKiller:
     def try_to_kill_mutants(self,
                             program_stats: GeneratedProgramStats,
                             selected_mutants: List[int]) -> ExecutionStatus:
+        generated_program_exe_compiled_with_mutants: str = '__prog_mutated'
+        if os.path.exists(generated_program_exe_compiled_with_mutants):
+            os.remove(generated_program_exe_compiled_with_mutants)
         try:
-            cmd: List[str] = [self.mutated_compiler_executable, "-O3", "-I", self.csmith_root / "runtime", "-I",
-                              self.csmith_root / "build" / "runtime", "__prog.c", "-o", "__prog_mutated"]
+            cmd: List[str] = [self.mutated_compiler_executable,
+                              "-O3",
+                              "-I",
+                              self.csmith_root / "runtime", "-I",
+                              self.csmith_root / "build" / "runtime",
+                              program_stats.name,
+                              "-o",
+                              generated_program_exe_compiled_with_mutants]
             mutated_environment: Dict[str, str] = os.environ.copy()
             mutated_environment['DREDD_ENABLED_MUTATION'] = ",".join([str(m) for m in selected_mutants])
             result = subprocess.run(cmd, timeout=max(5.0, 5.0 * program_stats.compile_time), capture_output=True,
@@ -197,7 +206,7 @@ class MutantKiller:
 
         print("Compilation with mutated compiler succeeded")
         sys.stdout.flush()
-        if hash_file('__prog_mutated') == program_stats.executable_hash:
+        if hash_file(generated_program_exe_compiled_with_mutants) == program_stats.executable_hash:
             print("Binaries are the same - not interesting")
             sys.stdout.flush()
             return ExecutionStatus.NO_EFFECT
@@ -205,7 +214,7 @@ class MutantKiller:
         print("Different binaries!")
         sys.stdout.flush()
         try:
-            cmd: List[str] = ["./__prog_mutated"]
+            cmd: List[str] = ["./" + generated_program_exe_compiled_with_mutants]
             result = subprocess.run(cmd, timeout=max(5.0, 10.0 * program_stats.execution_time), capture_output=True)
             if result.returncode != 0:
                 print("STRONG KILL: Execution of program compiled with mutated compiler failed.")
@@ -214,7 +223,7 @@ class MutantKiller:
             if result.stdout.decode('utf-8') != program_stats.expected_output:
                 print("VERY STRONG KILL: Execution results from program compiled with mutated compiler are different!")
                 sys.stdout.flush()
-                self.generate_interestingness_test(program='__prog.c', mutants=selected_mutants)
+                self.generate_interestingness_test(program=program_stats.name, mutants=selected_mutants)
                 assert subprocess.run(["./__interesting.py"]).returncode == 0
                 return ExecutionStatus.MISCOMPILATION_KILL
 
@@ -268,8 +277,9 @@ class MutantKiller:
         sys.stdout.flush()
         while len(miscompilation_kills_to_reduce) > 0:
             mutant: int = miscompilation_kills_to_reduce.pop()
-            shutil.copy(src='__prog.c', dst='__prog_to_reduce.c')
-            if not self.reduce_very_strong_kill(program_to_reduce='__prog_to_reduce.c', mutant=mutant):
+            reduced_program: str = '__prog_to_reduce.c'
+            shutil.copy(src=program_stats.name, dst=reduced_program)
+            if not self.reduce_very_strong_kill(program_to_reduce=reduced_program, mutant=mutant):
                 # This should never really happen: the mutant was previously confirmed as being miscompilation-killed,
                 # thus it should successfully reduce. It could happen due to nondeterminism.
                 continue
@@ -277,13 +287,13 @@ class MutantKiller:
             index: int = 0
             while index < len(miscompilation_kills_to_reduce):
                 follow_on_mutant: int = miscompilation_kills_to_reduce[index]
-                if self.is_killed_by_reduced_test_case(reduced_test_case='__prog_to_reduce.c', mutant=follow_on_mutant):
+                if self.is_killed_by_reduced_test_case(reduced_test_case=reduced_program, mutant=follow_on_mutant):
                     killed_by_reduced_test_case.append(follow_on_mutant)
                     miscompilation_kills_to_reduce.pop(index)
                 else:
                     index += 1
             print(f"Found {len(killed_by_reduced_test_case)} miscompilation kills from a reduced test case")
-            shutil.move(src='__prog_to_reduce.c',
+            shutil.move(src=reduced_program,
                         dst=f'__kills_{"_".join([str(m) for m in killed_by_reduced_test_case])}.c')
 
     def search_for_kills_in_mutant_selection(self,
@@ -334,18 +344,22 @@ class MutantKiller:
         return result
 
     def generate_a_program(self) -> GeneratedProgramStats:
+        generated_program: str = '__prog.c'
+        generated_program_exe_compiled_normally: str = '__prog'
+        generated_program_exe_compiled_with_mutant_tracking: str = '__prog_covered_mutants'
+
         while True:
-            if os.path.exists("__prog.c"):
-                os.remove("__prog.c")
-            if os.path.exists("__prog"):
-                os.remove("__prog")
+            if os.path.exists(generated_program):
+                os.remove(generated_program)
+            if os.path.exists(generated_program_exe_compiled_normally):
+                os.remove(generated_program_exe_compiled_normally)
             if os.path.exists("__dredd_covered_mutants"):
                 os.remove("__dredd_covered_mutants")
-            if os.path.exists("__prog_covered_mutants"):
-                os.remove("__prog_covered_mutants")
+            if os.path.exists(generated_program_exe_compiled_with_mutant_tracking):
+                os.remove(generated_program_exe_compiled_with_mutant_tracking)
             try:
                 # Run csmith until it yields a program
-                cmd: List[str] = [self.csmith_root / "build" / "src" / "csmith", "-o", "__prog.c"]
+                cmd: List[str] = [self.csmith_root / "build" / "src" / "csmith", "-o", generated_program]
                 result = subprocess.run(cmd, timeout=10, capture_output=True)
                 if result.returncode != 0:
                     print("csmith failed")
@@ -355,7 +369,7 @@ class MutantKiller:
                 continue
 
             # Inline some immediate header files into the Csmith-generated program
-            prepare_csmith_program.prepare(Path("__prog.c"), Path("__prog.c"), self.csmith_root)
+            prepare_csmith_program.prepare(Path(generated_program), Path(generated_program), self.csmith_root)
 
             try:
                 cmd: List[str] = [self.mutated_compiler_executable,
@@ -364,9 +378,9 @@ class MutantKiller:
                                   self.csmith_root / "runtime",
                                   "-I",
                                   self.csmith_root / "build" / "runtime",
-                                  "__prog.c",
+                                  generated_program,
                                   "-o",
-                                  "__prog"]
+                                  generated_program_exe_compiled_normally]
                 compile_time_start: float = time.time()
                 result = subprocess.run(cmd, timeout=10, capture_output=True)
                 compile_time_end: float = time.time()
@@ -378,7 +392,7 @@ class MutantKiller:
                 continue
 
             try:
-                cmd: List[str] = ["./__prog"]
+                cmd: List[str] = ["./" + generated_program_exe_compiled_normally]
                 execute_time_start: float = time.time()
                 result = subprocess.run(cmd, timeout=10, capture_output=True)
                 execute_time_end: float = time.time()
@@ -389,9 +403,8 @@ class MutantKiller:
                 print("execution of generated program compiled with non-mutated compiler timed out")
                 continue
 
-            shutil.copy(src="__prog", dst="__temp_prog")
             expected_output = result.stdout.decode('utf-8')
-            executable_hash = hash_file('__prog')
+            executable_hash = hash_file(generated_program_exe_compiled_normally)
 
             # Compile the program with the mutant tracking compiler in an environment that writes to said file
             tracking_environment = os.environ.copy()
@@ -402,9 +415,11 @@ class MutantKiller:
                                      self.csmith_root / "runtime",
                                      "-I",
                                      self.csmith_root / "build" / "runtime",
-                                     "__prog.c",
+                                     generated_program,
                                      "-o",
-                                     "__prog_covered_mutants"], capture_output=True, env=tracking_environment)
+                                     generated_program_exe_compiled_with_mutant_tracking],
+                                    capture_output=True,
+                                    env=tracking_environment)
             # The program compiled successfully, so it should still compile successfully when mutant tracking is
             # enabled.
             assert result.returncode == 0
@@ -413,7 +428,8 @@ class MutantKiller:
             covered_mutants: Set[int] = set([int(line.strip()) for line in
                                              open("__dredd_covered_mutants", 'r').readlines()])
 
-            return GeneratedProgramStats(compile_time=compile_time_end - compile_time_start,
+            return GeneratedProgramStats(name=generated_program,
+                                         compile_time=compile_time_end - compile_time_start,
                                          execution_time=execute_time_end - execute_time_start,
                                          expected_output=expected_output,
                                          executable_hash=executable_hash,
