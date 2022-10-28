@@ -138,20 +138,24 @@ class MutantKiller:
         self.round = 0
 
     def generate_interestingness_test(self,
+                                      program: str,
                                       mutants: List[int]) -> None:
         template_loader = jinja2.FileSystemLoader(searchpath="./")
         template_env = jinja2.Environment(loader=template_loader)
         template = template_env.get_template("interesting.py.template")
-        open('__interesting.py', 'w').write(template.render(csmith_root=self.csmith_root,
-                                                            mutated_compiler_executable=self.mutated_compiler_executable,
+        open('__interesting.py', 'w').write(template.render(program_to_check=program,
+                                                            csmith_root=self.csmith_root,
+                                                            mutated_compiler_executable=self.
+                                                            mutated_compiler_executable,
                                                             mutation_ids=','.join([str(m) for m in mutants])))
         # Make the interestingness test executable.
         st = os.stat('__interesting.py')
         os.chmod('__interesting.py', st.st_mode | stat.S_IEXEC)
 
     def reduce_very_strong_kill(self,
+                                program_to_reduce: str,
                                 mutant: int) -> bool:
-        self.generate_interestingness_test(mutants=[mutant])
+        self.generate_interestingness_test(program=program_to_reduce, mutants=[mutant])
         creduce_environment = os.environ.copy()
         creduce_environment['CREDUCE_INCLUDE_PATH'] = \
             str(self.csmith_root / 'runtime') + ':' + str(self.csmith_root / 'build' / 'runtime')
@@ -163,8 +167,8 @@ class MutantKiller:
             return False
         return True
 
-    def is_killed_by_reduced_test_case(self, mutant: int) -> bool:
-        self.generate_interestingness_test(mutants=[mutant])
+    def is_killed_by_reduced_test_case(self, reduced_test_case: str, mutant: int) -> bool:
+        self.generate_interestingness_test(program=reduced_test_case, mutants=[mutant])
         if subprocess.run(['./__interesting.py']).returncode == 0:
             print(f'Reduced file kills mutant {mutant}')
             return True
@@ -210,7 +214,7 @@ class MutantKiller:
             if result.stdout.decode('utf-8') != program_stats.expected_output:
                 print("VERY STRONG KILL: Execution results from program compiled with mutated compiler are different!")
                 sys.stdout.flush()
-                self.generate_interestingness_test(selected_mutants)
+                self.generate_interestingness_test(program='__prog.c', mutants=selected_mutants)
                 assert subprocess.run(["./__interesting.py"]).returncode == 0
                 return ExecutionStatus.MISCOMPILATION_KILL
 
@@ -264,7 +268,8 @@ class MutantKiller:
         sys.stdout.flush()
         while len(miscompilation_kills_to_reduce) > 0:
             mutant: int = miscompilation_kills_to_reduce.pop()
-            if not self.reduce_very_strong_kill(mutant=mutant):
+            shutil.copy(src='__prog.c', dst='__prog_to_reduce.c')
+            if not self.reduce_very_strong_kill(program_to_reduce='__prog_to_reduce.c', mutant=mutant):
                 # This should never really happen: the mutant was previously confirmed as being miscompilation-killed,
                 # thus it should successfully reduce. It could happen due to nondeterminism.
                 continue
@@ -272,13 +277,14 @@ class MutantKiller:
             index: int = 0
             while index < len(miscompilation_kills_to_reduce):
                 follow_on_mutant: int = miscompilation_kills_to_reduce[index]
-                if self.is_killed_by_reduced_test_case(mutant=follow_on_mutant):
+                if self.is_killed_by_reduced_test_case(reduced_test_case='__prog_to_reduce.c', mutant=follow_on_mutant):
                     killed_by_reduced_test_case.append(follow_on_mutant)
                     miscompilation_kills_to_reduce.pop(index)
                 else:
                     index += 1
             print(f"Found {len(killed_by_reduced_test_case)} miscompilation kills from a reduced test case")
-            shutil.move(src='__prog.c', dst=f'__kills_{"_".join([str(m) for m in killed_by_reduced_test_case])}.c')
+            shutil.move(src='__prog_to_reduce.c',
+                        dst=f'__kills_{"_".join([str(m) for m in killed_by_reduced_test_case])}.c')
 
     def search_for_kills_in_mutant_selection(self,
                                              program_stats: GeneratedProgramStats,
@@ -505,11 +511,11 @@ def main():
     mutant_killer: MutantKiller = MutantKiller(mutation_tree=mutation_tree,
                                                csmith_root=args.csmith_root,
                                                mutated_compiler_executable=args.mutated_compiler_executable,
-                                               mutant_tracking_compiler_executable=
-                                               args.mutant_tracking_compiler_executable,
+                                               mutant_tracking_compiler_executable=args.
+                                               mutant_tracking_compiler_executable,
                                                max_attempts_per_program=args.max_attempts_per_program,
-                                               max_consecutive_failed_attempts_per_program=
-                                               args.max_consecutive_failed_attempts_per_program,
+                                               max_consecutive_failed_attempts_per_program=args.
+                                               max_consecutive_failed_attempts_per_program,
                                                num_simultaneous_mutations=args.num_simultaneous_mutations)
     mutant_killer.go()
 
