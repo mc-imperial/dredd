@@ -1,0 +1,26 @@
+#!/usr/bin/python3
+
+# Interestingness test for use with C-Reduce.
+
+import shutil
+import subprocess
+import sys
+
+# Replace with the name of the file you want to reduce.
+filename = "prog.cc"
+# Replace this with the message you expect to see in an interesting test case.
+message = "Assertion `!isNull() && \"Cannot retrieve a NULL type pointer\"' failed"
+# Replace with the  path to your dredd checkout.
+dredd_root = "/home/afd/dev/dredd"
+
+shutil.copy(filename, "temp.cc")
+
+cmd = [dredd_root + "/third_party/clang+llvm/bin/dredd", "temp.cc", "--mutation-info-file", "info.json", "--"]
+result = subprocess.run(cmd, capture_output=True)
+if result.returncode == 0:
+    sys.exit(1)
+
+if message not in result.stderr.decode('utf-8'):
+    sys.exit(2)
+
+sys.exit(0)
