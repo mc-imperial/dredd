@@ -47,7 +47,7 @@ std::string MutationReplaceExpr::GetFunctionName(
   std::string result = "__dredd_replace_expr_";
 
   if (expr_.isLValue()) {
-    clang::QualType qualified_type = expr_.getType();
+    const clang::QualType qualified_type = expr_.getType();
     if (qualified_type.isVolatileQualified()) {
       assert(expr_.getType().isVolatileQualified() &&
              "Expected expression to be volatile-qualified since subexpression "
@@ -481,7 +481,7 @@ void MutationReplaceExpr::ApplyCppTypeModifiers(const clang::Expr* expr,
                                                 std::string& type) {
   if (expr->isLValue()) {
     type += "&";
-    clang::QualType qualified_type = expr->getType();
+    const clang::QualType qualified_type = expr->getType();
     if (qualified_type.isVolatileQualified()) {
       type = "volatile " + type;
     } else if (qualified_type.isConstQualified()) {
@@ -494,7 +494,7 @@ void MutationReplaceExpr::ApplyCTypeModifiers(const clang::Expr* expr,
                                               std::string& type) {
   if (expr->isLValue()) {
     type += "*";
-    clang::QualType qualified_type = expr->getType();
+    const clang::QualType qualified_type = expr->getType();
     if (qualified_type.isVolatileQualified()) {
       type = "volatile " + type;
     } else if (qualified_type.isConstQualified()) {
@@ -519,12 +519,12 @@ protobufs::MutationGroup MutationReplaceExpr::Apply(
   inner_result.mutable_end()->set_column(info_for_source_range_.GetEndColumn());
   *inner_result.mutable_snippet() = info_for_source_range_.GetSnippet();
 
-  std::string new_function_name =
+  const std::string new_function_name =
       GetFunctionName(optimise_mutations, ast_context);
-  std::string result_type = expr_.getType()
-                                ->getAs<clang::BuiltinType>()
-                                ->getName(ast_context.getPrintingPolicy())
-                                .str();
+  const std::string result_type = expr_.getType()
+                                      ->getAs<clang::BuiltinType>()
+                                      ->getName(ast_context.getPrintingPolicy())
+                                      .str();
 
   std::string input_type = result_type;
   // Type modifiers are added to the input type, if it is an l-value. The result
@@ -537,7 +537,7 @@ protobufs::MutationGroup MutationReplaceExpr::Apply(
     ApplyCTypeModifiers(&expr_, input_type);
   }
 
-  clang::SourceRange expr_source_range_in_main_file =
+  const clang::SourceRange expr_source_range_in_main_file =
       GetSourceRangeInMainFile(preprocessor, expr_);
   assert(expr_source_range_in_main_file.isValid() && "Invalid source range.");
 
@@ -615,7 +615,7 @@ protobufs::MutationGroup MutationReplaceExpr::Apply(
   assert(!rewriter_result && "Rewrite failed.\n");
   (void)rewriter_result;  // Keep release mode compilers happy.
 
-  std::string new_function = GenerateMutatorFunction(
+  const std::string new_function = GenerateMutatorFunction(
       ast_context, new_function_name, result_type, input_type,
       optimise_mutations, only_track_mutant_coverage, mutation_id,
       inner_result);

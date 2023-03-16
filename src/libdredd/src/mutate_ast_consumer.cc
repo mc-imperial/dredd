@@ -87,7 +87,7 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
                      dredd_declarations);
   *mutation_info_.add_info_for_files() = mutation_info_for_file;
 
-  clang::SourceLocation start_location_of_first_decl_in_source_file =
+  const clang::SourceLocation start_location_of_first_decl_in_source_file =
       visitor_->GetStartLocationOfFirstDeclInSourceFile();
   assert(start_location_of_first_decl_in_source_file.isValid() &&
          "There is at least one mutation, therefore there must be at least one "
@@ -99,15 +99,16 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
   sorted_dredd_declarations.insert(dredd_declarations.begin(),
                                    dredd_declarations.end());
   for (const auto& decl : sorted_dredd_declarations) {
-    bool rewriter_result = rewriter_.InsertTextBefore(
+    const bool rewriter_result = rewriter_.InsertTextBefore(
         start_location_of_first_decl_in_source_file, decl);
     (void)rewriter_result;  // Keep release-mode compilers happy.
     assert(!rewriter_result && "Rewrite failed.\n");
   }
 
-  std::string dredd_prelude = compiler_instance_.getLangOpts().CPlusPlus
-                                  ? GetDreddPreludeCpp(initial_mutation_id)
-                                  : GetDreddPreludeC(initial_mutation_id);
+  const std::string dredd_prelude =
+      compiler_instance_.getLangOpts().CPlusPlus
+          ? GetDreddPreludeCpp(initial_mutation_id)
+          : GetDreddPreludeC(initial_mutation_id);
 
   bool rewriter_result = rewriter_.InsertTextBefore(
       visitor_->GetStartLocationOfFirstDeclInSourceFile(), dredd_prelude);
@@ -361,7 +362,7 @@ protobufs::MutationTreeNode MutateAstConsumer::ApplyMutations(
                                             context, dredd_declarations);
   }
   for (const auto& mutation : mutation_tree_node.GetMutations()) {
-    int mutation_id_old = mutation_id_;
+    const int mutation_id_old = mutation_id_;
     *result.add_mutation_groups() = mutation->Apply(
         context, compiler_instance_.getPreprocessor(), optimise_mutations_,
         only_track_mutant_coverage_, initial_mutation_id, mutation_id_,

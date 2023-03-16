@@ -48,7 +48,7 @@ class MutateFrontendAction : public clang::ASTFrontendAction {
 
   bool BeginInvocation(clang::CompilerInstance& compiler_instance) override {
     (void)compiler_instance;  // Unused.
-    bool input_exists = !getCurrentInput().isEmpty();
+    const bool input_exists = !getCurrentInput().isEmpty();
     (void)input_exists;  // Keep release-mode compilers happy.
     assert(input_exists && "No current file.");
     if (processed_files_.contains(getCurrentFile().str())) {

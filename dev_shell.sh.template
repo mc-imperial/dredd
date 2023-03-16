@@ -83,7 +83,7 @@ export CPPLINT_PY
 
 # Get include what you use.
 
-IWYU_VERSION="0.18"
+IWYU_VERSION="0.19"
 IWYU_OUT="iwyu-${IWYU_VERSION}"
 
 if test ! -f "${IWYU_OUT}.touch"; then

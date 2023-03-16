@@ -40,7 +40,7 @@ InfoForSourceRange::InfoForSourceRange(clang::SourceRange source_range,
   auto char_source_range = clang::CharSourceRange::getTokenRange(source_range);
   assert(char_source_range.isTokenRange() && "Expected a token range.");
   (void)char_source_range;  // Keep release-mode compilers happy.
-  unsigned int final_token_length = clang::Lexer::MeasureTokenLength(
+  const unsigned int final_token_length = clang::Lexer::MeasureTokenLength(
       source_range.getEnd(), source_manager, ast_context.getLangOpts());
 
   auto start_loc_decomposed =
@@ -56,8 +56,8 @@ InfoForSourceRange::InfoForSourceRange(clang::SourceRange source_range,
   end_column_ = source_manager.getSpellingColumnNumber(source_range.getEnd()) +
                 final_token_length;
 
-  unsigned int length = end_loc_decomposed.second -
-                        start_loc_decomposed.second + final_token_length;
+  const unsigned int length = end_loc_decomposed.second -
+                              start_loc_decomposed.second + final_token_length;
 
   const std::string kSnipText(" ... [snip] ... ");
   const unsigned int kSnippetLengthEachSide = 10;

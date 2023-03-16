@@ -205,7 +205,8 @@ std::string MutationReplaceBinaryOperator::GetFunctionName(
   std::string lhs_qualifier;
 
   if (binary_operator_.isAssignmentOp()) {
-    clang::QualType qualified_lhs_type = binary_operator_.getLHS()->getType();
+    const clang::QualType qualified_lhs_type =
+        binary_operator_.getLHS()->getType();
     if (qualified_lhs_type.isVolatileQualified()) {
       lhs_qualifier = "volatile ";
     }
@@ -556,7 +557,7 @@ protobufs::MutationGroup MutationReplaceBinaryOperator::Apply(
   inner_result.mutable_rhs_end()->set_column(info_for_rhs_.GetEndColumn());
   *inner_result.mutable_rhs_snippet() = info_for_rhs_.GetSnippet();
 
-  std::string new_function_name =
+  const std::string new_function_name =
       GetFunctionName(optimise_mutations, ast_context);
   std::string result_type = binary_operator_.getType()
                                 ->getAs<clang::BuiltinType>()
@@ -567,11 +568,11 @@ protobufs::MutationGroup MutationReplaceBinaryOperator::Apply(
                              ->getAs<clang::BuiltinType>()
                              ->getName(ast_context.getPrintingPolicy())
                              .str();
-  std::string rhs_type = binary_operator_.getRHS()
-                             ->getType()
-                             ->getAs<clang::BuiltinType>()
-                             ->getName(ast_context.getPrintingPolicy())
-                             .str();
+  const std::string rhs_type = binary_operator_.getRHS()
+                                   ->getType()
+                                   ->getAs<clang::BuiltinType>()
+                                   ->getName(ast_context.getPrintingPolicy())
+                                   .str();
 
   if (!ast_context.getLangOpts().CPlusPlus && binary_operator_.isLogicalOp()) {
     // Logical operators in C require special treatment (see the header file for
@@ -595,7 +596,8 @@ protobufs::MutationGroup MutationReplaceBinaryOperator::Apply(
     } else {
       lhs_type += "*";
     }
-    clang::QualType qualified_lhs_type = binary_operator_.getLHS()->getType();
+    const clang::QualType qualified_lhs_type =
+        binary_operator_.getLHS()->getType();
     if (qualified_lhs_type.isVolatileQualified()) {
       lhs_type = "volatile " + lhs_type;
       if (ast_context.getLangOpts().CPlusPlus) {
@@ -610,7 +612,7 @@ protobufs::MutationGroup MutationReplaceBinaryOperator::Apply(
                   preprocessor, first_mutation_id_in_file, mutation_id,
                   rewriter);
 
-  std::string new_function = GenerateMutatorFunction(
+  const std::string new_function = GenerateMutatorFunction(
       ast_context, new_function_name, result_type, lhs_type, rhs_type,
       optimise_mutations, only_track_mutant_coverage, mutation_id,
       inner_result);
@@ -630,10 +632,10 @@ void MutationReplaceBinaryOperator::ReplaceOperator(
     const std::string& new_function_name, clang::ASTContext& ast_context,
     const clang::Preprocessor& preprocessor, int first_mutation_id_in_file,
     int& mutation_id, clang::Rewriter& rewriter) const {
-  clang::SourceRange lhs_source_range_in_main_file =
+  const clang::SourceRange lhs_source_range_in_main_file =
       GetSourceRangeInMainFile(preprocessor, *binary_operator_.getLHS());
   assert(lhs_source_range_in_main_file.isValid() && "Invalid source range.");
-  clang::SourceRange rhs_source_range_in_main_file =
+  const clang::SourceRange rhs_source_range_in_main_file =
       GetSourceRangeInMainFile(preprocessor, *binary_operator_.getRHS());
   assert(rhs_source_range_in_main_file.isValid() && "Invalid source range.");
 
