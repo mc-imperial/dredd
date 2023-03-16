@@ -37,17 +37,21 @@
 namespace dredd {
 
 void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
+  const std::string filename =
+      ast_context.getSourceManager()
+          .getFileEntryForID(ast_context.getSourceManager().getMainFileID())
+          ->getName()
+          .str();
+
+  llvm::errs() << "Processing " << filename << "\n";
+
   if (ast_context.getDiagnostics().hasErrorOccurred()) {
-    // There has been an error, so we don't do any processing.
+    llvm::errs() << "Skipping due to errors\n";
     return;
   }
+
   if (dump_ast_) {
-    llvm::errs() << "AST for: "
-                 << ast_context.getSourceManager()
-                        .getFileEntryForID(
-                            ast_context.getSourceManager().getMainFileID())
-                        ->getName()
-                 << "\n";
+    llvm::errs() << "AST:\n";
     ast_context.getTranslationUnitDecl()->dump();
     llvm::errs() << "\n";
   }
