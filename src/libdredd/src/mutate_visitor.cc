@@ -56,6 +56,9 @@ MutateVisitor::MutateVisitor(clang::CompilerInstance& compiler_instance,
 }
 
 bool MutateVisitor::IsTypeSupported(const clang::QualType qual_type) {
+  if (qual_type.isNull()) {
+    return false;
+  }
   const auto* builtin_type = qual_type->getAs<clang::BuiltinType>();
   return builtin_type != nullptr &&
          (builtin_type->isInteger() || builtin_type->isFloatingPoint());
