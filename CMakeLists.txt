@@ -152,6 +152,7 @@ if(DREDD_WARNING_SUPPRESSIONS)
       /wd4868 # warning C4868: compiler may not enforce left-to-right evaluation
               # order in braced initializer list
       /wd4702 # warning C4702: unrachable code.
+      /wd5262 # warning C5262: implicit fall-through.
     )
   else()
     add_compile_options(

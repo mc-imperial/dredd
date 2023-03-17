@@ -14,6 +14,7 @@
 
 #include "libdredd/mutation_replace_unary_operator.h"
 
+#include <algorithm>
 #include <cassert>
 #include <sstream>
 #include <vector>
@@ -152,7 +153,8 @@ std::string MutationReplaceUnaryOperator::GetFunctionName(
   }
 
   if (unary_operator_.getSubExpr()->isLValue()) {
-    clang::QualType qualified_type = unary_operator_.getSubExpr()->getType();
+    const clang::QualType qualified_type =
+        unary_operator_.getSubExpr()->getType();
     if (qualified_type.isVolatileQualified()) {
       assert(unary_operator_.getSubExpr()->getType().isVolatileQualified() &&
              "Expected expression to be volatile-qualified since subexpression "
@@ -301,11 +303,14 @@ void MutationReplaceUnaryOperator::GenerateUnaryOperatorReplacement(
     int mutation_id_base, std::stringstream& new_function,
     int& mutation_id_offset,
     protobufs::MutationReplaceUnaryOperator& protobuf_message) const {
-  std::vector<clang::UnaryOperatorKind> candidate_replacement_operators = {
-      clang::UnaryOperatorKind::UO_PreInc, clang::UnaryOperatorKind::UO_PostInc,
-      clang::UnaryOperatorKind::UO_PreDec, clang::UnaryOperatorKind::UO_PostDec,
-      clang::UnaryOperatorKind::UO_Not,    clang::UnaryOperatorKind::UO_Minus,
-      clang::UnaryOperatorKind::UO_LNot};
+  const std::vector<clang::UnaryOperatorKind> candidate_replacement_operators =
+      {clang::UnaryOperatorKind::UO_PreInc,
+       clang::UnaryOperatorKind::UO_PostInc,
+       clang::UnaryOperatorKind::UO_PreDec,
+       clang::UnaryOperatorKind::UO_PostDec,
+       clang::UnaryOperatorKind::UO_Not,
+       clang::UnaryOperatorKind::UO_Minus,
+       clang::UnaryOperatorKind::UO_LNot};
 
   for (const auto operator_kind : candidate_replacement_operators) {
     if (operator_kind == unary_operator_.getOpcode() ||
@@ -377,7 +382,7 @@ protobufs::MutationGroup MutationReplaceUnaryOperator::Apply(
       info_for_sub_expr_.GetEndColumn());
   *inner_result.mutable_operand_snippet() = info_for_sub_expr_.GetSnippet();
 
-  std::string new_function_name =
+  const std::string new_function_name =
       GetFunctionName(optimise_mutations, ast_context);
   std::string result_type = unary_operator_.getType()
                                 ->getAs<clang::BuiltinType>()
@@ -398,7 +403,7 @@ protobufs::MutationGroup MutationReplaceUnaryOperator::Apply(
                                              input_type);
   }
 
-  clang::SourceRange unary_operator_source_range_in_main_file =
+  const clang::SourceRange unary_operator_source_range_in_main_file =
       GetSourceRangeInMainFile(preprocessor, unary_operator_);
   assert(unary_operator_source_range_in_main_file.isValid() &&
          "Invalid source range.");
@@ -456,7 +461,7 @@ protobufs::MutationGroup MutationReplaceUnaryOperator::Apply(
   assert(!rewriter_result && "Rewrite failed.\n");
   (void)rewriter_result;  // Keep release-mode compilers happy.
 
-  std::string new_function = GenerateMutatorFunction(
+  const std::string new_function = GenerateMutatorFunction(
       ast_context, new_function_name, result_type, input_type,
       optimise_mutations, only_track_mutant_coverage, mutation_id,
       inner_result);

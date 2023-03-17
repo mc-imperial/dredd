@@ -67,7 +67,7 @@ protobufs::MutationGroup MutationRemoveStmt::Apply(
   bool is_extended_with_comment = false;
   while (true) {
     // Extend the source range in the case that the next token is a comment.
-    clang::CharSourceRange source_range_extended_with_comment =
+    const clang::CharSourceRange source_range_extended_with_comment =
         clang::tooling::maybeExtendRange(
             source_range, clang::tok::TokenKind::comment, ast_context);
     if (source_range.getAsRange() ==
@@ -84,10 +84,10 @@ protobufs::MutationGroup MutationRemoveStmt::Apply(
 
   // Now try to extend the source range further to include the next token, if it
   // is a semi-colon.
-  clang::CharSourceRange source_range_extended_with_semi =
+  const clang::CharSourceRange source_range_extended_with_semi =
       clang::tooling::maybeExtendRange(
           source_range, clang::tok::TokenKind::semi, ast_context);
-  bool is_extended_with_semi =
+  const bool is_extended_with_semi =
       source_range.getAsRange() != source_range_extended_with_semi.getAsRange();
   if (is_extended_with_semi) {
     source_range = source_range_extended_with_semi;
@@ -98,7 +98,7 @@ protobufs::MutationGroup MutationRemoveStmt::Apply(
   const int local_mutation_id = mutation_id - first_mutation_id_in_file;
 
   if (only_track_mutant_coverage) {
-    bool rewriter_result = rewriter.InsertTextBefore(
+    const bool rewriter_result = rewriter.InsertTextBefore(
         source_range.getBegin(), "__dredd_record_covered_mutants(" +
                                      std::to_string(local_mutation_id) +
                                      ", 1); ");

@@ -58,7 +58,8 @@ template <typename HasSourceRange>
   clang::SourceLocation end_loc_in_main_file;
   clang::SourceLocation macro_expansion_location;
   {
-    clang::SourceLocation begin_loc = ast_node.getSourceRange().getBegin();
+    const clang::SourceLocation begin_loc =
+        ast_node.getSourceRange().getBegin();
     auto begin_file_id = source_manager.getFileID(begin_loc);
     if (begin_file_id == main_file_id) {
       begin_loc_in_main_file = begin_loc;
@@ -75,7 +76,7 @@ template <typename HasSourceRange>
     }
   }
   {
-    clang::SourceLocation end_loc = ast_node.getSourceRange().getEnd();
+    const clang::SourceLocation end_loc = ast_node.getSourceRange().getEnd();
     auto end_file_id = source_manager.getFileID(end_loc);
     if (end_file_id == main_file_id) {
       end_loc_in_main_file = end_loc;

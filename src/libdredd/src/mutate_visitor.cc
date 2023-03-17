@@ -43,7 +43,6 @@
 #include "libdredd/mutation_replace_expr.h"
 #include "libdredd/mutation_replace_unary_operator.h"
 #include "libdredd/util.h"
-#include "llvm/ADT/iterator_range.h"
 #include "llvm/Support/Casting.h"
 
 namespace dredd {
@@ -88,7 +87,7 @@ bool MutateVisitor::IsInFunction() {
 bool MutateVisitor::TraverseDecl(clang::Decl* decl) {
   if (llvm::dyn_cast<clang::TranslationUnitDecl>(decl) != nullptr) {
     // This is the top-level translation unit declaration, so descend into it.
-    bool result = RecursiveASTVisitor::TraverseDecl(decl);
+    const bool result = RecursiveASTVisitor::TraverseDecl(decl);
     // At this point the translation unit has been fully visited, so the
     // mutation tree that has been built can be made simpler, in preparation for
     // later turning it into a JSON summary.
@@ -102,7 +101,7 @@ bool MutateVisitor::TraverseDecl(clang::Decl* decl) {
     // consider it for mutation.
     return true;
   }
-  clang::BeforeThanCompare<clang::SourceLocation> comparator(
+  const clang::BeforeThanCompare<clang::SourceLocation> comparator(
       compiler_instance_.getSourceManager());
   if (start_location_of_first_decl_in_source_file_.isInvalid() ||
       comparator(source_range_in_main_file.getBegin(),
@@ -153,7 +152,7 @@ bool MutateVisitor::TraverseDecl(clang::Decl* decl) {
 bool MutateVisitor::TraverseStmt(clang::Stmt* stmt) {
   // Add a node to the mutation tree to capture any mutations beneath this
   // statement.
-  PushMutationTreeRAII push_mutation_tree(*this);
+  const PushMutationTreeRAII push_mutation_tree(*this);
   return RecursiveASTVisitor::TraverseStmt(stmt);
 }
 
@@ -465,7 +464,7 @@ bool MutateVisitor::TraverseCompoundStmt(clang::CompoundStmt* compound_stmt) {
     // To ensure that each sub-statement of a compound statement has its
     // mutations recorded in sibling subtrees of the mutation tree, a mutation
     // tree node is pushed per sub-statement.
-    PushMutationTreeRAII push_mutation_tree(*this);
+    const PushMutationTreeRAII push_mutation_tree(*this);
     TraverseStmt(stmt);
     if (GetSourceRangeInMainFile(compiler_instance_.getPreprocessor(), *stmt)
             .isInvalid() ||

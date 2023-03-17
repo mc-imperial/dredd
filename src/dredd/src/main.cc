@@ -82,7 +82,7 @@ int main(int argc, const char** argv) {
       clang::tooling::CommonOptionsParser::create(argc, argv, mutate_category,
                                                   llvm::cl::OneOrMore);
   if (!options) {
-    std::string error_message = toString(options.takeError());
+    const std::string error_message = toString(options.takeError());
     llvm::errs() << error_message;
     return 1;
   }
@@ -97,7 +97,7 @@ int main(int argc, const char** argv) {
   // including their hierarchical structure.
   dredd::protobufs::MutationInfo mutation_info;
 
-  std::unique_ptr<clang::tooling::FrontendActionFactory> factory =
+  const std::unique_ptr<clang::tooling::FrontendActionFactory> factory =
       dredd::NewMutateFrontendActionFactory(!no_mutation_opts, dump_asts,
                                             only_track_mutant_coverage,
                                             mutation_id, mutation_info);

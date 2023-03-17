@@ -197,9 +197,9 @@ From the root of the repository, execute the following commands:
 ```
 cd third_party
 # The release file is pretty large, so this download may take a while
-curl -Lo clang+llvm.tar.xz https://github.com/llvm/llvm-project/releases/download/llvmorg-13.0.1/clang+llvm-13.0.1-x86_64-linux-gnu-ubuntu-18.04.tar.xz
+curl -Lo clang+llvm.tar.xz https://github.com/llvm/llvm-project/releases/download/llvmorg-15.0.6/clang+llvm-15.0.6-x86_64-linux-gnu-ubuntu-18.04.tar.xz
 tar xf clang+llvm.tar.xz
-mv clang+llvm-13.0.1-x86_64-linux-gnu-ubuntu-18.04 clang+llvm
+mv clang+llvm-15.0.6-x86_64-linux-gnu-ubuntu-18.04 clang+llvm
 rm clang+llvm.tar.xz
 cd ..
 ```

@@ -52,7 +52,7 @@ void TestReplacement(const std::string& original, const std::string& expected,
   ASSERT_GT(expression.size(), 0);
 
   ASSERT_LT(expression_to_replace, expression.size());
-  MutationReplaceExpr mutation(
+  const MutationReplaceExpr mutation(
       *expression[expression_to_replace].getNodeAs<clang::Expr>("expr"),
       ast_unit->getPreprocessor(), ast_unit->getASTContext());
 
@@ -68,16 +68,17 @@ void TestReplacement(const std::string& original, const std::string& expected,
 
   const clang::RewriteBuffer* rewrite_buffer = rewriter.getRewriteBufferFor(
       ast_unit->getSourceManager().getMainFileID());
-  std::string rewritten_text(rewrite_buffer->begin(), rewrite_buffer->end());
+  const std::string rewritten_text(rewrite_buffer->begin(),
+                                   rewrite_buffer->end());
   ASSERT_EQ(expected, rewritten_text);
 }
 
 TEST(MutationReplaceExprTest, MutateSignedConstants) {
-  std::string original = "void foo() { 2; }";
-  std::string expected =
+  const std::string original = "void foo() { 2; }";
+  const std::string expected =
       "void foo() { __dredd_replace_expr_int_constant([&]() -> int { "
       "return 2; }, 0); }";
-  std::string expected_dredd_declaration =
+  const std::string expected_dredd_declaration =
       R"(static int __dredd_replace_expr_int_constant(std::function<int()> arg, int local_mutation_id) {
   if (!__dredd_some_mutation_enabled) return arg();
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return ~(arg());
@@ -95,13 +96,13 @@ TEST(MutationReplaceExprTest, MutateSignedConstants) {
 }
 
 TEST(MutationReplaceExprTest, MutateUnsignedConstants) {
-  std::string original = "void foo() { unsigned int x = 2; }";
-  std::string expected =
+  const std::string original = "void foo() { unsigned int x = 2; }";
+  const std::string expected =
       "void foo() { unsigned int x = "
       "__dredd_replace_expr_unsigned_int_constant([&]() "
       "-> unsigned int { "
       "return 2; }, 0); }";
-  std::string expected_dredd_declaration =
+  const std::string expected_dredd_declaration =
       R"(static unsigned int __dredd_replace_expr_unsigned_int_constant(std::function<unsigned int()> arg, int local_mutation_id) {
   if (!__dredd_some_mutation_enabled) return arg();
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return ~(arg());
@@ -117,11 +118,11 @@ TEST(MutationReplaceExprTest, MutateUnsignedConstants) {
 }
 
 TEST(MutationReplaceExprTest, MutateFloatConstants) {
-  std::string original = "void foo() { 2.523; }";
-  std::string expected =
+  const std::string original = "void foo() { 2.523; }";
+  const std::string expected =
       "void foo() { __dredd_replace_expr_double([&]() -> double { "
       "return 2.523; }, 0); }";
-  std::string expected_dredd_declaration =
+  const std::string expected_dredd_declaration =
       R"(static double __dredd_replace_expr_double(std::function<double()> arg, int local_mutation_id) {
   if (!__dredd_some_mutation_enabled) return arg();
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return -(arg());
@@ -138,19 +139,19 @@ TEST(MutationReplaceExprTest, MutateFloatConstants) {
 }
 
 TEST(MutationReplaceExprTest, MutateLValues) {
-  std::string original =
+  const std::string original =
       R"(void foo() {
   int x;
   -x;
 }
 )";
-  std::string expected =
+  const std::string expected =
       R"(void foo() {
   int x;
   -__dredd_replace_expr_int_lvalue([&]() -> int& { return static_cast<int&>(x); }, 0);
 }
 )";
-  std::string expected_dredd_declaration =
+  const std::string expected_dredd_declaration =
       R"(static int __dredd_replace_expr_int_lvalue(std::function<int&()> arg, int local_mutation_id) {
   if (!__dredd_some_mutation_enabled) return arg();
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return ++(arg());
@@ -165,7 +166,7 @@ TEST(MutationReplaceExprTest, MutateLValues) {
 }
 
 TEST(MutationReplaceExprTest, MutateFunctionArgs) {
-  std::string original =
+  const std::string original =
       R"(
 int neg(int x);
 
@@ -178,7 +179,7 @@ int neg(int x) {
   return -x;
 }
 )";
-  std::string expected =
+  const std::string expected =
       R"(
 int neg(int x);
 
@@ -191,7 +192,7 @@ int neg(int x) {
   return -x;
 }
 )";
-  std::string expected_dredd_declaration =
+  const std::string expected_dredd_declaration =
       R"(static int __dredd_replace_expr_int(std::function<int()> arg, int local_mutation_id) {
   if (!__dredd_some_mutation_enabled) return arg();
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return !(arg());
@@ -210,19 +211,19 @@ int neg(int x) {
 }
 
 TEST(MutationReplaceExprTest, MutateLAnd) {
-  std::string original =
+  const std::string original =
       R"(
 bool foo(bool a, bool b) {
   return a && b;
 }
 )";
-  std::string expected =
+  const std::string expected =
       R"(
 bool foo(bool a, bool b) {
   return __dredd_replace_expr_bool_omit_true([&]() -> bool { return static_cast<bool>(a && b); }, 0);
 }
 )";
-  std::string expected_dredd_declaration =
+  const std::string expected_dredd_declaration =
       R"(static bool __dredd_replace_expr_bool_omit_true(std::function<bool()> arg, int local_mutation_id) {
   if (!__dredd_some_mutation_enabled) return arg();
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return false;
@@ -236,19 +237,19 @@ bool foo(bool a, bool b) {
 }
 
 TEST(MutationReplaceExprTest, MutateLOr) {
-  std::string original =
+  const std::string original =
       R"(
 bool foo(bool a, bool b) {
   return a || b;
 }
 )";
-  std::string expected =
+  const std::string expected =
       R"(
 bool foo(bool a, bool b) {
   return __dredd_replace_expr_bool_omit_false([&]() -> bool { return static_cast<bool>(a || b); }, 0);
 }
 )";
-  std::string expected_dredd_declaration =
+  const std::string expected_dredd_declaration =
       R"(static bool __dredd_replace_expr_bool_omit_false(std::function<bool()> arg, int local_mutation_id) {
   if (!__dredd_some_mutation_enabled) return arg();
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return true;
