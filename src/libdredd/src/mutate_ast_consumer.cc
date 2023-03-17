@@ -71,11 +71,6 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
   // file in a deterministic order.
   std::unordered_set<std::string> dredd_declarations;
 
-  if (visitor_->GetMutations().IsEmpty()) {
-    // No possibilities for mutation were found; nothing to do.
-    return;
-  }
-
   protobufs::MutationInfoForFile mutation_info_for_file;
   mutation_info_for_file.set_filename(
       ast_context.getSourceManager()
@@ -85,6 +80,12 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
   *mutation_info_for_file.mutable_mutation_tree_root() =
       ApplyMutations(visitor_->GetMutations(), initial_mutation_id, ast_context,
                      dredd_declarations);
+
+  if (initial_mutation_id == mutation_id_) {
+    // No possibilities for mutation were found; nothing else to do.
+    return;
+  }
+
   *mutation_info_.add_info_for_files() = mutation_info_for_file;
 
   const clang::SourceLocation start_location_of_first_decl_in_source_file =
@@ -366,14 +367,14 @@ protobufs::MutationTreeNode MutateAstConsumer::ApplyMutations(
   }
   for (const auto& mutation : mutation_tree_node.GetMutations()) {
     const int mutation_id_old = mutation_id_;
-    *result.add_mutation_groups() = mutation->Apply(
+    const auto mutation_group = mutation->Apply(
         context, compiler_instance_.getPreprocessor(), optimise_mutations_,
         only_track_mutant_coverage_, initial_mutation_id, mutation_id_,
         rewriter_, dredd_declarations);
-    assert(mutation_id_ > mutation_id_old &&
-           "Every mutation should lead to the mutation id increasing by at "
-           "least 1.");
-    (void)mutation_id_old;  // Keep release-mode compilers happy.
+    if (mutation_id_ > mutation_id_old) {
+      // Only add the result of applying the mutation if it had an effect.
+      *result.add_mutation_groups() = mutation_group;
+    }
   }
   return result;
 }
