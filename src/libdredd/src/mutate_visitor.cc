@@ -85,6 +85,11 @@ bool MutateVisitor::IsInFunction() {
 }
 
 bool MutateVisitor::TraverseDecl(clang::Decl* decl) {
+  if (decl == nullptr) {
+    // A Clang AST can feature nodes with null children; e.g.
+    // "catch (...)" leads to a null catch expression.
+    return true;
+  }
   if (llvm::dyn_cast<clang::TranslationUnitDecl>(decl) != nullptr) {
     // This is the top-level translation unit declaration, so descend into it.
     const bool result = RecursiveASTVisitor::TraverseDecl(decl);
