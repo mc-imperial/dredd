@@ -95,7 +95,7 @@ def exclude_filename(f: str):
 
 def go():
     fail = False
-    copyright_pattern = re.compile(r"Copyright 2022 The Dredd Project Authors")
+    copyright_pattern = re.compile(r"Copyright 202[23] The Dredd Project Authors")
     generated_pattern = re.compile(r"[gG]enerated")
 
     for (dirpath, dirnames, filenames) in os.walk(os.curdir):
