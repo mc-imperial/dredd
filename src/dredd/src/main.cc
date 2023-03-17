@@ -82,7 +82,8 @@ int main(int argc, const char** argv) {
       clang::tooling::CommonOptionsParser::create(argc, argv, mutate_category,
                                                   llvm::cl::OneOrMore);
   if (!options) {
-    llvm::errs() << toString(options.takeError());
+    const std::string error_message = toString(options.takeError());
+    llvm::errs() << error_message;
     return 1;
   }
 
