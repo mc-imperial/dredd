@@ -32,7 +32,7 @@ static int __dredd_enabled_mutation(int local_mutation_id) {
   return enabled_bitset[local_mutation_id / 64] & (1 << (local_mutation_id % 64));
 }
 
-static int __dredd_replace_unary_operator_LNot__Bool(_Bool arg, int local_mutation_id) {
+static int __dredd_replace_unary_operator_LNot_bool(bool arg, int local_mutation_id) {
   if (!__dredd_some_mutation_enabled) return !arg;
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return ~arg;
   if (__dredd_enabled_mutation(local_mutation_id + 1)) return -arg;
@@ -50,13 +50,13 @@ static int __dredd_replace_expr_int(int arg, int local_mutation_id) {
   return arg;
 }
 
-static _Bool __dredd_replace_expr__Bool_true(_Bool arg, int local_mutation_id) {
+static bool __dredd_replace_expr_bool_true(bool arg, int local_mutation_id) {
   if (!__dredd_some_mutation_enabled) return arg;
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return 0;
   return arg;
 }
 
-static _Bool __dredd_replace_expr__Bool(_Bool arg, int local_mutation_id) {
+static bool __dredd_replace_expr_bool(bool arg, int local_mutation_id) {
   if (!__dredd_some_mutation_enabled) return arg;
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return !(arg);
   if (__dredd_enabled_mutation(local_mutation_id + 1)) return 1;
@@ -65,6 +65,6 @@ static _Bool __dredd_replace_expr__Bool(_Bool arg, int local_mutation_id) {
 }
 
 int main() {
-  bool y = __dredd_replace_expr__Bool_true(true, 0);
-  if (!__dredd_enabled_mutation(12)) { return __dredd_replace_expr_int(__dredd_replace_unary_operator_LNot__Bool(__dredd_replace_expr__Bool(y, 1), 4), 6); }
+  bool y = __dredd_replace_expr_bool_true(true, 0);
+  if (!__dredd_enabled_mutation(12)) { return __dredd_replace_expr_int(__dredd_replace_unary_operator_LNot_bool(__dredd_replace_expr_bool(y, 1), 4), 6); }
 }
