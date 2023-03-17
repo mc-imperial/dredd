@@ -1,6 +1,4 @@
-#include <inttypes.h>
-
 void f() {
-  if (sizeof(uint32_t) == sizeof(uint64_t))
+  if (8 == 24)
     ;
 }
