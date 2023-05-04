@@ -26,6 +26,7 @@ help | head
 uname
 
 export DREDD_LLVM_SUFFIX=""
+DREDD_LLVM_TAG=$(./scripts/llvm_tag.sh)
 
 case "$(uname)" in
 "Linux")
