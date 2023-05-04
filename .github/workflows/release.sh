@@ -25,11 +25,12 @@ help | head
 
 uname
 
-DREDD_LLVM_TAG=$(./scripts/llvm_tag.sh)
+export DREDD_LLVM_SUFFIX=""
 
 case "$(uname)" in
 "Linux")
   NINJA_OS="linux"
+  export DREDD_LLVM_SUFFIX="-stock-clang"
   PYTHON="python3"
   LLVM_RELEASE_OS="${OS}"
   export CC=clang
