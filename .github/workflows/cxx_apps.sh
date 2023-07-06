@@ -18,6 +18,8 @@ set -x
 set -e
 set -u
 
+# Old bash versions can't expand empty arrays, so we always include at least this option.
+CMAKE_OPTIONS=("-DCMAKE_OSX_ARCHITECTURES=x86_64")
 
 help | head
 
@@ -38,8 +40,20 @@ case "$(uname)" in
   df -h
   ;;
 
+"Darwin")
+  NINJA_OS="mac"
+  SDKROOT=$(xcrun --show-sdk-path)
+  export SDKROOT
+  ;;
+
+"MINGW"*|"MSYS_NT"*)
+  NINJA_OS="win"
+  CMAKE_OPTIONS+=("-DCMAKE_C_COMPILER=cl.exe" "-DCMAKE_CXX_COMPILER=cl.exe")
+  choco install zip
+  ;;
+
 *)
-  echo "Unknown OS: only Linux is supported for the dev_build workflow"
+  echo "Unknown OS"
   exit 1
   ;;
 esac
@@ -58,31 +72,78 @@ popd
 
 DREDD_ROOT=$(pwd)
 
-export PATH="${DREDD_ROOT}/third_party/clang+llvm/bin:$PATH"
+case "$(uname)" in
+"Linux")
+  # On Linux, build Dredd using the prebuilt version of Clang that has been downloaded
+  export PATH="${DREDD_ROOT}/third_party/clang+llvm/bin:$PATH"
+  export CC=clang
+  export CXX=clang++
+  which ${CC}
+  which ${CXX}
+  ;;
 
-export CC=clang
-export CXX=clang++
+"Darwin")
+  ;;
 
-which ${CC}
-which ${CXX}
+"MINGW"*|"MSYS_NT"*)
+  ;;
+
+*)
+  echo "Unknown OS"
+  exit 1
+  ;;
+esac
 
 mkdir -p build
 pushd build
-  cmake -G Ninja .. -DCMAKE_BUILD_TYPE=Debug
-  cmake --build . --config Debug
-  cmake -DCMAKE_INSTALL_PREFIX=./install -DBUILD_TYPE=Debug -P cmake_install.cmake
+  cmake -G Ninja .. -DCMAKE_BUILD_TYPE="${CONFIG}" "${CMAKE_OPTIONS[@]}"
+  cmake --build . --config "${CONFIG}"
+  cmake -DCMAKE_INSTALL_PREFIX=./install -DBUILD_TYPE="${CONFIG}" -P cmake_install.cmake
 popd
 
 # Check that dredd works on some projects
 DREDD_EXECUTABLE="${DREDD_ROOT}/third_party/clang+llvm/bin/dredd"
 cp "${DREDD_ROOT}/build/src/dredd/dredd" "${DREDD_EXECUTABLE}"
 
+case "$(uname)" in
+"Linux")
+  CMAKE_OPTIONS_FOR_COMPILING_MUTATED_CODE=("-DCMAKE_CXX_FLAGS=-w")
+  ;;
+
+"MINGW"*|"MSYS_NT"*)
+  # Dredd can lead to object files with many sections, which can be too much for MSVC's default settings.
+  # The /bigobj switch enables a larger number of sections.
+  CMAKE_OPTIONS_FOR_COMPILING_MUTATED_CODE=("-DCMAKE_CXX_FLAGS=\"/w /bigobj /EHsc\"")
+  ;;
+
+"Darwin")
+  # The Apple compiler does not use C++11 by default; Dredd requires at least this language version.
+  CMAKE_OPTIONS_FOR_COMPILING_MUTATED_CODE=("-DCMAKE_CXX_FLAGS=\"-w -std=c++11\"")
+  ;;
+
+*)
+  ;;
+esac
+
 echo "examples/simple/pi.cc: check that we can build the simple example"
 date
 
 ${DREDD_EXECUTABLE} --mutation-info-file temp.json examples/simple/pi.cc
-clang++ examples/simple/pi.cc -o examples/simple/pi
-diff <(./examples/simple/pi) <(echo "3.14159")
+case "$(uname)" in
+"Linux"|"Darwin")
+  clang++ -std=c++11 examples/simple/pi.cc -o examples/simple/pi
+  ;;
+
+"MINGW"*|"MSYS_NT"*)
+  cl examples/simple/pi.cc
+  mv pi.exe examples/simple/    
+  ;;
+
+*)
+  ;;
+esac
+
+diff --strip-trailing-cr <(./examples/simple/pi) <(echo "3.14159")
 
 echo "examples/math: check that the tests pass after mutating the library"
 date
@@ -90,7 +151,7 @@ date
 pushd examples/math
   mkdir build
   pushd build
-    cmake -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ..
+    cmake -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON "${CMAKE_OPTIONS_FOR_COMPILING_MUTATED_CODE[@]}" ..
     ../mutate.sh
     cmake --build .
     ./mathtest/mathtest
@@ -106,7 +167,7 @@ pushd SPIRV-Tools
   python3 utils/git-sync-deps
   mkdir build
   pushd build
-    cmake -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DSPIRV_WERROR=OFF  -DCMAKE_CXX_FLAGS="-w" ..
+    cmake -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DSPIRV_WERROR=OFF "${CMAKE_OPTIONS_FOR_COMPILING_MUTATED_CODE[@]}" ..
     # Build something minimal to ensure all header files get generated.
     ninja SPIRV-Tools-static
   popd
@@ -133,7 +194,7 @@ git clone --branch llvmorg-14.0.6 --depth 1 https://github.com/llvm/llvm-project
 pushd llvm-project
   mkdir build
   pushd build
-    cmake -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_CXX_FLAGS="-w" ../llvm
+    cmake -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON "${CMAKE_OPTIONS_FOR_COMPILING_MUTATED_CODE[@]}" ../llvm
     # Build something minimal to ensure all header files get generated.
     ninja LLVMCore
   popd

@@ -18,6 +18,8 @@ set -x
 set -e
 set -u
 
+# Old bash versions can't expand empty arrays, so we always include at least this option.
+CMAKE_OPTIONS=("-DCMAKE_OSX_ARCHITECTURES=x86_64")
 
 help | head
 
@@ -38,8 +40,20 @@ case "$(uname)" in
   df -h
   ;;
 
+"Darwin")
+  NINJA_OS="mac"
+  SDKROOT=$(xcrun --show-sdk-path)
+  export SDKROOT
+  ;;
+
+"MINGW"*|"MSYS_NT"*)
+  NINJA_OS="win"
+  CMAKE_OPTIONS+=("-DCMAKE_C_COMPILER=cl.exe" "-DCMAKE_CXX_COMPILER=cl.exe")
+  choco install zip
+  ;;
+
 *)
-  echo "Unknown OS: only Linux is supported for the dev_build workflow"
+  echo "Unknown OS"
   exit 1
   ;;
 esac
@@ -58,80 +72,108 @@ popd
 
 DREDD_ROOT=$(pwd)
 
-export PATH="${DREDD_ROOT}/third_party/clang+llvm/bin:$PATH"
+case "$(uname)" in
+"Linux")
+  # On Linux, build Dredd using the prebuilt version of Clang that has been downloaded
+  export PATH="${DREDD_ROOT}/third_party/clang+llvm/bin:$PATH"
+  export CC=clang
+  export CXX=clang++
+  which ${CC}
+  which ${CXX}
+  ;;
 
-export CC=clang
-export CXX=clang++
+"Darwin")
+  ;;
 
-which ${CC}
-which ${CXX}
+"MINGW"*|"MSYS_NT"*)
+  ;;
+
+*)
+  echo "Unknown OS"
+  exit 1
+  ;;
+esac
 
 mkdir -p build
 pushd build
-  cmake -G Ninja .. -DCMAKE_BUILD_TYPE=Debug
-  cmake --build . --config Debug
-  cmake -DCMAKE_INSTALL_PREFIX=./install -DBUILD_TYPE=Debug -P cmake_install.cmake
+  cmake -G Ninja .. -DCMAKE_BUILD_TYPE="${CONFIG}" "${CMAKE_OPTIONS[@]}"
+  cmake --build . --config "${CONFIG}"
+  cmake -DCMAKE_INSTALL_PREFIX=./install -DBUILD_TYPE="${CONFIG}" -P cmake_install.cmake
 popd
 
 # Check that dredd works on some projects
 DREDD_EXECUTABLE="${DREDD_ROOT}/third_party/clang+llvm/bin/dredd"
 cp "${DREDD_ROOT}/build/src/dredd/dredd" "${DREDD_EXECUTABLE}"
 
-echo "Curl"
-date
+case "$(uname)" in
+"Linux"|"MINGW"*|"MSYS_NT"*)
+  echo "Curl"
+  date
 
-git clone https://github.com/curl/curl.git
-pushd curl
-  git reset --hard curl-7_84_0
-  mkdir build
-  pushd build
-    cmake -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ..
+  git clone https://github.com/curl/curl.git
+  pushd curl
+    git reset --hard curl-7_84_0
+    mkdir build
+    pushd build
+      cmake -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ..
+    popd
+    FILES=()
+    for f in $(find src -name "*.c")
+    do
+        FILES+=("${f}")
+    done
+
+    "${DREDD_EXECUTABLE}" --mutation-info-file temp.json -p "build/compile_commands.json" "${FILES[@]}"
+    pushd build
+      ninja
+      # TODO: run some tests
+    popd
   popd
-  FILES=()
-  for f in $(find src -name "*.c")
-  do
+  ;;
+
+*)
+  ;;
+esac
+
+case "$(uname)" in
+"Linux"|"Darwin")
+  echo "zstd"
+  date
+
+  git clone https://github.com/facebook/zstd.git
+  pushd zstd
+    git reset --hard v1.4.10
+    mkdir temp
+    pushd temp
+      # Generate a compilation database
+      cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ../build/cmake
+    popd
+    # Build non-mutated zstd
+    CFLAGS=-O0 make zstd-release
+    # Use the compiled zstd binary as a target for compression, and compress it.
+    cp ./programs/zstd tocompress
+    ./zstd tocompress -o normal
+    # Mutate all the source files in the lib directory of zstd
+    FILES=()
+    for f in $(find lib -name "*.c")
+    do
       FILES+=("${f}")
-  done
-
-  "${DREDD_EXECUTABLE}" --mutation-info-file temp.json -p "build/compile_commands.json" "${FILES[@]}"
-  pushd build
-    ninja
-    # TODO: run some tests
+    done
+    "${DREDD_EXECUTABLE}" --mutation-info-file temp.json -p "temp/compile_commands.json" "${FILES[@]}"
+    # Build mutated zstd
+    make clean
+    CFLAGS=-O0 make zstd-release
+    # Use it to compress the original (non-mutated) zstd binary
+    ./zstd tocompress -o mutated
+    # The results obtained using the original and mutated versions of zstd should
+    # be identical, since no mutations were enabled.
+    diff normal mutated
   popd
-popd
+  ;;
 
-echo "zstd"
-date
-
-git clone https://github.com/facebook/zstd.git
-pushd zstd
-  git reset --hard v1.4.10
-  mkdir temp
-  pushd temp
-    # Generate a compilation database
-    cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ../build/cmake
-  popd
-  # Build non-mutated zstd
-  CFLAGS=-O0 make zstd-release
-  # Use the compiled zstd binary as a target for compression, and compress it.
-  cp ./programs/zstd tocompress
-  ./zstd tocompress -o normal
-  # Mutate all the source files in the lib directory of zstd
-  FILES=()
-  for f in $(find lib -name "*.c")
-  do
-    FILES+=("${f}")
-  done
-  "${DREDD_EXECUTABLE}" --mutation-info-file temp.json -p "temp/compile_commands.json" "${FILES[@]}"
-  # Build mutated zstd
-  make clean
-  CFLAGS=-O0 make zstd-release
-  # Use it to compress the original (non-mutated) zstd binary
-  ./zstd tocompress -o mutated
-  # The results obtained using the original and mutated versions of zstd should
-  # be identical, since no mutations were enabled.
-  diff normal mutated
-popd
+*)
+  ;;
+esac
 
 echo "Finished"
 date

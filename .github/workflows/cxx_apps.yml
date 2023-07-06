@@ -24,9 +24,13 @@ jobs:
       fail-fast: false
       matrix:
         os:
-          - ubuntu-22.04
+          - macOS-latest
+          - windows-latest
         config:
           - Release
+        include:
+          - os: ubuntu-22.04
+            config: Debug
 
     runs-on: ${{ matrix.os }}
     env:
@@ -69,3 +73,12 @@ jobs:
         run: |
           .github/workflows/cxx_apps.sh
         shell: bash
+        if: |
+          !startsWith(matrix.os, 'windows')
+      - name: build_step_windows
+        run: |
+          call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" x64
+          "C:\Program Files\Git\bin\bash.EXE" --noprofile --norc -e -o pipefail .github/workflows/cxx_apps.sh
+        shell: cmd
+        if: |
+          startsWith(matrix.os, 'windows')
