@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "libdredd/mutation_replace_unary_operator.h"
+#include "libdredd/mutation_coverage_unary_operator.h"
 
 #include <algorithm>
 #include <cassert>
@@ -33,7 +33,7 @@
 
 namespace dredd {
 
-MutationReplaceUnaryOperator::MutationReplaceUnaryOperator(
+MutationCoverageUnaryOperator::MutationCoverageUnaryOperator(
     const clang::UnaryOperator& unary_operator,
     const clang::Preprocessor& preprocessor,
     const clang::ASTContext& ast_context)
@@ -44,13 +44,13 @@ MutationReplaceUnaryOperator::MutationReplaceUnaryOperator(
           GetSourceRangeInMainFile(preprocessor, *unary_operator.getSubExpr()),
           ast_context) {}
 
-bool MutationReplaceUnaryOperator::IsPrefix(
+bool MutationCoverageUnaryOperator::IsPrefix(
     clang::UnaryOperatorKind operator_kind) {
   return operator_kind != clang::UO_PostInc &&
          operator_kind != clang::UO_PostDec;
 }
 
-std::string MutationReplaceUnaryOperator::GetExpr(
+std::string MutationCoverageUnaryOperator::GetExpr(
     clang::ASTContext& ast_context) const {
   std::string arg_evaluated = "arg";
 
@@ -75,7 +75,7 @@ std::string MutationReplaceUnaryOperator::GetExpr(
   return result;
 }
 
-bool MutationReplaceUnaryOperator::IsValidReplacementOperator(
+bool MutationCoverageUnaryOperator::IsValidReplacementOperator(
     clang::UnaryOperatorKind operator_kind) const {
   if (!unary_operator_.getSubExpr()->isLValue() &&
       (operator_kind == clang::UO_PreInc || operator_kind == clang::UO_PreDec ||
@@ -119,7 +119,7 @@ bool MutationReplaceUnaryOperator::IsValidReplacementOperator(
   return true;
 }
 
-std::string MutationReplaceUnaryOperator::GetFunctionName(
+std::string MutationCoverageUnaryOperator::GetFunctionName(
     bool optimise_mutations, clang::ASTContext& ast_context) const {
   std::string result = "__dredd_replace_unary_operator_";
 
@@ -204,7 +204,7 @@ std::string MutationReplaceUnaryOperator::GetFunctionName(
   return result;
 }
 
-std::string MutationReplaceUnaryOperator::GenerateMutatorFunction(
+std::string MutationCoverageUnaryOperator::GenerateMutatorFunction(
     clang::ASTContext& ast_context, const std::string& function_name,
     const std::string& result_type, const std::string& input_type,
     bool optimise_mutations, bool only_track_mutant_coverage, int& mutation_id,
@@ -227,24 +227,12 @@ std::string MutationReplaceUnaryOperator::GenerateMutatorFunction(
     }
   }
 
-  if (!only_track_mutant_coverage) {
-    // Quickly apply the original operator if no mutant is enabled (which will
-    // be the common case).
-    new_function << "  if (!__dredd_some_mutation_enabled) return ";
-    // TODO: This effectively copy's `getExpr()`, consider changing.
-    if (IsPrefix(unary_operator_.getOpcode())) {
-      new_function << clang::UnaryOperator::getOpcodeStr(
-                          unary_operator_.getOpcode())
-                          .str()
-                   << arg_evaluated + ";\n";
-    } else {
-      new_function << arg_evaluated
-                   << clang::UnaryOperator::getOpcodeStr(
-                          unary_operator_.getOpcode())
-                          .str()
-                   << ";\n";
-    }
-  }
+
+  /* TODO: This currently means that semantics preserving modifications can't be used with `only-track-mutant-coverage`.
+   * Either change the way this works to accommodate it, or error if both are combined.
+   */
+  // Compute the value of the original expression.
+  new_function << "  " << result_type << " actual_result = " << GetExpr(ast_context) << ";\n";
 
   int mutation_id_offset = 0;
   GenerateUnaryOperatorReplacement(
@@ -257,7 +245,7 @@ std::string MutationReplaceUnaryOperator::GenerateMutatorFunction(
                         std::to_string(mutation_id_offset) + ");\n";
   }
 
-  new_function << "  return " << GetExpr(ast_context) << ";\n";
+  new_function << "  return actual_result;\n";
   new_function << "}\n\n";
 
   // The function captures |mutation_id_offset| different mutations, so bump up
@@ -267,7 +255,7 @@ std::string MutationReplaceUnaryOperator::GenerateMutatorFunction(
   return new_function.str();
 }
 
-bool MutationReplaceUnaryOperator::IsRedundantReplacementOperator(
+bool MutationCoverageUnaryOperator::IsRedundantReplacementOperator(
     clang::UnaryOperatorKind operator_kind,
     clang::ASTContext& ast_context) const {
   // When the operand is 0: - is equivalent to replacement with 0 and ! is
@@ -298,7 +286,7 @@ bool MutationReplaceUnaryOperator::IsRedundantReplacementOperator(
   return false;
 }
 
-void MutationReplaceUnaryOperator::GenerateUnaryOperatorReplacement(
+void MutationCoverageUnaryOperator::GenerateUnaryOperatorReplacement(
     const std::string& arg_evaluated, clang::ASTContext& ast_context,
     bool optimise_mutations, bool only_track_mutant_coverage,
     int mutation_id_base, std::stringstream& new_function,
@@ -321,29 +309,27 @@ void MutationReplaceUnaryOperator::GenerateUnaryOperatorReplacement(
       continue;
     }
     if (!only_track_mutant_coverage) {
-      new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
-                   << mutation_id_offset << ")) return ";
+      new_function << "  if ((";
       if (IsPrefix(operator_kind)) {
         new_function << clang::UnaryOperator::getOpcodeStr(operator_kind).str()
-                     << arg_evaluated + ";\n";
+                     << arg_evaluated;
       } else {
         new_function << arg_evaluated
-                     << clang::UnaryOperator::getOpcodeStr(operator_kind).str()
-                     << ";\n";
+                     << clang::UnaryOperator::getOpcodeStr(operator_kind).str();
       }
+      new_function << ") != actual_result) no_op++;\n";
     }
     AddMutationInstance(mutation_id_base, OperatorKindToAction(operator_kind),
                         mutation_id_offset, protobuf_message);
   }
 
+  // TODO: Figure out how to change optimizations to cover the coverage use case (likely vector masks).
   // Various operators are self-inverse, so that removing the operator is
   // equivalent to inserting another occurrence of it, which will be done by
   // another mutation.
   if (!optimise_mutations || !IsOperatorSelfInverse()) {
     if (!only_track_mutant_coverage) {
-      new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
-                   << mutation_id_offset
-                   << ")) return " + arg_evaluated + ";\n";
+      new_function << "  if (" << arg_evaluated << " != actual_result) no_op++;\n";
     }
     AddMutationInstance(
         mutation_id_base,
@@ -352,7 +338,7 @@ void MutationReplaceUnaryOperator::GenerateUnaryOperatorReplacement(
   }
 }
 
-protobufs::MutationGroup MutationReplaceUnaryOperator::Apply(
+protobufs::MutationGroup MutationCoverageUnaryOperator::Apply(
     clang::ASTContext& ast_context, const clang::Preprocessor& preprocessor,
     bool optimise_mutations, bool only_track_mutant_coverage,
     int first_mutation_id_in_file, int& mutation_id, clang::Rewriter& rewriter,
@@ -475,7 +461,7 @@ protobufs::MutationGroup MutationReplaceUnaryOperator::Apply(
   return result;
 }
 
-void MutationReplaceUnaryOperator::AddMutationInstance(
+void MutationCoverageUnaryOperator::AddMutationInstance(
     int mutation_id_base, protobufs::MutationReplaceUnaryOperatorAction action,
     int& mutation_id_offset,
     protobufs::MutationReplaceUnaryOperator& protobuf_message) {
@@ -487,7 +473,7 @@ void MutationReplaceUnaryOperator::AddMutationInstance(
 }
 
 protobufs::MutationReplaceUnaryOperatorAction
-MutationReplaceUnaryOperator::OperatorKindToAction(
+MutationCoverageUnaryOperator::OperatorKindToAction(
     clang::UnaryOperatorKind operator_kind) {
   switch (operator_kind) {
     case clang::UnaryOperatorKind::UO_Minus:
@@ -510,7 +496,7 @@ MutationReplaceUnaryOperator::OperatorKindToAction(
 }
 
 protobufs::UnaryOperator
-MutationReplaceUnaryOperator::ClangOperatorKindToProtobufOperatorKind(
+MutationCoverageUnaryOperator::ClangOperatorKindToProtobufOperatorKind(
     clang::UnaryOperatorKind operator_kind) {
   switch (operator_kind) {
     case clang::UnaryOperatorKind::UO_PostInc:
@@ -533,7 +519,7 @@ MutationReplaceUnaryOperator::ClangOperatorKindToProtobufOperatorKind(
   }
 }
 
-bool MutationReplaceUnaryOperator::IsOperatorSelfInverse() const {
+bool MutationCoverageUnaryOperator::IsOperatorSelfInverse() const {
   switch (unary_operator_.getOpcode()) {
     case clang::UO_LNot:
     case clang::UO_Minus:

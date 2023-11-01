@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "libdredd/mutation_replace_binary_operator.h"
+#include "libdredd/mutation_coverage_binary_operator.h"
 
 #include <algorithm>
 #include <cassert>
@@ -36,7 +36,7 @@
 
 namespace dredd {
 
-MutationReplaceBinaryOperator::MutationReplaceBinaryOperator(
+MutationCoverageBinaryOperator::MutationCoverageBinaryOperator(
     const clang::BinaryOperator& binary_operator,
     const clang::Preprocessor& preprocessor,
     const clang::ASTContext& ast_context)
@@ -50,7 +50,7 @@ MutationReplaceBinaryOperator::MutationReplaceBinaryOperator(
           GetSourceRangeInMainFile(preprocessor, *binary_operator.getRHS()),
           ast_context) {}
 
-std::string MutationReplaceBinaryOperator::GetExpr(
+std::string MutationCoverageBinaryOperator::GetExpr(
     clang::ASTContext& ast_context) const {
   std::string arg1_evaluated("arg1");
   std::string arg2_evaluated("arg2");
@@ -69,7 +69,7 @@ std::string MutationReplaceBinaryOperator::GetExpr(
   return result;
 }
 
-bool MutationReplaceBinaryOperator::IsRedundantReplacementOperator(
+bool MutationCoverageBinaryOperator::IsRedundantReplacementOperator(
     clang::BinaryOperatorKind operator_kind,
     clang::ASTContext& ast_context) const {
   if (IsRedundantReplacementForBooleanValuedOperator(operator_kind)) {
@@ -83,7 +83,7 @@ bool MutationReplaceBinaryOperator::IsRedundantReplacementOperator(
 
 // Certain operators such as % are not compatible with floating point numbers,
 // this function checks which operators can be applied for each type.
-bool MutationReplaceBinaryOperator::IsValidReplacementOperator(
+bool MutationCoverageBinaryOperator::IsValidReplacementOperator(
     clang::BinaryOperatorKind operator_kind) const {
   const auto* lhs_type =
       binary_operator_.getLHS()->getType()->getAs<clang::BuiltinType>();
@@ -103,7 +103,7 @@ bool MutationReplaceBinaryOperator::IsValidReplacementOperator(
             operator_kind == clang::BO_XorAssign));
 }
 
-std::string MutationReplaceBinaryOperator::GetFunctionName(
+std::string MutationCoverageBinaryOperator::GetFunctionName(
     bool optimise_mutations, clang::ASTContext& ast_context) const {
   std::string result = "__dredd_replace_binary_operator_";
 
@@ -272,7 +272,7 @@ std::string MutationReplaceBinaryOperator::GetFunctionName(
   return result;
 }
 
-void MutationReplaceBinaryOperator::GenerateArgumentReplacement(
+void MutationCoverageBinaryOperator::GenerateArgumentReplacement(
     const std::string& arg1_evaluated, const std::string& arg2_evaluated,
     clang::ASTContext& ast_context, bool optimise_mutations,
     bool only_track_mutant_coverage, int mutation_id_base,
@@ -320,9 +320,7 @@ void MutationReplaceBinaryOperator::GenerateArgumentReplacement(
         MutationReplaceExpr::ExprIsEquivalentToFloat(*binary_operator_.getLHS(),
                                                      -1.0, ast_context))) {
     if (!only_track_mutant_coverage) {
-      new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
-                   << mutation_id_offset << ")) return " << arg1_evaluated
-                   << ";\n";
+      new_function << "  if (" << arg1_evaluated <<" != actual_result) no_op++;\n";
     }
     AddMutationInstance(
         mutation_id_base,
@@ -347,9 +345,7 @@ void MutationReplaceBinaryOperator::GenerateArgumentReplacement(
         MutationReplaceExpr::ExprIsEquivalentToFloat(*binary_operator_.getRHS(),
                                                      -1.0, ast_context))) {
     if (!only_track_mutant_coverage) {
-      new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
-                   << mutation_id_offset << ")) return " << arg2_evaluated
-                   << ";\n";
+      new_function << "  if (" << arg2_evaluated << " != actual_result) no_op++;\n";
     }
     AddMutationInstance(
         mutation_id_base,
@@ -358,7 +354,7 @@ void MutationReplaceBinaryOperator::GenerateArgumentReplacement(
   }
 }
 
-void MutationReplaceBinaryOperator::GenerateBinaryOperatorReplacement(
+void MutationCoverageBinaryOperator::GenerateBinaryOperatorReplacement(
     const std::string& arg1_evaluated, const std::string& arg2_evaluated,
     clang::ASTContext& ast_context, bool optimise_mutations,
     bool only_track_mutant_coverage, int mutation_id_base,
@@ -367,11 +363,11 @@ void MutationReplaceBinaryOperator::GenerateBinaryOperatorReplacement(
   for (auto operator_kind :
        GetReplacementOperators(optimise_mutations, ast_context)) {
     if (!only_track_mutant_coverage) {
-      new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
-                   << mutation_id_offset << ")) return " << arg1_evaluated
-                   << " "
+      new_function << "  if (("
+                   << arg1_evaluated << " "
                    << clang::BinaryOperator::getOpcodeStr(operator_kind).str()
-                   << " " << arg2_evaluated << ";\n";
+                   << " " << arg2_evaluated
+                   << ") != actual_result) no_op++;\n";
     }
     AddMutationInstance(mutation_id_base, OperatorKindToAction(operator_kind),
                         mutation_id_offset, protobuf_message);
@@ -379,7 +375,7 @@ void MutationReplaceBinaryOperator::GenerateBinaryOperatorReplacement(
 }
 
 std::vector<clang::BinaryOperatorKind>
-MutationReplaceBinaryOperator::GetReplacementOperators(
+MutationCoverageBinaryOperator::GetReplacementOperators(
     bool optimise_mutations, clang::ASTContext& ast_context) const {
   const std::vector<clang::BinaryOperatorKind> kArithmeticOperators = {
       clang::BinaryOperatorKind::BO_Add, clang::BinaryOperatorKind::BO_Div,
@@ -452,7 +448,7 @@ MutationReplaceBinaryOperator::GetReplacementOperators(
   return result;
 }
 
-std::string MutationReplaceBinaryOperator::GenerateMutatorFunction(
+std::string MutationCoverageBinaryOperator::GenerateMutatorFunction(
     clang::ASTContext& ast_context, const std::string& function_name,
     const std::string& result_type, const std::string& lhs_type,
     const std::string& rhs_type, bool optimise_mutations,
@@ -474,7 +470,7 @@ std::string MutationReplaceBinaryOperator::GenerateMutatorFunction(
     new_function << rhs_type;
   }
 
-  new_function << " arg2, int local_mutation_id) {\n";
+  new_function << " arg2, int local_mutation_id) {\n";  // TODO: Possibly remove `local_mutation_id`.
 
   int mutation_id_offset = 0;
 
@@ -489,12 +485,8 @@ std::string MutationReplaceBinaryOperator::GenerateMutatorFunction(
     }
   }
 
-  if (!only_track_mutant_coverage) {
-    // Quickly apply the original operator if no mutant is enabled (which will
-    // be the common case).
-    new_function << "  if (!__dredd_some_mutation_enabled) return "
-                 << GetExpr(ast_context) << ";\n";
-  }
+  // Compute the value of the original expression.
+  new_function << "  " << result_type << " actual_result = " << GetExpr(ast_context) << ";\n";
 
   GenerateBinaryOperatorReplacement(
       arg1_evaluated, arg2_evaluated, ast_context, optimise_mutations,
@@ -509,7 +501,7 @@ std::string MutationReplaceBinaryOperator::GenerateMutatorFunction(
     new_function << "  __dredd_record_covered_mutants(local_mutation_id, " +
                         std::to_string(mutation_id_offset) + ");\n";
   }
-  new_function << "  return " << GetExpr(ast_context) << ";\n";
+  new_function << "  return actual_result;\n";
   new_function << "}\n\n";
 
   // The function captures |mutation_id_offset| different mutations, so bump up
@@ -519,7 +511,7 @@ std::string MutationReplaceBinaryOperator::GenerateMutatorFunction(
   return new_function.str();
 }
 
-protobufs::MutationGroup MutationReplaceBinaryOperator::Apply(
+protobufs::MutationGroup MutationCoverageBinaryOperator::Apply(
     clang::ASTContext& ast_context, const clang::Preprocessor& preprocessor,
     bool optimise_mutations, bool only_track_mutant_coverage,
     int first_mutation_id_in_file, int& mutation_id, clang::Rewriter& rewriter,
@@ -623,7 +615,7 @@ protobufs::MutationGroup MutationReplaceBinaryOperator::Apply(
   return result;
 }
 
-void MutationReplaceBinaryOperator::ReplaceOperator(
+void MutationCoverageBinaryOperator::ReplaceOperator(
     const std::string& lhs_type, const std::string& rhs_type,
     const std::string& new_function_name, clang::ASTContext& ast_context,
     const clang::Preprocessor& preprocessor, int first_mutation_id_in_file,
@@ -697,7 +689,7 @@ void MutationReplaceBinaryOperator::ReplaceOperator(
   (void)rewriter_result;  // Keep release-mode compilers happy.
 }
 
-void MutationReplaceBinaryOperator::HandleCLogicalOperator(
+void MutationCoverageBinaryOperator::HandleCLogicalOperator(
     const clang::Preprocessor& preprocessor,
     const std::string& new_function_prefix, const std::string& result_type,
     const std::string& lhs_type, const std::string& rhs_type,
@@ -860,7 +852,7 @@ void MutationReplaceBinaryOperator::HandleCLogicalOperator(
   mutation_id += 3;
 }
 
-void MutationReplaceBinaryOperator::AddMutationInstance(
+void MutationCoverageBinaryOperator::AddMutationInstance(
     int mutation_id_base, protobufs::MutationReplaceBinaryOperatorAction action,
     int& mutation_id_offset,
     protobufs::MutationReplaceBinaryOperator& protobuf_message) {
@@ -872,7 +864,7 @@ void MutationReplaceBinaryOperator::AddMutationInstance(
 }
 
 protobufs::MutationReplaceBinaryOperatorAction
-MutationReplaceBinaryOperator::OperatorKindToAction(
+MutationCoverageBinaryOperator::OperatorKindToAction(
     clang::BinaryOperatorKind operator_kind) {
   switch (operator_kind) {
     case clang::BinaryOperatorKind::BO_Add:
@@ -950,7 +942,7 @@ MutationReplaceBinaryOperator::OperatorKindToAction(
 }
 
 protobufs::BinaryOperator
-MutationReplaceBinaryOperator::ClangOperatorKindToProtobufOperatorKind(
+MutationCoverageBinaryOperator::ClangOperatorKindToProtobufOperatorKind(
     clang::BinaryOperatorKind operator_kind) {
   switch (operator_kind) {
     case clang::BinaryOperatorKind::BO_Mul:
@@ -1017,7 +1009,7 @@ MutationReplaceBinaryOperator::ClangOperatorKindToProtobufOperatorKind(
   }
 }
 
-bool MutationReplaceBinaryOperator::
+bool MutationCoverageBinaryOperator::
     IsRedundantReplacementForBooleanValuedOperator(
         clang::BinaryOperatorKind operator_kind) const {
   switch (binary_operator_.getOpcode()) {
@@ -1045,7 +1037,7 @@ bool MutationReplaceBinaryOperator::
   }
 }
 
-bool MutationReplaceBinaryOperator::IsRedundantReplacementForArithmeticOperator(
+bool MutationCoverageBinaryOperator::IsRedundantReplacementForArithmeticOperator(
     clang::BinaryOperatorKind operator_kind,
     clang::ASTContext& ast_context) const {
   // In the case where both operands are 0, the only case that isn't covered

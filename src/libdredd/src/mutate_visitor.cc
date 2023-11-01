@@ -39,6 +39,9 @@
 #include "clang/Frontend/CompilerInstance.h"
 #include "libdredd/mutation.h"
 #include "libdredd/mutation_remove_stmt.h"
+#include "libdredd/mutation_coverage_binary_operator.h"
+#include "libdredd/mutation_coverage_expr.h"
+#include "libdredd/mutation_coverage_unary_operator.h"
 #include "libdredd/mutation_replace_binary_operator.h"
 #include "libdredd/mutation_replace_expr.h"
 #include "libdredd/mutation_replace_unary_operator.h"
@@ -48,9 +51,10 @@
 namespace dredd {
 
 MutateVisitor::MutateVisitor(clang::CompilerInstance& compiler_instance,
-                             bool optimise_mutations)
+                             bool optimise_mutations, bool semantics_preserving_mutation)
     : compiler_instance_(compiler_instance),
       optimise_mutations_(optimise_mutations),
+      semantics_preserving_mutation_(semantics_preserving_mutation),
       mutation_tree_root_() {
   mutation_tree_path_.push_back(&mutation_tree_root_);
 }
@@ -294,10 +298,17 @@ bool MutateVisitor::HandleUnaryOperator(clang::UnaryOperator* unary_operator) {
     }
   }
 
-  mutation_tree_path_.back()->AddMutation(
-      std::make_unique<MutationReplaceUnaryOperator>(
-          *unary_operator, compiler_instance_.getPreprocessor(),
-          compiler_instance_.getASTContext()));
+  if (semantics_preserving_mutation_) {
+      mutation_tree_path_.back()->AddMutation(
+              std::make_unique<MutationCoverageUnaryOperator>(
+                      *unary_operator, compiler_instance_.getPreprocessor(),
+                      compiler_instance_.getASTContext()));
+  } else {
+      mutation_tree_path_.back()->AddMutation(
+              std::make_unique<MutationReplaceUnaryOperator>(
+                      *unary_operator, compiler_instance_.getPreprocessor(),
+                      compiler_instance_.getASTContext()));
+  }
   return true;
 }
 
@@ -353,10 +364,17 @@ bool MutateVisitor::HandleBinaryOperator(
     return true;
   }
 
-  mutation_tree_path_.back()->AddMutation(
-      std::make_unique<MutationReplaceBinaryOperator>(
-          *binary_operator, compiler_instance_.getPreprocessor(),
-          compiler_instance_.getASTContext()));
+  if (semantics_preserving_mutation_) {
+      mutation_tree_path_.back()->AddMutation(
+              std::make_unique<MutationCoverageBinaryOperator>(
+                      *binary_operator, compiler_instance_.getPreprocessor(),
+                      compiler_instance_.getASTContext()));
+  } else {
+      mutation_tree_path_.back()->AddMutation(
+              std::make_unique<MutationReplaceBinaryOperator>(
+                      *binary_operator, compiler_instance_.getPreprocessor(),
+                      compiler_instance_.getASTContext()));
+  }
   return true;
 }
 
@@ -451,10 +469,15 @@ bool MutateVisitor::VisitExpr(clang::Expr* expr) {
     }
   }
 
-  mutation_tree_path_.back()->AddMutation(std::make_unique<MutationReplaceExpr>(
+  if (semantics_preserving_mutation_) {
+    mutation_tree_path_.back()->AddMutation(std::make_unique<MutationCoverageExpr>(
+            *expr, compiler_instance_.getPreprocessor(),
+            compiler_instance_.getASTContext()));
+  } else {
+    mutation_tree_path_.back()->AddMutation(std::make_unique<MutationReplaceExpr>(
       *expr, compiler_instance_.getPreprocessor(),
       compiler_instance_.getASTContext()));
-
+}
   return true;
 }
 
