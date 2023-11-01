@@ -33,8 +33,8 @@ namespace dredd {
 class MutationCoverageUnaryOperator : public Mutation {
  public:
   MutationCoverageUnaryOperator(const clang::UnaryOperator& unary_operator,
-                               const clang::Preprocessor& preprocessor,
-                               const clang::ASTContext& ast_context);
+                                const clang::Preprocessor& preprocessor,
+                                const clang::ASTContext& ast_context);
 
   protobufs::MutationGroup Apply(
       clang::ASTContext& ast_context, const clang::Preprocessor& preprocessor,
@@ -96,4 +96,4 @@ class MutationCoverageUnaryOperator : public Mutation {
 
 }  // namespace dredd
 
-#endif  // LIBDREDD_MUTATION_REPLACE_UNARY_OPERATOR_H
+#endif  // LIBDREDD_MUTATION_COVERAGE_UNARY_OPERATOR_H

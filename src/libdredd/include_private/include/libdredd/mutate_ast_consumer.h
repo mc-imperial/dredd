@@ -33,15 +33,16 @@ class MutateAstConsumer : public clang::ASTConsumer {
  public:
   MutateAstConsumer(clang::CompilerInstance& compiler_instance,
                     bool optimise_mutations, bool dump_ast,
-                    bool only_track_mutant_coverage, bool semantics_preserving_mutation, int& mutation_id,
+                    bool only_track_mutant_coverage,
+                    bool semantics_preserving_mutation, int& mutation_id,
                     protobufs::MutationInfo& mutation_info)
       : compiler_instance_(compiler_instance),
         optimise_mutations_(optimise_mutations),
         dump_ast_(dump_ast),
         only_track_mutant_coverage_(only_track_mutant_coverage),
-        semantics_preserving_mutation_(semantics_preserving_mutation),
-        visitor_(std::make_unique<MutateVisitor>(compiler_instance,
-                                                 optimise_mutations, semantics_preserving_mutation)),
+        visitor_(std::make_unique<MutateVisitor>(
+            compiler_instance, optimise_mutations,
+            semantics_preserving_mutation)),
         mutation_id_(mutation_id),
         mutation_info_(mutation_info) {}
 
@@ -79,8 +80,6 @@ class MutateAstConsumer : public clang::ASTConsumer {
   const bool dump_ast_;
 
   const bool only_track_mutant_coverage_;
-
-  const bool semantics_preserving_mutation_;
 
   std::unique_ptr<MutateVisitor> visitor_;
 

@@ -140,4 +140,4 @@ class MutationCoverageBinaryOperator : public Mutation {
 
 }  // namespace dredd
 
-#endif  // LIBDREDD_MUTATION_REPLACE_BINARY_OPERATOR_H
+#endif  // LIBDREDD_MUTATION_COVERAGE_BINARY_OPERATOR_H

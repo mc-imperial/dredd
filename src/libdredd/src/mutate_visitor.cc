@@ -38,10 +38,10 @@
 #include "clang/Basic/SourceManager.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "libdredd/mutation.h"
-#include "libdredd/mutation_remove_stmt.h"
 #include "libdredd/mutation_coverage_binary_operator.h"
 #include "libdredd/mutation_coverage_expr.h"
 #include "libdredd/mutation_coverage_unary_operator.h"
+#include "libdredd/mutation_remove_stmt.h"
 #include "libdredd/mutation_replace_binary_operator.h"
 #include "libdredd/mutation_replace_expr.h"
 #include "libdredd/mutation_replace_unary_operator.h"
@@ -51,7 +51,8 @@
 namespace dredd {
 
 MutateVisitor::MutateVisitor(clang::CompilerInstance& compiler_instance,
-                             bool optimise_mutations, bool semantics_preserving_mutation)
+                             bool optimise_mutations,
+                             bool semantics_preserving_mutation)
     : compiler_instance_(compiler_instance),
       optimise_mutations_(optimise_mutations),
       semantics_preserving_mutation_(semantics_preserving_mutation),
@@ -299,15 +300,15 @@ bool MutateVisitor::HandleUnaryOperator(clang::UnaryOperator* unary_operator) {
   }
 
   if (semantics_preserving_mutation_) {
-      mutation_tree_path_.back()->AddMutation(
-              std::make_unique<MutationCoverageUnaryOperator>(
-                      *unary_operator, compiler_instance_.getPreprocessor(),
-                      compiler_instance_.getASTContext()));
+    mutation_tree_path_.back()->AddMutation(
+        std::make_unique<MutationCoverageUnaryOperator>(
+            *unary_operator, compiler_instance_.getPreprocessor(),
+            compiler_instance_.getASTContext()));
   } else {
-      mutation_tree_path_.back()->AddMutation(
-              std::make_unique<MutationReplaceUnaryOperator>(
-                      *unary_operator, compiler_instance_.getPreprocessor(),
-                      compiler_instance_.getASTContext()));
+    mutation_tree_path_.back()->AddMutation(
+        std::make_unique<MutationReplaceUnaryOperator>(
+            *unary_operator, compiler_instance_.getPreprocessor(),
+            compiler_instance_.getASTContext()));
   }
   return true;
 }
@@ -365,15 +366,15 @@ bool MutateVisitor::HandleBinaryOperator(
   }
 
   if (semantics_preserving_mutation_) {
-      mutation_tree_path_.back()->AddMutation(
-              std::make_unique<MutationCoverageBinaryOperator>(
-                      *binary_operator, compiler_instance_.getPreprocessor(),
-                      compiler_instance_.getASTContext()));
+    mutation_tree_path_.back()->AddMutation(
+        std::make_unique<MutationCoverageBinaryOperator>(
+            *binary_operator, compiler_instance_.getPreprocessor(),
+            compiler_instance_.getASTContext()));
   } else {
-      mutation_tree_path_.back()->AddMutation(
-              std::make_unique<MutationReplaceBinaryOperator>(
-                      *binary_operator, compiler_instance_.getPreprocessor(),
-                      compiler_instance_.getASTContext()));
+    mutation_tree_path_.back()->AddMutation(
+        std::make_unique<MutationReplaceBinaryOperator>(
+            *binary_operator, compiler_instance_.getPreprocessor(),
+            compiler_instance_.getASTContext()));
   }
   return true;
 }
@@ -383,6 +384,39 @@ bool MutateVisitor::VisitExpr(clang::Expr* expr) {
     // There is no value in mutating a parentheses expression.
     if (llvm::dyn_cast<clang::ParenExpr>(expr) != nullptr) {
       return true;
+    }
+
+    // If an expression is the direct child of a cast expression, do not mutate
+    // it unless the cast is an l-value to r-value cast. In an l-value to
+    // r-value cast it is worth mutating the expression before and after casting
+    // since different mutations will arise. In a cast that does not change l/r-
+    // value status, it is highly likely that mutations on the inner cast will
+    // have the same effect as on the outer cast. The possible differences
+    // arising due to a change of type are unlikely to be all that interesting,
+    // and r-value to r-value implicit casts are very common, e.g. occurring
+    // whenever a signed literal, such as `1`, is used in an unsigned context.
+    for (const auto& parent :
+         compiler_instance_.getASTContext().getParents<clang::Expr>(*expr)) {
+      const auto* cast_parent = parent.get<clang::CastExpr>();
+      if (cast_parent != nullptr &&
+          cast_parent->isLValue() == expr->isLValue()) {
+        return true;
+      }
+    }
+
+    // If an expression is the direct child of a compound statement then don't
+    // mutate it, because:
+    // - replacing it with a constant has the same effect as deleting it;
+    // - if it is an r-value, inserting a unary operator has no effect;
+    // - if it is an l-value, inserting an increment operator is fairly well
+    // captured by inserting an increment before a future use of the l-value (it
+    // is not exactly the same, because the future use could be dynamically
+    // reached in different manners compared with this statement).
+    for (const auto& parent :
+         compiler_instance_.getASTContext().getParents<clang::Stmt>(*expr)) {
+      if (parent.get<clang::CompoundStmt>() != nullptr) {
+        return true;
+      }
     }
   }
 
@@ -434,50 +468,17 @@ bool MutateVisitor::VisitExpr(clang::Expr* expr) {
     return true;
   }
 
-  if (optimise_mutations_) {
-    // If an expression is the direct child of a cast expression, do not mutate
-    // it unless the cast is an l-value to r-value cast. In an l-value to
-    // r-value cast it is worth mutating the expression before and after casting
-    // since different mutations will arise. In a cast that does not change l/r-
-    // value status, it is highly likely that mutations on the inner cast will
-    // have the same effect as on the outer cast. The possible differences
-    // arising due to a change of type are unlikely to be all that interesting,
-    // and r-value to r-value implicit casts are very common, e.g. occurring
-    // whenever a signed literal, such as `1`, is used in an unsigned context.
-    for (const auto& parent :
-         compiler_instance_.getASTContext().getParents<clang::Expr>(*expr)) {
-      const auto* cast_parent = parent.get<clang::CastExpr>();
-      if (cast_parent != nullptr &&
-          cast_parent->isLValue() == expr->isLValue()) {
-        return true;
-      }
-    }
-
-    // If an expression is the direct child of a compound statement then don't
-    // mutate it, because:
-    // - replacing it with a constant has the same effect as deleting it;
-    // - if it is an r-value, inserting a unary operator has no effect;
-    // - if it is an l-value, inserting an increment operator is fairly well
-    // captured by inserting an increment before a future use of the l-value (it
-    // is not exactly the same, because the future use could be dynamically
-    // reached in different manners compared with this statement).
-    for (const auto& parent :
-         compiler_instance_.getASTContext().getParents<clang::Stmt>(*expr)) {
-      if (parent.get<clang::CompoundStmt>() != nullptr) {
-        return true;
-      }
-    }
-  }
-
   if (semantics_preserving_mutation_) {
-    mutation_tree_path_.back()->AddMutation(std::make_unique<MutationCoverageExpr>(
+    mutation_tree_path_.back()->AddMutation(
+        std::make_unique<MutationCoverageExpr>(
             *expr, compiler_instance_.getPreprocessor(),
             compiler_instance_.getASTContext()));
   } else {
-    mutation_tree_path_.back()->AddMutation(std::make_unique<MutationReplaceExpr>(
-      *expr, compiler_instance_.getPreprocessor(),
-      compiler_instance_.getASTContext()));
-}
+    mutation_tree_path_.back()->AddMutation(
+        std::make_unique<MutationReplaceExpr>(
+            *expr, compiler_instance_.getPreprocessor(),
+            compiler_instance_.getASTContext()));
+  }
   return true;
 }
 

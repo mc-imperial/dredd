@@ -227,12 +227,13 @@ std::string MutationCoverageUnaryOperator::GenerateMutatorFunction(
     }
   }
 
-
-  /* TODO: This currently means that semantics preserving modifications can't be used with `only-track-mutant-coverage`.
-   * Either change the way this works to accommodate it, or error if both are combined.
+  /* TODO(JamesLeeJones): This currently means that semantics preserving
+   * modifications can't be used with `only-track-mutant-coverage`. Either
+   * change the way this works to accommodate it, or error if both are combined.
    */
   // Compute the value of the original expression.
-  new_function << "  " << result_type << " actual_result = " << GetExpr(ast_context) << ";\n";
+  new_function << "  " << result_type
+               << " actual_result = " << GetExpr(ast_context) << ";\n";
 
   int mutation_id_offset = 0;
   GenerateUnaryOperatorReplacement(
@@ -323,13 +324,16 @@ void MutationCoverageUnaryOperator::GenerateUnaryOperatorReplacement(
                         mutation_id_offset, protobuf_message);
   }
 
-  // TODO: Figure out how to change optimizations to cover the coverage use case (likely vector masks).
-  // Various operators are self-inverse, so that removing the operator is
-  // equivalent to inserting another occurrence of it, which will be done by
-  // another mutation.
+  // TODO(JamesLeeJones): Figure out how to change optimizations to cover the
+  // coverage use case (likely vector masks).
+
+  // Various operators are
+  // self-inverse, so that removing the operator is equivalent to inserting
+  // another occurrence of it, which will be done by another mutation.
   if (!optimise_mutations || !IsOperatorSelfInverse()) {
     if (!only_track_mutant_coverage) {
-      new_function << "  if (" << arg_evaluated << " != actual_result) no_op++;\n";
+      new_function << "  if (" << arg_evaluated
+                   << " != actual_result) no_op++;\n";
     }
     AddMutationInstance(
         mutation_id_base,

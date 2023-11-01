@@ -33,8 +33,8 @@ namespace dredd {
 class MutationCoverageExpr : public Mutation {
  public:
   MutationCoverageExpr(const clang::Expr& expr,
-                      const clang::Preprocessor& preprocessor,
-                      const clang::ASTContext& ast_context);
+                       const clang::Preprocessor& preprocessor,
+                       const clang::ASTContext& ast_context);
 
   protobufs::MutationGroup Apply(
       clang::ASTContext& ast_context, const clang::Preprocessor& preprocessor,
@@ -158,4 +158,4 @@ class MutationCoverageExpr : public Mutation {
 
 }  // namespace dredd
 
-#endif  // LIBDREDD_MUTATION_REPLACE_EXPR_H_
+#endif  // LIBDREDD_MUTATION_COVERAGE_EXPR_H_

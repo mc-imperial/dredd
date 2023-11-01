@@ -231,7 +231,8 @@ std::string MutationReplaceUnaryOperator::GenerateMutatorFunction(
     // Quickly apply the original operator if no mutant is enabled (which will
     // be the common case).
     new_function << "  if (!__dredd_some_mutation_enabled) return ";
-    // TODO: This effectively copy's `getExpr()`, consider changing.
+    // TODO(JamesLeeJones): This effectively copy's `getExpr()`, consider
+    // changing.
     if (IsPrefix(unary_operator_.getOpcode())) {
       new_function << clang::UnaryOperator::getOpcodeStr(
                           unary_operator_.getOpcode())

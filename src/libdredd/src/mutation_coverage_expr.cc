@@ -182,16 +182,18 @@ void MutationCoverageExpr::GenerateUnaryOperatorInsertionBeforeLValue(
     return;
   }
   if (!only_track_mutant_coverage) {
-    // TODO: Modify this to avoid side-effects.
-    new_function << "  if (++(" << arg_evaluated << ") != actual_result) no_op++;\n";
+    // TODO(JamesLeeJones): Modify this to avoid side-effects.
+    new_function << "  if (++(" << arg_evaluated
+                 << ") != actual_result) no_op++;\n";
   }
   AddMutationInstance(mutation_id_base,
                       protobufs::MutationReplaceExprAction::InsertPreInc,
                       mutation_id_offset, protobuf_message);
 
   if (!only_track_mutant_coverage) {
-    // TODO: Modify this to avoid side-effects.
-    new_function << "  if (--(" << arg_evaluated << ") != actual_result) no_op++;\n";
+    // TODO(JamesLeeJones): Modify this to avoid side-effects.
+    new_function << "  if (--(" << arg_evaluated
+                 << ") != actual_result) no_op++;\n";
   }
   AddMutationInstance(mutation_id_base,
                       protobufs::MutationReplaceExprAction::InsertPreDec,
@@ -214,7 +216,8 @@ void MutationCoverageExpr::GenerateUnaryOperatorInsertionBeforeNonLValue(
     if (!optimise_mutations ||
         !IsRedundantOperatorInsertion(ast_context, clang::UO_LNot)) {
       if (!only_track_mutant_coverage) {
-        new_function << "  if (!(" << arg_evaluated << ") != actual_result) no_op++;\n";
+        new_function << "  if (!(" << arg_evaluated
+                     << ") != actual_result) no_op++;\n";
       }
       AddMutationInstance(mutation_id_base,
                           protobufs::MutationReplaceExprAction::InsertLNot,
@@ -227,7 +230,8 @@ void MutationCoverageExpr::GenerateUnaryOperatorInsertionBeforeNonLValue(
     if (!optimise_mutations ||
         !IsRedundantOperatorInsertion(ast_context, clang::UO_Not)) {
       if (!only_track_mutant_coverage) {
-        new_function << "  if (~(" << arg_evaluated << ") != actual_result) no_op++;\n";
+        new_function << "  if (~(" << arg_evaluated
+                     << ") != actual_result) no_op++;\n";
       }
       AddMutationInstance(mutation_id_base,
                           protobufs::MutationReplaceExprAction::InsertNot,
@@ -240,7 +244,8 @@ void MutationCoverageExpr::GenerateUnaryOperatorInsertionBeforeNonLValue(
     if (!optimise_mutations ||
         !IsRedundantOperatorInsertion(ast_context, clang::UO_Minus)) {
       if (!only_track_mutant_coverage) {
-        new_function << "  if (-(" << arg_evaluated << ") != actual_result) no_op++;\n";
+        new_function << "  if (-(" << arg_evaluated
+                     << ") != actual_result) no_op++;\n";
       }
       AddMutationInstance(mutation_id_base,
                           protobufs::MutationReplaceExprAction::InsertMinus,
@@ -384,7 +389,7 @@ void MutationCoverageExpr::GenerateBooleanConstantReplacement(
          !IsBooleanReplacementRedundantForBinaryOperator(true, ast_context))) {
       // Replace expression with true
       if (!only_track_mutant_coverage) {
-        // TODO: Could be simplified to `if (!actual_result)`.
+        // TODO(JamesLeeJones): Could be simplified to `if (!actual_result)`.
         new_function << "  if ("
                      << (ast_context.getLangOpts().CPlusPlus ? "true" : "1")
                      << " != actual_result) no_op++;\n";
@@ -399,7 +404,7 @@ void MutationCoverageExpr::GenerateBooleanConstantReplacement(
          !IsBooleanReplacementRedundantForBinaryOperator(false, ast_context))) {
       // Replace expression with false
       if (!only_track_mutant_coverage) {
-        // TODO: Could be simplified to `if (!actual_result)`.
+        // TODO(JamesLeeJones): Could be simplified to `if (!actual_result)`.
         new_function << "  if ("
                      << (ast_context.getLangOpts().CPlusPlus ? "false" : "0")
                      << " != actual_result) no_op++;\n";
@@ -433,7 +438,8 @@ std::string MutationCoverageExpr::GenerateMutatorFunction(
     arg_evaluated = "(*" + arg_evaluated + ")";
   }
 
-  new_function << "  " << result_type << " actual_result = " << arg_evaluated << ";\n";
+  new_function << "  " << result_type << " actual_result = " << arg_evaluated
+               << ";\n";
 
   int mutation_id_offset = 0;
 
@@ -459,7 +465,7 @@ std::string MutationCoverageExpr::GenerateMutatorFunction(
 }
 
 void MutationCoverageExpr::ApplyCppTypeModifiers(const clang::Expr* expr,
-                                                std::string& type) {
+                                                 std::string& type) {
   if (expr->isLValue()) {
     type += "&";
     const clang::QualType qualified_type = expr->getType();
@@ -472,7 +478,7 @@ void MutationCoverageExpr::ApplyCppTypeModifiers(const clang::Expr* expr,
 }
 
 void MutationCoverageExpr::ApplyCTypeModifiers(const clang::Expr* expr,
-                                              std::string& type) {
+                                               std::string& type) {
   if (expr->isLValue()) {
     type += "*";
     const clang::QualType qualified_type = expr->getType();
@@ -610,7 +616,7 @@ protobufs::MutationGroup MutationCoverageExpr::Apply(
 }
 
 bool MutationCoverageExpr::CanMutateLValue(clang::ASTContext& ast_context,
-                                          const clang::Expr& expr) {
+                                           const clang::Expr& expr) {
   assert(expr.isLValue() &&
          "Method should only be invoked on an l-value expression.");
   if (expr.getType().isConstQualified() || expr.getType()->isBooleanType()) {

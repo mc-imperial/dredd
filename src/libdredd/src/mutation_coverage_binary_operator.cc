@@ -320,7 +320,8 @@ void MutationCoverageBinaryOperator::GenerateArgumentReplacement(
         MutationReplaceExpr::ExprIsEquivalentToFloat(*binary_operator_.getLHS(),
                                                      -1.0, ast_context))) {
     if (!only_track_mutant_coverage) {
-      new_function << "  if (" << arg1_evaluated <<" != actual_result) no_op++;\n";
+      new_function << "  if (" << arg1_evaluated
+                   << " != actual_result) no_op++;\n";
     }
     AddMutationInstance(
         mutation_id_base,
@@ -345,7 +346,8 @@ void MutationCoverageBinaryOperator::GenerateArgumentReplacement(
         MutationReplaceExpr::ExprIsEquivalentToFloat(*binary_operator_.getRHS(),
                                                      -1.0, ast_context))) {
     if (!only_track_mutant_coverage) {
-      new_function << "  if (" << arg2_evaluated << " != actual_result) no_op++;\n";
+      new_function << "  if (" << arg2_evaluated
+                   << " != actual_result) no_op++;\n";
     }
     AddMutationInstance(
         mutation_id_base,
@@ -363,11 +365,9 @@ void MutationCoverageBinaryOperator::GenerateBinaryOperatorReplacement(
   for (auto operator_kind :
        GetReplacementOperators(optimise_mutations, ast_context)) {
     if (!only_track_mutant_coverage) {
-      new_function << "  if (("
-                   << arg1_evaluated << " "
+      new_function << "  if ((" << arg1_evaluated << " "
                    << clang::BinaryOperator::getOpcodeStr(operator_kind).str()
-                   << " " << arg2_evaluated
-                   << ") != actual_result) no_op++;\n";
+                   << " " << arg2_evaluated << ") != actual_result) no_op++;\n";
     }
     AddMutationInstance(mutation_id_base, OperatorKindToAction(operator_kind),
                         mutation_id_offset, protobuf_message);
@@ -470,7 +470,8 @@ std::string MutationCoverageBinaryOperator::GenerateMutatorFunction(
     new_function << rhs_type;
   }
 
-  new_function << " arg2, int local_mutation_id) {\n";  // TODO: Possibly remove `local_mutation_id`.
+  // TODO(JamesLeeJones): Possibly remove `local_mutation_id`.
+  new_function << " arg2, int local_mutation_id) {\n";
 
   int mutation_id_offset = 0;
 
@@ -486,7 +487,8 @@ std::string MutationCoverageBinaryOperator::GenerateMutatorFunction(
   }
 
   // Compute the value of the original expression.
-  new_function << "  " << result_type << " actual_result = " << GetExpr(ast_context) << ";\n";
+  new_function << "  " << result_type
+               << " actual_result = " << GetExpr(ast_context) << ";\n";
 
   GenerateBinaryOperatorReplacement(
       arg1_evaluated, arg2_evaluated, ast_context, optimise_mutations,
@@ -1037,9 +1039,10 @@ bool MutationCoverageBinaryOperator::
   }
 }
 
-bool MutationCoverageBinaryOperator::IsRedundantReplacementForArithmeticOperator(
-    clang::BinaryOperatorKind operator_kind,
-    clang::ASTContext& ast_context) const {
+bool MutationCoverageBinaryOperator::
+    IsRedundantReplacementForArithmeticOperator(
+        clang::BinaryOperatorKind operator_kind,
+        clang::ASTContext& ast_context) const {
   // In the case where both operands are 0, the only case that isn't covered
   // by constant replacement is undefined behaviour, this is achieved by /.
   if ((MutationReplaceExpr::ExprIsEquivalentToInt(*binary_operator_.getRHS(), 0,

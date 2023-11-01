@@ -149,7 +149,8 @@ std::string MutateAstConsumer::GetRegularDreddPreludeCpp(
   result << "#define thread_local __thread\n";
   result << "#endif\n";
   result << "\n";
-  result << "static thread_local long long int no_op = 0;\n";  // TODO: Possibly modify this variable
+  // TODO(JamesLeeJones): Possibly modify this variable.
+  result << "static thread_local long long int no_op = 0;\n";
   // This allows for fast checking that at least *some* mutation in the file is
   // enabled. It is set to true initially so that __dredd_enabled_mutation gets
   // invoked the first time enabledness is queried. At that point it will get
