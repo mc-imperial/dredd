@@ -99,7 +99,7 @@ class MutationCoverageBinaryOperator : public Mutation {
       bool optimise_mutations, clang::ASTContext& ast_context) const;
 
   static clang::BinaryOperatorKind AssignmentToBaseOperator(
-      clang::BinaryOperatorKind assignment_operator);
+      clang::BinaryOperatorKind operator_kind);
 
   // The && and || operators in C require special treatment: due to
   // short-circuit evaluation their arguments must not be prematurely evaluated.

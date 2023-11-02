@@ -365,7 +365,13 @@ void MutationCoverageBinaryOperator::GenerateBinaryOperatorReplacement(
   for (auto operator_kind :
        GetReplacementOperators(optimise_mutations, ast_context)) {
     if (!only_track_mutant_coverage) {
-      new_function << "  if ((" << arg1_evaluated << " "
+      new_function << "  if ((";
+      // Division is a special case as we need to check that the divisor isn't
+      // 0.
+      if (operator_kind == clang::BinaryOperatorKind::BO_Div) {
+        new_function << arg2_evaluated << " != 0) && (";
+      }
+      new_function << arg1_evaluated << " "
                    << clang::BinaryOperator::getOpcodeStr(operator_kind).str()
                    << " " << arg2_evaluated << ") != actual_result) no_op++;\n";
     }
@@ -455,8 +461,8 @@ MutationCoverageBinaryOperator::GetReplacementOperators(
 
 clang::BinaryOperatorKind
 MutationCoverageBinaryOperator::AssignmentToBaseOperator(
-    clang::BinaryOperatorKind op) {
-  switch (op) {
+    clang::BinaryOperatorKind operator_kind) {
+  switch (operator_kind) {
     case clang::BinaryOperatorKind::BO_AddAssign:
       return clang::BinaryOperatorKind::BO_Add;
     case clang::BinaryOperatorKind::BO_MulAssign:
@@ -480,7 +486,7 @@ MutationCoverageBinaryOperator::AssignmentToBaseOperator(
     // TODO(JamesLeeJones): Figure out how to replace assignment with arg2().
     case clang::BinaryOperatorKind::BO_Assign:
     default:
-      return op;
+      return operator_kind;
   }
 }
 
