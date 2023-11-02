@@ -216,7 +216,7 @@ void MutationCoverageExpr::GenerateUnaryOperatorInsertionBeforeNonLValue(
     if (!optimise_mutations ||
         !IsRedundantOperatorInsertion(ast_context, clang::UO_LNot)) {
       if (!only_track_mutant_coverage) {
-        new_function << "  if (!(" << arg_evaluated
+        new_function << "  if ((!" << arg_evaluated
                      << ") != actual_result) no_op++;\n";
       }
       AddMutationInstance(mutation_id_base,
@@ -230,7 +230,7 @@ void MutationCoverageExpr::GenerateUnaryOperatorInsertionBeforeNonLValue(
     if (!optimise_mutations ||
         !IsRedundantOperatorInsertion(ast_context, clang::UO_Not)) {
       if (!only_track_mutant_coverage) {
-        new_function << "  if (~(" << arg_evaluated
+        new_function << "  if ((~" << arg_evaluated
                      << ") != actual_result) no_op++;\n";
       }
       AddMutationInstance(mutation_id_base,
@@ -244,7 +244,7 @@ void MutationCoverageExpr::GenerateUnaryOperatorInsertionBeforeNonLValue(
     if (!optimise_mutations ||
         !IsRedundantOperatorInsertion(ast_context, clang::UO_Minus)) {
       if (!only_track_mutant_coverage) {
-        new_function << "  if (-(" << arg_evaluated
+        new_function << "  if ((-" << arg_evaluated
                      << ") != actual_result) no_op++;\n";
       }
       AddMutationInstance(mutation_id_base,
