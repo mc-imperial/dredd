@@ -443,9 +443,43 @@ MutationCoverageBinaryOperator::GetReplacementOperators(
          IsRedundantReplacementOperator(operator_kind, ast_context))) {
       continue;
     }
-    result.push_back(operator_kind);
+
+    if (binary_operator_.isAssignmentOp()) {
+        result.push_back(AssignmentToBaseOperator(operator_kind));
+    } else {
+        result.push_back(operator_kind);
+    }
   }
   return result;
+}
+
+clang::BinaryOperatorKind MutationCoverageBinaryOperator::AssignmentToBaseOperator(clang::BinaryOperatorKind op) {
+    switch (op) {
+        case clang::BinaryOperatorKind::BO_AddAssign:
+            return clang::BinaryOperatorKind::BO_Add;
+        case clang::BinaryOperatorKind::BO_MulAssign:
+            return clang::BinaryOperatorKind::BO_Mul;
+        case clang::BinaryOperatorKind::BO_DivAssign:
+            return clang::BinaryOperatorKind::BO_Div;
+        case clang::BinaryOperatorKind::BO_RemAssign:
+            return clang::BinaryOperatorKind::BO_Rem;
+        case clang::BinaryOperatorKind::BO_SubAssign:
+            return clang::BinaryOperatorKind::BO_Sub;
+        case clang::BinaryOperatorKind::BO_ShlAssign:
+            return clang::BinaryOperatorKind::BO_Shl;
+        case clang::BinaryOperatorKind::BO_ShrAssign:
+            return clang::BinaryOperatorKind::BO_Shr;
+        case clang::BinaryOperatorKind::BO_AndAssign:
+            return clang::BinaryOperatorKind::BO_And;
+        case clang::BinaryOperatorKind::BO_XorAssign:
+            return clang::BinaryOperatorKind::BO_Xor;
+        case clang::BinaryOperatorKind::BO_OrAssign:
+            return clang::BinaryOperatorKind::BO_Or;
+        // TODO(JamesLeeJones): Figure out how to replace assignment with arg2().
+        case clang::BinaryOperatorKind::BO_Assign:
+        default:
+            return op;
+    }
 }
 
 std::string MutationCoverageBinaryOperator::GenerateMutatorFunction(
@@ -691,6 +725,7 @@ void MutationCoverageBinaryOperator::ReplaceOperator(
   (void)rewriter_result;  // Keep release-mode compilers happy.
 }
 
+// TODO(JamesLee-Jones): Update this to use no_op.
 void MutationCoverageBinaryOperator::HandleCLogicalOperator(
     const clang::Preprocessor& preprocessor,
     const std::string& new_function_prefix, const std::string& result_type,
