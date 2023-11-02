@@ -365,15 +365,23 @@ void MutationCoverageBinaryOperator::GenerateBinaryOperatorReplacement(
   for (auto operator_kind :
        GetReplacementOperators(optimise_mutations, ast_context)) {
     if (!only_track_mutant_coverage) {
-      new_function << "  if ((";
+      new_function << "  if (";
       // Division is a special case as we need to check that the divisor isn't
       // 0.
       if (operator_kind == clang::BinaryOperatorKind::BO_Div) {
-        new_function << arg2_evaluated << " != 0) && (";
+        new_function << "(" << arg2_evaluated << " != 0) && ";
       }
-      new_function << arg1_evaluated << " "
-                   << clang::BinaryOperator::getOpcodeStr(operator_kind).str()
-                   << " " << arg2_evaluated << ") != actual_result) no_op++;\n";
+
+      // The result of evaluating an assignment expression is equivalent to
+      // evaluating the RHS, so replace `arg1() = arg2()` with `arg2()`.
+      if (operator_kind == clang::BinaryOperatorKind::BO_Assign) {
+        new_function << arg2_evaluated << " ";
+      } else {
+        new_function << "(" << arg1_evaluated << " "
+                     << clang::BinaryOperator::getOpcodeStr(operator_kind).str()
+                     << " " << arg2_evaluated << ") ";
+      }
+      new_function << "!= actual_result) no_op++;\n";
     }
     AddMutationInstance(mutation_id_base, OperatorKindToAction(operator_kind),
                         mutation_id_offset, protobuf_message);
@@ -462,6 +470,8 @@ MutationCoverageBinaryOperator::GetReplacementOperators(
 clang::BinaryOperatorKind
 MutationCoverageBinaryOperator::AssignmentToBaseOperator(
     clang::BinaryOperatorKind operator_kind) {
+  // The result returned from evaluating (a *= b) is equivalent to
+  // evaluating (a * b) but the latter is non-side-effecting.
   switch (operator_kind) {
     case clang::BinaryOperatorKind::BO_AddAssign:
       return clang::BinaryOperatorKind::BO_Add;
@@ -484,7 +494,6 @@ MutationCoverageBinaryOperator::AssignmentToBaseOperator(
     case clang::BinaryOperatorKind::BO_OrAssign:
       return clang::BinaryOperatorKind::BO_Or;
     // TODO(JamesLeeJones): Figure out how to replace assignment with arg2().
-    case clang::BinaryOperatorKind::BO_Assign:
     default:
       return operator_kind;
   }
