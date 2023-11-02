@@ -98,7 +98,8 @@ class MutationCoverageBinaryOperator : public Mutation {
   [[nodiscard]] std::vector<clang::BinaryOperatorKind> GetReplacementOperators(
       bool optimise_mutations, clang::ASTContext& ast_context) const;
 
-  static clang::BinaryOperatorKind AssignmentToBaseOperator(clang::BinaryOperatorKind assignment_operator);
+  static clang::BinaryOperatorKind AssignmentToBaseOperator(
+      clang::BinaryOperatorKind assignment_operator);
 
   // The && and || operators in C require special treatment: due to
   // short-circuit evaluation their arguments must not be prematurely evaluated.
