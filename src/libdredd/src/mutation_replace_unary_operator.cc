@@ -14,7 +14,6 @@
 
 #include "libdredd/mutation_replace_unary_operator.h"
 
-#include <algorithm>
 #include <cassert>
 #include <sstream>
 #include <vector>
