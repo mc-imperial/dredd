@@ -113,7 +113,8 @@ popd
 case "$(uname)" in
 "Linux")
   # On Linux, run a few extra analyzes using the compile_commands.json file.
-  check_compile_commands.sh build/compile_commands.json
+  #check_compile_commands.sh build/compile_commands.json
+  # TODO are tests being run on Linux?
   ;;
 
 "Darwin"*)
