@@ -32,7 +32,7 @@ namespace dredd {
 MutationRemoveStmt::MutationRemoveStmt(const clang::Stmt& stmt,
                                        const clang::Preprocessor& preprocessor,
                                        const clang::ASTContext& ast_context)
-    : stmt_(stmt),
+    : stmt_(&stmt),
       info_for_source_range_(GetSourceRangeInMainFile(preprocessor, stmt),
                              ast_context) {}
 
@@ -56,7 +56,7 @@ protobufs::MutationGroup MutationRemoveStmt::Apply(
   *inner_result.mutable_snippet() = info_for_source_range_.GetSnippet();
 
   clang::CharSourceRange source_range = clang::CharSourceRange::getTokenRange(
-      GetSourceRangeInMainFile(preprocessor, stmt_));
+      GetSourceRangeInMainFile(preprocessor, *stmt_));
 
   // If the statement is followed immediately by a semi-colon, possibly with
   // intervening comments, that semi-colon should be part of the code that is
