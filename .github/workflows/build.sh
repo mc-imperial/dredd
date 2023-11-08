@@ -109,22 +109,20 @@ pushd build
   ./src/libdreddtest/libdreddtest
 popd
 
+cp build/src/dredd/dredd third_party/clang+llvm/bin/
+DREDD_REPO_ROOT=$(pwd)
+export DREDD_REPO_ROOT
+export PATH=${PATH}:${DREDD_REPO_ROOT}/scripts
 
 case "$(uname)" in
 "Linux")
-  # On Linux, run a few extra analyzes using the compile_commands.json file.
-  #check_compile_commands.sh build/compile_commands.json
-  # TODO are tests being run on Linux?
+  DREDD_SKIP_COPY_EXECUTABLE=1 ./scripts/check_single_file_tests.sh
   ;;
 
 "Darwin"*)
   # On Mac, run the single-file tests
   SDKROOT=$(xcrun --show-sdk-path)
   export SDKROOT
-  cp build/src/dredd/dredd third_party/clang+llvm/bin/
-  DREDD_REPO_ROOT=$(pwd)
-  export DREDD_REPO_ROOT
-  export PATH=${PATH}:${DREDD_REPO_ROOT}/scripts
   export CC=clang
   export CXX=clang++
 
@@ -151,10 +149,6 @@ case "$(uname)" in
 
 "MINGW"*|"MSYS_NT"*)
   # On Windows, run the single-file tests
-  cp build/src/dredd/dredd third_party/clang+llvm/bin/
-  DREDD_REPO_ROOT=$(pwd)
-  export DREDD_REPO_ROOT
-  export PATH=${PATH}:${DREDD_REPO_ROOT}/scripts
   export CC=cl.exe
   export CXX=cl.exe
 
