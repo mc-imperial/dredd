@@ -42,8 +42,8 @@ class MutationRemoveStmt : public Mutation {
       std::unordered_set<std::string>& dredd_declarations) const override;
 
  private:
-  const clang::Stmt& stmt_;
-  const InfoForSourceRange info_for_source_range_;
+  const clang::Stmt* stmt_;
+  InfoForSourceRange info_for_source_range_;
 };
 
 }  // namespace dredd

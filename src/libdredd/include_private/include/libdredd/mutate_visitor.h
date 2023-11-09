@@ -39,7 +39,7 @@ namespace dredd {
 
 class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
  public:
-  MutateVisitor(clang::CompilerInstance& compiler_instance,
+  MutateVisitor(const clang::CompilerInstance& compiler_instance,
                 bool optimise_mutations);
 
   bool TraverseDecl(clang::Decl* decl);
@@ -114,14 +114,14 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
   class PushMutationTreeRAII {
    public:
     explicit PushMutationTreeRAII(MutateVisitor& mutate_visitor)
-        : mutate_visitor_(mutate_visitor) {
+        : mutate_visitor_(&mutate_visitor) {
       auto child = std::make_unique<MutationTreeNode>();
       auto* child_ptr = child.get();
-      mutate_visitor_.mutation_tree_path_.back()->AddChild(std::move(child));
-      mutate_visitor_.mutation_tree_path_.push_back(child_ptr);
+      mutate_visitor_->mutation_tree_path_.back()->AddChild(std::move(child));
+      mutate_visitor_->mutation_tree_path_.push_back(child_ptr);
     }
 
-    ~PushMutationTreeRAII() { mutate_visitor_.mutation_tree_path_.pop_back(); }
+    ~PushMutationTreeRAII() { mutate_visitor_->mutation_tree_path_.pop_back(); }
 
     PushMutationTreeRAII(const PushMutationTreeRAII&) = delete;
 
@@ -132,7 +132,7 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
     PushMutationTreeRAII& operator=(PushMutationTreeRAII&&) = delete;
 
    private:
-    MutateVisitor& mutate_visitor_;
+    MutateVisitor* mutate_visitor_;
   };
 
   bool HandleUnaryOperator(clang::UnaryOperator* unary_operator);
@@ -165,8 +165,8 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
   // }
   bool IsInFunction();
 
-  clang::CompilerInstance& compiler_instance_;
-  const bool optimise_mutations_;
+  const clang::CompilerInstance* compiler_instance_;
+  bool optimise_mutations_;
 
   // Records the start locat of the very first declaration in the source file,
   // before which Dredd's prelude can be placed.

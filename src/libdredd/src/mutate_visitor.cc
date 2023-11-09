@@ -47,9 +47,9 @@
 
 namespace dredd {
 
-MutateVisitor::MutateVisitor(clang::CompilerInstance& compiler_instance,
+MutateVisitor::MutateVisitor(const clang::CompilerInstance& compiler_instance,
                              bool optimise_mutations)
-    : compiler_instance_(compiler_instance),
+    : compiler_instance_(&compiler_instance),
       optimise_mutations_(optimise_mutations),
       mutation_tree_root_() {
   mutation_tree_path_.push_back(&mutation_tree_root_);
@@ -103,14 +103,14 @@ bool MutateVisitor::TraverseDecl(clang::Decl* decl) {
     return result;
   }
   auto source_range_in_main_file =
-      GetSourceRangeInMainFile(compiler_instance_.getPreprocessor(), *decl);
+      GetSourceRangeInMainFile(compiler_instance_->getPreprocessor(), *decl);
   if (source_range_in_main_file.isInvalid()) {
     // This declaration is not wholly contained in the main file, so do not
     // consider it for mutation.
     return true;
   }
   const clang::BeforeThanCompare<clang::SourceLocation> comparator(
-      compiler_instance_.getSourceManager());
+      compiler_instance_->getSourceManager());
   if (start_location_of_first_decl_in_source_file_.isInvalid() ||
       comparator(source_range_in_main_file.getBegin(),
                  start_location_of_first_decl_in_source_file_)) {
@@ -141,7 +141,7 @@ bool MutateVisitor::TraverseDecl(clang::Decl* decl) {
       // C++ constexprs, which require compile-time evaluation.
       return true;
     }
-    if (!compiler_instance_.getLangOpts().CPlusPlus &&
+    if (!compiler_instance_->getLangOpts().CPlusPlus &&
         var_decl->isStaticLocal()) {
       // In C, static local variables can only be initialized using constant
       // expressions, which require compile-time evaluation.
@@ -186,7 +186,7 @@ bool MutateVisitor::TraverseConstantArrayTypeLoc(
 
 bool MutateVisitor::TraverseVariableArrayTypeLoc(
     clang::VariableArrayTypeLoc variable_array_type_loc) {
-  if (compiler_instance_.getLangOpts().CPlusPlus) {
+  if (compiler_instance_->getLangOpts().CPlusPlus) {
     // In C++, lambdas cannot appear in array sizes, so avoid mutating here.
     return true;
   }
@@ -242,7 +242,7 @@ bool MutateVisitor::HandleUnaryOperator(clang::UnaryOperator* unary_operator) {
   // part of the main file. In particular, this avoids mutating expressions that
   // directly involve the use of macros (though it is OK if sub-expressions of
   // arguments use macros).
-  if (GetSourceRangeInMainFile(compiler_instance_.getPreprocessor(),
+  if (GetSourceRangeInMainFile(compiler_instance_->getPreprocessor(),
                                *unary_operator->getSubExpr())
           .isInvalid()) {
     return true;
@@ -270,34 +270,34 @@ bool MutateVisitor::HandleUnaryOperator(clang::UnaryOperator* unary_operator) {
     if (unary_operator->getOpcode() == clang::UO_Minus &&
         (MutationReplaceExpr::ExprIsEquivalentToInt(
              *unary_operator->getSubExpr(), 1,
-             compiler_instance_.getASTContext()) ||
+             compiler_instance_->getASTContext()) ||
          MutationReplaceExpr::ExprIsEquivalentToFloat(
              *unary_operator->getSubExpr(), 1.0,
-             compiler_instance_.getASTContext()))) {
+             compiler_instance_->getASTContext()))) {
       return true;
     }
 
     if (unary_operator->getOpcode() == clang::UO_Not &&
         (MutationReplaceExpr::ExprIsEquivalentToInt(
              *unary_operator->getSubExpr(), 0,
-             compiler_instance_.getASTContext()) ||
+             compiler_instance_->getASTContext()) ||
          MutationReplaceExpr::ExprIsEquivalentToFloat(
              *unary_operator->getSubExpr(), 0.0,
-             compiler_instance_.getASTContext()) ||
+             compiler_instance_->getASTContext()) ||
          MutationReplaceExpr::ExprIsEquivalentToInt(
              *unary_operator->getSubExpr(), 1,
-             compiler_instance_.getASTContext()) ||
+             compiler_instance_->getASTContext()) ||
          MutationReplaceExpr::ExprIsEquivalentToFloat(
              *unary_operator->getSubExpr(), 1.0,
-             compiler_instance_.getASTContext()))) {
+             compiler_instance_->getASTContext()))) {
       return true;
     }
   }
 
   mutation_tree_path_.back()->AddMutation(
       std::make_unique<MutationReplaceUnaryOperator>(
-          *unary_operator, compiler_instance_.getPreprocessor(),
-          compiler_instance_.getASTContext()));
+          *unary_operator, compiler_instance_->getPreprocessor(),
+          compiler_instance_->getASTContext()));
   return true;
 }
 
@@ -307,10 +307,10 @@ bool MutateVisitor::HandleBinaryOperator(
   // part of the main file. In particular, this avoids mutating expressions that
   // directly involve the use of macros (though it is OK if sub-expressions of
   // arguments use macros).
-  if (GetSourceRangeInMainFile(compiler_instance_.getPreprocessor(),
+  if (GetSourceRangeInMainFile(compiler_instance_->getPreprocessor(),
                                *binary_operator->getLHS())
           .isInvalid() ||
-      GetSourceRangeInMainFile(compiler_instance_.getPreprocessor(),
+      GetSourceRangeInMainFile(compiler_instance_->getPreprocessor(),
                                *binary_operator->getRHS())
           .isInvalid()) {
     return true;
@@ -341,22 +341,24 @@ bool MutateVisitor::HandleBinaryOperator(
   // replacement with a constant in all cases.
   if (optimise_mutations_ &&
       (MutationReplaceExpr::ExprIsEquivalentToInt(
-           *binary_operator->getLHS(), 0, compiler_instance_.getASTContext()) ||
+           *binary_operator->getLHS(), 0,
+           compiler_instance_->getASTContext()) ||
        MutationReplaceExpr::ExprIsEquivalentToFloat(
            *binary_operator->getLHS(), 0.0,
-           compiler_instance_.getASTContext())) &&
+           compiler_instance_->getASTContext())) &&
       (MutationReplaceExpr::ExprIsEquivalentToInt(
-           *binary_operator->getRHS(), 1, compiler_instance_.getASTContext()) ||
+           *binary_operator->getRHS(), 1,
+           compiler_instance_->getASTContext()) ||
        MutationReplaceExpr::ExprIsEquivalentToFloat(
            *binary_operator->getRHS(), 1.0,
-           compiler_instance_.getASTContext()))) {
+           compiler_instance_->getASTContext()))) {
     return true;
   }
 
   mutation_tree_path_.back()->AddMutation(
       std::make_unique<MutationReplaceBinaryOperator>(
-          *binary_operator, compiler_instance_.getPreprocessor(),
-          compiler_instance_.getASTContext()));
+          *binary_operator, compiler_instance_->getPreprocessor(),
+          compiler_instance_->getASTContext()));
   return true;
 }
 
@@ -384,7 +386,7 @@ bool MutateVisitor::VisitExpr(clang::Expr* expr) {
     return true;
   }
 
-  if (GetSourceRangeInMainFile(compiler_instance_.getPreprocessor(), *expr)
+  if (GetSourceRangeInMainFile(compiler_instance_->getPreprocessor(), *expr)
           .isInvalid()) {
     return true;
   }
@@ -406,7 +408,7 @@ bool MutateVisitor::VisitExpr(clang::Expr* expr) {
   // only under specific circumstances as documented by
   // MutationReplaceExpr::CanMutateLValue.
   if (expr->isLValue() && !MutationReplaceExpr::CanMutateLValue(
-                              compiler_instance_.getASTContext(), *expr)) {
+                              compiler_instance_->getASTContext(), *expr)) {
     return true;
   }
 
@@ -427,7 +429,7 @@ bool MutateVisitor::VisitExpr(clang::Expr* expr) {
     // and r-value to r-value implicit casts are very common, e.g. occurring
     // whenever a signed literal, such as `1`, is used in an unsigned context.
     for (const auto& parent :
-         compiler_instance_.getASTContext().getParents<clang::Expr>(*expr)) {
+         compiler_instance_->getASTContext().getParents<clang::Expr>(*expr)) {
       const auto* cast_parent = parent.get<clang::CastExpr>();
       if (cast_parent != nullptr &&
           cast_parent->isLValue() == expr->isLValue()) {
@@ -444,7 +446,7 @@ bool MutateVisitor::VisitExpr(clang::Expr* expr) {
     // is not exactly the same, because the future use could be dynamically
     // reached in different manners compared with this statement).
     for (const auto& parent :
-         compiler_instance_.getASTContext().getParents<clang::Stmt>(*expr)) {
+         compiler_instance_->getASTContext().getParents<clang::Stmt>(*expr)) {
       if (parent.get<clang::CompoundStmt>() != nullptr) {
         return true;
       }
@@ -452,8 +454,8 @@ bool MutateVisitor::VisitExpr(clang::Expr* expr) {
   }
 
   mutation_tree_path_.back()->AddMutation(std::make_unique<MutationReplaceExpr>(
-      *expr, compiler_instance_.getPreprocessor(),
-      compiler_instance_.getASTContext()));
+      *expr, compiler_instance_->getPreprocessor(),
+      compiler_instance_->getASTContext()));
 
   return true;
 }
@@ -462,7 +464,7 @@ bool MutateVisitor::TraverseCompoundStmt(clang::CompoundStmt* compound_stmt) {
   for (auto* stmt : compound_stmt->body()) {
     if (optimise_mutations_) {
       if (auto* expr = llvm::dyn_cast<clang::Expr>(stmt)) {
-        if (!expr->HasSideEffects(compiler_instance_.getASTContext())) {
+        if (!expr->HasSideEffects(compiler_instance_->getASTContext())) {
           // There is no point mutating a side-effect free expression statement.
           continue;
         }
@@ -474,7 +476,7 @@ bool MutateVisitor::TraverseCompoundStmt(clang::CompoundStmt* compound_stmt) {
     // tree node is pushed per sub-statement.
     const PushMutationTreeRAII push_mutation_tree(*this);
     TraverseStmt(stmt);
-    if (GetSourceRangeInMainFile(compiler_instance_.getPreprocessor(), *stmt)
+    if (GetSourceRangeInMainFile(compiler_instance_->getPreprocessor(), *stmt)
             .isInvalid() ||
         llvm::dyn_cast<clang::NullStmt>(stmt) != nullptr ||
         llvm::dyn_cast<clang::DeclStmt>(stmt) != nullptr ||
@@ -496,8 +498,8 @@ bool MutateVisitor::TraverseCompoundStmt(clang::CompoundStmt* compound_stmt) {
            "declaration.");
     mutation_tree_path_.back()->AddMutation(
         std::make_unique<MutationRemoveStmt>(
-            *stmt, compiler_instance_.getPreprocessor(),
-            compiler_instance_.getASTContext()));
+            *stmt, compiler_instance_->getPreprocessor(),
+            compiler_instance_->getASTContext()));
   }
   return true;
 }

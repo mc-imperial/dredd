@@ -38,7 +38,7 @@ namespace dredd {
 dredd::MutationReplaceExpr::MutationReplaceExpr(
     const clang::Expr& expr, const clang::Preprocessor& preprocessor,
     const clang::ASTContext& ast_context)
-    : expr_(expr),
+    : expr_(&expr),
       info_for_source_range_(GetSourceRangeInMainFile(preprocessor, expr),
                              ast_context) {}
 
@@ -46,10 +46,10 @@ std::string MutationReplaceExpr::GetFunctionName(
     bool optimise_mutations, clang::ASTContext& ast_context) const {
   std::string result = "__dredd_replace_expr_";
 
-  if (expr_.isLValue()) {
-    const clang::QualType qualified_type = expr_.getType();
+  if (expr_->isLValue()) {
+    const clang::QualType qualified_type = expr_->getType();
     if (qualified_type.isVolatileQualified()) {
-      assert(expr_.getType().isVolatileQualified() &&
+      assert(expr_->getType().isVolatileQualified() &&
              "Expected expression to be volatile-qualified since subexpression "
              "is.");
       result += "volatile_";
@@ -59,12 +59,12 @@ std::string MutationReplaceExpr::GetFunctionName(
   // A string corresponding to the expression forms part of the name of the
   // mutation function, to differentiate mutation functions for different
   // types
-  result += SpaceToUnderscore(expr_.getType()
+  result += SpaceToUnderscore(expr_->getType()
                                   ->getAs<clang::BuiltinType>()
                                   ->getName(ast_context.getPrintingPolicy())
                                   .str());
 
-  if (expr_.isLValue()) {
+  if (expr_->isLValue()) {
     result += "_lvalue";
   }
 
@@ -78,26 +78,27 @@ std::string MutationReplaceExpr::GetFunctionName(
 void MutationReplaceExpr::AddOptimisationSpecifier(
     clang::ASTContext& ast_context, std::string& function_name) const {
   clang::Expr::EvalResult unused_eval_result;
-  if ((expr_.getType()->isIntegerType() && !expr_.getType()->isBooleanType()) ||
-      expr_.getType()->isFloatingType()) {
-    if (ExprIsEquivalentToInt(expr_, 0, ast_context) ||
-        ExprIsEquivalentToFloat(expr_, 0.0, ast_context)) {
+  if ((expr_->getType()->isIntegerType() &&
+       !expr_->getType()->isBooleanType()) ||
+      expr_->getType()->isFloatingType()) {
+    if (ExprIsEquivalentToInt(*expr_, 0, ast_context) ||
+        ExprIsEquivalentToFloat(*expr_, 0.0, ast_context)) {
       function_name += "_zero";
-    } else if (ExprIsEquivalentToInt(expr_, 1, ast_context) ||
-               ExprIsEquivalentToFloat(expr_, 1.0, ast_context)) {
+    } else if (ExprIsEquivalentToInt(*expr_, 1, ast_context) ||
+               ExprIsEquivalentToFloat(*expr_, 1.0, ast_context)) {
       function_name += "_one";
-    } else if (ExprIsEquivalentToInt(expr_, -1, ast_context) ||
-               ExprIsEquivalentToFloat(expr_, -1.0, ast_context)) {
+    } else if (ExprIsEquivalentToInt(*expr_, -1, ast_context) ||
+               ExprIsEquivalentToFloat(*expr_, -1.0, ast_context)) {
       function_name += "_minus_one";
-    } else if (expr_.EvaluateAsInt(unused_eval_result, ast_context)) {
+    } else if (expr_->EvaluateAsInt(unused_eval_result, ast_context)) {
       function_name += "_constant";
     }
   }
 
-  if (expr_.getType()->isBooleanType()) {
-    if (ExprIsEquivalentToBool(expr_, true, ast_context)) {
+  if (expr_->getType()->isBooleanType()) {
+    if (ExprIsEquivalentToBool(*expr_, true, ast_context)) {
       function_name += "_true";
-    } else if (ExprIsEquivalentToBool(expr_, false, ast_context)) {
+    } else if (ExprIsEquivalentToBool(*expr_, false, ast_context)) {
       function_name += "_false";
     }
   }
@@ -178,7 +179,7 @@ void MutationReplaceExpr::GenerateUnaryOperatorInsertionBeforeLValue(
     bool only_track_mutant_coverage, int mutation_id_base,
     std::stringstream& new_function, int& mutation_id_offset,
     protobufs::MutationReplaceExpr& protobuf_message) const {
-  if (!expr_.isLValue() || !CanMutateLValue(ast_context, expr_)) {
+  if (!expr_->isLValue() || !CanMutateLValue(ast_context, *expr_)) {
     return;
   }
   if (!only_track_mutant_coverage) {
@@ -206,11 +207,11 @@ void MutationReplaceExpr::GenerateUnaryOperatorInsertionBeforeNonLValue(
     int mutation_id_base, std::stringstream& new_function,
     int& mutation_id_offset,
     protobufs::MutationReplaceExpr& protobuf_message) const {
-  if (expr_.isLValue()) {
+  if (expr_->isLValue()) {
     return;
   }
   const clang::BuiltinType& exprType =
-      *expr_.getType()->getAs<clang::BuiltinType>();
+      *expr_->getType()->getAs<clang::BuiltinType>();
   // Insert '!'
   if (exprType.isBooleanType() || exprType.isInteger()) {
     if (!optimise_mutations ||
@@ -277,7 +278,7 @@ void MutationReplaceExpr::GenerateConstantReplacement(
     bool only_track_mutant_coverage, int mutation_id_base,
     std::stringstream& new_function, int& mutation_id_offset,
     protobufs::MutationReplaceExpr& protobuf_message) const {
-  if (!expr_.isLValue()) {
+  if (!expr_->isLValue()) {
     GenerateBooleanConstantReplacement(
         ast_context, optimise_mutations, only_track_mutant_coverage,
         mutation_id_base, new_function, mutation_id_offset, protobuf_message);
@@ -296,10 +297,10 @@ void MutationReplaceExpr::GenerateFloatConstantReplacement(
     std::stringstream& new_function, int& mutation_id_offset,
     protobufs::MutationReplaceExpr& protobuf_message) const {
   const clang::BuiltinType& exprType =
-      *expr_.getType()->getAs<clang::BuiltinType>();
+      *expr_->getType()->getAs<clang::BuiltinType>();
   if (exprType.isFloatingPoint()) {
     if (!optimise_mutations ||
-        !ExprIsEquivalentToFloat(expr_, 0.0, ast_context)) {
+        !ExprIsEquivalentToFloat(*expr_, 0.0, ast_context)) {
       // Replace floating point expression with 0.0
       if (!only_track_mutant_coverage) {
         new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
@@ -312,7 +313,7 @@ void MutationReplaceExpr::GenerateFloatConstantReplacement(
     }
 
     if (!optimise_mutations ||
-        !ExprIsEquivalentToFloat(expr_, 1.0, ast_context)) {
+        !ExprIsEquivalentToFloat(*expr_, 1.0, ast_context)) {
       // Replace floating point expression with 1.0
       if (!only_track_mutant_coverage) {
         new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
@@ -325,7 +326,7 @@ void MutationReplaceExpr::GenerateFloatConstantReplacement(
     }
 
     if (!optimise_mutations ||
-        !ExprIsEquivalentToFloat(expr_, -1.0, ast_context)) {
+        !ExprIsEquivalentToFloat(*expr_, -1.0, ast_context)) {
       // Replace floating point expression with -1.0
       if (!only_track_mutant_coverage) {
         new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
@@ -344,9 +345,9 @@ void MutationReplaceExpr::GenerateIntegerConstantReplacement(
     std::stringstream& new_function, int& mutation_id_offset,
     protobufs::MutationReplaceExpr& protobuf_message) const {
   const clang::BuiltinType& exprType =
-      *expr_.getType()->getAs<clang::BuiltinType>();
+      *expr_->getType()->getAs<clang::BuiltinType>();
   if (exprType.isInteger() && !exprType.isBooleanType()) {
-    if (!optimise_mutations || !ExprIsEquivalentToInt(expr_, 0, ast_context)) {
+    if (!optimise_mutations || !ExprIsEquivalentToInt(*expr_, 0, ast_context)) {
       // Replace expression with 0
       if (!only_track_mutant_coverage) {
         new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
@@ -358,7 +359,7 @@ void MutationReplaceExpr::GenerateIntegerConstantReplacement(
           mutation_id_offset, protobuf_message);
     }
 
-    if (!optimise_mutations || !ExprIsEquivalentToInt(expr_, 1, ast_context)) {
+    if (!optimise_mutations || !ExprIsEquivalentToInt(*expr_, 1, ast_context)) {
       // Replace expression with 1
       if (!only_track_mutant_coverage) {
         new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
@@ -372,7 +373,8 @@ void MutationReplaceExpr::GenerateIntegerConstantReplacement(
   }
 
   if (exprType.isSignedInteger()) {
-    if (!optimise_mutations || !ExprIsEquivalentToInt(expr_, -1, ast_context)) {
+    if (!optimise_mutations ||
+        !ExprIsEquivalentToInt(*expr_, -1, ast_context)) {
       // Replace signed integer expression with -1
       if (!only_track_mutant_coverage) {
         new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
@@ -391,10 +393,10 @@ void MutationReplaceExpr::GenerateBooleanConstantReplacement(
     std::stringstream& new_function, int& mutation_id_offset,
     protobufs::MutationReplaceExpr& protobuf_message) const {
   const clang::BuiltinType& exprType =
-      *expr_.getType()->getAs<clang::BuiltinType>();
+      *expr_->getType()->getAs<clang::BuiltinType>();
   if (exprType.isBooleanType()) {
     if (!optimise_mutations ||
-        (!ExprIsEquivalentToBool(expr_, true, ast_context) &&
+        (!ExprIsEquivalentToBool(*expr_, true, ast_context) &&
          !IsBooleanReplacementRedundantForBinaryOperator(true, ast_context))) {
       // Replace expression with true
       if (!only_track_mutant_coverage) {
@@ -409,7 +411,7 @@ void MutationReplaceExpr::GenerateBooleanConstantReplacement(
     }
 
     if (!optimise_mutations ||
-        (!ExprIsEquivalentToBool(expr_, false, ast_context) &&
+        (!ExprIsEquivalentToBool(*expr_, false, ast_context) &&
          !IsBooleanReplacementRedundantForBinaryOperator(false, ast_context))) {
       // Replace expression with false
       if (!only_track_mutant_coverage) {
@@ -443,7 +445,7 @@ std::string MutationReplaceExpr::GenerateMutatorFunction(
   std::string arg_evaluated = "arg";
   if (ast_context.getLangOpts().CPlusPlus) {
     arg_evaluated += "()";
-  } else if (expr_.isLValue()) {
+  } else if (expr_->isLValue()) {
     arg_evaluated = "(*" + arg_evaluated + ")";
   }
 
@@ -477,11 +479,11 @@ std::string MutationReplaceExpr::GenerateMutatorFunction(
   return new_function.str();
 }
 
-void MutationReplaceExpr::ApplyCppTypeModifiers(const clang::Expr* expr,
+void MutationReplaceExpr::ApplyCppTypeModifiers(const clang::Expr& expr,
                                                 std::string& type) {
-  if (expr->isLValue()) {
+  if (expr.isLValue()) {
     type += "&";
-    const clang::QualType qualified_type = expr->getType();
+    const clang::QualType qualified_type = expr.getType();
     if (qualified_type.isVolatileQualified()) {
       type = "volatile " + type;
     } else if (qualified_type.isConstQualified()) {
@@ -490,11 +492,11 @@ void MutationReplaceExpr::ApplyCppTypeModifiers(const clang::Expr* expr,
   }
 }
 
-void MutationReplaceExpr::ApplyCTypeModifiers(const clang::Expr* expr,
+void MutationReplaceExpr::ApplyCTypeModifiers(const clang::Expr& expr,
                                               std::string& type) {
-  if (expr->isLValue()) {
+  if (expr.isLValue()) {
     type += "*";
-    const clang::QualType qualified_type = expr->getType();
+    const clang::QualType qualified_type = expr.getType();
     if (qualified_type.isVolatileQualified()) {
       type = "volatile " + type;
     } else if (qualified_type.isConstQualified()) {
@@ -521,7 +523,7 @@ protobufs::MutationGroup MutationReplaceExpr::Apply(
 
   const std::string new_function_name =
       GetFunctionName(optimise_mutations, ast_context);
-  const std::string result_type = expr_.getType()
+  const std::string result_type = expr_->getType()
                                       ->getAs<clang::BuiltinType>()
                                       ->getName(ast_context.getPrintingPolicy())
                                       .str();
@@ -532,13 +534,13 @@ protobufs::MutationGroup MutationReplaceExpr::Apply(
   // where they are implicitly cast to r-values, so the associated mutator
   // function should return a value, not a reference.
   if (ast_context.getLangOpts().CPlusPlus) {
-    ApplyCppTypeModifiers(&expr_, input_type);
+    ApplyCppTypeModifiers(*expr_, input_type);
   } else {
-    ApplyCTypeModifiers(&expr_, input_type);
+    ApplyCTypeModifiers(*expr_, input_type);
   }
 
   const clang::SourceRange expr_source_range_in_main_file =
-      GetSourceRangeInMainFile(preprocessor, expr_);
+      GetSourceRangeInMainFile(preprocessor, *expr_);
   assert(expr_source_range_in_main_file.isValid() && "Invalid source range.");
 
   // Replace the operator expression with a call to the wrapper function.
@@ -561,18 +563,18 @@ protobufs::MutationGroup MutationReplaceExpr::Apply(
   if (ast_context.getLangOpts().CPlusPlus) {
     prefix.append(new_function_name + "([&]() -> " + input_type + " { return " +
                   // We don't need to static cast constant expressions
-                  (expr_.isCXX11ConstantExpr(ast_context)
+                  (expr_->isCXX11ConstantExpr(ast_context)
                        ? ""
                        : "static_cast<" + input_type + ">("));
-    suffix.append(expr_.isCXX11ConstantExpr(ast_context) ? "" : ")");
+    suffix.append(expr_->isCXX11ConstantExpr(ast_context) ? "" : ")");
     suffix.append("; }");
   } else {
     prefix.append(new_function_name + "(");
-    if (expr_.isLValue() && input_type.ends_with('*')) {
+    if (expr_->isLValue() && input_type.ends_with('*')) {
       prefix.append("&(");
       suffix.append(")");
     } else if (const auto* binary_expr =
-                   llvm::dyn_cast<clang::BinaryOperator>(&expr_)) {
+                   llvm::dyn_cast<clang::BinaryOperator>(expr_)) {
       // The comma operator requires special care in C, to avoid it appearing to
       // provide multiple parameters for an enclosing function call.
       if (binary_expr->isCommaOp()) {
@@ -588,7 +590,7 @@ protobufs::MutationGroup MutationReplaceExpr::Apply(
   // cast. There are cases where such implicit casts are allowed for constants
   // but not for non-constants. This is catered for by inserting an explicit
   // cast.
-  auto parents = ast_context.getParents<clang::Expr>(expr_);
+  auto parents = ast_context.getParents<clang::Expr>(*expr_);
   // This the expression occurs in an initializer list and is subject to an
   // explicit cast then it will have two parents -- the initializer list, and
   // the implicit cast. (This is probably due to implicit casts being treated
@@ -665,7 +667,7 @@ bool MutationReplaceExpr::IsBooleanReplacementRedundantForBinaryOperator(
   // Various cases of replacing a boolean-valued binary operator with a boolean
   // constant are redundant.
   if (const auto* binary_operator =
-          llvm::dyn_cast<clang::BinaryOperator>(&expr_)) {
+          llvm::dyn_cast<clang::BinaryOperator>(expr_)) {
     switch (binary_operator->getOpcode()) {
       case clang::BO_LAnd:
         // The optimisation only applies to logical operators when targeting
@@ -696,21 +698,21 @@ bool MutationReplaceExpr::IsRedundantUnaryMinusInsertion(
   // It never makes sense to insert '-' before 0 as this would lead to an
   // equivalent mutant. (Technically this may not be true for floating-point
   // due to two values of 0, but the mutant is likely to be equivalent.)
-  if (ExprIsEquivalentToInt(expr_, 0, ast_context) ||
-      ExprIsEquivalentToFloat(expr_, 0.0, ast_context)) {
+  if (ExprIsEquivalentToInt(*expr_, 0, ast_context) ||
+      ExprIsEquivalentToFloat(*expr_, 0.0, ast_context)) {
     return true;
   }
 
   // If the expression is signed or floating-point, it does not make sense
   // to insert '-' before 1 or -1, as these cases are captured by
   // replacement with -1 and 1, respectively.
-  if (expr_.getType()->isSignedIntegerType() &&
-      (ExprIsEquivalentToInt(expr_, 1, ast_context) ||
-       ExprIsEquivalentToInt(expr_, -1, ast_context))) {
+  if (expr_->getType()->isSignedIntegerType() &&
+      (ExprIsEquivalentToInt(*expr_, 1, ast_context) ||
+       ExprIsEquivalentToInt(*expr_, -1, ast_context))) {
     return true;
   }
-  if (ExprIsEquivalentToFloat(expr_, 1.0, ast_context) ||
-      ExprIsEquivalentToFloat(expr_, -1.0, ast_context)) {
+  if (ExprIsEquivalentToFloat(*expr_, 1.0, ast_context) ||
+      ExprIsEquivalentToFloat(*expr_, -1.0, ast_context)) {
     return true;
   }
   return false;
@@ -721,9 +723,9 @@ bool MutationReplaceExpr::IsRedundantUnaryNotInsertion(
   // If the expression is signed, it does not make sense to insert '~'
   // before 0 or -1, as these cases are captured by replacement with -1 and
   // 0, respectively.
-  if (expr_.getType()->isSignedIntegerType() &&
-      (ExprIsEquivalentToInt(expr_, 0, ast_context) ||
-       ExprIsEquivalentToInt(expr_, -1, ast_context))) {
+  if (expr_->getType()->isSignedIntegerType() &&
+      (ExprIsEquivalentToInt(*expr_, 0, ast_context) ||
+       ExprIsEquivalentToInt(*expr_, -1, ast_context))) {
     return true;
   }
   return false;
@@ -739,8 +741,8 @@ bool MutationReplaceExpr::IsRedundantUnaryLogicalNotInsertion(
   // to if it does indeed evaluate to a constant, but we do not use this
   // value because either way, operator insertion would be redundant.
   bool unused_bool_value;
-  if (expr_.getType()->isBooleanType() &&
-      expr_.EvaluateAsBooleanCondition(unused_bool_value, ast_context)) {
+  if (expr_->getType()->isBooleanType() &&
+      expr_->EvaluateAsBooleanCondition(unused_bool_value, ast_context)) {
     return true;
   }
 
@@ -751,7 +753,7 @@ bool MutationReplaceExpr::IsRedundantUnaryLogicalNotInsertion(
   // Similarly, this value is not used as it does not matter which constant
   // integer the expression evaluates to.
   clang::Expr::EvalResult unused_result_value;
-  if (expr_.EvaluateAsInt(unused_result_value, ast_context)) {
+  if (expr_->EvaluateAsInt(unused_result_value, ast_context)) {
     return true;
   }
 
@@ -761,7 +763,7 @@ bool MutationReplaceExpr::IsRedundantUnaryLogicalNotInsertion(
 bool MutationReplaceExpr::IsRedundantOperatorInsertionBeforeBinaryExpr(
     clang::ASTContext& ast_context) const {
   if (const auto* binary_operator =
-          llvm::dyn_cast<clang::BinaryOperator>(&expr_)) {
+          llvm::dyn_cast<clang::BinaryOperator>(expr_)) {
     switch (binary_operator->getOpcode()) {
         // From
         // https://people.cs.umass.edu/~rjust/publ/non_redundant_mutants_jstvr_2014.pdf:
@@ -769,7 +771,7 @@ bool MutationReplaceExpr::IsRedundantOperatorInsertionBeforeBinaryExpr(
         // mutated is a && b or a || b.
       case clang::BO_LAnd:
       case clang::BO_LOr:
-        assert(!expr_.isLValue() &&
+        assert(!expr_->isLValue() &&
                "The result of one of these binary operators should be an "
                "r-value.");
         // In C, binary logical operators are not mutated with full flexibility,
@@ -783,7 +785,7 @@ bool MutationReplaceExpr::IsRedundantOperatorInsertionBeforeBinaryExpr(
       case clang::BO_GE:
       case clang::BO_LT:
       case clang::BO_LE:
-        assert(!expr_.isLValue() &&
+        assert(!expr_->isLValue() &&
                "The result of one of these binary operators should be an "
                "r-value.");
         return true;
@@ -808,12 +810,12 @@ bool MutationReplaceExpr::
     return false;
   }
 
-  auto parents = ast_context.getParents<clang::Expr>(expr_);
+  auto parents = ast_context.getParents<clang::Expr>(*expr_);
   for (const auto& parent : parents) {
     if (const auto* binary_operator = parent.get<clang::BinaryOperator>()) {
       if (binary_operator->isLogicalOp() &&
-          (binary_operator->getLHS() == &expr_ ||
-           binary_operator->getRHS() == &expr_)) {
+          (binary_operator->getLHS() == expr_ ||
+           binary_operator->getRHS() == expr_)) {
         return true;
       }
     }

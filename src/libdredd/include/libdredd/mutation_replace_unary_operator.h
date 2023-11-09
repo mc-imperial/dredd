@@ -89,9 +89,9 @@ class MutationReplaceUnaryOperator : public Mutation {
   ClangOperatorKindToProtobufOperatorKind(
       clang::UnaryOperatorKind operator_kind);
 
-  const clang::UnaryOperator& unary_operator_;
-  const InfoForSourceRange info_for_overall_expr_;
-  const InfoForSourceRange info_for_sub_expr_;
+  const clang::UnaryOperator* unary_operator_;
+  InfoForSourceRange info_for_overall_expr_;
+  InfoForSourceRange info_for_sub_expr_;
 };
 
 }  // namespace dredd
