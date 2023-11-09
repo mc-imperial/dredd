@@ -62,9 +62,6 @@ class MutationReplaceUnaryOperator : public Mutation {
 
   [[nodiscard]] bool IsOperatorSelfInverse() const;
 
-  // This returns a string corresponding to the non-mutated expression.
-  std::string GetExpr(clang::ASTContext& ast_context) const;
-
   std::string GetFunctionName(bool optimise_mutations,
                               clang::ASTContext& ast_context) const;
 

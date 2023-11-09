@@ -68,12 +68,23 @@ static int __dredd_replace_expr_int(std::function<int()> arg, int local_mutation
   return arg();
 }
 
+static int __dredd_replace_expr_int(int arg, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return arg;
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return !(arg);
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return ~(arg);
+  if (__dredd_enabled_mutation(local_mutation_id + 2)) return -(arg);
+  if (__dredd_enabled_mutation(local_mutation_id + 3)) return 0;
+  if (__dredd_enabled_mutation(local_mutation_id + 4)) return 1;
+  if (__dredd_enabled_mutation(local_mutation_id + 5)) return -1;
+  return arg;
+}
+
 template<typename T>
 T foo(T a) {
-  if (!__dredd_enabled_mutation(6)) { return a + __dredd_replace_expr_int([&]() -> int { return 2; }, 0); }
+  if (!__dredd_enabled_mutation(6)) { return a + __dredd_replace_expr_int(2, 0); }
 }
 
 void foo() {
   int x;
-  if (!__dredd_enabled_mutation(29)) { __dredd_replace_binary_operator_Assign_int_int(x , [&]() -> int { return static_cast<int>(__dredd_replace_expr_int([&]() -> int { return static_cast<int>(foo(__dredd_replace_expr_int([&]() -> int { return 3; }, 7))); }, 13)); }, 19); }
+  if (!__dredd_enabled_mutation(29)) { __dredd_replace_binary_operator_Assign_int_int(x , [&]() -> int { return static_cast<int>(__dredd_replace_expr_int([&]() -> int { return static_cast<int>(foo(__dredd_replace_expr_int(3, 7))); }, 13)); }, 19); }
 }

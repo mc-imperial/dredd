@@ -435,7 +435,8 @@ std::string MutationReplaceExpr::GenerateMutatorFunction(
     protobufs::MutationReplaceExpr& protobuf_message) const {
   std::stringstream new_function;
   new_function << "static " << result_type << " " << function_name << "(";
-  if (ast_context.getLangOpts().CPlusPlus) {
+  if (ast_context.getLangOpts().CPlusPlus &&
+      expr_->HasSideEffects(ast_context)) {
     new_function << "std::function<" << input_type << "()>";
   } else {
     new_function << input_type;
@@ -443,9 +444,12 @@ std::string MutationReplaceExpr::GenerateMutatorFunction(
   new_function << " arg, int local_mutation_id) {\n";
 
   std::string arg_evaluated = "arg";
-  if (ast_context.getLangOpts().CPlusPlus) {
+  if (ast_context.getLangOpts().CPlusPlus &&
+      expr_->HasSideEffects(ast_context)) {
     arg_evaluated += "()";
-  } else if (expr_->isLValue()) {
+  }
+
+  if (!ast_context.getLangOpts().CPlusPlus && expr_->isLValue()) {
     arg_evaluated = "(*" + arg_evaluated + ")";
   }
 
@@ -557,19 +561,21 @@ protobufs::MutationGroup MutationReplaceExpr::Apply(
 
   // These record the text that should be inserted before and after the
   // expression.
-  std::string prefix;
+  std::string prefix = new_function_name + "(";
   std::string suffix;
 
-  if (ast_context.getLangOpts().CPlusPlus) {
-    prefix.append(new_function_name + "([&]() -> " + input_type + " { return " +
+  if (ast_context.getLangOpts().CPlusPlus &&
+      expr_->HasSideEffects(ast_context)) {
+    prefix.append(+"[&]() -> " + input_type + " { return " +
                   // We don't need to static cast constant expressions
                   (expr_->isCXX11ConstantExpr(ast_context)
                        ? ""
                        : "static_cast<" + input_type + ">("));
     suffix.append(expr_->isCXX11ConstantExpr(ast_context) ? "" : ")");
     suffix.append("; }");
-  } else {
-    prefix.append(new_function_name + "(");
+  }
+
+  if (!ast_context.getLangOpts().CPlusPlus) {
     if (expr_->isLValue() && input_type.ends_with('*')) {
       prefix.append("&(");
       suffix.append(")");

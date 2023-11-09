@@ -49,31 +49,6 @@ bool MutationReplaceUnaryOperator::IsPrefix(
          operator_kind != clang::UO_PostDec;
 }
 
-std::string MutationReplaceUnaryOperator::GetExpr(
-    clang::ASTContext& ast_context) const {
-  std::string arg_evaluated = "arg";
-
-  if (ast_context.getLangOpts().CPlusPlus) {
-    arg_evaluated += "()";
-  } else {
-    if (unary_operator_->isIncrementDecrementOp()) {
-      arg_evaluated = "(*" + arg_evaluated + ")";
-    }
-  }
-
-  std::string result;
-  if (IsPrefix(unary_operator_->getOpcode())) {
-    result =
-        clang::UnaryOperator::getOpcodeStr(unary_operator_->getOpcode()).str() +
-        arg_evaluated;
-  } else {
-    result =
-        arg_evaluated +
-        clang::UnaryOperator::getOpcodeStr(unary_operator_->getOpcode()).str();
-  }
-  return result;
-}
-
 bool MutationReplaceUnaryOperator::IsValidReplacementOperator(
     clang::UnaryOperatorKind operator_kind) const {
   if (!unary_operator_->getSubExpr()->isLValue() &&
@@ -210,7 +185,8 @@ std::string MutationReplaceUnaryOperator::GenerateMutatorFunction(
     protobufs::MutationReplaceUnaryOperator& protobuf_message) const {
   std::stringstream new_function;
   new_function << "static " << result_type << " " << function_name << "(";
-  if (ast_context.getLangOpts().CPlusPlus) {
+  if (ast_context.getLangOpts().CPlusPlus &&
+      unary_operator_->HasSideEffects(ast_context)) {
     new_function << "std::function<" << input_type << "()>";
   } else {
     new_function << input_type;
@@ -218,12 +194,14 @@ std::string MutationReplaceUnaryOperator::GenerateMutatorFunction(
   new_function << " arg, int local_mutation_id) {\n";
 
   std::string arg_evaluated = "arg";
-  if (ast_context.getLangOpts().CPlusPlus) {
+  if (ast_context.getLangOpts().CPlusPlus &&
+      unary_operator_->HasSideEffects(ast_context)) {
     arg_evaluated += "()";
-  } else {
-    if (unary_operator_->isIncrementDecrementOp()) {
-      arg_evaluated = "(*" + arg_evaluated + ")";
-    }
+  }
+
+  if (!ast_context.getLangOpts().CPlusPlus &&
+      unary_operator_->isIncrementDecrementOp()) {
+    arg_evaluated = "(*" + arg_evaluated + ")";
   }
 
   if (!only_track_mutant_coverage) {
@@ -255,7 +233,14 @@ std::string MutationReplaceUnaryOperator::GenerateMutatorFunction(
                         std::to_string(mutation_id_offset) + ");\n";
   }
 
-  new_function << "  return " << GetExpr(ast_context) << ";\n";
+  const std::string opcode_string =
+      clang::UnaryOperator::getOpcodeStr(unary_operator_->getOpcode()).str();
+  new_function << "  return "
+               << (IsPrefix(unary_operator_->getOpcode()) ? opcode_string : "")
+               << arg_evaluated
+               << (IsPrefix(unary_operator_->getOpcode()) ? "" : opcode_string)
+               << ";\n";
+
   new_function << "}\n\n";
 
   // The function captures |mutation_id_offset| different mutations, so bump up
@@ -431,26 +416,29 @@ protobufs::MutationGroup MutationReplaceUnaryOperator::Apply(
       "");
 
   // These record the text that should be inserted before and after the operand.
-  std::string prefix;
+  std::string prefix = new_function_name + "(";
   std::string suffix;
-  if (ast_context.getLangOpts().CPlusPlus) {
-    prefix = new_function_name + "([&]() -> " + input_type + " { return " +
-             // We don't need to static cast constant expressions
-             (unary_operator_->getSubExpr()->isCXX11ConstantExpr(ast_context)
-                  ? ""
-                  : "static_cast<" + input_type + ">(");
-    suffix =
-        (unary_operator_->getSubExpr()->isCXX11ConstantExpr(ast_context) ? ""
-                                                                         : ")");
-    suffix.append("; }, " + std::to_string(local_mutation_id) + ")");
-  } else {
-    prefix = new_function_name + "(";
-    if (unary_operator_->isIncrementDecrementOp()) {
-      prefix.append("&(");
-      suffix.append(")");
-    }
-    suffix.append(", " + std::to_string(local_mutation_id) + ")");
+  if (ast_context.getLangOpts().CPlusPlus &&
+      unary_operator_->HasSideEffects(ast_context)) {
+    prefix.append(
+        "[&]() -> " + input_type + " { return " +
+        // We don't need to static cast constant expressions
+        (unary_operator_->getSubExpr()->isCXX11ConstantExpr(ast_context)
+             ? ""
+             : "static_cast<" + input_type + ">("));
+    suffix.append(
+        unary_operator_->getSubExpr()->isCXX11ConstantExpr(ast_context) ? ""
+                                                                        : ")");
+    suffix.append("; }");
   }
+
+  if (!ast_context.getLangOpts().CPlusPlus &&
+      unary_operator_->isIncrementDecrementOp()) {
+    prefix.append("&(");
+    suffix.append(")");
+  }
+  suffix.append(", " + std::to_string(local_mutation_id) + ")");
+
   // The prefix and suffix are ready, so make the relevant insertions.
   bool rewriter_result = rewriter.InsertTextBefore(
       unary_operator_source_range_in_main_file.getBegin(), prefix);

@@ -42,36 +42,36 @@ static bool __dredd_enabled_mutation(int local_mutation_id) {
   return (enabled_bitset[local_mutation_id / 64] & (1 << (local_mutation_id % 64))) != 0;
 }
 
-static int __dredd_replace_expr_int_zero(std::function<int()> arg, int local_mutation_id) {
-  if (!__dredd_some_mutation_enabled) return arg();
+static int __dredd_replace_expr_int_zero(int arg, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return arg;
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return 1;
   if (__dredd_enabled_mutation(local_mutation_id + 1)) return -1;
-  return arg();
+  return arg;
 }
 
-static int __dredd_replace_expr_int_one(std::function<int()> arg, int local_mutation_id) {
-  if (!__dredd_some_mutation_enabled) return arg();
-  if (__dredd_enabled_mutation(local_mutation_id + 0)) return ~(arg());
+static int __dredd_replace_expr_int_one(int arg, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return arg;
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return ~(arg);
   if (__dredd_enabled_mutation(local_mutation_id + 1)) return 0;
   if (__dredd_enabled_mutation(local_mutation_id + 2)) return -1;
-  return arg();
+  return arg;
 }
 
-static int __dredd_replace_expr_int_minus_one(std::function<int()> arg, int local_mutation_id) {
-  if (!__dredd_some_mutation_enabled) return arg();
+static int __dredd_replace_expr_int_minus_one(int arg, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return arg;
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return 0;
   if (__dredd_enabled_mutation(local_mutation_id + 1)) return 1;
-  return arg();
+  return arg;
 }
 
-static int __dredd_replace_expr_int_constant(std::function<int()> arg, int local_mutation_id) {
-  if (!__dredd_some_mutation_enabled) return arg();
-  if (__dredd_enabled_mutation(local_mutation_id + 0)) return ~(arg());
-  if (__dredd_enabled_mutation(local_mutation_id + 1)) return -(arg());
+static int __dredd_replace_expr_int_constant(int arg, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return arg;
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return ~(arg);
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return -(arg);
   if (__dredd_enabled_mutation(local_mutation_id + 2)) return 0;
   if (__dredd_enabled_mutation(local_mutation_id + 3)) return 1;
   if (__dredd_enabled_mutation(local_mutation_id + 4)) return -1;
-  return arg();
+  return arg;
 }
 
 static int __dredd_replace_binary_operator_Sub_int_int_lhs_zero(int arg1, int arg2, int local_mutation_id) {
@@ -100,7 +100,7 @@ static int __dredd_replace_binary_operator_Div_int_int_rhs_one(int arg1, int arg
 }
 
 int main() {
-  int x = __dredd_replace_expr_int_constant([&]() -> int { return __dredd_replace_binary_operator_Sub_int_int_lhs_zero(__dredd_replace_expr_int_zero([&]() -> int { return 0; }, 0) , __dredd_replace_expr_int_constant([&]() -> int { return 7; }, 2), 7); }, 8);
-  int y = __dredd_replace_expr_int_constant([&]() -> int { return __dredd_replace_binary_operator_Div_int_int_rhs_one(__dredd_replace_expr_int_constant([&]() -> int { return 5; }, 13) , __dredd_replace_expr_int_one([&]() -> int { return 1; }, 18), 21); }, 25);
-  int z = __dredd_replace_expr_int_constant([&]() -> int { return __dredd_replace_binary_operator_Mul_int_int_lhs_minus_one(__dredd_replace_expr_int_minus_one([&]() -> int { return -__dredd_replace_expr_int_one([&]() -> int { return 1; }, 30); }, 33) , __dredd_replace_expr_int_constant([&]() -> int { return 3; }, 35), 40); }, 45);
+  int x = __dredd_replace_expr_int_constant(__dredd_replace_binary_operator_Sub_int_int_lhs_zero(__dredd_replace_expr_int_zero(0, 0) , __dredd_replace_expr_int_constant(7, 2), 7), 8);
+  int y = __dredd_replace_expr_int_constant(__dredd_replace_binary_operator_Div_int_int_rhs_one(__dredd_replace_expr_int_constant(5, 13) , __dredd_replace_expr_int_one(1, 18), 21), 25);
+  int z = __dredd_replace_expr_int_constant(__dredd_replace_binary_operator_Mul_int_int_lhs_minus_one(__dredd_replace_expr_int_minus_one(-__dredd_replace_expr_int_one(1, 30), 33) , __dredd_replace_expr_int_constant(3, 35), 40), 45);
 }

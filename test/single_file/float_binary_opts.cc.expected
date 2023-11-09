@@ -42,20 +42,20 @@ static bool __dredd_enabled_mutation(int local_mutation_id) {
   return (enabled_bitset[local_mutation_id / 64] & (1 << (local_mutation_id % 64))) != 0;
 }
 
-static double __dredd_replace_expr_double_zero(std::function<double()> arg, int local_mutation_id) {
-  if (!__dredd_some_mutation_enabled) return arg();
+static double __dredd_replace_expr_double_zero(double arg, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return arg;
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return 1.0;
   if (__dredd_enabled_mutation(local_mutation_id + 1)) return -1.0;
-  return arg();
+  return arg;
 }
 
-static double __dredd_replace_expr_double(std::function<double()> arg, int local_mutation_id) {
-  if (!__dredd_some_mutation_enabled) return arg();
-  if (__dredd_enabled_mutation(local_mutation_id + 0)) return -(arg());
+static double __dredd_replace_expr_double(double arg, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return arg;
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return -(arg);
   if (__dredd_enabled_mutation(local_mutation_id + 1)) return 0.0;
   if (__dredd_enabled_mutation(local_mutation_id + 2)) return 1.0;
   if (__dredd_enabled_mutation(local_mutation_id + 3)) return -1.0;
-  return arg();
+  return arg;
 }
 
 static double __dredd_replace_binary_operator_Add_double_double_lhs_zero(double arg1, double arg2, int local_mutation_id) {
@@ -76,6 +76,6 @@ static double __dredd_replace_binary_operator_Add_double_double(double arg1, dou
 }
 
 int main() {
-  double x = __dredd_replace_expr_double([&]() -> double { return __dredd_replace_binary_operator_Add_double_double_lhs_zero(__dredd_replace_expr_double_zero([&]() -> double { return 0.0; }, 0) , __dredd_replace_expr_double([&]() -> double { return 5.32; }, 2), 6); }, 8);
-  double y = __dredd_replace_expr_double([&]() -> double { return __dredd_replace_binary_operator_Add_double_double(__dredd_replace_expr_double([&]() -> double { return 5.234; }, 12) , __dredd_replace_expr_double([&]() -> double { return 2.352; }, 16), 20); }, 25);
+  double x = __dredd_replace_expr_double(__dredd_replace_binary_operator_Add_double_double_lhs_zero(__dredd_replace_expr_double_zero(0.0, 0) , __dredd_replace_expr_double(5.32, 2), 6), 8);
+  double y = __dredd_replace_expr_double(__dredd_replace_binary_operator_Add_double_double(__dredd_replace_expr_double(5.234, 12) , __dredd_replace_expr_double(2.352, 16), 20), 25);
 }
