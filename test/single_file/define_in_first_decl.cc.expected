@@ -62,15 +62,15 @@ static int __dredd_replace_expr_int_constant(std::function<int()> arg, int local
   return arg();
 }
 
-static int __dredd_replace_binary_operator_Add_int_int_lhs_one(std::function<int()> arg1, std::function<int()> arg2, int local_mutation_id) {
-  if (!__dredd_some_mutation_enabled) return arg1() + arg2();
-  if (__dredd_enabled_mutation(local_mutation_id + 0)) return arg1() / arg2();
-  if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg1() % arg2();
-  if (__dredd_enabled_mutation(local_mutation_id + 2)) return arg1() - arg2();
-  if (__dredd_enabled_mutation(local_mutation_id + 3)) return arg2();
-  return arg1() + arg2();
+static int __dredd_replace_binary_operator_Add_int_int_lhs_one(int arg1, int arg2, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return arg1 + arg2;
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return arg1 / arg2;
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg1 % arg2;
+  if (__dredd_enabled_mutation(local_mutation_id + 2)) return arg1 - arg2;
+  if (__dredd_enabled_mutation(local_mutation_id + 3)) return arg2;
+  return arg1 + arg2;
 }
 
 TYPE foo() {
-  if (!__dredd_enabled_mutation(17)) { return __dredd_replace_expr_int_constant([&]() -> int { return __dredd_replace_binary_operator_Add_int_int_lhs_one([&]() -> int { return static_cast<int>(__dredd_replace_expr_int_one([&]() -> int { return 1; }, 0)); } , [&]() -> int { return static_cast<int>(__dredd_replace_expr_int_constant([&]() -> int { return 2; }, 3)); }, 8); }, 12); }
+  if (!__dredd_enabled_mutation(17)) { return __dredd_replace_expr_int_constant([&]() -> int { return __dredd_replace_binary_operator_Add_int_int_lhs_one(__dredd_replace_expr_int_one([&]() -> int { return 1; }, 0) , __dredd_replace_expr_int_constant([&]() -> int { return 2; }, 3), 8); }, 12); }
 }

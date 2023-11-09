@@ -51,17 +51,17 @@ static double __dredd_replace_expr_double(std::function<double()> arg, int local
   return arg();
 }
 
-static double __dredd_replace_binary_operator_Add_double_double(std::function<double()> arg1, std::function<double()> arg2, int local_mutation_id) {
-  if (!__dredd_some_mutation_enabled) return arg1() + arg2();
-  if (__dredd_enabled_mutation(local_mutation_id + 0)) return arg1() / arg2();
-  if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg1() * arg2();
-  if (__dredd_enabled_mutation(local_mutation_id + 2)) return arg1() - arg2();
-  if (__dredd_enabled_mutation(local_mutation_id + 3)) return arg1();
-  if (__dredd_enabled_mutation(local_mutation_id + 4)) return arg2();
-  return arg1() + arg2();
+static double __dredd_replace_binary_operator_Add_double_double(double arg1, double arg2, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return arg1 + arg2;
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return arg1 / arg2;
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg1 * arg2;
+  if (__dredd_enabled_mutation(local_mutation_id + 2)) return arg1 - arg2;
+  if (__dredd_enabled_mutation(local_mutation_id + 3)) return arg1;
+  if (__dredd_enabled_mutation(local_mutation_id + 4)) return arg2;
+  return arg1 + arg2;
 }
 
 int main() {
-  double x = __dredd_replace_expr_double([&]() -> double { return __dredd_replace_binary_operator_Add_double_double([&]() -> double { return static_cast<double>(__dredd_replace_expr_double([&]() -> double { return 0.0; }, 0)); } , [&]() -> double { return static_cast<double>(__dredd_replace_expr_double([&]() -> double { return 5.32; }, 4)); }, 8); }, 13);
-  double y = __dredd_replace_expr_double([&]() -> double { return __dredd_replace_binary_operator_Add_double_double([&]() -> double { return static_cast<double>(__dredd_replace_expr_double([&]() -> double { return 5.234; }, 17)); } , [&]() -> double { return static_cast<double>(__dredd_replace_expr_double([&]() -> double { return 2.352; }, 21)); }, 25); }, 30);
+  double x = __dredd_replace_expr_double([&]() -> double { return __dredd_replace_binary_operator_Add_double_double(__dredd_replace_expr_double([&]() -> double { return 0.0; }, 0) , __dredd_replace_expr_double([&]() -> double { return 5.32; }, 4), 8); }, 13);
+  double y = __dredd_replace_expr_double([&]() -> double { return __dredd_replace_binary_operator_Add_double_double(__dredd_replace_expr_double([&]() -> double { return 5.234; }, 17) , __dredd_replace_expr_double([&]() -> double { return 2.352; }, 21), 25); }, 30);
 }
