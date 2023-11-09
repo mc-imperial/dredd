@@ -509,50 +509,10 @@ void MutationReplaceExpr::ApplyCTypeModifiers(const clang::Expr& expr,
   }
 }
 
-protobufs::MutationGroup MutationReplaceExpr::Apply(
-    clang::ASTContext& ast_context, const clang::Preprocessor& preprocessor,
-    bool optimise_mutations, bool only_track_mutant_coverage,
-    int first_mutation_id_in_file, int& mutation_id, clang::Rewriter& rewriter,
-    std::unordered_set<std::string>& dredd_declarations) const {
-  // The protobuf object for the mutation, which will be wrapped in a
-  // MutationGroup.
-  protobufs::MutationReplaceExpr inner_result;
-
-  inner_result.mutable_start()->set_line(info_for_source_range_.GetStartLine());
-  inner_result.mutable_start()->set_column(
-      info_for_source_range_.GetStartColumn());
-  inner_result.mutable_end()->set_line(info_for_source_range_.GetEndLine());
-  inner_result.mutable_end()->set_column(info_for_source_range_.GetEndColumn());
-  *inner_result.mutable_snippet() = info_for_source_range_.GetSnippet();
-
-  const std::string new_function_name =
-      GetFunctionName(optimise_mutations, ast_context);
-  const std::string result_type = expr_->getType()
-                                      ->getAs<clang::BuiltinType>()
-                                      ->getName(ast_context.getPrintingPolicy())
-                                      .str();
-
-  std::string input_type = result_type;
-  // Type modifiers are added to the input type, if it is an l-value. The result
-  // type is left unmodified, because l-values are only mutated in positions
-  // where they are implicitly cast to r-values, so the associated mutator
-  // function should return a value, not a reference.
-  if (ast_context.getLangOpts().CPlusPlus) {
-    ApplyCppTypeModifiers(*expr_, input_type);
-  } else {
-    ApplyCTypeModifiers(*expr_, input_type);
-  }
-
-  const clang::SourceRange expr_source_range_in_main_file =
-      GetSourceRangeInMainFile(preprocessor, *expr_);
-  assert(expr_source_range_in_main_file.isValid() && "Invalid source range.");
-
-  // Replace the operator expression with a call to the wrapper function.
-  //
-  // Subtracting |first_mutation_id_in_file| turns the global mutation id,
-  // |mutation_id|, into a file-local mutation id.
-  const int local_mutation_id = mutation_id - first_mutation_id_in_file;
-
+void MutationReplaceExpr::ReplaceExprWithFunctionCall(
+    const std::string& new_function_name, const std::string& input_type,
+    int local_mutation_id, clang::ASTContext& ast_context,
+    const clang::Preprocessor& preprocessor, clang::Rewriter& rewriter) const {
   // Replacement of an expression with a function call is simulated by
   // Inserting suitable text before and after the expression.
   // This is preferable over the (otherwise more intuitive) approach of directly
@@ -589,6 +549,7 @@ protobufs::MutationGroup MutationReplaceExpr::Apply(
       }
     }
   }
+
   suffix.append(", " + std::to_string(local_mutation_id) + ")");
 
   // The following code handles a tricky special case, where constant values are
@@ -615,6 +576,10 @@ protobufs::MutationGroup MutationReplaceExpr::Apply(
     suffix.append(")");
   }
 
+  const clang::SourceRange expr_source_range_in_main_file =
+      GetSourceRangeInMainFile(preprocessor, *expr_);
+  assert(expr_source_range_in_main_file.isValid() && "Invalid source range.");
+
   bool rewriter_result = rewriter.InsertTextBefore(
       expr_source_range_in_main_file.getBegin(), prefix);
   assert(!rewriter_result && "Rewrite failed.\n");
@@ -622,6 +587,48 @@ protobufs::MutationGroup MutationReplaceExpr::Apply(
       expr_source_range_in_main_file.getEnd(), suffix);
   assert(!rewriter_result && "Rewrite failed.\n");
   (void)rewriter_result;  // Keep release mode compilers happy.
+}
+
+protobufs::MutationGroup MutationReplaceExpr::Apply(
+    clang::ASTContext& ast_context, const clang::Preprocessor& preprocessor,
+    bool optimise_mutations, bool only_track_mutant_coverage,
+    int first_mutation_id_in_file, int& mutation_id, clang::Rewriter& rewriter,
+    std::unordered_set<std::string>& dredd_declarations) const {
+  // The protobuf object for the mutation, which will be wrapped in a
+  // MutationGroup.
+  protobufs::MutationReplaceExpr inner_result;
+
+  inner_result.mutable_start()->set_line(info_for_source_range_.GetStartLine());
+  inner_result.mutable_start()->set_column(
+      info_for_source_range_.GetStartColumn());
+  inner_result.mutable_end()->set_line(info_for_source_range_.GetEndLine());
+  inner_result.mutable_end()->set_column(info_for_source_range_.GetEndColumn());
+  *inner_result.mutable_snippet() = info_for_source_range_.GetSnippet();
+
+  const std::string new_function_name =
+      GetFunctionName(optimise_mutations, ast_context);
+  const std::string result_type = expr_->getType()
+                                      ->getAs<clang::BuiltinType>()
+                                      ->getName(ast_context.getPrintingPolicy())
+                                      .str();
+
+  std::string input_type = result_type;
+  // Type modifiers are added to the input type, if it is an l-value. The result
+  // type is left unmodified, because l-values are only mutated in positions
+  // where they are implicitly cast to r-values, so the associated mutator
+  // function should return a value, not a reference.
+  if (ast_context.getLangOpts().CPlusPlus) {
+    ApplyCppTypeModifiers(*expr_, input_type);
+  } else {
+    ApplyCTypeModifiers(*expr_, input_type);
+  }
+
+  // Replace the expression with a function call.
+  // Subtracting |first_mutation_id_in_file| turns the global mutation id,
+  // |mutation_id|, into a file-local mutation id.
+  ReplaceExprWithFunctionCall(new_function_name, input_type,
+                              mutation_id - first_mutation_id_in_file,
+                              ast_context, preprocessor, rewriter);
 
   const std::string new_function = GenerateMutatorFunction(
       ast_context, new_function_name, result_type, input_type,
