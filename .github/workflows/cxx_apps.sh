@@ -127,7 +127,7 @@ pushd llvm-project
   for f in llvm/lib/Transforms/InstCombine/*.cpp
   do
     [[ -e "$f" ]] || break
-    FILES+=("${DREDD_ROOT}/${f}")
+    FILES+=("${DREDD_ROOT}/llvm-project/${f}")
   done
   ${DREDD_EXECUTABLE} --mutation-info-file temp.json -p "${DREDD_ROOT}/llvm-project/build/compile_commands.json" "${FILES[@]}"
   cmake --build build --target LLVMInstCombine
