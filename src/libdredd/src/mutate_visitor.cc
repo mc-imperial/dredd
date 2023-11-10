@@ -391,6 +391,15 @@ bool MutateVisitor::VisitExpr(clang::Expr* expr) {
     return true;
   }
 
+  // Introduced to work around what seems like a bug in Clang, where a source
+  // range can end earlier than it starts. See "structured_binding.cc" under
+  // single file tests. If the Clang issue is indeed a bug and gets fixed, this
+  // check (and the associated function) should be removed.
+  if (!SourceRangeConsistencyCheck(expr->getSourceRange(),
+                                   compiler_instance_->getASTContext())) {
+    return true;
+  }
+
   // Check that the result type is supported
   if (!IsTypeSupported(expr->getType())) {
     return true;
