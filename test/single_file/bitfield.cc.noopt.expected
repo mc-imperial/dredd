@@ -53,6 +53,17 @@ static int __dredd_replace_expr_int(std::function<int()> arg, int local_mutation
   return arg();
 }
 
+static int __dredd_replace_expr_int(int arg, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return arg;
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return !(arg);
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return ~(arg);
+  if (__dredd_enabled_mutation(local_mutation_id + 2)) return -(arg);
+  if (__dredd_enabled_mutation(local_mutation_id + 3)) return 0;
+  if (__dredd_enabled_mutation(local_mutation_id + 4)) return 1;
+  if (__dredd_enabled_mutation(local_mutation_id + 5)) return -1;
+  return arg;
+}
+
 struct S {
   int a : 3;
   int b : 3;
@@ -60,7 +71,7 @@ struct S {
 
 void foo() {
   S myS;
-  if (!__dredd_enabled_mutation(6)) { myS.a = __dredd_replace_expr_int([&]() -> int { return static_cast<int>(myS.b); }, 0); }
+  if (!__dredd_enabled_mutation(6)) { myS.a = __dredd_replace_expr_int(myS.b, 0); }
   if (!__dredd_enabled_mutation(13)) { __dredd_replace_expr_int([&]() -> int { return static_cast<int>(myS.a++); }, 7); }
   if (!__dredd_enabled_mutation(14)) { --myS.b; }
 }

@@ -74,14 +74,13 @@ void TestReplacement(const std::string& original, const std::string& expected,
 TEST(MutationReplaceUnaryOperatorTest, MutateMinus) {
   const std::string original = "void foo() { -2; }";
   const std::string expected_opt =
-      "void foo() { __dredd_replace_unary_operator_Minus_int([&]() -> int { "
-      "return 2; }, 0); }";
+      "void foo() { __dredd_replace_unary_operator_Minus_int(2, 0); }";
   const std::string expected_dredd_declaration_opt =
-      R"(static int __dredd_replace_unary_operator_Minus_int(std::function<int()> arg, int local_mutation_id) {
-  if (!__dredd_some_mutation_enabled) return -arg();
-  if (__dredd_enabled_mutation(local_mutation_id + 0)) return ~arg();
-  if (__dredd_enabled_mutation(local_mutation_id + 1)) return !arg();
-  return -arg();
+      R"(static int __dredd_replace_unary_operator_Minus_int(int arg, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return -arg;
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return ~arg;
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return !arg;
+  return -arg;
 }
 
 )";
@@ -92,15 +91,14 @@ TEST(MutationReplaceUnaryOperatorTest, MutateMinus) {
                   expected_dredd_declaration_opt);
 
   const std::string expected_no_opt =
-      "void foo() { __dredd_replace_unary_operator_Minus_int([&]() -> int { "
-      "return 2; }, 0); }";
+      "void foo() { __dredd_replace_unary_operator_Minus_int(2, 0); }";
   const std::string expected_dredd_declaration_no_opt =
-      R"(static int __dredd_replace_unary_operator_Minus_int(std::function<int()> arg, int local_mutation_id) {
-  if (!__dredd_some_mutation_enabled) return -arg();
-  if (__dredd_enabled_mutation(local_mutation_id + 0)) return ~arg();
-  if (__dredd_enabled_mutation(local_mutation_id + 1)) return !arg();
-  if (__dredd_enabled_mutation(local_mutation_id + 2)) return arg();
-  return -arg();
+      R"(static int __dredd_replace_unary_operator_Minus_int(int arg, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return -arg;
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return ~arg;
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return !arg;
+  if (__dredd_enabled_mutation(local_mutation_id + 2)) return arg;
+  return -arg;
 }
 
 )";
@@ -120,15 +118,15 @@ TEST(MutationReplaceUnaryOperatorTest, MutateNot) {
   const std::string expected_opt =
       R"(void foo() {
   bool f = false;
-  __dredd_replace_unary_operator_LNot_bool([&]() -> bool { return static_cast<bool>(f); }, 0);
+  __dredd_replace_unary_operator_LNot_bool(f, 0);
 }
 )";
   const std::string expected_dredd_declaration_opt =
-      R"(static bool __dredd_replace_unary_operator_LNot_bool(std::function<bool()> arg, int local_mutation_id) {
-  if (!__dredd_some_mutation_enabled) return !arg();
-  if (__dredd_enabled_mutation(local_mutation_id + 0)) return ~arg();
-  if (__dredd_enabled_mutation(local_mutation_id + 1)) return -arg();
-  return !arg();
+      R"(static bool __dredd_replace_unary_operator_LNot_bool(bool arg, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return !arg;
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return ~arg;
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return -arg;
+  return !arg;
 }
 
 )";
@@ -141,16 +139,16 @@ TEST(MutationReplaceUnaryOperatorTest, MutateNot) {
   const std::string expected_no_opt =
       R"(void foo() {
   bool f = false;
-  __dredd_replace_unary_operator_LNot_bool([&]() -> bool { return static_cast<bool>(f); }, 0);
+  __dredd_replace_unary_operator_LNot_bool(f, 0);
 }
 )";
   const std::string expected_dredd_declaration_no_opt =
-      R"(static bool __dredd_replace_unary_operator_LNot_bool(std::function<bool()> arg, int local_mutation_id) {
-  if (!__dredd_some_mutation_enabled) return !arg();
-  if (__dredd_enabled_mutation(local_mutation_id + 0)) return ~arg();
-  if (__dredd_enabled_mutation(local_mutation_id + 1)) return -arg();
-  if (__dredd_enabled_mutation(local_mutation_id + 2)) return arg();
-  return !arg();
+      R"(static bool __dredd_replace_unary_operator_LNot_bool(bool arg, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return !arg;
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return ~arg;
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return -arg;
+  if (__dredd_enabled_mutation(local_mutation_id + 2)) return arg;
+  return !arg;
 }
 
 )";

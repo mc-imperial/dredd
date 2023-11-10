@@ -50,25 +50,6 @@ MutationReplaceBinaryOperator::MutationReplaceBinaryOperator(
           GetSourceRangeInMainFile(preprocessor, *binary_operator.getRHS()),
           ast_context) {}
 
-std::string MutationReplaceBinaryOperator::GetExpr(
-    clang::ASTContext& ast_context) const {
-  std::string arg1_evaluated("arg1");
-  std::string arg2_evaluated("arg2");
-  if (ast_context.getLangOpts().CPlusPlus) {
-    arg1_evaluated += "()";
-    arg2_evaluated += "()";
-  } else {
-    if (binary_operator_->isAssignmentOp()) {
-      arg1_evaluated = "(*" + arg1_evaluated + ")";
-    }
-  }
-  std::string result =
-      arg1_evaluated + " " +
-      clang::BinaryOperator::getOpcodeStr(binary_operator_->getOpcode()).str() +
-      " " + arg2_evaluated;
-  return result;
-}
-
 bool MutationReplaceBinaryOperator::IsRedundantReplacementOperator(
     clang::BinaryOperatorKind operator_kind,
     clang::ASTContext& ast_context) const {
@@ -461,14 +442,17 @@ std::string MutationReplaceBinaryOperator::GenerateMutatorFunction(
   std::stringstream new_function;
   new_function << "static " << result_type << " " << function_name << "(";
 
-  if (ast_context.getLangOpts().CPlusPlus) {
+  if (ast_context.getLangOpts().CPlusPlus &&
+      binary_operator_->getLHS()->HasSideEffects(ast_context)) {
     new_function << "std::function<" << lhs_type << "()>";
   } else {
     new_function << lhs_type;
   }
   new_function << " arg1, ";
 
-  if (ast_context.getLangOpts().CPlusPlus) {
+  if (ast_context.getLangOpts().CPlusPlus &&
+      (binary_operator_->isLogicalOp() ||
+       binary_operator_->getRHS()->HasSideEffects(ast_context))) {
     new_function << "std::function<" << rhs_type << "()>";
   } else {
     new_function << rhs_type;
@@ -479,14 +463,20 @@ std::string MutationReplaceBinaryOperator::GenerateMutatorFunction(
   int mutation_id_offset = 0;
 
   std::string arg1_evaluated("arg1");
-  std::string arg2_evaluated("arg2");
-  if (ast_context.getLangOpts().CPlusPlus) {
+  if (ast_context.getLangOpts().CPlusPlus &&
+      binary_operator_->getLHS()->HasSideEffects(ast_context)) {
     arg1_evaluated += "()";
+  }
+  if (!ast_context.getLangOpts().CPlusPlus &&
+      binary_operator_->isAssignmentOp()) {
+    arg1_evaluated = "(*" + arg1_evaluated + ")";
+  }
+
+  std::string arg2_evaluated("arg2");
+  if (ast_context.getLangOpts().CPlusPlus &&
+      (binary_operator_->isLogicalOp() ||
+       binary_operator_->getRHS()->HasSideEffects(ast_context))) {
     arg2_evaluated += "()";
-  } else {
-    if (binary_operator_->isAssignmentOp()) {
-      arg1_evaluated = "(*" + arg1_evaluated + ")";
-    }
   }
 
   if (!only_track_mutant_coverage) {
@@ -513,7 +503,12 @@ std::string MutationReplaceBinaryOperator::GenerateMutatorFunction(
     new_function << "  __dredd_record_covered_mutants(local_mutation_id, " +
                         std::to_string(mutation_id_offset) + ");\n";
   }
-  new_function << "  return " << GetExpr(ast_context) << ";\n";
+  new_function << "  return " << arg1_evaluated << " "
+               << clang::BinaryOperator::getOpcodeStr(
+                      binary_operator_->getOpcode())
+                      .str()
+               << " " << arg2_evaluated << ";\n";
+
   new_function << "}\n\n";
 
   // The function captures |mutation_id_offset| different mutations, so bump up
@@ -665,26 +660,31 @@ void MutationReplaceBinaryOperator::ReplaceOperator(
 
   // These record the text that should be inserted before and after the LHS and
   // RHS operands.
-  std::string lhs_prefix;
+  std::string lhs_prefix = new_function_name + "(";
   std::string lhs_suffix;
   std::string rhs_prefix;
   std::string rhs_suffix;
 
   if (ast_context.getLangOpts().CPlusPlus) {
-    lhs_prefix = new_function_name + "([&]() -> " + lhs_type +
-                 " { return static_cast<" + lhs_type + ">(";
-    lhs_suffix = "); }";
-    rhs_prefix =
-        "[&]() -> " + rhs_type + " { return static_cast<" + rhs_type + ">(";
-    rhs_suffix = "); }, " + std::to_string(local_mutation_id) + ")";
+    if (binary_operator_->getLHS()->HasSideEffects(ast_context)) {
+      lhs_prefix.append("[&]() -> " + lhs_type + " { return static_cast<" +
+                        lhs_type + ">(");
+      lhs_suffix.append("); }");
+    }
+    if (binary_operator_->isLogicalOp() ||
+        binary_operator_->getRHS()->HasSideEffects(ast_context)) {
+      rhs_prefix.append("[&]() -> " + rhs_type + " { return static_cast<" +
+                        rhs_type + ">(");
+      rhs_suffix.append("); }");
+    }
   } else {
-    lhs_prefix = new_function_name + "(";
     if (binary_operator_->isAssignmentOp()) {
       lhs_prefix.append("&(");
       lhs_suffix.append(")");
     }
-    rhs_suffix = ", " + std::to_string(local_mutation_id) + ")";
   }
+  rhs_suffix.append(", " + std::to_string(local_mutation_id) + ")");
+
   // The prefixes and suffixes are ready, so make the relevant insertions.
   bool rewriter_result = rewriter.InsertTextBefore(
       lhs_source_range_in_main_file.getBegin(), lhs_prefix);

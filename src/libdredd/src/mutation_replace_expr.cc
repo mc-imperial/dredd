@@ -435,7 +435,8 @@ std::string MutationReplaceExpr::GenerateMutatorFunction(
     protobufs::MutationReplaceExpr& protobuf_message) const {
   std::stringstream new_function;
   new_function << "static " << result_type << " " << function_name << "(";
-  if (ast_context.getLangOpts().CPlusPlus) {
+  if (ast_context.getLangOpts().CPlusPlus &&
+      expr_->HasSideEffects(ast_context)) {
     new_function << "std::function<" << input_type << "()>";
   } else {
     new_function << input_type;
@@ -443,9 +444,12 @@ std::string MutationReplaceExpr::GenerateMutatorFunction(
   new_function << " arg, int local_mutation_id) {\n";
 
   std::string arg_evaluated = "arg";
-  if (ast_context.getLangOpts().CPlusPlus) {
+  if (ast_context.getLangOpts().CPlusPlus &&
+      expr_->HasSideEffects(ast_context)) {
     arg_evaluated += "()";
-  } else if (expr_->isLValue()) {
+  }
+
+  if (!ast_context.getLangOpts().CPlusPlus && expr_->isLValue()) {
     arg_evaluated = "(*" + arg_evaluated + ")";
   }
 
@@ -505,6 +509,86 @@ void MutationReplaceExpr::ApplyCTypeModifiers(const clang::Expr& expr,
   }
 }
 
+void MutationReplaceExpr::ReplaceExprWithFunctionCall(
+    const std::string& new_function_name, const std::string& input_type,
+    int local_mutation_id, clang::ASTContext& ast_context,
+    const clang::Preprocessor& preprocessor, clang::Rewriter& rewriter) const {
+  // Replacement of an expression with a function call is simulated by
+  // Inserting suitable text before and after the expression.
+  // This is preferable over the (otherwise more intuitive) approach of directly
+  // replacing the text for the expression node, because the Clang rewriter
+  // does not support nested replacements.
+
+  // These record the text that should be inserted before and after the
+  // expression.
+  std::string prefix = new_function_name + "(";
+  std::string suffix;
+
+  if (ast_context.getLangOpts().CPlusPlus &&
+      expr_->HasSideEffects(ast_context)) {
+    prefix.append(+"[&]() -> " + input_type + " { return " +
+                  // We don't need to static cast constant expressions
+                  (expr_->isCXX11ConstantExpr(ast_context)
+                       ? ""
+                       : "static_cast<" + input_type + ">("));
+    suffix.append(expr_->isCXX11ConstantExpr(ast_context) ? "" : ")");
+    suffix.append("; }");
+  }
+
+  if (!ast_context.getLangOpts().CPlusPlus) {
+    if (expr_->isLValue() && input_type.ends_with('*')) {
+      prefix.append("&(");
+      suffix.append(")");
+    } else if (const auto* binary_expr =
+                   llvm::dyn_cast<clang::BinaryOperator>(expr_)) {
+      // The comma operator requires special care in C, to avoid it appearing to
+      // provide multiple parameters for an enclosing function call.
+      if (binary_expr->isCommaOp()) {
+        prefix.append("(");
+        suffix.append(")");
+      }
+    }
+  }
+
+  suffix.append(", " + std::to_string(local_mutation_id) + ")");
+
+  // The following code handles a tricky special case, where constant values are
+  // used in an initializer list in a manner that leads to them being implicitly
+  // cast. There are cases where such implicit casts are allowed for constants
+  // but not for non-constants. This is catered for by inserting an explicit
+  // cast.
+  auto parents = ast_context.getParents<clang::Expr>(*expr_);
+  // This the expression occurs in an initializer list and is subject to an
+  // explicit cast then it will have two parents -- the initializer list, and
+  // the implicit cast. (This is probably due to implicit casts being treated
+  // as invisible nodes in the AST.)
+  if (ast_context.getLangOpts().CPlusPlus && parents.size() == 2 &&
+      parents[0].get<clang::InitListExpr>() != nullptr &&
+      parents[1].get<clang::ImplicitCastExpr>() != nullptr) {
+    // Add an explicit cast to the result type of the explicit cast.
+    const auto* implicit_cast_expr = parents[1].get<clang::ImplicitCastExpr>();
+    prefix = "static_cast<" +
+             implicit_cast_expr->getType()
+                 ->getAs<clang::BuiltinType>()
+                 ->getName(ast_context.getPrintingPolicy())
+                 .str() +
+             ">(" + prefix;
+    suffix.append(")");
+  }
+
+  const clang::SourceRange expr_source_range_in_main_file =
+      GetSourceRangeInMainFile(preprocessor, *expr_);
+  assert(expr_source_range_in_main_file.isValid() && "Invalid source range.");
+
+  bool rewriter_result = rewriter.InsertTextBefore(
+      expr_source_range_in_main_file.getBegin(), prefix);
+  assert(!rewriter_result && "Rewrite failed.\n");
+  rewriter_result = rewriter.InsertTextAfterToken(
+      expr_source_range_in_main_file.getEnd(), suffix);
+  assert(!rewriter_result && "Rewrite failed.\n");
+  (void)rewriter_result;  // Keep release mode compilers happy.
+}
+
 protobufs::MutationGroup MutationReplaceExpr::Apply(
     clang::ASTContext& ast_context, const clang::Preprocessor& preprocessor,
     bool optimise_mutations, bool only_track_mutant_coverage,
@@ -539,83 +623,12 @@ protobufs::MutationGroup MutationReplaceExpr::Apply(
     ApplyCTypeModifiers(*expr_, input_type);
   }
 
-  const clang::SourceRange expr_source_range_in_main_file =
-      GetSourceRangeInMainFile(preprocessor, *expr_);
-  assert(expr_source_range_in_main_file.isValid() && "Invalid source range.");
-
-  // Replace the operator expression with a call to the wrapper function.
-  //
+  // Replace the expression with a function call.
   // Subtracting |first_mutation_id_in_file| turns the global mutation id,
   // |mutation_id|, into a file-local mutation id.
-  const int local_mutation_id = mutation_id - first_mutation_id_in_file;
-
-  // Replacement of an expression with a function call is simulated by
-  // Inserting suitable text before and after the expression.
-  // This is preferable over the (otherwise more intuitive) approach of directly
-  // replacing the text for the expression node, because the Clang rewriter
-  // does not support nested replacements.
-
-  // These record the text that should be inserted before and after the
-  // expression.
-  std::string prefix;
-  std::string suffix;
-
-  if (ast_context.getLangOpts().CPlusPlus) {
-    prefix.append(new_function_name + "([&]() -> " + input_type + " { return " +
-                  // We don't need to static cast constant expressions
-                  (expr_->isCXX11ConstantExpr(ast_context)
-                       ? ""
-                       : "static_cast<" + input_type + ">("));
-    suffix.append(expr_->isCXX11ConstantExpr(ast_context) ? "" : ")");
-    suffix.append("; }");
-  } else {
-    prefix.append(new_function_name + "(");
-    if (expr_->isLValue() && input_type.ends_with('*')) {
-      prefix.append("&(");
-      suffix.append(")");
-    } else if (const auto* binary_expr =
-                   llvm::dyn_cast<clang::BinaryOperator>(expr_)) {
-      // The comma operator requires special care in C, to avoid it appearing to
-      // provide multiple parameters for an enclosing function call.
-      if (binary_expr->isCommaOp()) {
-        prefix.append("(");
-        suffix.append(")");
-      }
-    }
-  }
-  suffix.append(", " + std::to_string(local_mutation_id) + ")");
-
-  // The following code handles a tricky special case, where constant values are
-  // used in an initializer list in a manner that leads to them being implicitly
-  // cast. There are cases where such implicit casts are allowed for constants
-  // but not for non-constants. This is catered for by inserting an explicit
-  // cast.
-  auto parents = ast_context.getParents<clang::Expr>(*expr_);
-  // This the expression occurs in an initializer list and is subject to an
-  // explicit cast then it will have two parents -- the initializer list, and
-  // the implicit cast. (This is probably due to implicit casts being treated
-  // as invisible nodes in the AST.)
-  if (ast_context.getLangOpts().CPlusPlus && parents.size() == 2 &&
-      parents[0].get<clang::InitListExpr>() != nullptr &&
-      parents[1].get<clang::ImplicitCastExpr>() != nullptr) {
-    // Add an explicit cast to the result type of the explicit cast.
-    const auto* implicit_cast_expr = parents[1].get<clang::ImplicitCastExpr>();
-    prefix = "static_cast<" +
-             implicit_cast_expr->getType()
-                 ->getAs<clang::BuiltinType>()
-                 ->getName(ast_context.getPrintingPolicy())
-                 .str() +
-             ">(" + prefix;
-    suffix.append(")");
-  }
-
-  bool rewriter_result = rewriter.InsertTextBefore(
-      expr_source_range_in_main_file.getBegin(), prefix);
-  assert(!rewriter_result && "Rewrite failed.\n");
-  rewriter_result = rewriter.InsertTextAfterToken(
-      expr_source_range_in_main_file.getEnd(), suffix);
-  assert(!rewriter_result && "Rewrite failed.\n");
-  (void)rewriter_result;  // Keep release mode compilers happy.
+  ReplaceExprWithFunctionCall(new_function_name, input_type,
+                              mutation_id - first_mutation_id_in_file,
+                              ast_context, preprocessor, rewriter);
 
   const std::string new_function = GenerateMutatorFunction(
       ast_context, new_function_name, result_type, input_type,
