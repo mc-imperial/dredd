@@ -104,7 +104,7 @@ pushd SPIRV-Tools
   for f in source/val/*.cpp
   do
     [[ -e "$f" ]] || break
-    FILES+=("${DREDD_ROOT}/${f}")
+    FILES+=("${DREDD_ROOT}/SPIRV-Tools/${f}")
   done
   ${DREDD_EXECUTABLE} --mutation-info-file temp.json -p "${DREDD_ROOT}/SPIRV-Tools/build/compile_commands.json" "${FILES[@]}"
   cmake --build build --target test_val_abcde test_val_capability test_val_fghijklmnop test_val_limits test_val_stuvw
