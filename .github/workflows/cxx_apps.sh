@@ -67,7 +67,7 @@ which ${CC}
 which ${CXX}
 
 cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug
-cmake --build . --config Debug
+cmake --build build --config Debug
 
 # Check that dredd works on some projects
 DREDD_EXECUTABLE="${DREDD_ROOT}/third_party/clang+llvm/bin/dredd"
