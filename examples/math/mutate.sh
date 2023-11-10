@@ -15,8 +15,8 @@
 # limitations under the License.
 
 
-for f in `ls ../math/src/*.cc`
+for f in `ls math/src/*.cc`
 do
     FILES="${FILES} ${f}"
 done
-../../../third_party/clang+llvm/bin/dredd --mutation-info-file mutation_info.json -p ./build/compile_commands.json ${FILES}
+../../third_party/clang+llvm/bin/dredd --mutation-info-file temp.json -p ./build/compile_commands.json ${FILES}
