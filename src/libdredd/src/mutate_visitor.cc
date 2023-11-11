@@ -158,6 +158,12 @@ bool MutateVisitor::TraverseDecl(clang::Decl* decl) {
 }
 
 bool MutateVisitor::TraverseStmt(clang::Stmt* stmt) {
+  // Do not mutate under a constant expression, since mutation logic is
+  // inherently non-constant.
+  if (stmt != nullptr && llvm::dyn_cast<clang::ConstantExpr>(stmt) != nullptr) {
+    return true;
+  }
+
   // Add a node to the mutation tree to capture any mutations beneath this
   // statement.
   const PushMutationTreeRAII push_mutation_tree(*this);
