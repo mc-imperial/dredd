@@ -423,12 +423,12 @@ protobufs::MutationGroup MutationReplaceUnaryOperator::Apply(
     prefix.append(
         "[&]() -> " + input_type + " { return " +
         // We don't need to static cast constant expressions
-        (unary_operator_->getSubExpr()->isCXX11ConstantExpr(ast_context)
+        (IsCxx11ConstantExpr(*unary_operator_->getSubExpr(), ast_context)
              ? ""
              : "static_cast<" + input_type + ">("));
     suffix.append(
-        unary_operator_->getSubExpr()->isCXX11ConstantExpr(ast_context) ? ""
-                                                                        : ")");
+        IsCxx11ConstantExpr(*unary_operator_->getSubExpr(), ast_context) ? ""
+                                                                         : ")");
     suffix.append("; }");
   }
 

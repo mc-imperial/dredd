@@ -124,4 +124,9 @@ bool EvaluateAsFloat(const clang::Expr& expr,
   return !expr.isValueDependent() && expr.EvaluateAsFloat(result, ast_context);
 }
 
+bool IsCxx11ConstantExpr(const clang::Expr& expr,
+                         const clang::ASTContext& ast_context) {
+  return !expr.isValueDependent() && expr.isCXX11ConstantExpr(ast_context);
+}
+
 }  // namespace dredd

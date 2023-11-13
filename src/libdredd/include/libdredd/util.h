@@ -122,6 +122,12 @@ bool EvaluateAsFloat(const clang::Expr& expr,
                      const clang::ASTContext& ast_context,
                      llvm::APFloat& result);
 
+// A wrapper for Expr::isCXX11ConstantExpr that first checks whether the
+// expression is value-dependent (isCXX11ConstantExpr fails an assertion if the
+// expression is value-dependent).
+bool IsCxx11ConstantExpr(const clang::Expr& expr,
+                         const clang::ASTContext& ast_context);
+
 }  // namespace dredd
 
 #endif  // LIBDREDD_UTIL_H
