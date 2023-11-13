@@ -58,7 +58,7 @@ class MutationReplaceUnaryOperator : public Mutation {
 
   [[nodiscard]] bool IsRedundantReplacementOperator(
       clang::UnaryOperatorKind operator_kind,
-      clang::ASTContext& ast_context) const;
+      const clang::ASTContext& ast_context) const;
 
   [[nodiscard]] bool IsOperatorSelfInverse() const;
 
@@ -67,7 +67,7 @@ class MutationReplaceUnaryOperator : public Mutation {
 
   // Replaces unary operators with other valid unary operators.
   void GenerateUnaryOperatorReplacement(
-      const std::string& arg_evaluated, clang::ASTContext& ast_context,
+      const std::string& arg_evaluated, const clang::ASTContext& ast_context,
       bool optimise_mutations, bool only_track_mutant_coverage,
       int mutation_id_base, std::stringstream& new_function,
       int& mutation_id_offset,

@@ -252,7 +252,7 @@ std::string MutationReplaceUnaryOperator::GenerateMutatorFunction(
 
 bool MutationReplaceUnaryOperator::IsRedundantReplacementOperator(
     clang::UnaryOperatorKind operator_kind,
-    clang::ASTContext& ast_context) const {
+    const clang::ASTContext& ast_context) const {
   // When the operand is 0: - is equivalent to replacement with 0 and ! is
   // equivalent to replacement with 1. When the operand is 1: - is equivalent to
   // replacement with -1 and ! is equivalent to replacement with 0.
@@ -282,7 +282,7 @@ bool MutationReplaceUnaryOperator::IsRedundantReplacementOperator(
 }
 
 void MutationReplaceUnaryOperator::GenerateUnaryOperatorReplacement(
-    const std::string& arg_evaluated, clang::ASTContext& ast_context,
+    const std::string& arg_evaluated, const clang::ASTContext& ast_context,
     bool optimise_mutations, bool only_track_mutant_coverage,
     int mutation_id_base, std::stringstream& new_function,
     int& mutation_id_offset,
@@ -423,12 +423,12 @@ protobufs::MutationGroup MutationReplaceUnaryOperator::Apply(
     prefix.append(
         "[&]() -> " + input_type + " { return " +
         // We don't need to static cast constant expressions
-        (unary_operator_->getSubExpr()->isCXX11ConstantExpr(ast_context)
+        (IsCxx11ConstantExpr(*unary_operator_->getSubExpr(), ast_context)
              ? ""
              : "static_cast<" + input_type + ">("));
     suffix.append(
-        unary_operator_->getSubExpr()->isCXX11ConstantExpr(ast_context) ? ""
-                                                                        : ")");
+        IsCxx11ConstantExpr(*unary_operator_->getSubExpr(), ast_context) ? ""
+                                                                         : ")");
     suffix.append("; }");
   }
 
