@@ -34,6 +34,28 @@ std::string SpaceToUnderscore(const std::string& input) {
   return result;
 }
 
+bool SourceRangeConsistencyCheck(clang::SourceRange source_range,
+                                 const clang::ASTContext& ast_context) {
+  const auto& source_manager = ast_context.getSourceManager();
+  auto char_source_range = clang::CharSourceRange::getTokenRange(source_range);
+  assert(char_source_range.isTokenRange() && "Expected a token range.");
+  (void)char_source_range;  // Keep release-mode compilers happy.
+  const unsigned int final_token_length = clang::Lexer::MeasureTokenLength(
+      source_range.getEnd(), source_manager, ast_context.getLangOpts());
+
+  const unsigned int start_line =
+      source_manager.getSpellingLineNumber(source_range.getBegin());
+  const unsigned int start_column =
+      source_manager.getSpellingColumnNumber(source_range.getBegin());
+  const unsigned int end_line =
+      source_manager.getSpellingLineNumber(source_range.getEnd());
+  const unsigned int end_column =
+      source_manager.getSpellingColumnNumber(source_range.getEnd()) +
+      final_token_length;
+
+  return start_line < end_line || start_column < end_column;
+}
+
 InfoForSourceRange::InfoForSourceRange(clang::SourceRange source_range,
                                        const clang::ASTContext& ast_context) {
   const auto& source_manager = ast_context.getSourceManager();
@@ -55,6 +77,9 @@ InfoForSourceRange::InfoForSourceRange(clang::SourceRange source_range,
   end_line_ = source_manager.getSpellingLineNumber(source_range.getEnd());
   end_column_ = source_manager.getSpellingColumnNumber(source_range.getEnd()) +
                 final_token_length;
+
+  assert((start_line_ < end_line_ || start_column_ < end_column_) &&
+         "Bad source range.");
 
   const unsigned int length = end_loc_decomposed.second -
                               start_loc_decomposed.second + final_token_length;

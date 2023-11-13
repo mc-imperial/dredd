@@ -66,12 +66,8 @@ export CXX=clang++
 which ${CC}
 which ${CXX}
 
-mkdir -p build
-pushd build
-  cmake -G Ninja .. -DCMAKE_BUILD_TYPE=Debug
-  cmake --build . --config Debug
-  cmake -DCMAKE_INSTALL_PREFIX=./install -DBUILD_TYPE=Debug -P cmake_install.cmake
-popd
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug
+cmake --build build --config Debug
 
 # Check that dredd works on some projects
 DREDD_EXECUTABLE="${DREDD_ROOT}/third_party/clang+llvm/bin/dredd"
@@ -88,13 +84,10 @@ echo "examples/math: check that the tests pass after mutating the library"
 date
 
 pushd examples/math
-  mkdir build
-  pushd build
-    cmake -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ..
-    ../mutate.sh
-    cmake --build .
-    ./mathtest/mathtest
-  popd
+  cmake -S . -B build -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+  ./mutate.sh
+  cmake --build build
+  ./build/mathtest/mathtest
 popd
 
 echo "SPIRV-Tools validator: check that the tests pass after mutating the validator"
@@ -104,26 +97,21 @@ git clone https://github.com/KhronosGroup/SPIRV-Tools.git
 pushd SPIRV-Tools
   git reset --hard c94501352d545e84c821ce031399e76d1af32d18
   python3 utils/git-sync-deps
-  mkdir build
-  pushd build
-    cmake -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DSPIRV_WERROR=OFF  -DCMAKE_CXX_FLAGS="-w" ..
-    # Build something minimal to ensure all header files get generated.
-    ninja SPIRV-Tools-static
-  popd
-popd
-FILES=()
-for f in SPIRV-Tools/source/val/*.cpp
-do
-  [[ -e "$f" ]] || break
-  FILES+=("${DREDD_ROOT}/${f}")
-done
-${DREDD_EXECUTABLE} --mutation-info-file temp.json -p "${DREDD_ROOT}/SPIRV-Tools/build/compile_commands.json" "${FILES[@]}"
-pushd SPIRV-Tools/build
-  ninja test_val_abcde test_val_capability test_val_fghijklmnop test_val_limits test_val_stuvw
-  ./test/val/test_val_abcde
-  ./test/val/test_val_capability
-  ./test/val/test_val_fghijklmnop
-  ./test/val/test_val_stuvw
+  cmake -S . -B build -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DSPIRV_WERROR=OFF -DCMAKE_CXX_FLAGS="-w"
+  # Build something minimal to ensure all header files get generated.
+  cmake --build build --target SPIRV-Tools-static
+  FILES=()
+  for f in source/val/*.cpp
+  do
+    [[ -e "$f" ]] || break
+    FILES+=("${DREDD_ROOT}/SPIRV-Tools/${f}")
+  done
+  ${DREDD_EXECUTABLE} --mutation-info-file temp.json -p "${DREDD_ROOT}/SPIRV-Tools/build/compile_commands.json" "${FILES[@]}"
+  cmake --build build --target test_val_abcde test_val_capability test_val_fghijklmnop test_val_limits test_val_stuvw
+  ./build/test/val/test_val_abcde
+  ./build/test/val/test_val_capability
+  ./build/test/val/test_val_fghijklmnop
+  ./build/test/val/test_val_stuvw
 popd
 
 echo "LLVM: check that InstCombine builds after mutation"
@@ -131,23 +119,18 @@ date
 
 git clone --branch llvmorg-14.0.6 --depth 1 https://github.com/llvm/llvm-project.git
 pushd llvm-project
-  mkdir build
-  pushd build
-    cmake -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_CXX_FLAGS="-w" ../llvm
-    # Build something minimal to ensure all header files get generated.
-    ninja LLVMCore
-  popd
-popd
+  cmake -S llvm -B build -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_CXX_FLAGS="-w"
+  # Build something minimal to ensure all header files get generated.
+  cmake --build build --target LLVMCore
 
-FILES=()
-for f in llvm-project/llvm/lib/Transforms/InstCombine/*.cpp
-do
-  [[ -e "$f" ]] || break
-  FILES+=("${DREDD_ROOT}/${f}")
-done
-${DREDD_EXECUTABLE} --mutation-info-file temp.json -p "${DREDD_ROOT}/llvm-project/build/compile_commands.json" "${FILES[@]}"
-pushd llvm-project/build
-  ninja LLVMInstCombine
+  FILES=()
+  for f in llvm/lib/Transforms/InstCombine/*.cpp
+  do
+    [[ -e "$f" ]] || break
+    FILES+=("${DREDD_ROOT}/llvm-project/${f}")
+  done
+  ${DREDD_EXECUTABLE} --mutation-info-file temp.json -p "${DREDD_ROOT}/llvm-project/build/compile_commands.json" "${FILES[@]}"
+  cmake --build build --target LLVMInstCombine
 popd
 
 echo "Finished"

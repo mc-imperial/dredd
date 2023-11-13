@@ -42,48 +42,48 @@ static bool __dredd_enabled_mutation(int local_mutation_id) {
   return (enabled_bitset[local_mutation_id / 64] & (1 << (local_mutation_id % 64))) != 0;
 }
 
-static int __dredd_replace_expr_int_lvalue(std::function<int&()> arg, int local_mutation_id) {
-  if (!__dredd_some_mutation_enabled) return arg();
-  if (__dredd_enabled_mutation(local_mutation_id + 0)) return ++(arg());
-  if (__dredd_enabled_mutation(local_mutation_id + 1)) return --(arg());
-  return arg();
+static int __dredd_replace_expr_int_lvalue(int& arg, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return arg;
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return ++(arg);
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return --(arg);
+  return arg;
 }
 
-static int __dredd_replace_expr_int(std::function<int()> arg, int local_mutation_id) {
-  if (!__dredd_some_mutation_enabled) return arg();
-  if (__dredd_enabled_mutation(local_mutation_id + 0)) return !(arg());
-  if (__dredd_enabled_mutation(local_mutation_id + 1)) return ~(arg());
-  if (__dredd_enabled_mutation(local_mutation_id + 2)) return -(arg());
+static int __dredd_replace_expr_int(int arg, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return arg;
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return !(arg);
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return ~(arg);
+  if (__dredd_enabled_mutation(local_mutation_id + 2)) return -(arg);
   if (__dredd_enabled_mutation(local_mutation_id + 3)) return 0;
   if (__dredd_enabled_mutation(local_mutation_id + 4)) return 1;
   if (__dredd_enabled_mutation(local_mutation_id + 5)) return -1;
-  return arg();
+  return arg;
 }
 
-static bool __dredd_replace_expr_bool_before_logical_operator_argument(std::function<bool()> arg, int local_mutation_id) {
-  if (!__dredd_some_mutation_enabled) return arg();
+static bool __dredd_replace_expr_bool_before_logical_operator_argument(bool arg, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return arg;
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return true;
   if (__dredd_enabled_mutation(local_mutation_id + 1)) return false;
-  return arg();
+  return arg;
 }
 
-static bool __dredd_replace_expr_bool(std::function<bool()> arg, int local_mutation_id) {
-  if (!__dredd_some_mutation_enabled) return arg();
-  if (__dredd_enabled_mutation(local_mutation_id + 0)) return !(arg());
+static bool __dredd_replace_expr_bool(bool arg, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return arg;
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return !(arg);
   if (__dredd_enabled_mutation(local_mutation_id + 1)) return true;
   if (__dredd_enabled_mutation(local_mutation_id + 2)) return false;
-  return arg();
+  return arg;
 }
 
-static bool __dredd_replace_binary_operator_LAnd_bool_bool(std::function<bool()> arg1, std::function<bool()> arg2, int local_mutation_id) {
-  if (!__dredd_some_mutation_enabled) return arg1() && arg2();
-  if (__dredd_enabled_mutation(local_mutation_id + 0)) return arg1() == arg2();
-  if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg1();
+static bool __dredd_replace_binary_operator_LAnd_bool_bool(bool arg1, std::function<bool()> arg2, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return arg1 && arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return arg1 == arg2();
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg1;
   if (__dredd_enabled_mutation(local_mutation_id + 2)) return arg2();
-  return arg1() && arg2();
+  return arg1 && arg2();
 }
 
 int foo(int a, int b) {
-  bool c = __dredd_replace_expr_bool([&]() -> bool { return static_cast<bool>(__dredd_replace_expr_int_lvalue([&]() -> int& { return static_cast<int&>(a); }, 0)); }, 2);
-  if (!__dredd_enabled_mutation(20)) { return __dredd_replace_expr_int([&]() -> int { return static_cast<int>(__dredd_replace_binary_operator_LAnd_bool_bool([&]() -> bool { return static_cast<bool>(__dredd_replace_expr_bool_before_logical_operator_argument([&]() -> bool { return static_cast<bool>(c); }, 5)); } , [&]() -> bool { return static_cast<bool>(__dredd_replace_expr_bool_before_logical_operator_argument([&]() -> bool { return static_cast<bool>(__dredd_replace_expr_int_lvalue([&]() -> int& { return static_cast<int&>(b); }, 7)); }, 9)); }, 11)); }, 14); }
+  bool c = __dredd_replace_expr_bool(__dredd_replace_expr_int_lvalue(a, 0), 2);
+  if (!__dredd_enabled_mutation(20)) { return __dredd_replace_expr_int(__dredd_replace_binary_operator_LAnd_bool_bool(__dredd_replace_expr_bool_before_logical_operator_argument(c, 5) , [&]() -> bool { return static_cast<bool>(__dredd_replace_expr_bool_before_logical_operator_argument(__dredd_replace_expr_int_lvalue(b, 7), 9)); }, 11), 14); }
 }

@@ -15,7 +15,6 @@
 #include <fstream>
 #include <memory>
 #include <string>
-#include <type_traits>
 
 #include "clang/Tooling/CommonOptionsParser.h"
 #include "clang/Tooling/Tooling.h"

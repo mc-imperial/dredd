@@ -43,9 +43,9 @@ class MutationReplaceExpr : public Mutation {
       clang::Rewriter& rewriter,
       std::unordered_set<std::string>& dredd_declarations) const override;
 
-  static void ApplyCppTypeModifiers(const clang::Expr* expr, std::string& type);
+  static void ApplyCppTypeModifiers(const clang::Expr& expr, std::string& type);
 
-  static void ApplyCTypeModifiers(const clang::Expr* expr, std::string& type);
+  static void ApplyCTypeModifiers(const clang::Expr& expr, std::string& type);
 
   // Check if an expression is equivalent to a constant.
   static bool ExprIsEquivalentToInt(const clang::Expr& expr, int constant,
@@ -147,13 +147,20 @@ class MutationReplaceExpr : public Mutation {
   [[nodiscard]] std::string GetFunctionName(
       bool optimise_mutations, clang::ASTContext& ast_context) const;
 
+  void ReplaceExprWithFunctionCall(const std::string& new_function_name,
+                                   const std::string& input_type,
+                                   int local_mutation_id,
+                                   clang::ASTContext& ast_context,
+                                   const clang::Preprocessor& preprocessor,
+                                   clang::Rewriter& rewriter) const;
+
   static void AddMutationInstance(
       int mutation_id_base, protobufs::MutationReplaceExprAction action,
       int& mutation_id_offset,
       protobufs::MutationReplaceExpr& protobuf_message);
 
-  const clang::Expr& expr_;
-  const InfoForSourceRange info_for_source_range_;
+  const clang::Expr* expr_;
+  InfoForSourceRange info_for_source_range_;
 };
 
 }  // namespace dredd

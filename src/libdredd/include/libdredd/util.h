@@ -92,8 +92,15 @@ template <typename HasSourceRange>
       return {};
     }
   }
+
   return {begin_loc_in_main_file, end_loc_in_main_file};
 }
+
+// Introduced to work around what seems like a bug in Clang, where a source
+// range can end earlier than it starts. See "structured_binding.cc" under
+// single file tests.
+bool SourceRangeConsistencyCheck(clang::SourceRange source_range,
+                                 const clang::ASTContext& ast_context);
 
 }  // namespace dredd
 

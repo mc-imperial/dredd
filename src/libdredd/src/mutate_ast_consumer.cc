@@ -57,15 +57,15 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
   }
   visitor_->TraverseDecl(ast_context.getTranslationUnitDecl());
 
-  rewriter_.setSourceMgr(compiler_instance_.getSourceManager(),
-                         compiler_instance_.getLangOpts());
+  rewriter_.setSourceMgr(compiler_instance_->getSourceManager(),
+                         compiler_instance_->getLangOpts());
 
   // Recording this makes it possible to keep track of how many mutations have
   // been applied to an individual source file, which allows mutations within
   // that source file to be tracked using a file-local mutation id that starts
   // from zero. Adding this value to the file-local id gives the global mutation
   // id.
-  const int initial_mutation_id = mutation_id_;
+  const int initial_mutation_id = *mutation_id_;
 
   // This is used to collect the various declarations that are introduced by
   // mutations in a manner that avoids duplicates, after which they can be added
@@ -85,12 +85,12 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
       ApplyMutations(visitor_->GetMutations(), initial_mutation_id, ast_context,
                      dredd_declarations);
 
-  if (initial_mutation_id == mutation_id_) {
+  if (initial_mutation_id == *mutation_id_) {
     // No possibilities for mutation were found; nothing else to do.
     return;
   }
 
-  *mutation_info_.add_info_for_files() = mutation_info_for_file;
+  *mutation_info_->add_info_for_files() = mutation_info_for_file;
 
   const clang::SourceLocation start_location_of_first_decl_in_source_file =
       visitor_->GetStartLocationOfFirstDeclInSourceFile();
@@ -111,7 +111,7 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
   }
 
   const std::string dredd_prelude =
-      compiler_instance_.getLangOpts().CPlusPlus
+      compiler_instance_->getLangOpts().CPlusPlus
           ? GetDreddPreludeCpp(initial_mutation_id)
           : GetDreddPreludeC(initial_mutation_id);
 
@@ -128,7 +128,7 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
 std::string MutateAstConsumer::GetRegularDreddPreludeCpp(
     int initial_mutation_id) const {
   // The number of mutations applied to this file is known.
-  const int num_mutations = mutation_id_ - initial_mutation_id;
+  const int num_mutations = *mutation_id_ - initial_mutation_id;
 
   // Whether mutants are enabled or not will be tracked using a bitset,
   // represented as an array of 64-bit integers. First, work out how large this
@@ -225,7 +225,7 @@ std::string MutateAstConsumer::GetRegularDreddPreludeCpp(
 std::string MutateAstConsumer::GetMutantTrackingDreddPreludeCpp(
     int initial_mutation_id) const {
   // The number of mutations applied to this file is known.
-  const int num_mutations = mutation_id_ - initial_mutation_id;
+  const int num_mutations = *mutation_id_ - initial_mutation_id;
 
   std::stringstream result;
   result << "#include <atomic>\n";
@@ -265,7 +265,7 @@ std::string MutateAstConsumer::GetRegularDreddPreludeC(
     int initial_mutation_id) const {
   // See comments in GetRegularDreddPreludeCpp - this C version is a
   // straightforward port.
-  const int num_mutations = mutation_id_ - initial_mutation_id;
+  const int num_mutations = *mutation_id_ - initial_mutation_id;
   const int kWordSize = 64;
   const int num_64_bit_words_required =
       (num_mutations + kWordSize - 1) / kWordSize;
@@ -325,7 +325,7 @@ std::string MutateAstConsumer::GetMutantTrackingDreddPreludeC(
     int initial_mutation_id) const {
   // See comments in GetMutantTrackingDreddPreludeCpp; this is a straightforward
   // port to C.
-  const int num_mutations = mutation_id_ - initial_mutation_id;
+  const int num_mutations = *mutation_id_ - initial_mutation_id;
   std::stringstream result;
   result << "#include <inttypes.h>\n";
   result << "#include <stdatomic.h>\n";
@@ -372,12 +372,12 @@ protobufs::MutationTreeNode MutateAstConsumer::ApplyMutations(
                                             context, dredd_declarations);
   }
   for (const auto& mutation : mutation_tree_node.GetMutations()) {
-    const int mutation_id_old = mutation_id_;
+    const int mutation_id_old = *mutation_id_;
     const auto mutation_group = mutation->Apply(
-        context, compiler_instance_.getPreprocessor(), optimise_mutations_,
-        only_track_mutant_coverage_, initial_mutation_id, mutation_id_,
+        context, compiler_instance_->getPreprocessor(), optimise_mutations_,
+        only_track_mutant_coverage_, initial_mutation_id, *mutation_id_,
         rewriter_, dredd_declarations);
-    if (mutation_id_ > mutation_id_old) {
+    if (*mutation_id_ > mutation_id_old) {
       // Only add the result of applying the mutation if it had an effect.
       *result.add_mutation_groups() = mutation_group;
     }

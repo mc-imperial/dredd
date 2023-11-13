@@ -53,12 +53,12 @@ class MutateFrontendAction : public clang::ASTFrontendAction {
     const bool input_exists = !getCurrentInput().isEmpty();
     (void)input_exists;  // Keep release-mode compilers happy.
     assert(input_exists && "No current file.");
-    if (processed_files_.contains(getCurrentFile().str())) {
+    if (processed_files_->contains(getCurrentFile().str())) {
       llvm::errs() << "Warning: already processed " << getCurrentFile()
                    << "; skipping repeat occurrence.\n";
       return false;
     }
-    processed_files_.insert(getCurrentFile().str());
+    processed_files_->insert(getCurrentFile().str());
     return true;
   }
 

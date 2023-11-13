@@ -62,9 +62,6 @@ class MutationReplaceUnaryOperator : public Mutation {
 
   [[nodiscard]] bool IsOperatorSelfInverse() const;
 
-  // This returns a string corresponding to the non-mutated expression.
-  std::string GetExpr(clang::ASTContext& ast_context) const;
-
   std::string GetFunctionName(bool optimise_mutations,
                               clang::ASTContext& ast_context) const;
 
@@ -89,9 +86,9 @@ class MutationReplaceUnaryOperator : public Mutation {
   ClangOperatorKindToProtobufOperatorKind(
       clang::UnaryOperatorKind operator_kind);
 
-  const clang::UnaryOperator& unary_operator_;
-  const InfoForSourceRange info_for_overall_expr_;
-  const InfoForSourceRange info_for_sub_expr_;
+  const clang::UnaryOperator* unary_operator_;
+  InfoForSourceRange info_for_overall_expr_;
+  InfoForSourceRange info_for_sub_expr_;
 };
 
 }  // namespace dredd

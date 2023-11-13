@@ -42,20 +42,20 @@ static bool __dredd_enabled_mutation(int local_mutation_id) {
   return (enabled_bitset[local_mutation_id / 64] & (1 << (local_mutation_id % 64))) != 0;
 }
 
-static double __dredd_replace_expr_double_one(std::function<double()> arg, int local_mutation_id) {
-  if (!__dredd_some_mutation_enabled) return arg();
+static double __dredd_replace_expr_double_one(double arg, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return arg;
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return 0.0;
   if (__dredd_enabled_mutation(local_mutation_id + 1)) return -1.0;
-  return arg();
+  return arg;
 }
 
-static double __dredd_replace_expr_double_minus_one(std::function<double()> arg, int local_mutation_id) {
-  if (!__dredd_some_mutation_enabled) return arg();
+static double __dredd_replace_expr_double_minus_one(double arg, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return arg;
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return 0.0;
   if (__dredd_enabled_mutation(local_mutation_id + 1)) return 1.0;
-  return arg();
+  return arg;
 }
 
 int main() {
-  double x = __dredd_replace_expr_double_minus_one([&]() -> double { return -__dredd_replace_expr_double_one([&]() -> double { return 1.0; }, 0); }, 2);
+  double x = __dredd_replace_expr_double_minus_one(-__dredd_replace_expr_double_one(1.0, 0), 2);
 }

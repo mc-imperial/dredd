@@ -40,7 +40,7 @@ MutationReplaceBinaryOperator::MutationReplaceBinaryOperator(
     const clang::BinaryOperator& binary_operator,
     const clang::Preprocessor& preprocessor,
     const clang::ASTContext& ast_context)
-    : binary_operator_(binary_operator),
+    : binary_operator_(&binary_operator),
       info_for_overall_expr_(
           GetSourceRangeInMainFile(preprocessor, binary_operator), ast_context),
       info_for_lhs_(
@@ -49,25 +49,6 @@ MutationReplaceBinaryOperator::MutationReplaceBinaryOperator(
       info_for_rhs_(
           GetSourceRangeInMainFile(preprocessor, *binary_operator.getRHS()),
           ast_context) {}
-
-std::string MutationReplaceBinaryOperator::GetExpr(
-    clang::ASTContext& ast_context) const {
-  std::string arg1_evaluated("arg1");
-  std::string arg2_evaluated("arg2");
-  if (ast_context.getLangOpts().CPlusPlus) {
-    arg1_evaluated += "()";
-    arg2_evaluated += "()";
-  } else {
-    if (binary_operator_.isAssignmentOp()) {
-      arg1_evaluated = "(*" + arg1_evaluated + ")";
-    }
-  }
-  std::string result =
-      arg1_evaluated + " " +
-      clang::BinaryOperator::getOpcodeStr(binary_operator_.getOpcode()).str() +
-      " " + arg2_evaluated;
-  return result;
-}
 
 bool MutationReplaceBinaryOperator::IsRedundantReplacementOperator(
     clang::BinaryOperatorKind operator_kind,
@@ -86,11 +67,11 @@ bool MutationReplaceBinaryOperator::IsRedundantReplacementOperator(
 bool MutationReplaceBinaryOperator::IsValidReplacementOperator(
     clang::BinaryOperatorKind operator_kind) const {
   const auto* lhs_type =
-      binary_operator_.getLHS()->getType()->getAs<clang::BuiltinType>();
+      binary_operator_->getLHS()->getType()->getAs<clang::BuiltinType>();
   assert((lhs_type->isFloatingPoint() || lhs_type->isInteger()) &&
          "Expected lhs to be either integer or floating-point.");
   const auto* rhs_type =
-      binary_operator_.getRHS()->getType()->getAs<clang::BuiltinType>();
+      binary_operator_->getRHS()->getType()->getAs<clang::BuiltinType>();
   assert((rhs_type->isFloatingPoint() || rhs_type->isInteger()) &&
          "Expected rhs to be either integer or floating-point.");
   return !((lhs_type->isFloatingPoint() || rhs_type->isFloatingPoint()) &&
@@ -110,7 +91,7 @@ std::string MutationReplaceBinaryOperator::GetFunctionName(
   // A string corresponding to the binary operator forms part of the name of the
   // mutation function, to differentiate mutation functions for different
   // operators
-  switch (binary_operator_.getOpcode()) {
+  switch (binary_operator_->getOpcode()) {
     case clang::BinaryOperatorKind::BO_Add:
       result += "Add";
       break;
@@ -204,9 +185,9 @@ std::string MutationReplaceBinaryOperator::GetFunctionName(
 
   std::string lhs_qualifier;
 
-  if (binary_operator_.isAssignmentOp()) {
+  if (binary_operator_->isAssignmentOp()) {
     const clang::QualType qualified_lhs_type =
-        binary_operator_.getLHS()->getType();
+        binary_operator_->getLHS()->getType();
     if (qualified_lhs_type.isVolatileQualified()) {
       lhs_qualifier = "volatile ";
     }
@@ -217,13 +198,13 @@ std::string MutationReplaceBinaryOperator::GetFunctionName(
   // are replaced with underscores.
   result +=
       "_" + SpaceToUnderscore(lhs_qualifier +
-                              binary_operator_.getLHS()
+                              binary_operator_->getLHS()
                                   ->getType()
                                   ->getAs<clang::BuiltinType>()
                                   ->getName(ast_context.getPrintingPolicy())
                                   .str());
   result +=
-      "_" + SpaceToUnderscore(binary_operator_.getRHS()
+      "_" + SpaceToUnderscore(binary_operator_->getRHS()
                                   ->getType()
                                   ->getAs<clang::BuiltinType>()
                                   ->getName(ast_context.getPrintingPolicy())
@@ -233,38 +214,38 @@ std::string MutationReplaceBinaryOperator::GetFunctionName(
   // important to change the name of the mutator function to avoid clashes
   // with other versions that apply to the same operator and types but cannot
   // be optimised.
-  if (optimise_mutations && !binary_operator_.isAssignmentOp()) {
-    if (MutationReplaceExpr::ExprIsEquivalentToInt(*binary_operator_.getRHS(),
+  if (optimise_mutations && !binary_operator_->isAssignmentOp()) {
+    if (MutationReplaceExpr::ExprIsEquivalentToInt(*binary_operator_->getRHS(),
                                                    0, ast_context) ||
-        MutationReplaceExpr::ExprIsEquivalentToFloat(*binary_operator_.getRHS(),
-                                                     0.0, ast_context)) {
+        MutationReplaceExpr::ExprIsEquivalentToFloat(
+            *binary_operator_->getRHS(), 0.0, ast_context)) {
       result += "_rhs_zero";
     } else if (MutationReplaceExpr::ExprIsEquivalentToInt(
-                   *binary_operator_.getRHS(), 1, ast_context) ||
+                   *binary_operator_->getRHS(), 1, ast_context) ||
                MutationReplaceExpr::ExprIsEquivalentToFloat(
-                   *binary_operator_.getRHS(), 1.0, ast_context)) {
+                   *binary_operator_->getRHS(), 1.0, ast_context)) {
       result += "_rhs_one";
     } else if (MutationReplaceExpr::ExprIsEquivalentToInt(
-                   *binary_operator_.getRHS(), -1, ast_context) ||
+                   *binary_operator_->getRHS(), -1, ast_context) ||
                MutationReplaceExpr::ExprIsEquivalentToFloat(
-                   *binary_operator_.getRHS(), -1.0, ast_context)) {
+                   *binary_operator_->getRHS(), -1.0, ast_context)) {
       result += "_rhs_minus_one";
     }
 
-    if (MutationReplaceExpr::ExprIsEquivalentToInt(*binary_operator_.getLHS(),
+    if (MutationReplaceExpr::ExprIsEquivalentToInt(*binary_operator_->getLHS(),
                                                    0, ast_context) ||
-        MutationReplaceExpr::ExprIsEquivalentToFloat(*binary_operator_.getLHS(),
-                                                     0.0, ast_context)) {
+        MutationReplaceExpr::ExprIsEquivalentToFloat(
+            *binary_operator_->getLHS(), 0.0, ast_context)) {
       result += "_lhs_zero";
     } else if (MutationReplaceExpr::ExprIsEquivalentToInt(
-                   *binary_operator_.getLHS(), 1, ast_context) ||
+                   *binary_operator_->getLHS(), 1, ast_context) ||
                MutationReplaceExpr::ExprIsEquivalentToFloat(
-                   *binary_operator_.getLHS(), 1.0, ast_context)) {
+                   *binary_operator_->getLHS(), 1.0, ast_context)) {
       result += "_lhs_one";
     } else if (MutationReplaceExpr::ExprIsEquivalentToInt(
-                   *binary_operator_.getLHS(), -1, ast_context) ||
+                   *binary_operator_->getLHS(), -1, ast_context) ||
                MutationReplaceExpr::ExprIsEquivalentToFloat(
-                   *binary_operator_.getLHS(), -1.0, ast_context)) {
+                   *binary_operator_->getLHS(), -1.0, ast_context)) {
       result += "_lhs_minus_one";
     }
   }
@@ -279,7 +260,7 @@ void MutationReplaceBinaryOperator::GenerateArgumentReplacement(
     std::stringstream& new_function, int& mutation_id_offset,
     protobufs::MutationReplaceBinaryOperator& protobuf_message) const {
   if (optimise_mutations) {
-    switch (binary_operator_.getOpcode()) {
+    switch (binary_operator_->getOpcode()) {
       case clang::BO_GT:
       case clang::BO_GE:
       case clang::BO_LT:
@@ -295,7 +276,7 @@ void MutationReplaceBinaryOperator::GenerateArgumentReplacement(
     }
   }
 
-  if (binary_operator_.isAssignmentOp()) {
+  if (binary_operator_->isAssignmentOp()) {
     // It would be possible to replace an assignment operator, such as `x = y`,
     // with its LHS. However, since the most common case is for such expressions
     // to appear as top-level statements, with the LHS being a side effect-free
@@ -307,18 +288,18 @@ void MutationReplaceBinaryOperator::GenerateArgumentReplacement(
   // These cases are equivalent to constant replacement with the respective
   // constants
   if (!optimise_mutations ||
-      !(MutationReplaceExpr::ExprIsEquivalentToInt(*binary_operator_.getLHS(),
+      !(MutationReplaceExpr::ExprIsEquivalentToInt(*binary_operator_->getLHS(),
                                                    0, ast_context) ||
-        MutationReplaceExpr::ExprIsEquivalentToFloat(*binary_operator_.getLHS(),
-                                                     0.0, ast_context) ||
-        MutationReplaceExpr::ExprIsEquivalentToInt(*binary_operator_.getLHS(),
+        MutationReplaceExpr::ExprIsEquivalentToFloat(
+            *binary_operator_->getLHS(), 0.0, ast_context) ||
+        MutationReplaceExpr::ExprIsEquivalentToInt(*binary_operator_->getLHS(),
                                                    1, ast_context) ||
-        MutationReplaceExpr::ExprIsEquivalentToFloat(*binary_operator_.getLHS(),
-                                                     1.0, ast_context) ||
-        MutationReplaceExpr::ExprIsEquivalentToInt(*binary_operator_.getLHS(),
+        MutationReplaceExpr::ExprIsEquivalentToFloat(
+            *binary_operator_->getLHS(), 1.0, ast_context) ||
+        MutationReplaceExpr::ExprIsEquivalentToInt(*binary_operator_->getLHS(),
                                                    -1, ast_context) ||
-        MutationReplaceExpr::ExprIsEquivalentToFloat(*binary_operator_.getLHS(),
-                                                     -1.0, ast_context))) {
+        MutationReplaceExpr::ExprIsEquivalentToFloat(
+            *binary_operator_->getLHS(), -1.0, ast_context))) {
     if (!only_track_mutant_coverage) {
       new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
                    << mutation_id_offset << ")) return " << arg1_evaluated
@@ -334,18 +315,18 @@ void MutationReplaceBinaryOperator::GenerateArgumentReplacement(
   // These cases are equivalent to constant replacement with the respective
   // constants
   if (!optimise_mutations ||
-      !(MutationReplaceExpr::ExprIsEquivalentToInt(*binary_operator_.getRHS(),
+      !(MutationReplaceExpr::ExprIsEquivalentToInt(*binary_operator_->getRHS(),
                                                    0, ast_context) ||
-        MutationReplaceExpr::ExprIsEquivalentToFloat(*binary_operator_.getRHS(),
-                                                     0.0, ast_context) ||
-        MutationReplaceExpr::ExprIsEquivalentToInt(*binary_operator_.getRHS(),
+        MutationReplaceExpr::ExprIsEquivalentToFloat(
+            *binary_operator_->getRHS(), 0.0, ast_context) ||
+        MutationReplaceExpr::ExprIsEquivalentToInt(*binary_operator_->getRHS(),
                                                    1, ast_context) ||
-        MutationReplaceExpr::ExprIsEquivalentToFloat(*binary_operator_.getRHS(),
-                                                     1.0, ast_context) ||
-        MutationReplaceExpr::ExprIsEquivalentToInt(*binary_operator_.getRHS(),
+        MutationReplaceExpr::ExprIsEquivalentToFloat(
+            *binary_operator_->getRHS(), 1.0, ast_context) ||
+        MutationReplaceExpr::ExprIsEquivalentToInt(*binary_operator_->getRHS(),
                                                    -1, ast_context) ||
-        MutationReplaceExpr::ExprIsEquivalentToFloat(*binary_operator_.getRHS(),
-                                                     -1.0, ast_context))) {
+        MutationReplaceExpr::ExprIsEquivalentToFloat(
+            *binary_operator_->getRHS(), -1.0, ast_context))) {
     if (!only_track_mutant_coverage) {
       new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
                    << mutation_id_offset << ")) return " << arg2_evaluated
@@ -419,19 +400,19 @@ MutationReplaceBinaryOperator::GetReplacementOperators(
        {kArithmeticOperators, kAssignmentOperators, kBitwiseOperators,
         kLogicalOperators, kRelationalOperators, kShiftOperators}) {
     if (std::find(operator_kinds.begin(), operator_kinds.end(),
-                  binary_operator_.getOpcode()) != operator_kinds.end()) {
+                  binary_operator_->getOpcode()) != operator_kinds.end()) {
       candidate_operator_kinds = operator_kinds;
       // It is desirable to consider replacing && and || with == and !=.
-      if (binary_operator_.getOpcode() == clang::BO_LAnd ||
-          binary_operator_.getOpcode() == clang::BO_LOr) {
+      if (binary_operator_->getOpcode() == clang::BO_LAnd ||
+          binary_operator_->getOpcode() == clang::BO_LOr) {
         candidate_operator_kinds.push_back(clang::BO_EQ);
         candidate_operator_kinds.push_back(clang::BO_NE);
       }
       // When they are applied to booleans, it is desirable to consider
       // replacing == and != with && and ||.
-      if (binary_operator_.getLHS()->getType()->isBooleanType() &&
-          (binary_operator_.getOpcode() == clang::BO_EQ ||
-           binary_operator_.getOpcode() == clang::BO_NE)) {
+      if (binary_operator_->getLHS()->getType()->isBooleanType() &&
+          (binary_operator_->getOpcode() == clang::BO_EQ ||
+           binary_operator_->getOpcode() == clang::BO_NE)) {
         candidate_operator_kinds.push_back(clang::BO_LAnd);
         candidate_operator_kinds.push_back(clang::BO_LOr);
       }
@@ -441,7 +422,7 @@ MutationReplaceBinaryOperator::GetReplacementOperators(
 
   std::vector<clang::BinaryOperatorKind> result;
   for (auto operator_kind : candidate_operator_kinds) {
-    if (operator_kind == binary_operator_.getOpcode() ||
+    if (operator_kind == binary_operator_->getOpcode() ||
         !IsValidReplacementOperator(operator_kind) ||
         (optimise_mutations &&
          IsRedundantReplacementOperator(operator_kind, ast_context))) {
@@ -461,14 +442,17 @@ std::string MutationReplaceBinaryOperator::GenerateMutatorFunction(
   std::stringstream new_function;
   new_function << "static " << result_type << " " << function_name << "(";
 
-  if (ast_context.getLangOpts().CPlusPlus) {
+  if (ast_context.getLangOpts().CPlusPlus &&
+      binary_operator_->getLHS()->HasSideEffects(ast_context)) {
     new_function << "std::function<" << lhs_type << "()>";
   } else {
     new_function << lhs_type;
   }
   new_function << " arg1, ";
 
-  if (ast_context.getLangOpts().CPlusPlus) {
+  if (ast_context.getLangOpts().CPlusPlus &&
+      (binary_operator_->isLogicalOp() ||
+       binary_operator_->getRHS()->HasSideEffects(ast_context))) {
     new_function << "std::function<" << rhs_type << "()>";
   } else {
     new_function << rhs_type;
@@ -479,14 +463,20 @@ std::string MutationReplaceBinaryOperator::GenerateMutatorFunction(
   int mutation_id_offset = 0;
 
   std::string arg1_evaluated("arg1");
-  std::string arg2_evaluated("arg2");
-  if (ast_context.getLangOpts().CPlusPlus) {
+  if (ast_context.getLangOpts().CPlusPlus &&
+      binary_operator_->getLHS()->HasSideEffects(ast_context)) {
     arg1_evaluated += "()";
+  }
+  if (!ast_context.getLangOpts().CPlusPlus &&
+      binary_operator_->isAssignmentOp()) {
+    arg1_evaluated = "(*" + arg1_evaluated + ")";
+  }
+
+  std::string arg2_evaluated("arg2");
+  if (ast_context.getLangOpts().CPlusPlus &&
+      (binary_operator_->isLogicalOp() ||
+       binary_operator_->getRHS()->HasSideEffects(ast_context))) {
     arg2_evaluated += "()";
-  } else {
-    if (binary_operator_.isAssignmentOp()) {
-      arg1_evaluated = "(*" + arg1_evaluated + ")";
-    }
   }
 
   if (!only_track_mutant_coverage) {
@@ -509,7 +499,12 @@ std::string MutationReplaceBinaryOperator::GenerateMutatorFunction(
     new_function << "  __dredd_record_covered_mutants(local_mutation_id, " +
                         std::to_string(mutation_id_offset) + ");\n";
   }
-  new_function << "  return " << GetExpr(ast_context) << ";\n";
+  new_function << "  return " << arg1_evaluated << " "
+               << clang::BinaryOperator::getOpcodeStr(
+                      binary_operator_->getOpcode())
+                      .str()
+               << " " << arg2_evaluated << ";\n";
+
   new_function << "}\n\n";
 
   // The function captures |mutation_id_offset| different mutations, so bump up
@@ -529,7 +524,7 @@ protobufs::MutationGroup MutationReplaceBinaryOperator::Apply(
   protobufs::MutationReplaceBinaryOperator inner_result;
 
   inner_result.set_operator_(
-      ClangOperatorKindToProtobufOperatorKind(binary_operator_.getOpcode()));
+      ClangOperatorKindToProtobufOperatorKind(binary_operator_->getOpcode()));
 
   inner_result.mutable_expr_start()->set_line(
       info_for_overall_expr_.GetStartLine());
@@ -555,22 +550,22 @@ protobufs::MutationGroup MutationReplaceBinaryOperator::Apply(
 
   const std::string new_function_name =
       GetFunctionName(optimise_mutations, ast_context);
-  std::string result_type = binary_operator_.getType()
+  std::string result_type = binary_operator_->getType()
                                 ->getAs<clang::BuiltinType>()
                                 ->getName(ast_context.getPrintingPolicy())
                                 .str();
-  std::string lhs_type = binary_operator_.getLHS()
+  std::string lhs_type = binary_operator_->getLHS()
                              ->getType()
                              ->getAs<clang::BuiltinType>()
                              ->getName(ast_context.getPrintingPolicy())
                              .str();
-  const std::string rhs_type = binary_operator_.getRHS()
+  const std::string rhs_type = binary_operator_->getRHS()
                                    ->getType()
                                    ->getAs<clang::BuiltinType>()
                                    ->getName(ast_context.getPrintingPolicy())
                                    .str();
 
-  if (!ast_context.getLangOpts().CPlusPlus && binary_operator_.isLogicalOp()) {
+  if (!ast_context.getLangOpts().CPlusPlus && binary_operator_->isLogicalOp()) {
     // Logical operators in C require special treatment (see the header file for
     // details). Rather than scattering this special treatment throughout the
     // logic for handling other operators, it is simpler to handle this case
@@ -585,7 +580,7 @@ protobufs::MutationGroup MutationReplaceBinaryOperator::Apply(
     return result;
   }
 
-  if (binary_operator_.isAssignmentOp()) {
+  if (binary_operator_->isAssignmentOp()) {
     if (ast_context.getLangOpts().CPlusPlus) {
       result_type += "&";
       lhs_type += "&";
@@ -593,11 +588,11 @@ protobufs::MutationGroup MutationReplaceBinaryOperator::Apply(
       lhs_type += "*";
     }
     const clang::QualType qualified_lhs_type =
-        binary_operator_.getLHS()->getType();
+        binary_operator_->getLHS()->getType();
     if (qualified_lhs_type.isVolatileQualified()) {
       lhs_type = "volatile " + lhs_type;
       if (ast_context.getLangOpts().CPlusPlus) {
-        assert(binary_operator_.getType().isVolatileQualified() &&
+        assert(binary_operator_->getType().isVolatileQualified() &&
                "Expected expression to be volatile-qualified since LHS is.");
         result_type = "volatile " + result_type;
       }
@@ -629,10 +624,10 @@ void MutationReplaceBinaryOperator::ReplaceOperator(
     const clang::Preprocessor& preprocessor, int first_mutation_id_in_file,
     int& mutation_id, clang::Rewriter& rewriter) const {
   const clang::SourceRange lhs_source_range_in_main_file =
-      GetSourceRangeInMainFile(preprocessor, *binary_operator_.getLHS());
+      GetSourceRangeInMainFile(preprocessor, *binary_operator_->getLHS());
   assert(lhs_source_range_in_main_file.isValid() && "Invalid source range.");
   const clang::SourceRange rhs_source_range_in_main_file =
-      GetSourceRangeInMainFile(preprocessor, *binary_operator_.getRHS());
+      GetSourceRangeInMainFile(preprocessor, *binary_operator_->getRHS());
   assert(rhs_source_range_in_main_file.isValid() && "Invalid source range.");
 
   // Replace the binary operator expression with a call to the wrapper
@@ -653,34 +648,39 @@ void MutationReplaceBinaryOperator::ReplaceOperator(
 
   // Replace the operator symbol with ","
   rewriter.ReplaceText(
-      binary_operator_.getOperatorLoc(),
+      binary_operator_->getOperatorLoc(),
       static_cast<unsigned int>(
-          clang::BinaryOperator::getOpcodeStr(binary_operator_.getOpcode())
+          clang::BinaryOperator::getOpcodeStr(binary_operator_->getOpcode())
               .size()),
       ",");
 
   // These record the text that should be inserted before and after the LHS and
   // RHS operands.
-  std::string lhs_prefix;
+  std::string lhs_prefix = new_function_name + "(";
   std::string lhs_suffix;
   std::string rhs_prefix;
   std::string rhs_suffix;
 
   if (ast_context.getLangOpts().CPlusPlus) {
-    lhs_prefix = new_function_name + "([&]() -> " + lhs_type +
-                 " { return static_cast<" + lhs_type + ">(";
-    lhs_suffix = "); }";
-    rhs_prefix =
-        "[&]() -> " + rhs_type + " { return static_cast<" + rhs_type + ">(";
-    rhs_suffix = "); }, " + std::to_string(local_mutation_id) + ")";
+    if (binary_operator_->getLHS()->HasSideEffects(ast_context)) {
+      lhs_prefix.append("[&]() -> " + lhs_type + " { return static_cast<" +
+                        lhs_type + ">(");
+      lhs_suffix.append("); }");
+    }
+    if (binary_operator_->isLogicalOp() ||
+        binary_operator_->getRHS()->HasSideEffects(ast_context)) {
+      rhs_prefix.append("[&]() -> " + rhs_type + " { return static_cast<" +
+                        rhs_type + ">(");
+      rhs_suffix.append("); }");
+    }
   } else {
-    lhs_prefix = new_function_name + "(";
-    if (binary_operator_.isAssignmentOp()) {
+    if (binary_operator_->isAssignmentOp()) {
       lhs_prefix.append("&(");
       lhs_suffix.append(")");
     }
-    rhs_suffix = ", " + std::to_string(local_mutation_id) + ")";
   }
+  rhs_suffix.append(", " + std::to_string(local_mutation_id) + ")");
+
   // The prefixes and suffixes are ready, so make the relevant insertions.
   bool rewriter_result = rewriter.InsertTextBefore(
       lhs_source_range_in_main_file.getBegin(), lhs_prefix);
@@ -730,7 +730,7 @@ void MutationReplaceBinaryOperator::HandleCLogicalOperator(
       // Rewrite the LHS of the expression, and introduce the associated
       // function.
       auto source_range_lhs =
-          GetSourceRangeInMainFile(preprocessor, *binary_operator_.getLHS());
+          GetSourceRangeInMainFile(preprocessor, *binary_operator_->getLHS());
       const std::string lhs_function_name = new_function_prefix + "_lhs";
       rewriter.InsertTextBefore(source_range_lhs.getBegin(),
                                 lhs_function_name + "(");
@@ -752,7 +752,7 @@ void MutationReplaceBinaryOperator::HandleCLogicalOperator(
       // Case 1: replacing with LHS: no action is needed here.
 
       // Case 2: replacing with RHS.
-      if (binary_operator_.getOpcode() == clang::BinaryOperatorKind::BO_LAnd) {
+      if (binary_operator_->getOpcode() == clang::BinaryOperatorKind::BO_LAnd) {
         // Replacing "a && b" with "b" is achieved by replacing "a" with "1".
         lhs_function
             << "  if (__dredd_enabled_mutation(local_mutation_id + 2)) "
@@ -772,7 +772,7 @@ void MutationReplaceBinaryOperator::HandleCLogicalOperator(
       // Rewrite the RHS of the expression, and introduce the associated
       // function.
       auto source_range_rhs =
-          GetSourceRangeInMainFile(preprocessor, *binary_operator_.getRHS());
+          GetSourceRangeInMainFile(preprocessor, *binary_operator_->getRHS());
       const std::string rhs_function_name = new_function_prefix + "_rhs";
       rewriter.InsertTextBefore(source_range_rhs.getBegin(),
                                 rhs_function_name + "(");
@@ -792,7 +792,7 @@ void MutationReplaceBinaryOperator::HandleCLogicalOperator(
                       "return !arg;\n";
 
       // Case 1: replacing with LHS.
-      if (binary_operator_.getOpcode() == clang::BinaryOperatorKind::BO_LAnd) {
+      if (binary_operator_->getOpcode() == clang::BinaryOperatorKind::BO_LAnd) {
         // Replacing "a && b" with "a" is achieved by replacing "b" with "1".
         rhs_function
             << "  if (__dredd_enabled_mutation(local_mutation_id + 1)) "
@@ -815,7 +815,7 @@ void MutationReplaceBinaryOperator::HandleCLogicalOperator(
   {
     // Rewrite the overall expression, and introduce the associated function.
     auto source_range_binary_operator =
-        GetSourceRangeInMainFile(preprocessor, binary_operator_);
+        GetSourceRangeInMainFile(preprocessor, *binary_operator_);
     const std::string outer_function_name = new_function_prefix + "_outer";
     rewriter.InsertTextBefore(source_range_binary_operator.getBegin(),
                               outer_function_name + "(");
@@ -1020,7 +1020,7 @@ MutationReplaceBinaryOperator::ClangOperatorKindToProtobufOperatorKind(
 bool MutationReplaceBinaryOperator::
     IsRedundantReplacementForBooleanValuedOperator(
         clang::BinaryOperatorKind operator_kind) const {
-  switch (binary_operator_.getOpcode()) {
+  switch (binary_operator_->getOpcode()) {
     // From
     // https://people.cs.umass.edu/~rjust/publ/non_redundant_mutants_jstvr_2014.pdf:
     // For boolean operators, only a subset of replacements are non-redundant.
@@ -1050,13 +1050,13 @@ bool MutationReplaceBinaryOperator::IsRedundantReplacementForArithmeticOperator(
     clang::ASTContext& ast_context) const {
   // In the case where both operands are 0, the only case that isn't covered
   // by constant replacement is undefined behaviour, this is achieved by /.
-  if ((MutationReplaceExpr::ExprIsEquivalentToInt(*binary_operator_.getRHS(), 0,
-                                                  ast_context) ||
-       MutationReplaceExpr::ExprIsEquivalentToFloat(*binary_operator_.getRHS(),
+  if ((MutationReplaceExpr::ExprIsEquivalentToInt(*binary_operator_->getRHS(),
+                                                  0, ast_context) ||
+       MutationReplaceExpr::ExprIsEquivalentToFloat(*binary_operator_->getRHS(),
                                                     0.0, ast_context)) &&
-      (MutationReplaceExpr::ExprIsEquivalentToInt(*binary_operator_.getRHS(), 0,
-                                                  ast_context) ||
-       MutationReplaceExpr::ExprIsEquivalentToFloat(*binary_operator_.getRHS(),
+      (MutationReplaceExpr::ExprIsEquivalentToInt(*binary_operator_->getRHS(),
+                                                  0, ast_context) ||
+       MutationReplaceExpr::ExprIsEquivalentToFloat(*binary_operator_->getRHS(),
                                                     0.0, ast_context))) {
     if (operator_kind == clang::BO_Div) {
       return false;
@@ -1065,9 +1065,9 @@ bool MutationReplaceBinaryOperator::IsRedundantReplacementForArithmeticOperator(
 
   // In the following cases, the replacement is equivalent to either replacement
   // with a constant or argument replacement.
-  if ((MutationReplaceExpr::ExprIsEquivalentToInt(*binary_operator_.getRHS(), 0,
-                                                  ast_context) ||
-       MutationReplaceExpr::ExprIsEquivalentToFloat(*binary_operator_.getRHS(),
+  if ((MutationReplaceExpr::ExprIsEquivalentToInt(*binary_operator_->getRHS(),
+                                                  0, ast_context) ||
+       MutationReplaceExpr::ExprIsEquivalentToFloat(*binary_operator_->getRHS(),
                                                     0.0, ast_context))) {
     // When the right operand is 0: +, -, << and >> are all equivalent to
     // replacement with the right operand; * is equivalent to replacement with
@@ -1080,9 +1080,9 @@ bool MutationReplaceBinaryOperator::IsRedundantReplacementForArithmeticOperator(
     }
   }
 
-  if ((MutationReplaceExpr::ExprIsEquivalentToInt(*binary_operator_.getRHS(), 1,
-                                                  ast_context) ||
-       MutationReplaceExpr::ExprIsEquivalentToFloat(*binary_operator_.getRHS(),
+  if ((MutationReplaceExpr::ExprIsEquivalentToInt(*binary_operator_->getRHS(),
+                                                  1, ast_context) ||
+       MutationReplaceExpr::ExprIsEquivalentToFloat(*binary_operator_->getRHS(),
                                                     1.0, ast_context))) {
     // When the right operand is 1: * and / are equivalent to replacement by
     // the left operand.
@@ -1091,9 +1091,9 @@ bool MutationReplaceBinaryOperator::IsRedundantReplacementForArithmeticOperator(
     }
   }
 
-  if ((MutationReplaceExpr::ExprIsEquivalentToInt(*binary_operator_.getLHS(), 0,
-                                                  ast_context) ||
-       MutationReplaceExpr::ExprIsEquivalentToFloat(*binary_operator_.getLHS(),
+  if ((MutationReplaceExpr::ExprIsEquivalentToInt(*binary_operator_->getLHS(),
+                                                  0, ast_context) ||
+       MutationReplaceExpr::ExprIsEquivalentToFloat(*binary_operator_->getLHS(),
                                                     0.0, ast_context))) {
     // When the left operand is 0: *, /, %, << and >> are equivalent to
     // replacement by the constant 0 and + is equivalent to replacement by the
@@ -1105,9 +1105,9 @@ bool MutationReplaceBinaryOperator::IsRedundantReplacementForArithmeticOperator(
     }
   }
 
-  if ((MutationReplaceExpr::ExprIsEquivalentToInt(*binary_operator_.getLHS(), 1,
-                                                  ast_context) ||
-       MutationReplaceExpr::ExprIsEquivalentToFloat(*binary_operator_.getLHS(),
+  if ((MutationReplaceExpr::ExprIsEquivalentToInt(*binary_operator_->getLHS(),
+                                                  1, ast_context) ||
+       MutationReplaceExpr::ExprIsEquivalentToFloat(*binary_operator_->getLHS(),
                                                     1.0, ast_context)) &&
       operator_kind == clang::BO_Mul) {
     // When the left operand is 1: * is equivalent to replacement by the right

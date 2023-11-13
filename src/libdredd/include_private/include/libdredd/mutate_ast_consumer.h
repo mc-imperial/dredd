@@ -31,12 +31,12 @@ namespace dredd {
 
 class MutateAstConsumer : public clang::ASTConsumer {
  public:
-  MutateAstConsumer(clang::CompilerInstance& compiler_instance,
+  MutateAstConsumer(const clang::CompilerInstance& compiler_instance,
                     bool optimise_mutations, bool dump_ast,
                     bool only_track_mutant_coverage,
                     bool semantics_preserving_mutation, int& mutation_id,
                     protobufs::MutationInfo& mutation_info)
-      : compiler_instance_(compiler_instance),
+      : compiler_instance_(&compiler_instance),
         optimise_mutations_(optimise_mutations),
         dump_ast_(dump_ast),
         only_track_mutant_coverage_(only_track_mutant_coverage),
@@ -70,16 +70,16 @@ class MutateAstConsumer : public clang::ASTConsumer {
       clang::ASTContext& context,
       std::unordered_set<std::string>& dredd_declarations);
 
-  const clang::CompilerInstance& compiler_instance_;
+  const clang::CompilerInstance* compiler_instance_;
 
   // True if and only if Dredd's optimisations are enabled.
-  const bool optimise_mutations_;
+  bool optimise_mutations_;
 
   // True if and only if the AST being consumed should be dumped; useful for
   // debugging.
-  const bool dump_ast_;
+  bool dump_ast_;
 
-  const bool only_track_mutant_coverage_;
+  bool only_track_mutant_coverage_;
 
   std::unique_ptr<MutateVisitor> visitor_;
 
@@ -87,9 +87,9 @@ class MutateAstConsumer : public clang::ASTConsumer {
 
   // Counter used to give each mutation a unique id; shared among AST consumers
   // for different translation units.
-  int& mutation_id_;
+  int* mutation_id_;
 
-  protobufs::MutationInfo& mutation_info_;
+  protobufs::MutationInfo* mutation_info_;
 };
 
 }  // namespace dredd

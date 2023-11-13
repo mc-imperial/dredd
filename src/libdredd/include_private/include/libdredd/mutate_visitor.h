@@ -42,6 +42,7 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
   MutateVisitor(clang::CompilerInstance& compiler_instance,
                 bool optimise_mutations, bool semantics_preserving_mutation);
 
+
   bool TraverseDecl(clang::Decl* decl);
 
   bool TraverseStmt(clang::Stmt* stmt);
@@ -114,14 +115,14 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
   class PushMutationTreeRAII {
    public:
     explicit PushMutationTreeRAII(MutateVisitor& mutate_visitor)
-        : mutate_visitor_(mutate_visitor) {
+        : mutate_visitor_(&mutate_visitor) {
       auto child = std::make_unique<MutationTreeNode>();
       auto* child_ptr = child.get();
-      mutate_visitor_.mutation_tree_path_.back()->AddChild(std::move(child));
-      mutate_visitor_.mutation_tree_path_.push_back(child_ptr);
+      mutate_visitor_->mutation_tree_path_.back()->AddChild(std::move(child));
+      mutate_visitor_->mutation_tree_path_.push_back(child_ptr);
     }
 
-    ~PushMutationTreeRAII() { mutate_visitor_.mutation_tree_path_.pop_back(); }
+    ~PushMutationTreeRAII() { mutate_visitor_->mutation_tree_path_.pop_back(); }
 
     PushMutationTreeRAII(const PushMutationTreeRAII&) = delete;
 
@@ -132,7 +133,7 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
     PushMutationTreeRAII& operator=(PushMutationTreeRAII&&) = delete;
 
    private:
-    MutateVisitor& mutate_visitor_;
+    MutateVisitor* mutate_visitor_;
   };
 
   bool HandleUnaryOperator(clang::UnaryOperator* unary_operator);
