@@ -162,15 +162,15 @@ bool MutateVisitor::TraverseStmt(clang::Stmt* stmt) {
     return true;
   }
 
+  if (auto* expr = llvm::dyn_cast<clang::Expr>(stmt)) {
+    if (expr->isValueDependent()) {
+      return true;
+    }
+  }
+
   // Do not mutate under a constant expression, since mutation logic is
   // inherently non-constant.
   if (llvm::dyn_cast<clang::ConstantExpr>(stmt) != nullptr) {
-    return true;
-  }
-
-  // Do not mutate under a 'noexcept', since it requires a constexpr argument
-  // and mutation logic is inherently non-constant.
-  if (llvm::dyn_cast<clang::CXXNoexceptExpr>(stmt) != nullptr) {
     return true;
   }
 
@@ -432,9 +432,7 @@ void MutateVisitor::HandleExpr(clang::Expr* expr) {
 }
 
 bool MutateVisitor::VisitExpr(clang::Expr* expr) {
-  assert(llvm::dyn_cast<clang::CXXNoexceptExpr>(expr) == nullptr &&
-         "A 'noexcept' expression should be skipped when deciding where to "
-         "mutate.");
+  assert (!expr->isValueDependent() && "A value-dependent expression should be skipped when deciding where to mutate.");
 
   if (optimise_mutations_ &&
       llvm::dyn_cast<clang::ParenExpr>(expr) != nullptr) {
