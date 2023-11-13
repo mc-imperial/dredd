@@ -253,7 +253,7 @@ bool MutateVisitor::TraverseParmVarDecl(clang::ParmVarDecl* parm_var_decl) {
   return true;
 }
 
-bool MutateVisitor::HandleUnaryOperator(clang::UnaryOperator* unary_operator) {
+void MutateVisitor::HandleUnaryOperator(clang::UnaryOperator* unary_operator) {
   // Check that the argument to the unary expression has a source ranges that is
   // part of the main file. In particular, this avoids mutating expressions that
   // directly involve the use of macros (though it is OK if sub-expressions of
@@ -261,24 +261,24 @@ bool MutateVisitor::HandleUnaryOperator(clang::UnaryOperator* unary_operator) {
   if (GetSourceRangeInMainFile(compiler_instance_->getPreprocessor(),
                                *unary_operator->getSubExpr())
           .isInvalid()) {
-    return true;
+    return;
   }
 
   // Don't mutate unary plus as this is unlikely to lead to a mutation that
   // differs from inserting a unary operator
   if (unary_operator->getOpcode() == clang::UnaryOperatorKind::UO_Plus) {
-    return true;
+    return;
   }
 
   // Check that the argument type is supported
   if (!IsTypeSupported(unary_operator->getSubExpr()->getType())) {
-    return true;
+    return;
   }
 
   // As it is not possible to pass bit-fields by reference, mutation of
   // bit-field l-values is not supported.
   if (unary_operator->getSubExpr()->refersToBitField()) {
-    return true;
+    return;
   }
 
   // There is no useful way to mutate this expression.
@@ -290,7 +290,7 @@ bool MutateVisitor::HandleUnaryOperator(clang::UnaryOperator* unary_operator) {
          MutationReplaceExpr::ExprIsEquivalentToFloat(
              *unary_operator->getSubExpr(), 1.0,
              compiler_instance_->getASTContext()))) {
-      return true;
+      return;
     }
 
     if (unary_operator->getOpcode() == clang::UO_Not &&
@@ -306,7 +306,7 @@ bool MutateVisitor::HandleUnaryOperator(clang::UnaryOperator* unary_operator) {
          MutationReplaceExpr::ExprIsEquivalentToFloat(
              *unary_operator->getSubExpr(), 1.0,
              compiler_instance_->getASTContext()))) {
-      return true;
+      return;
     }
   }
 
@@ -314,10 +314,9 @@ bool MutateVisitor::HandleUnaryOperator(clang::UnaryOperator* unary_operator) {
       std::make_unique<MutationReplaceUnaryOperator>(
           *unary_operator, compiler_instance_->getPreprocessor(),
           compiler_instance_->getASTContext()));
-  return true;
 }
 
-bool MutateVisitor::HandleBinaryOperator(
+void MutateVisitor::HandleBinaryOperator(
     clang::BinaryOperator* binary_operator) {
   // Check that arguments of the binary expression have source ranges that are
   // part of the main file. In particular, this avoids mutating expressions that
@@ -329,28 +328,28 @@ bool MutateVisitor::HandleBinaryOperator(
       GetSourceRangeInMainFile(compiler_instance_->getPreprocessor(),
                                *binary_operator->getRHS())
           .isInvalid()) {
-    return true;
+    return;
   }
 
   // We only want to change operators for binary operations on basic types.
   // Check that the argument types are supported.
   if (!IsTypeSupported(binary_operator->getLHS()->getType())) {
-    return true;
+    return;
   }
   if (!IsTypeSupported(binary_operator->getRHS()->getType())) {
-    return true;
+    return;
   }
 
   // As it is not possible to pass bit-fields by reference, mutation of
   // bit-field l-values is not supported.
   if (binary_operator->getLHS()->refersToBitField()) {
-    return true;
+    return;
   }
 
   if (binary_operator->isCommaOp()) {
     // The comma operator is so versatile that it does not make a great deal of
     // sense to try to rewrite it.
-    return true;
+    return;
   }
 
   // There is no useful way to mutate this expression since it is equivalent to
@@ -368,14 +367,68 @@ bool MutateVisitor::HandleBinaryOperator(
        MutationReplaceExpr::ExprIsEquivalentToFloat(
            *binary_operator->getRHS(), 1.0,
            compiler_instance_->getASTContext()))) {
-    return true;
+    return;
   }
 
   mutation_tree_path_.back()->AddMutation(
       std::make_unique<MutationReplaceBinaryOperator>(
           *binary_operator, compiler_instance_->getPreprocessor(),
           compiler_instance_->getASTContext()));
-  return true;
+}
+
+void MutateVisitor::HandleExpr(clang::Expr* expr) {
+  // L-values are only mutated by inserting the prefix operators ++ and --, and
+  // only under specific circumstances as documented by
+  // MutationReplaceExpr::CanMutateLValue.
+  if (expr->isLValue() && !MutationReplaceExpr::CanMutateLValue(
+                              compiler_instance_->getASTContext(), *expr)) {
+    return;
+  }
+
+  // As it is not possible to pass bit-fields by reference, mutation of
+  // bit-field l-values is not supported.
+  if (expr->refersToBitField()) {
+    return;
+  }
+
+  if (optimise_mutations_) {
+    // If an expression is the direct child of a cast expression, do not mutate
+    // it unless the cast is an l-value to r-value cast. In an l-value to
+    // r-value cast it is worth mutating the expression before and after casting
+    // since different mutations will arise. In a cast that does not change l/r-
+    // value status, it is highly likely that mutations on the inner cast will
+    // have the same effect as on the outer cast. The possible differences
+    // arising due to a change of type are unlikely to be all that interesting,
+    // and r-value to r-value implicit casts are very common, e.g. occurring
+    // whenever a signed literal, such as `1`, is used in an unsigned context.
+    for (const auto& parent :
+         compiler_instance_->getASTContext().getParents<clang::Expr>(*expr)) {
+      const auto* cast_parent = parent.get<clang::CastExpr>();
+      if (cast_parent != nullptr &&
+          cast_parent->isLValue() == expr->isLValue()) {
+        return;
+      }
+    }
+
+    // If an expression is the direct child of a compound statement then don't
+    // mutate it, because:
+    // - replacing it with a constant has the same effect as deleting it;
+    // - if it is an r-value, inserting a unary operator has no effect;
+    // - if it is an l-value, inserting an increment operator is fairly well
+    // captured by inserting an increment before a future use of the l-value (it
+    // is not exactly the same, because the future use could be dynamically
+    // reached in different manners compared with this statement).
+    for (const auto& parent :
+         compiler_instance_->getASTContext().getParents<clang::Stmt>(*expr)) {
+      if (parent.get<clang::CompoundStmt>() != nullptr) {
+        return;
+      }
+    }
+  }
+
+  mutation_tree_path_.back()->AddMutation(std::make_unique<MutationReplaceExpr>(
+      *expr, compiler_instance_->getPreprocessor(),
+      compiler_instance_->getASTContext()));
 }
 
 bool MutateVisitor::VisitExpr(clang::Expr* expr) {
@@ -383,11 +436,10 @@ bool MutateVisitor::VisitExpr(clang::Expr* expr) {
          "A 'noexcept' expression should be skipped when deciding where to "
          "mutate.");
 
-  if (optimise_mutations_) {
+  if (optimise_mutations_ &&
+      llvm::dyn_cast<clang::ParenExpr>(expr) != nullptr) {
     // There is no value in mutating a parentheses expression.
-    if (llvm::dyn_cast<clang::ParenExpr>(expr) != nullptr) {
-      return true;
-    }
+    return true;
   }
 
   if (!IsInFunction()) {
@@ -433,58 +485,7 @@ bool MutateVisitor::VisitExpr(clang::Expr* expr) {
     HandleBinaryOperator(binary_operator);
   }
 
-  // L-values are only mutated by inserting the prefix operators ++ and --, and
-  // only under specific circumstances as documented by
-  // MutationReplaceExpr::CanMutateLValue.
-  if (expr->isLValue() && !MutationReplaceExpr::CanMutateLValue(
-                              compiler_instance_->getASTContext(), *expr)) {
-    return true;
-  }
-
-  // As it is not possible to pass bit-fields by reference, mutation of
-  // bit-field l-values is not supported.
-  if (expr->refersToBitField()) {
-    return true;
-  }
-
-  if (optimise_mutations_) {
-    // If an expression is the direct child of a cast expression, do not mutate
-    // it unless the cast is an l-value to r-value cast. In an l-value to
-    // r-value cast it is worth mutating the expression before and after casting
-    // since different mutations will arise. In a cast that does not change l/r-
-    // value status, it is highly likely that mutations on the inner cast will
-    // have the same effect as on the outer cast. The possible differences
-    // arising due to a change of type are unlikely to be all that interesting,
-    // and r-value to r-value implicit casts are very common, e.g. occurring
-    // whenever a signed literal, such as `1`, is used in an unsigned context.
-    for (const auto& parent :
-         compiler_instance_->getASTContext().getParents<clang::Expr>(*expr)) {
-      const auto* cast_parent = parent.get<clang::CastExpr>();
-      if (cast_parent != nullptr &&
-          cast_parent->isLValue() == expr->isLValue()) {
-        return true;
-      }
-    }
-
-    // If an expression is the direct child of a compound statement then don't
-    // mutate it, because:
-    // - replacing it with a constant has the same effect as deleting it;
-    // - if it is an r-value, inserting a unary operator has no effect;
-    // - if it is an l-value, inserting an increment operator is fairly well
-    // captured by inserting an increment before a future use of the l-value (it
-    // is not exactly the same, because the future use could be dynamically
-    // reached in different manners compared with this statement).
-    for (const auto& parent :
-         compiler_instance_->getASTContext().getParents<clang::Stmt>(*expr)) {
-      if (parent.get<clang::CompoundStmt>() != nullptr) {
-        return true;
-      }
-    }
-  }
-
-  mutation_tree_path_.back()->AddMutation(std::make_unique<MutationReplaceExpr>(
-      *expr, compiler_instance_->getPreprocessor(),
-      compiler_instance_->getASTContext()));
+  HandleExpr(expr);
 
   return true;
 }
