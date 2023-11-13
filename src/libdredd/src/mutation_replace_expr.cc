@@ -90,7 +90,7 @@ void MutationReplaceExpr::AddOptimisationSpecifier(
     } else if (ExprIsEquivalentToInt(*expr_, -1, ast_context) ||
                ExprIsEquivalentToFloat(*expr_, -1.0, ast_context)) {
       function_name += "_minus_one";
-    } else if (expr_->EvaluateAsInt(unused_eval_result, ast_context)) {
+    } else if (EvaluateAsInt(*expr_, ast_context, unused_eval_result)) {
       function_name += "_constant";
     }
   }
@@ -117,10 +117,11 @@ void MutationReplaceExpr::AddOptimisationSpecifier(
 }
 
 bool MutationReplaceExpr::ExprIsEquivalentToInt(
-    const clang::Expr& expr, int constant, clang::ASTContext& ast_context) {
+    const clang::Expr& expr, int constant,
+    const clang::ASTContext& ast_context) {
   clang::Expr::EvalResult int_eval_result;
   if (expr.getType()->isIntegerType() &&
-      expr.EvaluateAsInt(int_eval_result, ast_context)) {
+      EvaluateAsInt(expr, ast_context, int_eval_result)) {
     return llvm::APSInt::isSameValue(int_eval_result.Val.getInt(),
                                      llvm::APSInt::get(constant));
   }
@@ -129,10 +130,11 @@ bool MutationReplaceExpr::ExprIsEquivalentToInt(
 }
 
 bool MutationReplaceExpr::ExprIsEquivalentToFloat(
-    const clang::Expr& expr, double constant, clang::ASTContext& ast_context) {
+    const clang::Expr& expr, double constant,
+    const clang::ASTContext& ast_context) {
   llvm::APFloat float_eval_result(static_cast<double>(0));
   if (expr.getType()->isFloatingType() &&
-      expr.EvaluateAsFloat(float_eval_result, ast_context)) {
+      EvaluateAsFloat(expr, ast_context, float_eval_result)) {
     return float_eval_result.isExactlyValue(constant);
   }
 
@@ -140,10 +142,11 @@ bool MutationReplaceExpr::ExprIsEquivalentToFloat(
 }
 
 bool MutationReplaceExpr::ExprIsEquivalentToBool(
-    const clang::Expr& expr, bool constant, clang::ASTContext& ast_context) {
+    const clang::Expr& expr, bool constant,
+    const clang::ASTContext& ast_context) {
   bool bool_eval_result = false;
   if (expr.getType()->isBooleanType() &&
-      expr.EvaluateAsBooleanCondition(bool_eval_result, ast_context)) {
+      EvaluateAsBooleanCondition(expr, ast_context, bool_eval_result)) {
     return bool_eval_result == constant;
   }
 
@@ -292,7 +295,7 @@ void MutationReplaceExpr::GenerateConstantReplacement(
 }
 
 void MutationReplaceExpr::GenerateFloatConstantReplacement(
-    clang::ASTContext& ast_context, bool optimise_mutations,
+    const clang::ASTContext& ast_context, bool optimise_mutations,
     bool only_track_mutant_coverage, int mutation_id_base,
     std::stringstream& new_function, int& mutation_id_offset,
     protobufs::MutationReplaceExpr& protobuf_message) const {
@@ -340,7 +343,7 @@ void MutationReplaceExpr::GenerateFloatConstantReplacement(
   }
 }
 void MutationReplaceExpr::GenerateIntegerConstantReplacement(
-    clang::ASTContext& ast_context, bool optimise_mutations,
+    const clang::ASTContext& ast_context, bool optimise_mutations,
     bool only_track_mutant_coverage, int mutation_id_base,
     std::stringstream& new_function, int& mutation_id_offset,
     protobufs::MutationReplaceExpr& protobuf_message) const {
@@ -707,7 +710,7 @@ bool MutationReplaceExpr::IsBooleanReplacementRedundantForBinaryOperator(
 }
 
 bool MutationReplaceExpr::IsRedundantUnaryMinusInsertion(
-    clang::ASTContext& ast_context) const {
+    const clang::ASTContext& ast_context) const {
   // It never makes sense to insert '-' before 0 as this would lead to an
   // equivalent mutant. (Technically this may not be true for floating-point
   // due to two values of 0, but the mutant is likely to be equivalent.)
@@ -732,7 +735,7 @@ bool MutationReplaceExpr::IsRedundantUnaryMinusInsertion(
 }
 
 bool MutationReplaceExpr::IsRedundantUnaryNotInsertion(
-    clang::ASTContext& ast_context) const {
+    const clang::ASTContext& ast_context) const {
   // If the expression is signed, it does not make sense to insert '~'
   // before 0 or -1, as these cases are captured by replacement with -1 and
   // 0, respectively.
@@ -745,7 +748,7 @@ bool MutationReplaceExpr::IsRedundantUnaryNotInsertion(
 }
 
 bool MutationReplaceExpr::IsRedundantUnaryLogicalNotInsertion(
-    clang::ASTContext& ast_context) const {
+    const clang::ASTContext& ast_context) const {
   // If the expression is a boolean constant, it does not make sense to
   // insert '!' because this is captured by replacement with the other
   // boolean constant.
@@ -755,7 +758,7 @@ bool MutationReplaceExpr::IsRedundantUnaryLogicalNotInsertion(
   // value because either way, operator insertion would be redundant.
   bool unused_bool_value;
   if (expr_->getType()->isBooleanType() &&
-      expr_->EvaluateAsBooleanCondition(unused_bool_value, ast_context)) {
+      EvaluateAsBooleanCondition(*expr_, ast_context, unused_bool_value)) {
     return true;
   }
 
@@ -766,7 +769,7 @@ bool MutationReplaceExpr::IsRedundantUnaryLogicalNotInsertion(
   // Similarly, this value is not used as it does not matter which constant
   // integer the expression evaluates to.
   clang::Expr::EvalResult unused_result_value;
-  if (expr_->EvaluateAsInt(unused_result_value, ast_context)) {
+  if (EvaluateAsInt(*expr_, ast_context, unused_result_value)) {
     return true;
   }
 
@@ -774,7 +777,7 @@ bool MutationReplaceExpr::IsRedundantUnaryLogicalNotInsertion(
 }
 
 bool MutationReplaceExpr::IsRedundantOperatorInsertionBeforeBinaryExpr(
-    clang::ASTContext& ast_context) const {
+    const clang::ASTContext& ast_context) const {
   if (const auto* binary_operator =
           llvm::dyn_cast<clang::BinaryOperator>(expr_)) {
     switch (binary_operator->getOpcode()) {

@@ -52,7 +52,7 @@ MutationReplaceBinaryOperator::MutationReplaceBinaryOperator(
 
 bool MutationReplaceBinaryOperator::IsRedundantReplacementOperator(
     clang::BinaryOperatorKind operator_kind,
-    clang::ASTContext& ast_context) const {
+    const clang::ASTContext& ast_context) const {
   if (IsRedundantReplacementForBooleanValuedOperator(operator_kind)) {
     return true;
   }
@@ -255,7 +255,7 @@ std::string MutationReplaceBinaryOperator::GetFunctionName(
 
 void MutationReplaceBinaryOperator::GenerateArgumentReplacement(
     const std::string& arg1_evaluated, const std::string& arg2_evaluated,
-    clang::ASTContext& ast_context, bool optimise_mutations,
+    const clang::ASTContext& ast_context, bool optimise_mutations,
     bool only_track_mutant_coverage, int mutation_id_base,
     std::stringstream& new_function, int& mutation_id_offset,
     protobufs::MutationReplaceBinaryOperator& protobuf_message) const {
@@ -341,7 +341,7 @@ void MutationReplaceBinaryOperator::GenerateArgumentReplacement(
 
 void MutationReplaceBinaryOperator::GenerateBinaryOperatorReplacement(
     const std::string& arg1_evaluated, const std::string& arg2_evaluated,
-    clang::ASTContext& ast_context, bool optimise_mutations,
+    const clang::ASTContext& ast_context, bool optimise_mutations,
     bool only_track_mutant_coverage, int mutation_id_base,
     std::stringstream& new_function, int& mutation_id_offset,
     protobufs::MutationReplaceBinaryOperator& protobuf_message) const {
@@ -361,7 +361,7 @@ void MutationReplaceBinaryOperator::GenerateBinaryOperatorReplacement(
 
 std::vector<clang::BinaryOperatorKind>
 MutationReplaceBinaryOperator::GetReplacementOperators(
-    bool optimise_mutations, clang::ASTContext& ast_context) const {
+    bool optimise_mutations, const clang::ASTContext& ast_context) const {
   const std::vector<clang::BinaryOperatorKind> kArithmeticOperators = {
       clang::BinaryOperatorKind::BO_Add, clang::BinaryOperatorKind::BO_Div,
       clang::BinaryOperatorKind::BO_Mul, clang::BinaryOperatorKind::BO_Rem,
@@ -1051,7 +1051,7 @@ bool MutationReplaceBinaryOperator::
 
 bool MutationReplaceBinaryOperator::IsRedundantReplacementForArithmeticOperator(
     clang::BinaryOperatorKind operator_kind,
-    clang::ASTContext& ast_context) const {
+    const clang::ASTContext& ast_context) const {
   // In the case where both operands are 0, the only case that isn't covered
   // by constant replacement is undefined behaviour, this is achieved by /.
   if ((MutationReplaceExpr::ExprIsEquivalentToInt(*binary_operator_->getRHS(),

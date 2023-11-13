@@ -103,4 +103,23 @@ InfoForSourceRange::InfoForSourceRange(clang::SourceRange source_range,
   }
 }
 
+bool EvaluateAsBooleanCondition(const clang::Expr& expr,
+                                const clang::ASTContext& ast_context,
+                                bool& result) {
+  return !expr.isValueDependent() &&
+         expr.EvaluateAsBooleanCondition(result, ast_context);
+}
+
+bool EvaluateAsInt(const clang::Expr& expr,
+                   const clang::ASTContext& ast_context,
+                   clang::Expr::EvalResult& result) {
+  return !expr.isValueDependent() && expr.EvaluateAsInt(result, ast_context);
+}
+
+bool EvaluateAsFloat(const clang::Expr& expr,
+                     const clang::ASTContext& ast_context,
+                     llvm::APFloat& result) {
+  return !expr.isValueDependent() && expr.EvaluateAsFloat(result, ast_context);
+}
+
 }  // namespace dredd

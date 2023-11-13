@@ -18,6 +18,7 @@
 #include <string>
 
 #include "clang/AST/ASTContext.h"
+#include "clang/AST/Expr.h"
 #include "clang/Basic/SourceLocation.h"
 #include "clang/Basic/SourceManager.h"
 #include "clang/Lex/Preprocessor.h"
@@ -101,6 +102,24 @@ template <typename HasSourceRange>
 // single file tests.
 bool SourceRangeConsistencyCheck(clang::SourceRange source_range,
                                  const clang::ASTContext& ast_context);
+
+// Delegates to Expr::EvaluateAsBooleanCondition, but only if the expression is
+// not value-dependent.
+bool EvaluateAsBooleanCondition(const clang::Expr& expr,
+                                const clang::ASTContext& ast_context,
+                                bool& result);
+
+// Delegates to Expr::EvaluateAsInt, but only if the expression is not
+// value-dependent.
+bool EvaluateAsInt(const clang::Expr& expr,
+                   const clang::ASTContext& ast_context,
+                   clang::Expr::EvalResult& result);
+
+// Delegates to Expr::EvaluateAsFloat, but only if the expression is not
+// value-dependent.
+bool EvaluateAsFloat(const clang::Expr& expr,
+                     const clang::ASTContext& ast_context,
+                     llvm::APFloat& result);
 
 }  // namespace dredd
 
