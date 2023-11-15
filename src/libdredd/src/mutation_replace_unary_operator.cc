@@ -210,7 +210,7 @@ std::string MutationReplaceUnaryOperator::GenerateMutatorFunction(
     new_function << "  if (!__dredd_some_mutation_enabled) return ";
     // TODO(JamesLeeJones): This effectively copy's `getExpr()`, consider
     // changing.
-    if (IsPrefix(unary_operator_.getOpcode())) {
+    if (IsPrefix(unary_operator_->getOpcode())) {
       new_function << clang::UnaryOperator::getOpcodeStr(
                           unary_operator_->getOpcode())
                           .str()
