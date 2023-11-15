@@ -114,8 +114,8 @@ NewMutateFrontendActionFactory(bool optimise_mutations,
   };
 
   return std::make_unique<MutateFrontendActionFactory>(
-      optimise_mutations, dump_asts, only_track_mutant_coverage,
-      semantics_preserving_mutation, mutation_id, mutation_info);
+      optimise_mutations, semantics_preserving_mutation, dump_asts,
+      only_track_mutant_coverage, mutation_id, mutation_info);
 }
 
 std::unique_ptr<clang::ASTConsumer> MutateFrontendAction::CreateASTConsumer(

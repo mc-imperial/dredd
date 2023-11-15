@@ -105,9 +105,8 @@ int main(int argc, const char** argv) {
 
   const std::unique_ptr<clang::tooling::FrontendActionFactory> factory =
       dredd::NewMutateFrontendActionFactory(
-          !no_mutation_opts, dump_asts, only_track_mutant_coverage,
-          semantics_preserving_coverage_instrumentation, mutation_id,
-          mutation_info);
+          !no_mutation_opts, semantics_preserving_coverage_instrumentation,
+          dump_asts, only_track_mutant_coverage, mutation_id, mutation_info);
 
   const int return_code = Tool.run(factory.get());
 

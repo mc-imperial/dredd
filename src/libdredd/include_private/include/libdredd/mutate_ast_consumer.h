@@ -37,6 +37,7 @@ class MutateAstConsumer : public clang::ASTConsumer {
                     int& mutation_id, protobufs::MutationInfo& mutation_info)
       : compiler_instance_(&compiler_instance),
         optimise_mutations_(optimise_mutations),
+        semantics_preserving_mutation_(semantics_preserving_mutation),
         dump_ast_(dump_ast),
         only_track_mutant_coverage_(only_track_mutant_coverage),
         visitor_(std::make_unique<MutateVisitor>(
@@ -73,6 +74,8 @@ class MutateAstConsumer : public clang::ASTConsumer {
 
   // True if and only if Dredd's optimisations are enabled.
   bool optimise_mutations_;
+
+  bool semantics_preserving_mutation_;
 
   // True if and only if the AST being consumed should be dumped; useful for
   // debugging.

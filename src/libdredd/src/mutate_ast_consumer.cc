@@ -120,6 +120,15 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
   (void)rewriter_result;  // Keep release-mode compilers happy.
   assert(!rewriter_result && "Rewrite failed.\n");
 
+  if (semantics_preserving_mutation_) {
+    // TODO(JamesLeeJones): Possibly modify this variable.
+    rewriter_result = rewriter_.InsertTextBefore(
+        visitor_->GetStartLocationOfFirstDeclInSourceFile(),
+        "static thread_local unsigned long long int no_op = 0;\n\n");
+    (void)rewriter_result;  // Keep release-mode compilers happy.
+    assert(!rewriter_result && "Rewrite failed.\n");
+  }
+
   rewriter_result = rewriter_.overwriteChangedFiles();
   (void)rewriter_result;  // Keep release mode compilers happy
   assert(!rewriter_result && "Something went wrong emitting rewritten files.");
@@ -149,8 +158,6 @@ std::string MutateAstConsumer::GetRegularDreddPreludeCpp(
   result << "#define thread_local __thread\n";
   result << "#endif\n";
   result << "\n";
-  // TODO(JamesLeeJones): Possibly modify this variable.
-  result << "static thread_local long long int no_op = 0;\n";
   // This allows for fast checking that at least *some* mutation in the file is
   // enabled. It is set to true initially so that __dredd_enabled_mutation gets
   // invoked the first time enabledness is queried. At that point it will get
