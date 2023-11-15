@@ -135,10 +135,10 @@ class MutationCoverageBinaryOperator : public Mutation {
   ClangOperatorKindToProtobufOperatorKind(
       clang::BinaryOperatorKind operator_kind);
 
-  const clang::BinaryOperator& binary_operator_;
-  const InfoForSourceRange info_for_overall_expr_;
-  const InfoForSourceRange info_for_lhs_;
-  const InfoForSourceRange info_for_rhs_;
+  const clang::BinaryOperator* binary_operator_;
+  InfoForSourceRange info_for_overall_expr_;
+  InfoForSourceRange info_for_lhs_;
+  InfoForSourceRange info_for_rhs_;
 };
 
 }  // namespace dredd
