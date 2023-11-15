@@ -42,7 +42,6 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
   MutateVisitor(clang::CompilerInstance& compiler_instance,
                 bool optimise_mutations, bool semantics_preserving_mutation);
 
-
   bool TraverseDecl(clang::Decl* decl);
 
   bool TraverseStmt(clang::Stmt* stmt);
@@ -136,9 +135,11 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
     MutateVisitor* mutate_visitor_;
   };
 
-  bool HandleUnaryOperator(clang::UnaryOperator* unary_operator);
+  void HandleUnaryOperator(clang::UnaryOperator* unary_operator);
 
-  bool HandleBinaryOperator(clang::BinaryOperator* binary_operator);
+  void HandleBinaryOperator(clang::BinaryOperator* binary_operator);
+
+  void HandleExpr(clang::Expr* expr);
 
   static bool IsTypeSupported(clang::QualType qual_type);
 

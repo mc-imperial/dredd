@@ -163,9 +163,19 @@ bool MutateVisitor::TraverseDecl(clang::Decl* decl) {
 }
 
 bool MutateVisitor::TraverseStmt(clang::Stmt* stmt) {
+  if (stmt == nullptr) {
+    return true;
+  }
+
   // Do not mutate under a constant expression, since mutation logic is
   // inherently non-constant.
-  if (stmt != nullptr && llvm::dyn_cast<clang::ConstantExpr>(stmt) != nullptr) {
+  if (llvm::dyn_cast<clang::ConstantExpr>(stmt) != nullptr) {
+    return true;
+  }
+
+  // Do not mutate under a 'noexcept', since it requires a constexpr argument
+  // and mutation logic is inherently non-constant.
+  if (llvm::dyn_cast<clang::CXXNoexceptExpr>(stmt) != nullptr) {
     return true;
   }
 
@@ -248,7 +258,7 @@ bool MutateVisitor::TraverseParmVarDecl(clang::ParmVarDecl* parm_var_decl) {
   return true;
 }
 
-bool MutateVisitor::HandleUnaryOperator(clang::UnaryOperator* unary_operator) {
+void MutateVisitor::HandleUnaryOperator(clang::UnaryOperator* unary_operator) {
   // Check that the argument to the unary expression has a source ranges that is
   // part of the main file. In particular, this avoids mutating expressions that
   // directly involve the use of macros (though it is OK if sub-expressions of
@@ -256,24 +266,24 @@ bool MutateVisitor::HandleUnaryOperator(clang::UnaryOperator* unary_operator) {
   if (GetSourceRangeInMainFile(compiler_instance_->getPreprocessor(),
                                *unary_operator->getSubExpr())
           .isInvalid()) {
-    return true;
+    return;
   }
 
   // Don't mutate unary plus as this is unlikely to lead to a mutation that
   // differs from inserting a unary operator
   if (unary_operator->getOpcode() == clang::UnaryOperatorKind::UO_Plus) {
-    return true;
+    return;
   }
 
   // Check that the argument type is supported
   if (!IsTypeSupported(unary_operator->getSubExpr()->getType())) {
-    return true;
+    return;
   }
 
   // As it is not possible to pass bit-fields by reference, mutation of
   // bit-field l-values is not supported.
   if (unary_operator->getSubExpr()->refersToBitField()) {
-    return true;
+    return;
   }
 
   // There is no useful way to mutate this expression.
@@ -285,7 +295,7 @@ bool MutateVisitor::HandleUnaryOperator(clang::UnaryOperator* unary_operator) {
          MutationReplaceExpr::ExprIsEquivalentToFloat(
              *unary_operator->getSubExpr(), 1.0,
              compiler_instance_->getASTContext()))) {
-      return true;
+      return;
     }
 
     if (unary_operator->getOpcode() == clang::UO_Not &&
@@ -301,7 +311,7 @@ bool MutateVisitor::HandleUnaryOperator(clang::UnaryOperator* unary_operator) {
          MutationReplaceExpr::ExprIsEquivalentToFloat(
              *unary_operator->getSubExpr(), 1.0,
              compiler_instance_->getASTContext()))) {
-      return true;
+      return;
     }
   }
 
@@ -316,11 +326,9 @@ bool MutateVisitor::HandleUnaryOperator(clang::UnaryOperator* unary_operator) {
             *unary_operator, compiler_instance_.getPreprocessor(),
             compiler_instance_.getASTContext()));
   }
-
-  return true;
 }
 
-bool MutateVisitor::HandleBinaryOperator(
+void MutateVisitor::HandleBinaryOperator(
     clang::BinaryOperator* binary_operator) {
   // Check that arguments of the binary expression have source ranges that are
   // part of the main file. In particular, this avoids mutating expressions that
@@ -332,28 +340,28 @@ bool MutateVisitor::HandleBinaryOperator(
       GetSourceRangeInMainFile(compiler_instance_->getPreprocessor(),
                                *binary_operator->getRHS())
           .isInvalid()) {
-    return true;
+    return;
   }
 
   // We only want to change operators for binary operations on basic types.
   // Check that the argument types are supported.
   if (!IsTypeSupported(binary_operator->getLHS()->getType())) {
-    return true;
+    return;
   }
   if (!IsTypeSupported(binary_operator->getRHS()->getType())) {
-    return true;
+    return;
   }
 
   // As it is not possible to pass bit-fields by reference, mutation of
   // bit-field l-values is not supported.
   if (binary_operator->getLHS()->refersToBitField()) {
-    return true;
+    return;
   }
 
   if (binary_operator->isCommaOp()) {
     // The comma operator is so versatile that it does not make a great deal of
     // sense to try to rewrite it.
-    return true;
+    return;
   }
 
   // There is no useful way to mutate this expression since it is equivalent to
@@ -371,7 +379,7 @@ bool MutateVisitor::HandleBinaryOperator(
        MutationReplaceExpr::ExprIsEquivalentToFloat(
            *binary_operator->getRHS(), 1.0,
            compiler_instance_->getASTContext()))) {
-    return true;
+    return;
   }
 
   if (semantics_preserving_mutation_) {
@@ -385,17 +393,24 @@ bool MutateVisitor::HandleBinaryOperator(
             *binary_operator, compiler_instance_.getPreprocessor(),
             compiler_instance_.getASTContext()));
   }
-
-  return true;
 }
 
-bool MutateVisitor::VisitExpr(clang::Expr* expr) {
-  if (optimise_mutations_) {
-    // There is no value in mutating a parentheses expression.
-    if (llvm::dyn_cast<clang::ParenExpr>(expr) != nullptr) {
-      return true;
-    }
+void MutateVisitor::HandleExpr(clang::Expr* expr) {
+  // L-values are only mutated by inserting the prefix operators ++ and --, and
+  // only under specific circumstances as documented by
+  // MutationReplaceExpr::CanMutateLValue.
+  if (expr->isLValue() && !MutationReplaceExpr::CanMutateLValue(
+                              compiler_instance_->getASTContext(), *expr)) {
+    return;
+  }
 
+  // As it is not possible to pass bit-fields by reference, mutation of
+  // bit-field l-values is not supported.
+  if (expr->refersToBitField()) {
+    return;
+  }
+
+  if (optimise_mutations_) {
     // If an expression is the direct child of a cast expression, do not mutate
     // it unless the cast is an l-value to r-value cast. In an l-value to
     // r-value cast it is worth mutating the expression before and after casting
@@ -406,11 +421,11 @@ bool MutateVisitor::VisitExpr(clang::Expr* expr) {
     // and r-value to r-value implicit casts are very common, e.g. occurring
     // whenever a signed literal, such as `1`, is used in an unsigned context.
     for (const auto& parent :
-         compiler_instance_.getASTContext().getParents<clang::Expr>(*expr)) {
+         compiler_instance_->getASTContext().getParents<clang::Expr>(*expr)) {
       const auto* cast_parent = parent.get<clang::CastExpr>();
       if (cast_parent != nullptr &&
           cast_parent->isLValue() == expr->isLValue()) {
-        return true;
+        return;
       }
     }
 
@@ -423,11 +438,31 @@ bool MutateVisitor::VisitExpr(clang::Expr* expr) {
     // is not exactly the same, because the future use could be dynamically
     // reached in different manners compared with this statement).
     for (const auto& parent :
-         compiler_instance_.getASTContext().getParents<clang::Stmt>(*expr)) {
+         compiler_instance_->getASTContext().getParents<clang::Stmt>(*expr)) {
       if (parent.get<clang::CompoundStmt>() != nullptr) {
-        return true;
+        return;
       }
     }
+  }
+
+  if (semantics_preserving_mutation_) {
+    mutation_tree_path_.back()->AddMutation(
+        std::make_unique<MutationCoverageExpr>(
+            *expr, compiler_instance_.getPreprocessor(),
+            compiler_instance_.getASTContext()));
+  } else {
+    mutation_tree_path_.back()->AddMutation(
+        std::make_unique<MutationReplaceExpr>(
+            *expr, compiler_instance_.getPreprocessor(),
+            compiler_instance_.getASTContext()));
+  }
+}
+
+bool MutateVisitor::VisitExpr(clang::Expr* expr) {
+  if (optimise_mutations_ &&
+      llvm::dyn_cast<clang::ParenExpr>(expr) != nullptr) {
+    // There is no value in mutating a parentheses expression.
+    return true;
   }
 
   if (!IsInFunction()) {
@@ -443,6 +478,11 @@ bool MutateVisitor::VisitExpr(clang::Expr* expr) {
     // condition expression for the if statement. It must not be mutated,
     // because this would lead to invalid code of the form:
     // "if (auto __dredd_fun(v) = ...)".
+    return true;
+  }
+
+  if (GetSourceRangeInMainFile(compiler_instance_->getPreprocessor(), *expr)
+          .isInvalid()) {
     return true;
   }
 
@@ -473,31 +513,7 @@ bool MutateVisitor::VisitExpr(clang::Expr* expr) {
     HandleBinaryOperator(binary_operator);
   }
 
-  // L-values are only mutated by inserting the prefix operators ++ and --, and
-  // only under specific circumstances as documented by
-  // MutationReplaceExpr::CanMutateLValue.
-  if (expr->isLValue() && !MutationReplaceExpr::CanMutateLValue(
-                              compiler_instance_->getASTContext(), *expr)) {
-    return true;
-  }
-
-  // As it is not possible to pass bit-fields by reference, mutation of
-  // bit-field l-values is not supported.
-  if (expr->refersToBitField()) {
-    return true;
-  }
-
-  if (semantics_preserving_mutation_) {
-    mutation_tree_path_.back()->AddMutation(
-        std::make_unique<MutationCoverageExpr>(
-            *expr, compiler_instance_.getPreprocessor(),
-            compiler_instance_.getASTContext()));
-  } else {
-    mutation_tree_path_.back()->AddMutation(
-        std::make_unique<MutationReplaceExpr>(
-            *expr, compiler_instance_.getPreprocessor(),
-            compiler_instance_.getASTContext()));
-  }
+  HandleExpr(expr);
 
   return true;
 }

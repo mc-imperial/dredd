@@ -19,9 +19,11 @@
 #include <utility>
 
 #include "clang/AST/ASTContext.h"
+#include "clang/AST/Expr.h"
 #include "clang/Basic/SourceLocation.h"
 #include "clang/Basic/SourceManager.h"
 #include "clang/Lex/Lexer.h"
+#include "llvm/ADT/APFloat.h"
 #include "llvm/ADT/StringRef.h"
 
 namespace dredd {
@@ -101,6 +103,30 @@ InfoForSourceRange::InfoForSourceRange(clang::SourceRange source_range,
                 kSnippetLengthEachSide)
             .str();
   }
+}
+
+bool EvaluateAsBooleanCondition(const clang::Expr& expr,
+                                const clang::ASTContext& ast_context,
+                                bool& result) {
+  return !expr.isValueDependent() &&
+         expr.EvaluateAsBooleanCondition(result, ast_context);
+}
+
+bool EvaluateAsInt(const clang::Expr& expr,
+                   const clang::ASTContext& ast_context,
+                   clang::Expr::EvalResult& result) {
+  return !expr.isValueDependent() && expr.EvaluateAsInt(result, ast_context);
+}
+
+bool EvaluateAsFloat(const clang::Expr& expr,
+                     const clang::ASTContext& ast_context,
+                     llvm::APFloat& result) {
+  return !expr.isValueDependent() && expr.EvaluateAsFloat(result, ast_context);
+}
+
+bool IsCxx11ConstantExpr(const clang::Expr& expr,
+                         const clang::ASTContext& ast_context) {
+  return !expr.isValueDependent() && expr.isCXX11ConstantExpr(ast_context);
 }
 
 }  // namespace dredd

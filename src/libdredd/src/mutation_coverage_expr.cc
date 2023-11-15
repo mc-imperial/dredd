@@ -260,9 +260,9 @@ void MutationCoverageExpr::GenerateUnaryOperatorInsertion(
     int mutation_id_base, std::stringstream& new_function,
     int& mutation_id_offset,
     protobufs::MutationReplaceExpr& protobuf_message) const {
-//  GenerateUnaryOperatorInsertionBeforeLValue(
-//      arg_evaluated, ast_context, only_track_mutant_coverage, mutation_id_base,
-//      new_function, mutation_id_offset, protobuf_message);
+  //  GenerateUnaryOperatorInsertionBeforeLValue(
+  //      arg_evaluated, ast_context, only_track_mutant_coverage,
+  //      mutation_id_base, new_function, mutation_id_offset, protobuf_message);
   GenerateUnaryOperatorInsertionBeforeNonLValue(
       arg_evaluated, ast_context, optimise_mutations,
       only_track_mutant_coverage, mutation_id_base, new_function,
