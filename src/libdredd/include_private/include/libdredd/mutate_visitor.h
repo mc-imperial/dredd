@@ -39,7 +39,7 @@ namespace dredd {
 
 class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
  public:
-  MutateVisitor(clang::CompilerInstance& compiler_instance,
+  MutateVisitor(const clang::CompilerInstance& compiler_instance,
                 bool optimise_mutations, bool semantics_preserving_mutation);
 
   bool TraverseDecl(clang::Decl* decl);
@@ -167,8 +167,8 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
   // }
   bool IsInFunction();
 
-  clang::CompilerInstance& compiler_instance_;
-  const bool optimise_mutations_;
+  const clang::CompilerInstance* compiler_instance_;
+  bool optimise_mutations_;
   bool semantics_preserving_mutation_;
 
   // Records the start locat of the very first declaration in the source file,

@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "libdredd/mutation_coverage_expr.h"
+
 #include <cassert>
 #include <sstream>
 
@@ -26,7 +28,6 @@
 #include "clang/Basic/SourceLocation.h"
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Rewrite/Core/Rewriter.h"
-#include "libdredd/mutation_coverage_expr.h"
 #include "libdredd/util.h"
 #include "llvm/ADT/APFloat.h"
 #include "llvm/ADT/APSInt.h"
@@ -34,7 +35,7 @@
 #include "llvm/Support/Casting.h"
 
 namespace dredd {
-dredd::MutationReplaceExpr::MutationReplaceExpr(
+dredd::MutationCoverageExpr::MutationCoverageExpr(
     const clang::Expr& expr, const clang::Preprocessor& preprocessor,
     const clang::ASTContext& ast_context)
     : expr_(&expr),
@@ -295,7 +296,7 @@ void MutationCoverageExpr::GenerateFloatConstantReplacement(
     std::stringstream& new_function, int& mutation_id_offset,
     protobufs::MutationReplaceExpr& protobuf_message) const {
   const clang::BuiltinType& exprType =
-      *expr_.getType()->getAs<clang::BuiltinType>();
+      *expr_->getType()->getAs<clang::BuiltinType>();
   if (exprType.isFloatingPoint()) {
     if (!optimise_mutations ||
         !ExprIsEquivalentToFloat(*expr_, 0.0, ast_context)) {
@@ -385,7 +386,7 @@ void MutationCoverageExpr::GenerateBooleanConstantReplacement(
     std::stringstream& new_function, int& mutation_id_offset,
     protobufs::MutationReplaceExpr& protobuf_message) const {
   const clang::BuiltinType& exprType =
-      *expr_.getType()->getAs<clang::BuiltinType>();
+      *expr_->getType()->getAs<clang::BuiltinType>();
   if (exprType.isBooleanType()) {
     if (!optimise_mutations ||
         (!ExprIsEquivalentToBool(*expr_, true, ast_context) &&
@@ -449,8 +450,6 @@ std::string MutationCoverageExpr::GenerateMutatorFunction(
     // Calculate the value of evaluating the original expression.
     new_function << "  " << result_type << " actual_result = " << arg_evaluated
                  << ";\n";
-
-    int mutation_id_offset = 0;
   }
 
   int mutation_id_offset = 0;
@@ -477,7 +476,7 @@ std::string MutationCoverageExpr::GenerateMutatorFunction(
 }
 
 void MutationCoverageExpr::ApplyCppTypeModifiers(const clang::Expr& expr,
-                                                std::string& type) {
+                                                 std::string& type) {
   if (expr.isLValue()) {
     type += "&";
     const clang::QualType qualified_type = expr.getType();
@@ -490,7 +489,7 @@ void MutationCoverageExpr::ApplyCppTypeModifiers(const clang::Expr& expr,
 }
 
 void MutationCoverageExpr::ApplyCTypeModifiers(const clang::Expr& expr,
-                                              std::string& type) {
+                                               std::string& type) {
   if (expr.isLValue()) {
     type += "*";
     const clang::QualType qualified_type = expr.getType();
@@ -637,7 +636,7 @@ protobufs::MutationGroup MutationCoverageExpr::Apply(
 }
 
 bool MutationCoverageExpr::CanMutateLValue(clang::ASTContext& ast_context,
-                                          const clang::Expr& expr) {
+                                           const clang::Expr& expr) {
   assert(expr.isLValue() &&
          "Method should only be invoked on an l-value expression.");
   if (expr.getType().isConstQualified() || expr.getType()->isBooleanType()) {

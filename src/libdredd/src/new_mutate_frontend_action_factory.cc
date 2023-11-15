@@ -31,18 +31,18 @@ namespace dredd {
 
 class MutateFrontendAction : public clang::ASTFrontendAction {
  public:
-  MutateFrontendAction(bool optimise_mutations, bool dump_asts,
-                       bool only_track_mutant_coverage,
-                       bool semantics_preserving_mutation, int& mutation_id,
+  MutateFrontendAction(bool optimise_mutations,
+                       bool semantics_preserving_mutation, bool dump_asts,
+                       bool only_track_mutant_coverage, int& mutation_id,
                        protobufs::MutationInfo& mutation_info,
                        std::set<std::string>& processed_files)
       : optimise_mutations_(optimise_mutations),
+        semantics_preserving_mutation_(semantics_preserving_mutation),
         dump_asts_(dump_asts),
         only_track_mutant_coverage_(only_track_mutant_coverage),
-        semantics_preserving_mutation_(semantics_preserving_mutation),
-        mutation_id_(mutation_id),
-        mutation_info_(mutation_info),
-        processed_files_(processed_files) {}
+        mutation_id_(&mutation_id),
+        mutation_info_(&mutation_info),
+        processed_files_(&processed_files) {}
 
   std::unique_ptr<clang::ASTConsumer> CreateASTConsumer(
       clang::CompilerInstance& compiler_instance,
@@ -63,50 +63,50 @@ class MutateFrontendAction : public clang::ASTFrontendAction {
   }
 
  private:
-  const bool optimise_mutations_;
-  const bool dump_asts_;
-  const bool only_track_mutant_coverage_;
-  const bool semantics_preserving_mutation_;
-  int& mutation_id_;
-  protobufs::MutationInfo& mutation_info_;
-  std::set<std::string>& processed_files_;
+  bool optimise_mutations_;
+  bool semantics_preserving_mutation_;
+  bool dump_asts_;
+  bool only_track_mutant_coverage_;
+  int* mutation_id_;
+  protobufs::MutationInfo* mutation_info_;
+  std::set<std::string>* processed_files_;
 };
 
 std::unique_ptr<clang::tooling::FrontendActionFactory>
-NewMutateFrontendActionFactory(bool optimise_mutations, bool dump_asts,
-                               bool only_track_mutant_coverage,
+NewMutateFrontendActionFactory(bool optimise_mutations,
                                bool semantics_preserving_mutation,
+                               bool dump_asts, bool only_track_mutant_coverage,
                                int& mutation_id,
                                protobufs::MutationInfo& mutation_info) {
   class MutateFrontendActionFactory
       : public clang::tooling::FrontendActionFactory {
    public:
-    MutateFrontendActionFactory(bool optimise_mutations, bool dump_asts,
-                                bool only_track_mutant_coverage,
+    MutateFrontendActionFactory(bool optimise_mutations,
                                 bool semantics_preserving_mutation,
+                                bool dump_asts, bool only_track_mutant_coverage,
                                 int& mutation_id,
                                 protobufs::MutationInfo& mutation_info)
         : optimise_mutations_(optimise_mutations),
+          semantics_preserving_mutation_(semantics_preserving_mutation),
           dump_asts_(dump_asts),
           only_track_mutant_coverage_(only_track_mutant_coverage),
-          semantics_preserving_mutation_(semantics_preserving_mutation),
-          mutation_id_(mutation_id),
-          mutation_info_(mutation_info) {}
+          mutation_id_(&mutation_id),
+          mutation_info_(&mutation_info) {}
 
     std::unique_ptr<clang::FrontendAction> create() override {
       return std::make_unique<MutateFrontendAction>(
-          optimise_mutations_, dump_asts_, only_track_mutant_coverage_,
-          semantics_preserving_mutation_, mutation_id_, mutation_info_,
+          optimise_mutations_, semantics_preserving_mutation_, dump_asts_,
+          only_track_mutant_coverage_, *mutation_id_, *mutation_info_,
           processed_files_);
     }
 
    private:
-    const bool optimise_mutations_;
-    const bool dump_asts_;
-    const bool only_track_mutant_coverage_;
-    const bool semantics_preserving_mutation_;
-    int& mutation_id_;
-    protobufs::MutationInfo& mutation_info_;
+    bool optimise_mutations_;
+    bool semantics_preserving_mutation_;
+    bool dump_asts_;
+    bool only_track_mutant_coverage_;
+    int* mutation_id_;
+    protobufs::MutationInfo* mutation_info_;
 
     // Stores the ids of the files that have been processed so far, to avoid
     // processing a file multiple times.
@@ -122,9 +122,8 @@ std::unique_ptr<clang::ASTConsumer> MutateFrontendAction::CreateASTConsumer(
     clang::CompilerInstance& compiler_instance, llvm::StringRef file) {
   (void)file;  // Unused.
   return std::make_unique<MutateAstConsumer>(
-      compiler_instance, optimise_mutations_, dump_asts_,
-      only_track_mutant_coverage_, semantics_preserving_mutation_, mutation_id_,
-      mutation_info_);
+      compiler_instance, optimise_mutations_, semantics_preserving_mutation_,
+      dump_asts_, only_track_mutant_coverage_, *mutation_id_, *mutation_info_);
 }
 
 }  // namespace dredd

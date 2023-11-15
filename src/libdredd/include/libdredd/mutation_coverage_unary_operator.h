@@ -58,19 +58,16 @@ class MutationCoverageUnaryOperator : public Mutation {
 
   [[nodiscard]] bool IsRedundantReplacementOperator(
       clang::UnaryOperatorKind operator_kind,
-      clang::ASTContext& ast_context) const;
+      const clang::ASTContext& ast_context) const;
 
   [[nodiscard]] bool IsOperatorSelfInverse() const;
-
-  // This returns a string corresponding to the non-mutated expression.
-  std::string GetExpr(clang::ASTContext& ast_context) const;
 
   std::string GetFunctionName(bool optimise_mutations,
                               clang::ASTContext& ast_context) const;
 
   // Replaces unary operators with other valid unary operators.
   void GenerateUnaryOperatorReplacement(
-      const std::string& arg_evaluated, clang::ASTContext& ast_context,
+      const std::string& arg_evaluated, const clang::ASTContext& ast_context,
       bool optimise_mutations, bool only_track_mutant_coverage,
       int mutation_id_base, std::stringstream& new_function,
       int& mutation_id_offset,
@@ -89,9 +86,9 @@ class MutationCoverageUnaryOperator : public Mutation {
   ClangOperatorKindToProtobufOperatorKind(
       clang::UnaryOperatorKind operator_kind);
 
-  const clang::UnaryOperator& unary_operator_;
-  const InfoForSourceRange info_for_overall_expr_;
-  const InfoForSourceRange info_for_sub_expr_;
+  const clang::UnaryOperator* unary_operator_;
+  InfoForSourceRange info_for_overall_expr_;
+  InfoForSourceRange info_for_sub_expr_;
 };
 
 }  // namespace dredd
