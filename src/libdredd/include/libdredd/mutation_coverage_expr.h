@@ -160,7 +160,7 @@ class MutationCoverageExpr : public Mutation {
       protobufs::MutationReplaceExpr& protobuf_message);
 
   const clang::Expr* expr_;
-  const InfoForSourceRange info_for_source_range_;
+  InfoForSourceRange info_for_source_range_;
 };
 
 }  // namespace dredd
