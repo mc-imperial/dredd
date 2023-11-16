@@ -120,7 +120,7 @@ bool MutationCoverageExpr::ExprIsEquivalentToInt(
     const clang::Expr& expr, int constant, clang::ASTContext& ast_context) {
   clang::Expr::EvalResult int_eval_result;
   if (expr.getType()->isIntegerType() &&
-      expr.EvaluateAsInt(int_eval_result, ast_context)) {
+      EvaluateAsInt(expr, ast_context, int_eval_result)) {
     return llvm::APSInt::isSameValue(int_eval_result.Val.getInt(),
                                      llvm::APSInt::get(constant));
   }
@@ -132,7 +132,7 @@ bool MutationCoverageExpr::ExprIsEquivalentToFloat(
     const clang::Expr& expr, double constant, clang::ASTContext& ast_context) {
   llvm::APFloat float_eval_result(static_cast<double>(0));
   if (expr.getType()->isFloatingType() &&
-      expr.EvaluateAsFloat(float_eval_result, ast_context)) {
+      EvaluateAsFloat(expr, ast_context, float_eval_result)) {
     return float_eval_result.isExactlyValue(constant);
   }
 
@@ -143,7 +143,7 @@ bool MutationCoverageExpr::ExprIsEquivalentToBool(
     const clang::Expr& expr, bool constant, clang::ASTContext& ast_context) {
   bool bool_eval_result = false;
   if (expr.getType()->isBooleanType() &&
-      expr.EvaluateAsBooleanCondition(bool_eval_result, ast_context)) {
+      EvaluateAsBooleanCondition(expr, ast_context, bool_eval_result)) {
     return bool_eval_result == constant;
   }
 
@@ -520,10 +520,10 @@ void MutationCoverageExpr::ReplaceExprWithFunctionCall(
       expr_->HasSideEffects(ast_context)) {
     prefix.append(+"[&]() -> " + input_type + " { return " +
                   // We don't need to static cast constant expressions
-                  (expr_->isCXX11ConstantExpr(ast_context)
+                  (IsCxx11ConstantExpr(*expr_, ast_context)
                        ? ""
                        : "static_cast<" + input_type + ">("));
-    suffix.append(expr_->isCXX11ConstantExpr(ast_context) ? "" : ")");
+    suffix.append(IsCxx11ConstantExpr(*expr_, ast_context) ? "" : ")");
     suffix.append("; }");
   }
 
@@ -747,7 +747,7 @@ bool MutationCoverageExpr::IsRedundantUnaryLogicalNotInsertion(
   // value because either way, operator insertion would be redundant.
   bool unused_bool_value;
   if (expr_->getType()->isBooleanType() &&
-      expr_->EvaluateAsBooleanCondition(unused_bool_value, ast_context)) {
+      EvaluateAsBooleanCondition(*expr_, ast_context, unused_bool_value)) {
     return true;
   }
 
@@ -758,7 +758,7 @@ bool MutationCoverageExpr::IsRedundantUnaryLogicalNotInsertion(
   // Similarly, this value is not used as it does not matter which constant
   // integer the expression evaluates to.
   clang::Expr::EvalResult unused_result_value;
-  if (expr_->EvaluateAsInt(unused_result_value, ast_context)) {
+  if (EvaluateAsInt(*expr_, ast_context, unused_result_value)) {
     return true;
   }
 
