@@ -448,7 +448,7 @@ std::string MutationCoverageExpr::GenerateMutatorFunction(
 
   if (!only_track_mutant_coverage) {
     // Calculate the value of evaluating the original expression.
-    new_function << "  " << result_type << " actual_result = " << arg_evaluated
+    new_function << "  " << input_type << " actual_result = " << arg_evaluated
                  << ";\n";
   }
 
@@ -599,12 +599,11 @@ protobufs::MutationGroup MutationCoverageExpr::Apply(
 
   const std::string new_function_name =
       GetFunctionName(optimise_mutations, ast_context);
-  const std::string result_type = expr_->getType()
+  std::string input_type = expr_->getType()
                                       ->getAs<clang::BuiltinType>()
                                       ->getName(ast_context.getPrintingPolicy())
                                       .str();
 
-  std::string input_type = result_type;
   // Type modifiers are added to the input type, if it is an l-value. The result
   // type is left unmodified, because l-values are only mutated in positions
   // where they are implicitly cast to r-values, so the associated mutator
@@ -623,7 +622,7 @@ protobufs::MutationGroup MutationCoverageExpr::Apply(
                               ast_context, preprocessor, rewriter);
 
   const std::string new_function = GenerateMutatorFunction(
-      ast_context, new_function_name, result_type, input_type,
+      ast_context, new_function_name, input_type, input_type,
       optimise_mutations, only_track_mutant_coverage, mutation_id,
       inner_result);
   assert(!new_function.empty() && "Unsupported expression.");

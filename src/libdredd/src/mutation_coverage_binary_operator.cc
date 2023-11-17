@@ -366,9 +366,10 @@ void MutationCoverageBinaryOperator::GenerateBinaryOperatorReplacement(
        GetReplacementOperators(optimise_mutations, ast_context)) {
     if (!only_track_mutant_coverage) {
       new_function << "  if (";
-      // Division is a special case as we need to check that the divisor isn't
-      // 0.
-      if (operator_kind == clang::BinaryOperatorKind::BO_Div) {
+      // Division is a special case as we need to check that the second argument
+      // isn't 0.
+      if (operator_kind == clang::BinaryOperatorKind::BO_Div ||
+          operator_kind == clang::BinaryOperatorKind::BO_Rem) {
         new_function << "(" << arg2_evaluated << " != 0) && ";
       }
 
