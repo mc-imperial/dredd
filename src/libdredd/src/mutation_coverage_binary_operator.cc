@@ -50,25 +50,6 @@ MutationCoverageBinaryOperator::MutationCoverageBinaryOperator(
           GetSourceRangeInMainFile(preprocessor, *binary_operator.getRHS()),
           ast_context) {}
 
-std::string MutationCoverageBinaryOperator::GetExpr(
-    clang::ASTContext& ast_context) const {
-  std::string arg1_evaluated("arg1");
-  std::string arg2_evaluated("arg2");
-  if (ast_context.getLangOpts().CPlusPlus) {
-    arg1_evaluated += "()";
-    arg2_evaluated += "()";
-  } else {
-    if (binary_operator_->isAssignmentOp()) {
-      arg1_evaluated = "(*" + arg1_evaluated + ")";
-    }
-  }
-  std::string result =
-      arg1_evaluated + " " +
-      clang::BinaryOperator::getOpcodeStr(binary_operator_->getOpcode()).str() +
-      " " + arg2_evaluated;
-  return result;
-}
-
 bool MutationCoverageBinaryOperator::IsRedundantReplacementOperator(
     clang::BinaryOperatorKind operator_kind,
     const clang::ASTContext& ast_context) const {

@@ -117,7 +117,8 @@ void MutationCoverageExpr::AddOptimisationSpecifier(
 }
 
 bool MutationCoverageExpr::ExprIsEquivalentToInt(
-    const clang::Expr& expr, int constant, clang::ASTContext& ast_context) {
+    const clang::Expr& expr, int constant,
+    const clang::ASTContext& ast_context) {
   clang::Expr::EvalResult int_eval_result;
   if (expr.getType()->isIntegerType() &&
       EvaluateAsInt(expr, ast_context, int_eval_result)) {
@@ -140,7 +141,8 @@ bool MutationCoverageExpr::ExprIsEquivalentToFloat(
 }
 
 bool MutationCoverageExpr::ExprIsEquivalentToBool(
-    const clang::Expr& expr, bool constant, clang::ASTContext& ast_context) {
+    const clang::Expr& expr, bool constant,
+    const clang::ASTContext& ast_context) {
   bool bool_eval_result = false;
   if (expr.getType()->isBooleanType() &&
       EvaluateAsBooleanCondition(expr, ast_context, bool_eval_result)) {
@@ -336,7 +338,7 @@ void MutationCoverageExpr::GenerateFloatConstantReplacement(
   }
 }
 void MutationCoverageExpr::GenerateIntegerConstantReplacement(
-    clang::ASTContext& ast_context, bool optimise_mutations,
+    const clang::ASTContext& ast_context, bool optimise_mutations,
     bool only_track_mutant_coverage, int mutation_id_base,
     std::stringstream& new_function, int& mutation_id_offset,
     protobufs::MutationReplaceExpr& protobuf_message) const {
@@ -600,9 +602,9 @@ protobufs::MutationGroup MutationCoverageExpr::Apply(
   const std::string new_function_name =
       GetFunctionName(optimise_mutations, ast_context);
   std::string input_type = expr_->getType()
-                                      ->getAs<clang::BuiltinType>()
-                                      ->getName(ast_context.getPrintingPolicy())
-                                      .str();
+                               ->getAs<clang::BuiltinType>()
+                               ->getName(ast_context.getPrintingPolicy())
+                               .str();
 
   // Type modifiers are added to the input type, if it is an l-value. The result
   // type is left unmodified, because l-values are only mutated in positions
@@ -723,7 +725,7 @@ bool MutationCoverageExpr::IsRedundantUnaryMinusInsertion(
 }
 
 bool MutationCoverageExpr::IsRedundantUnaryNotInsertion(
-    clang::ASTContext& ast_context) const {
+    const clang::ASTContext& ast_context) const {
   // If the expression is signed, it does not make sense to insert '~'
   // before 0 or -1, as these cases are captured by replacement with -1 and
   // 0, respectively.
@@ -736,7 +738,7 @@ bool MutationCoverageExpr::IsRedundantUnaryNotInsertion(
 }
 
 bool MutationCoverageExpr::IsRedundantUnaryLogicalNotInsertion(
-    clang::ASTContext& ast_context) const {
+    const clang::ASTContext& ast_context) const {
   // If the expression is a boolean constant, it does not make sense to
   // insert '!' because this is captured by replacement with the other
   // boolean constant.
