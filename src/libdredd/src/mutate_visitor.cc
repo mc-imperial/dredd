@@ -410,6 +410,18 @@ void MutateVisitor::HandleExpr(clang::Expr* expr) {
     return;
   }
 
+  clang::Expr::NullPointerConstantKind const kind = expr->isNullPointerConstant(
+      compiler_instance_->getASTContext(),
+      clang::Expr::NullPointerConstantValueDependence());
+  for (const auto& parent :
+       compiler_instance_->getASTContext().getParents<clang::Expr>(*expr)) {
+    const auto* cast_parent = parent.get<clang::CastExpr>();
+    if (cast_parent != nullptr && kind != clang::Expr::NPCK_NotNull &&
+        cast_parent->getType()->isAnyPointerType()) {
+      return;
+    }
+  }
+
   if (optimise_mutations_) {
     // If an expression is the direct child of a cast expression, do not mutate
     // it unless the cast is an l-value to r-value cast. In an l-value to
