@@ -373,16 +373,19 @@ void MutateVisitor::HandleExpr(clang::Expr* expr) {
     return;
   }
 
-  for (const auto& parent :
-       compiler_instance_->getASTContext().getParents<clang::Expr>(*expr)) {
-    const auto* cast_parent = parent.get<clang::CastExpr>();
-    if (cast_parent != nullptr &&
-        expr->isNullPointerConstant(
-            compiler_instance_->getASTContext(),
-            clang::Expr::NullPointerConstantValueDependence()) != 0U) {
-      return;
-    }
-  }
+  //  clang::Expr::NullPointerConstantKind const kind =
+  //  expr->isNullPointerConstant(
+  //      compiler_instance_->getASTContext(),
+  //      clang::Expr::NullPointerConstantValueDependence());
+  //  for (const auto& parent :
+  //       compiler_instance_->getASTContext().getParents<clang::Expr>(*expr)) {
+  //    const auto* cast_parent = parent.get<clang::CastExpr>();
+  //    if (cast_parent != nullptr && (kind == clang::Expr::NPCK_CXX11_nullptr
+  //    ||
+  //                                   kind == clang::Expr::NPCK_GNUNull)) {
+  //      return;
+  //    }
+  //  }
 
   if (optimise_mutations_) {
     // If an expression is the direct child of a cast expression, do not mutate
