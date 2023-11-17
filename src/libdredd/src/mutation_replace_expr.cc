@@ -579,23 +579,6 @@ void MutationReplaceExpr::ReplaceExprWithFunctionCall(
     suffix.append(")");
   }
 
-  //  for (const auto& parent : ast_context.getParents<clang::Expr>(*expr_)) {
-  //    const auto* cast_parent = parent.get<clang::CastExpr>();
-  //    if (cast_parent != nullptr &&
-  //        expr_->isNullPointerConstant(
-  //            ast_context, clang::Expr::NullPointerConstantValueDependence())
-  //            != 0U) {
-  //      prefix = "static_cast<" +
-  //               cast_parent->getType()
-  //                   ->getAs<clang::BuiltinType>()
-  //                   ->getName(ast_context.getPrintingPolicy())
-  //                   .str() +
-  //               ">(" + prefix;
-  //      suffix.append(")");
-  //      break;
-  //    }
-  //  }
-
   const clang::SourceRange expr_source_range_in_main_file =
       GetSourceRangeInMainFile(preprocessor, *expr_);
   assert(expr_source_range_in_main_file.isValid() && "Invalid source range.");
