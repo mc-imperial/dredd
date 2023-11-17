@@ -391,6 +391,12 @@ void MutateVisitor::HandleExpr(clang::Expr* expr) {
     return;
   }
 
+  if (expr->isNullPointerConstant(
+          compiler_instance_->getASTContext(),
+          clang::Expr::NullPointerConstantValueDependence()) != 0U) {
+    return;
+  }
+
   if (optimise_mutations_) {
     // If an expression is the direct child of a cast expression, do not mutate
     // it unless the cast is an l-value to r-value cast. In an l-value to
