@@ -391,10 +391,15 @@ void MutateVisitor::HandleExpr(clang::Expr* expr) {
     return;
   }
 
-  if (expr->isNullPointerConstant(
-          compiler_instance_->getASTContext(),
-          clang::Expr::NullPointerConstantValueDependence()) != 0U) {
-    return;
+  for (const auto& parent :
+       compiler_instance_->getASTContext().getParents<clang::Expr>(*expr)) {
+    const auto* cast_parent = parent.get<clang::CastExpr>();
+    if (cast_parent != nullptr &&
+        expr->isNullPointerConstant(
+            compiler_instance_->getASTContext(),
+            clang::Expr::NullPointerConstantValueDependence()) != 0U) {
+      return;
+    }
   }
 
   if (optimise_mutations_) {
