@@ -1,5 +1,3 @@
-#include <stdio.h>
-
 int main() {
-    int* x = NULL;
+    int* x = 0;
 }
