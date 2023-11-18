@@ -184,19 +184,19 @@ std::string MutationCoverageUnaryOperator::GenerateMutatorFunction(
     protobufs::MutationReplaceUnaryOperator& protobuf_message) const {
   std::stringstream new_function;
   new_function << "static " << result_type << " " << function_name << "(";
-  if (ast_context.getLangOpts().CPlusPlus &&
-      unary_operator_->HasSideEffects(ast_context)) {
-    new_function << "std::function<" << input_type << "()>";
-  } else {
-    new_function << input_type;
-  }
+  //  if (ast_context.getLangOpts().CPlusPlus &&
+  //      unary_operator_->HasSideEffects(ast_context)) {
+  //    new_function << "std::function<" << input_type << "()>";
+  //  } else {
+  new_function << input_type;
+  //  }
   new_function << " arg, int local_mutation_id) {\n";
 
   std::string arg_evaluated = "arg";
-  if (ast_context.getLangOpts().CPlusPlus &&
-      unary_operator_->HasSideEffects(ast_context)) {
-    arg_evaluated += "()";
-  }
+  //  if (ast_context.getLangOpts().CPlusPlus &&
+  //      unary_operator_->HasSideEffects(ast_context)) {
+  //    arg_evaluated += "()";
+  //  }
 
   if (!ast_context.getLangOpts().CPlusPlus &&
       unary_operator_->isIncrementDecrementOp()) {
@@ -410,17 +410,10 @@ protobufs::MutationGroup MutationCoverageUnaryOperator::Apply(
   std::string prefix = new_function_name + "(";
   std::string suffix;
   if (ast_context.getLangOpts().CPlusPlus &&
-      unary_operator_->HasSideEffects(ast_context)) {
-    prefix.append(
-        "[&]() -> " + input_type + " { return " +
-        // We don't need to static cast constant expressions
-        (IsCxx11ConstantExpr(*unary_operator_->getSubExpr(), ast_context)
-             ? ""
-             : "static_cast<" + input_type + ">("));
-    suffix.append(
-        IsCxx11ConstantExpr(*unary_operator_->getSubExpr(), ast_context) ? ""
-                                                                         : ")");
-    suffix.append("; }");
+      unary_operator_->HasSideEffects(ast_context) &&
+      !IsCxx11ConstantExpr(*unary_operator_->getSubExpr(), ast_context)) {
+    prefix.append("static_cast<" + input_type + ">(");
+    suffix.append(")");
   }
 
   if (!ast_context.getLangOpts().CPlusPlus &&

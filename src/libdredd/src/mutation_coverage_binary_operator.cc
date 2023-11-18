@@ -489,44 +489,21 @@ std::string MutationCoverageBinaryOperator::GenerateMutatorFunction(
     protobufs::MutationReplaceBinaryOperator& protobuf_message) const {
   std::stringstream new_function;
   new_function << "static " << result_type << " " << function_name << "(";
-
-  if (ast_context.getLangOpts().CPlusPlus &&
-      binary_operator_->getLHS()->HasSideEffects(ast_context)) {
-    new_function << "std::function<" << lhs_type << "()>";
-  } else {
-    new_function << lhs_type;
-  }
+  new_function << lhs_type;
   new_function << " arg1, ";
-
-  if (ast_context.getLangOpts().CPlusPlus &&
-      (binary_operator_->isLogicalOp() ||
-       binary_operator_->getRHS()->HasSideEffects(ast_context))) {
-    new_function << "std::function<" << rhs_type << "()>";
-  } else {
-    new_function << rhs_type;
-  }
-
+  new_function << rhs_type;
   // TODO(JamesLeeJones): Possibly remove `local_mutation_id`.
   new_function << " arg2, int local_mutation_id) {\n";
 
   int mutation_id_offset = 0;
 
   std::string arg1_evaluated("arg1");
-  if (ast_context.getLangOpts().CPlusPlus &&
-      binary_operator_->getLHS()->HasSideEffects(ast_context)) {
-    arg1_evaluated += "()";
-  }
   if (!ast_context.getLangOpts().CPlusPlus &&
       binary_operator_->isAssignmentOp()) {
     arg1_evaluated = "(*" + arg1_evaluated + ")";
   }
 
-  std::string arg2_evaluated("arg2");
-  if (ast_context.getLangOpts().CPlusPlus &&
-      (binary_operator_->isLogicalOp() ||
-       binary_operator_->getRHS()->HasSideEffects(ast_context))) {
-    arg2_evaluated += "()";
-  }
+  const std::string arg2_evaluated("arg2");
 
   if (!only_track_mutant_coverage) {
     // Compute the value of the original expression.
@@ -710,15 +687,13 @@ void MutationCoverageBinaryOperator::ReplaceOperator(
 
   if (ast_context.getLangOpts().CPlusPlus) {
     if (binary_operator_->getLHS()->HasSideEffects(ast_context)) {
-      lhs_prefix.append("[&]() -> " + lhs_type + " { return static_cast<" +
-                        lhs_type + ">(");
-      lhs_suffix.append("); }");
+      lhs_prefix.append("static_cast<" + lhs_type + ">(");
+      lhs_suffix.append(")");
     }
     if (binary_operator_->isLogicalOp() ||
         binary_operator_->getRHS()->HasSideEffects(ast_context)) {
-      rhs_prefix.append("[&]() -> " + rhs_type + " { return static_cast<" +
-                        rhs_type + ">(");
-      rhs_suffix.append("); }");
+      rhs_prefix.append("static_cast<" + rhs_type + ">(");
+      rhs_suffix.append(")");
     }
   } else {
     if (binary_operator_->isAssignmentOp()) {
