@@ -450,7 +450,7 @@ std::string MutationCoverageExpr::GenerateMutatorFunction(
 
   if (!only_track_mutant_coverage) {
     // Calculate the value of evaluating the original expression.
-    new_function << "  " << input_type << " actual_result = " << arg_evaluated
+    new_function << "  " << result_type << " actual_result = " << arg_evaluated
                  << ";\n";
   }
 
