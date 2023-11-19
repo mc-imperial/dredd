@@ -20,6 +20,7 @@
 
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/Stmt.h"
+#include "clang/Basic/SourceLocation.h"
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Rewrite/Core/Rewriter.h"
 #include "libdredd/mutation.h"
@@ -42,6 +43,9 @@ class MutationRemoveStmt : public Mutation {
       std::unordered_set<std::string>& dredd_declarations) const override;
 
  private:
+  static bool IsNextTokenHash(const clang::CharSourceRange& source_range,
+                              const clang::Preprocessor& preprocessor);
+
   const clang::Stmt* stmt_;
   InfoForSourceRange info_for_source_range_;
 };

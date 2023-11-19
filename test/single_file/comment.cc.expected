@@ -60,9 +60,9 @@ void f()
 
   }
   // something
-}
+ }
   if (!__dredd_enabled_mutation(5)) { if(__dredd_replace_expr_bool_true(true, 4)) {
 
   } /* something */
-}
+ }
 }
