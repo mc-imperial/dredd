@@ -43,6 +43,11 @@ class MutationRemoveStmt : public Mutation {
       std::unordered_set<std::string>& dredd_declarations) const override;
 
  private:
+  // Helper method to determine whether the token immediately following the
+  // given source range is the '#' token. This is useful for working around
+  // issues where the placement of semicolons at the end of a statement that is
+  // wrapped in a conditional is challenging, due to a preprocessor directive
+  // occurring between the end of a statement and its associated semicolon.
   static bool IsNextTokenHash(const clang::CharSourceRange& source_range,
                               const clang::Preprocessor& preprocessor);
 
