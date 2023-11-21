@@ -14,7 +14,6 @@
 
 #include <fstream>
 #include <memory>
-#include <optional>
 #include <string>
 
 #include "clang/Tooling/CommonOptionsParser.h"
@@ -95,10 +94,12 @@ int main(int argc, const char** argv) {
 
   // Keeps track of the mutations that are applied to each source file,
   // including their hierarchical structure.
-  std::optional<dredd::protobufs::MutationInfo> mutation_info;
+  dredd::protobufs::MutationInfo mutation_info;
 
   if (mutation_info_file.empty()) {
-    mutation_info = std::nullopt;
+    mutation_info.set_use(false);
+  } else {
+    mutation_info.set_use(true);
   }
 
   const std::unique_ptr<clang::tooling::FrontendActionFactory> factory =
@@ -108,7 +109,7 @@ int main(int argc, const char** argv) {
 
   const int return_code = Tool.run(factory.get());
 
-  if (mutation_info.has_value() && return_code == 0) {
+  if (mutation_info.use() && return_code == 0) {
     // Application of mutations was successful, so write out the mutation info
     // in JSON format.
     std::string json_string;
@@ -116,7 +117,7 @@ int main(int argc, const char** argv) {
     json_options.add_whitespace = true;
     json_options.always_print_primitive_fields = true;
     auto json_generation_status = google::protobuf::util::MessageToJsonString(
-        mutation_info.value(), &json_string, json_options);
+        mutation_info, &json_string, json_options);
     if (json_generation_status.ok()) {
       std::ofstream transformations_json_file(mutation_info_file);
       transformations_json_file << json_string;

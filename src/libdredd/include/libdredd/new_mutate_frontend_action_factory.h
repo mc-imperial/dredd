@@ -16,7 +16,6 @@
 #define LIBDREDD_NEW_MUTATE_FRONTEND_ACTION_FACTORY_H
 
 #include <memory>
-#include <optional>
 
 #include "clang/Tooling/Tooling.h"
 #include "libdredd/protobufs/dredd_protobufs.h"
@@ -24,9 +23,10 @@
 namespace dredd {
 
 std::unique_ptr<clang::tooling::FrontendActionFactory>
-NewMutateFrontendActionFactory(
-    bool optimise_mutations, bool dump_asts, bool only_track_mutant_coverage,
-    int& mutation_id, std::optional<protobufs::MutationInfo>& mutation_info);
+NewMutateFrontendActionFactory(bool optimise_mutations, bool dump_asts,
+                               bool only_track_mutant_coverage,
+                               int& mutation_id,
+                               protobufs::MutationInfo& mutation_info);
 
 }
 
