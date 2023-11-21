@@ -370,8 +370,7 @@ std::string MutateAstConsumer::GetDreddPreludeC(int initial_mutation_id) const {
 std::optional<protobufs::MutationTreeNode> MutateAstConsumer::ApplyMutations(
     const MutationTreeNode& mutation_tree_node, int initial_mutation_id,
     clang::ASTContext& context,
-    std::unordered_set<std::string>& dredd_declarations,
-    bool build_tree) {
+    std::unordered_set<std::string>& dredd_declarations, bool build_tree) {
   assert(!(mutation_tree_node.IsEmpty() &&
            mutation_tree_node.GetChildren().size() == 1) &&
          "The mutation tree should already be compressed.");
@@ -385,7 +384,7 @@ std::optional<protobufs::MutationTreeNode> MutateAstConsumer::ApplyMutations(
     // children can only have a value if result has a value, so we don't need to
     // check both.
     if (children.has_value()) {
-        *result.add_children() = children.value();
+      *result.add_children() = children.value();
     }
   }
   for (const auto& mutation : mutation_tree_node.GetMutations()) {
