@@ -42,7 +42,7 @@ static bool __dredd_enabled_mutation(int local_mutation_id) {
   return (enabled_bitset[local_mutation_id / 64] & (1 << (local_mutation_id % 64))) != 0;
 }
 
-static int& __dredd_replace_binary_operator_Assign_int_int(int& arg1, std::function<int()> arg2, int local_mutation_id) {
+static int& __dredd_replace_binary_operator_Assign_arg1_int_arg2_int(int& arg1, std::function<int()> arg2, int local_mutation_id) {
   if (!__dredd_some_mutation_enabled) return arg1 = arg2();
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return arg1 += arg2();
   if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg1 &= arg2();
@@ -102,7 +102,7 @@ void foo() {
   if (!__dredd_enabled_mutation(59)) { if (__dredd_replace_expr_bool(true, 12)) {
     auto [x, y] = a;
     auto& [xr, yr] = a;
-    if (!__dredd_enabled_mutation(36)) { __dredd_replace_binary_operator_Assign_int_int(xr , [&]() -> int { return static_cast<int>(__dredd_replace_expr_int([&]() -> int { return static_cast<int>(__dredd_replace_unary_operator_PostInc_int([&]() -> int& { return static_cast<int&>(y); }, 15)); }, 20)); }, 26); }
-    if (!__dredd_enabled_mutation(58)) { __dredd_replace_binary_operator_Assign_int_int(yr , [&]() -> int { return static_cast<int>(__dredd_replace_expr_int([&]() -> int { return static_cast<int>(__dredd_replace_unary_operator_PostInc_int([&]() -> int& { return static_cast<int&>(x); }, 37)); }, 42)); }, 48); }
+    if (!__dredd_enabled_mutation(36)) { __dredd_replace_binary_operator_Assign_arg1_int_arg2_int(xr , [&]() -> int { return static_cast<int>(__dredd_replace_expr_int([&]() -> int { return static_cast<int>(__dredd_replace_unary_operator_PostInc_int([&]() -> int& { return static_cast<int&>(y); }, 15)); }, 20)); }, 26); }
+    if (!__dredd_enabled_mutation(58)) { __dredd_replace_binary_operator_Assign_arg1_int_arg2_int(yr , [&]() -> int { return static_cast<int>(__dredd_replace_expr_int([&]() -> int { return static_cast<int>(__dredd_replace_unary_operator_PostInc_int([&]() -> int& { return static_cast<int&>(x); }, 37)); }, 42)); }, 48); }
   } }
 }

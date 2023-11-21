@@ -67,7 +67,7 @@ static int __dredd_replace_expr_int(int arg, int local_mutation_id) {
   return arg;
 }
 
-static int __dredd_replace_binary_operator_Add_int_int(int arg1, int arg2, int local_mutation_id) {
+static int __dredd_replace_binary_operator_Add_arg1_int_arg2_int(int arg1, int arg2, int local_mutation_id) {
   if (!__dredd_some_mutation_enabled) return arg1 + arg2;
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return arg1 / arg2;
   if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg1 * arg2;
@@ -81,5 +81,5 @@ static int __dredd_replace_binary_operator_Add_int_int(int arg1, int arg2, int l
 void foo() {
   int b = __dredd_replace_expr_int_zero(0, 0);
   int c = __dredd_replace_expr_int_zero(0, 2);
-  static int a = __dredd_replace_expr_int(__dredd_replace_binary_operator_Add_int_int(__dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(b, 4), 6) , __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(c, 12), 14), 20), 26);
+  static int a = __dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(b, 4), 6) , __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(c, 12), 14), 20), 26);
 }

@@ -60,7 +60,7 @@ static int __dredd_replace_expr_int(int arg, int local_mutation_id) {
   return arg;
 }
 
-static int __dredd_replace_binary_operator_Div_int_int(int arg1, int arg2, int local_mutation_id) {
+static int __dredd_replace_binary_operator_Div_arg1_int_arg2_int(int arg1, int arg2, int local_mutation_id) {
   if (!__dredd_some_mutation_enabled) return arg1 / arg2;
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return arg1 + arg2;
   if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg1 * arg2;
@@ -79,7 +79,7 @@ static bool __dredd_replace_expr_bool(bool arg, int local_mutation_id) {
   return arg;
 }
 
-static bool __dredd_replace_binary_operator_NE_int_int(int arg1, int arg2, int local_mutation_id) {
+static bool __dredd_replace_binary_operator_NE_arg1_int_arg2_int(int arg1, int arg2, int local_mutation_id) {
   if (!__dredd_some_mutation_enabled) return arg1 != arg2;
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return arg1 == arg2;
   if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg1 >= arg2;
@@ -91,7 +91,7 @@ static bool __dredd_replace_binary_operator_NE_int_int(int arg1, int arg2, int l
   return arg1 != arg2;
 }
 
-static bool __dredd_replace_binary_operator_LAnd_bool_bool(bool arg1, std::function<bool()> arg2, int local_mutation_id) {
+static bool __dredd_replace_binary_operator_LAnd_arg1_bool_arg2_bool(bool arg1, std::function<bool()> arg2, int local_mutation_id) {
   if (!__dredd_some_mutation_enabled) return arg1 && arg2();
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return arg1 || arg2();
   if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg1 == arg2();
@@ -102,5 +102,5 @@ static bool __dredd_replace_binary_operator_LAnd_bool_bool(bool arg1, std::funct
 }
 
 int foo(int a, int b) {
-  if (!__dredd_enabled_mutation(78)) { return __dredd_replace_expr_int(__dredd_replace_expr_bool(__dredd_replace_binary_operator_LAnd_bool_bool(__dredd_replace_expr_bool((__dredd_replace_expr_bool(__dredd_replace_binary_operator_NE_int_int(__dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(b, 0), 2) , __dredd_replace_expr_int(0, 8), 14), 21)), 24) , [&]() -> bool { return static_cast<bool>(__dredd_replace_expr_bool(__dredd_replace_expr_int((__dredd_replace_expr_int(__dredd_replace_binary_operator_Div_int_int(__dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(a, 27), 29) , __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(b, 35), 37), 43), 49)), 55), 61)); }, 64), 69), 72); }
+  if (!__dredd_enabled_mutation(78)) { return __dredd_replace_expr_int(__dredd_replace_expr_bool(__dredd_replace_binary_operator_LAnd_arg1_bool_arg2_bool(__dredd_replace_expr_bool((__dredd_replace_expr_bool(__dredd_replace_binary_operator_NE_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(b, 0), 2) , __dredd_replace_expr_int(0, 8), 14), 21)), 24) , [&]() -> bool { return static_cast<bool>(__dredd_replace_expr_bool(__dredd_replace_expr_int((__dredd_replace_expr_int(__dredd_replace_binary_operator_Div_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(a, 27), 29) , __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(b, 35), 37), 43), 49)), 55), 61)); }, 64), 69), 72); }
 }

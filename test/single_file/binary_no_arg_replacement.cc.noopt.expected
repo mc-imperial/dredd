@@ -61,7 +61,7 @@ static int __dredd_replace_expr_int(int arg, int local_mutation_id) {
   return arg;
 }
 
-static int __dredd_replace_binary_operator_Sub_int_int(int arg1, int arg2, int local_mutation_id) {
+static int __dredd_replace_binary_operator_Sub_arg1_int_arg2_int(int arg1, int arg2, int local_mutation_id) {
   if (!__dredd_some_mutation_enabled) return arg1 - arg2;
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return arg1 + arg2;
   if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg1 / arg2;
@@ -72,7 +72,7 @@ static int __dredd_replace_binary_operator_Sub_int_int(int arg1, int arg2, int l
   return arg1 - arg2;
 }
 
-static int __dredd_replace_binary_operator_Mul_int_int(int arg1, int arg2, int local_mutation_id) {
+static int __dredd_replace_binary_operator_Mul_arg1_int_arg2_int(int arg1, int arg2, int local_mutation_id) {
   if (!__dredd_some_mutation_enabled) return arg1 * arg2;
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return arg1 + arg2;
   if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg1 / arg2;
@@ -83,7 +83,7 @@ static int __dredd_replace_binary_operator_Mul_int_int(int arg1, int arg2, int l
   return arg1 * arg2;
 }
 
-static int __dredd_replace_binary_operator_Div_int_int(int arg1, int arg2, int local_mutation_id) {
+static int __dredd_replace_binary_operator_Div_arg1_int_arg2_int(int arg1, int arg2, int local_mutation_id) {
   if (!__dredd_some_mutation_enabled) return arg1 / arg2;
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return arg1 + arg2;
   if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg1 * arg2;
@@ -95,7 +95,7 @@ static int __dredd_replace_binary_operator_Div_int_int(int arg1, int arg2, int l
 }
 
 int main() {
-  int x = __dredd_replace_expr_int(__dredd_replace_binary_operator_Sub_int_int(__dredd_replace_expr_int(0, 0) , __dredd_replace_expr_int(7, 6), 12), 18);
-  int y = __dredd_replace_expr_int(__dredd_replace_binary_operator_Div_int_int(__dredd_replace_expr_int(5, 24) , __dredd_replace_expr_int(1, 30), 36), 42);
-  int z = __dredd_replace_expr_int(__dredd_replace_binary_operator_Mul_int_int(__dredd_replace_expr_int(__dredd_replace_unary_operator_Minus_int(__dredd_replace_expr_int(1, 48), 54), 57) , __dredd_replace_expr_int(3, 63), 69), 75);
+  int x = __dredd_replace_expr_int(__dredd_replace_binary_operator_Sub_arg1_int_arg2_int(__dredd_replace_expr_int(0, 0) , __dredd_replace_expr_int(7, 6), 12), 18);
+  int y = __dredd_replace_expr_int(__dredd_replace_binary_operator_Div_arg1_int_arg2_int(__dredd_replace_expr_int(5, 24) , __dredd_replace_expr_int(1, 30), 36), 42);
+  int z = __dredd_replace_expr_int(__dredd_replace_binary_operator_Mul_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_unary_operator_Minus_int(__dredd_replace_expr_int(1, 48), 54), 57) , __dredd_replace_expr_int(3, 63), 69), 75);
 }

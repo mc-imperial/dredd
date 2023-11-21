@@ -60,7 +60,7 @@ static int __dredd_replace_expr_int(int arg, int local_mutation_id) {
   return arg;
 }
 
-static int __dredd_replace_binary_operator_Mul_int_int(int arg1, int arg2, int local_mutation_id) {
+static int __dredd_replace_binary_operator_Mul_arg1_int_arg2_int(int arg1, int arg2, int local_mutation_id) {
   if (!__dredd_some_mutation_enabled) return arg1 * arg2;
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return arg1 + arg2;
   if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg1 / arg2;
@@ -71,7 +71,7 @@ static int __dredd_replace_binary_operator_Mul_int_int(int arg1, int arg2, int l
   return arg1 * arg2;
 }
 
-static int __dredd_replace_binary_operator_Add_int_int(int arg1, int arg2, int local_mutation_id) {
+static int __dredd_replace_binary_operator_Add_arg1_int_arg2_int(int arg1, int arg2, int local_mutation_id) {
   if (!__dredd_some_mutation_enabled) return arg1 + arg2;
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return arg1 / arg2;
   if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg1 * arg2;
@@ -85,5 +85,5 @@ static int __dredd_replace_binary_operator_Add_int_int(int arg1, int arg2, int l
 int main() {
   int x = __dredd_replace_expr_int(1, 0);
   int y = __dredd_replace_expr_int(2, 6);
-  if (!__dredd_enabled_mutation(60)) { return __dredd_replace_expr_int(__dredd_replace_binary_operator_Add_int_int(__dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x, 12), 14) , __dredd_replace_expr_int(__dredd_replace_binary_operator_Mul_int_int(__dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(y, 20), 22) , __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x, 28), 30), 36), 42), 48), 54); }
+  if (!__dredd_enabled_mutation(60)) { return __dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x, 12), 14) , __dredd_replace_expr_int(__dredd_replace_binary_operator_Mul_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(y, 20), 22) , __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x, 28), 30), 36), 42), 48), 54); }
 }

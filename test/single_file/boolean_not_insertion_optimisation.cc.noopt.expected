@@ -42,7 +42,7 @@ static bool __dredd_enabled_mutation(int local_mutation_id) {
   return (enabled_bitset[local_mutation_id / 64] & (1 << (local_mutation_id % 64))) != 0;
 }
 
-static bool& __dredd_replace_binary_operator_Assign_bool_bool(bool& arg1, bool arg2, int local_mutation_id) {
+static bool& __dredd_replace_binary_operator_Assign_arg1_bool_arg2_bool(bool& arg1, bool arg2, int local_mutation_id) {
   if (!__dredd_some_mutation_enabled) return arg1 = arg2;
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return arg1 += arg2;
   if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg1 &= arg2;
@@ -67,5 +67,5 @@ static bool __dredd_replace_expr_bool(bool arg, int local_mutation_id) {
 
 int main() {
   bool x = __dredd_replace_expr_bool(true, 0);
-  if (!__dredd_enabled_mutation(16)) { __dredd_replace_binary_operator_Assign_bool_bool(x , __dredd_replace_expr_bool(false, 3), 6); }
+  if (!__dredd_enabled_mutation(16)) { __dredd_replace_binary_operator_Assign_arg1_bool_arg2_bool(x , __dredd_replace_expr_bool(false, 3), 6); }
 }
