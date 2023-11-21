@@ -15,7 +15,10 @@ syntax = "proto3";
 
 package dredd.protobufs;
 
-message MutationInfo { repeated MutationInfoForFile info_for_files = 1; }
+message MutationInfo {
+  repeated MutationInfoForFile info_for_files = 1;
+  bool use = 2;
+}
 
 message MutationInfoForFile {
   string filename = 1;

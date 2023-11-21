@@ -33,7 +33,7 @@ class MutateFrontendAction : public clang::ASTFrontendAction {
  public:
   MutateFrontendAction(bool optimise_mutations, bool dump_asts,
                        bool only_track_mutant_coverage, int& mutation_id,
-                       std::optional<protobufs::MutationInfo>& mutation_info,
+                       protobufs::MutationInfo& mutation_info,
                        std::set<std::string>& processed_files)
       : optimise_mutations_(optimise_mutations),
         dump_asts_(dump_asts),
@@ -65,21 +65,22 @@ class MutateFrontendAction : public clang::ASTFrontendAction {
   bool dump_asts_;
   bool only_track_mutant_coverage_;
   int* mutation_id_;
-  std::optional<protobufs::MutationInfo>* mutation_info_;
+  protobufs::MutationInfo* mutation_info_;
   std::set<std::string>* processed_files_;
 };
 
 std::unique_ptr<clang::tooling::FrontendActionFactory>
-NewMutateFrontendActionFactory(
-    bool optimise_mutations, bool dump_asts, bool only_track_mutant_coverage,
-    int& mutation_id, std::optional<protobufs::MutationInfo>& mutation_info) {
+NewMutateFrontendActionFactory(bool optimise_mutations, bool dump_asts,
+                               bool only_track_mutant_coverage,
+                               int& mutation_id,
+                               protobufs::MutationInfo& mutation_info) {
   class MutateFrontendActionFactory
       : public clang::tooling::FrontendActionFactory {
    public:
-    MutateFrontendActionFactory(
-        bool optimise_mutations, bool dump_asts,
-        bool only_track_mutant_coverage, int& mutation_id,
-        std::optional<protobufs::MutationInfo>& mutation_info)
+    MutateFrontendActionFactory(bool optimise_mutations, bool dump_asts,
+                                bool only_track_mutant_coverage,
+                                int& mutation_id,
+                                protobufs::MutationInfo& mutation_info)
         : optimise_mutations_(optimise_mutations),
           dump_asts_(dump_asts),
           only_track_mutant_coverage_(only_track_mutant_coverage),
@@ -97,7 +98,7 @@ NewMutateFrontendActionFactory(
     bool dump_asts_;
     bool only_track_mutant_coverage_;
     int* mutation_id_;
-    std::optional<protobufs::MutationInfo>* mutation_info_;
+    protobufs::MutationInfo* mutation_info_;
 
     // Stores the ids of the files that have been processed so far, to avoid
     // processing a file multiple times.

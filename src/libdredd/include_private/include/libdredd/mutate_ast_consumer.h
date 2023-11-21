@@ -35,7 +35,7 @@ class MutateAstConsumer : public clang::ASTConsumer {
   MutateAstConsumer(const clang::CompilerInstance& compiler_instance,
                     bool optimise_mutations, bool dump_ast,
                     bool only_track_mutant_coverage, int& mutation_id,
-                    std::optional<protobufs::MutationInfo>& mutation_info)
+                    protobufs::MutationInfo& mutation_info)
       : compiler_instance_(&compiler_instance),
         optimise_mutations_(optimise_mutations),
         dump_ast_(dump_ast),
@@ -67,7 +67,8 @@ class MutateAstConsumer : public clang::ASTConsumer {
   std::optional<protobufs::MutationTreeNode> ApplyMutations(
       const MutationTreeNode& mutation_tree_node, int initial_mutation_id,
       clang::ASTContext& context,
-      std::unordered_set<std::string>& dredd_declarations);
+      std::unordered_set<std::string>& dredd_declarations,
+      bool build_tree);
 
   const clang::CompilerInstance* compiler_instance_;
 
@@ -88,7 +89,7 @@ class MutateAstConsumer : public clang::ASTConsumer {
   // for different translation units.
   int* mutation_id_;
 
-  std::optional<protobufs::MutationInfo>* mutation_info_;
+  protobufs::MutationInfo* mutation_info_;
 };
 
 }  // namespace dredd
