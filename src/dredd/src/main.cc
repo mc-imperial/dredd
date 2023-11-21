@@ -14,6 +14,7 @@
 
 #include <fstream>
 #include <memory>
+#include <optional>
 #include <string>
 
 #include "clang/Tooling/CommonOptionsParser.h"
