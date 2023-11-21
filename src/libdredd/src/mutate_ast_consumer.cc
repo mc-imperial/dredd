@@ -76,21 +76,25 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
   std::unordered_set<std::string> dredd_declarations;
 
   protobufs::MutationInfoForFile mutation_info_for_file;
-  mutation_info_for_file.set_filename(
-      ast_context.getSourceManager()
-          .getFileEntryForID(ast_context.getSourceManager().getMainFileID())
-          ->getName()
-          .str());
-  *mutation_info_for_file.mutable_mutation_tree_root() =
-      ApplyMutations(visitor_->GetMutations(), initial_mutation_id, ast_context,
-                     dredd_declarations);
+  if (mutation_info_) {
+    mutation_info_for_file.set_filename(
+        ast_context.getSourceManager()
+            .getFileEntryForID(ast_context.getSourceManager().getMainFileID())
+            ->getName()
+            .str());
+    *mutation_info_for_file.mutable_mutation_tree_root() =
+        ApplyMutations(visitor_->GetMutations(), initial_mutation_id,
+                       ast_context, dredd_declarations);
+  }
 
   if (initial_mutation_id == *mutation_id_) {
     // No possibilities for mutation were found; nothing else to do.
     return;
   }
 
-  *mutation_info_->add_info_for_files() = mutation_info_for_file;
+  if (mutation_info_) {
+    *mutation_info_->value().add_info_for_files() = mutation_info_for_file;
+  }
 
   auto& source_manager = ast_context.getSourceManager();
   const clang::SourceLocation start_of_source_file =
