@@ -83,16 +83,20 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
   std::unordered_set<std::string> dredd_declarations;
 
   protobufs::MutationInfoForFile mutation_info_for_file;
-  mutation_info_for_file.set_filename(
-      ast_context.getSourceManager()
-          .getFileEntryForID(ast_context.getSourceManager().getMainFileID())
-          ->getName()
-          .str());
+
+  if (mutation_info_->has_value()) {
+    mutation_info_for_file.set_filename(
+        ast_context.getSourceManager()
+            .getFileEntryForID(ast_context.getSourceManager().getMainFileID())
+            ->getName()
+            .str());
+  }
+
   protobufs::MutationTreeNode* root_protobuf_mutation_tree_node =
       mutation_info_for_file.add_mutation_tree();
   ApplyMutations(visitor_->GetMutations(), initial_mutation_id, ast_context,
                  mutation_info_for_file, *root_protobuf_mutation_tree_node,
-                 dredd_declarations);
+                 dredd_declarations, mutation_info_->has_value());
 
   if (initial_mutation_id == *mutation_id_) {
     // No possibilities for mutation were found; nothing else to do.
@@ -135,7 +139,9 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
     }
   }
 
-  *mutation_info_->add_info_for_files() = mutation_info_for_file;
+  if (mutation_info_->has_value()) {
+    *mutation_info_->value().add_info_for_files() = mutation_info_for_file;
+  }
 
   auto& source_manager = ast_context.getSourceManager();
   const clang::SourceLocation start_of_source_file =
@@ -411,7 +417,7 @@ void MutateAstConsumer::ApplyMutations(
     clang::ASTContext& context,
     protobufs::MutationInfoForFile& protobufs_mutation_info_for_file,
     protobufs::MutationTreeNode& protobufs_mutation_tree_node,
-    std::unordered_set<std::string>& dredd_declarations) {
+    std::unordered_set<std::string>& dredd_declarations, bool build_tree) {
   assert(!(dredd_mutation_tree_node.IsEmpty() &&
            dredd_mutation_tree_node.GetChildren().size() == 1) &&
          "The mutation tree should already be compressed.");
@@ -422,17 +428,18 @@ void MutateAstConsumer::ApplyMutations(
         protobufs_mutation_info_for_file.mutation_tree_size()));
     protobufs::MutationTreeNode* new_protobufs_mutation_tree_node =
         protobufs_mutation_info_for_file.add_mutation_tree();
-    ApplyMutations(*child, initial_mutation_id, context,
-                   protobufs_mutation_info_for_file,
-                   *new_protobufs_mutation_tree_node, dredd_declarations);
+    ApplyMutations(
+        *child, initial_mutation_id, context, protobufs_mutation_info_for_file,
+        *new_protobufs_mutation_tree_node, dredd_declarations, build_tree);
   }
+
   for (const auto& mutation : dredd_mutation_tree_node.GetMutations()) {
     const int mutation_id_old = *mutation_id_;
     const auto mutation_group = mutation->Apply(
         context, compiler_instance_->getPreprocessor(), optimise_mutations_,
         only_track_mutant_coverage_, initial_mutation_id, *mutation_id_,
         rewriter_, dredd_declarations);
-    if (*mutation_id_ > mutation_id_old) {
+    if (build_tree && *mutation_id_ > mutation_id_old) {
       // Only add the result of applying the mutation if it had an effect.
       *protobufs_mutation_tree_node.add_mutation_groups() = mutation_group;
     }
