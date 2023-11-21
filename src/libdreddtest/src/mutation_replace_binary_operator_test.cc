@@ -74,7 +74,8 @@ void TestReplacement(const std::string& original, const std::string& expected,
 TEST(MutationReplaceBinaryOperatorTest, MutateAdd) {
   const std::string original = "void foo() { 1 + 2; }";
   const std::string expected_opt =
-      "void foo() { __dredd_replace_binary_operator_Add_arg1_int_arg2_int_lhs_one(1 , 2, "
+      "void foo() { "
+      "__dredd_replace_binary_operator_Add_arg1_int_arg2_int_lhs_one(1 , 2, "
       "0); "
       "}";
   const std::string expected_dredd_declaration_opt =
@@ -94,7 +95,8 @@ TEST(MutationReplaceBinaryOperatorTest, MutateAdd) {
                   expected_dredd_declaration_opt);
 
   const std::string expected_no_opt =
-      "void foo() { __dredd_replace_binary_operator_Add_arg1_int_arg2_int(1 , 2, 0); "
+      "void foo() { __dredd_replace_binary_operator_Add_arg1_int_arg2_int(1 , "
+      "2, 0); "
       "}";
   const std::string expected_dredd_declaration_no_opt =
       R"(static int __dredd_replace_binary_operator_Add_arg1_int_arg2_int(int arg1, int arg2, int local_mutation_id) {
