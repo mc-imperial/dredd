@@ -195,16 +195,17 @@ std::string MutationReplaceBinaryOperator::GetFunctionName(
   // To avoid problems of ambiguous function calls, the argument types (ignoring
   // whether they are references or not) are baked into the mutation function
   // name. Some type names have space in them (e.g. 'unsigned int'); such spaces
-  // are replaced with underscores.
-  result +=
-      "_" + SpaceToUnderscore(lhs_qualifier +
+  // are replaced with underscores. We add arg specifiers to avoid the ambiguous
+  // case when the arguments are `long long` and `long`.
+  result += "_arg1_" +
+            SpaceToUnderscore(lhs_qualifier +
                               binary_operator_->getLHS()
                                   ->getType()
                                   ->getAs<clang::BuiltinType>()
                                   ->getName(ast_context.getPrintingPolicy())
                                   .str());
-  result +=
-      "_" + SpaceToUnderscore(binary_operator_->getRHS()
+  result += "_arg2_" +
+            SpaceToUnderscore(binary_operator_->getRHS()
                                   ->getType()
                                   ->getAs<clang::BuiltinType>()
                                   ->getName(ast_context.getPrintingPolicy())

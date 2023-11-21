@@ -66,7 +66,7 @@ static float __dredd_replace_expr_float(float arg, int local_mutation_id) {
   return arg;
 }
 
-static float __dredd_replace_binary_operator_Assign_float_float(float* arg1, float arg2, int local_mutation_id) {
+static float __dredd_replace_binary_operator_Assign_arg1_float_arg2_float(float* arg1, float arg2, int local_mutation_id) {
   if (!__dredd_some_mutation_enabled) return (*arg1) = arg2;
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return (*arg1) += arg2;
   if (__dredd_enabled_mutation(local_mutation_id + 1)) return (*arg1) /= arg2;
@@ -75,7 +75,7 @@ static float __dredd_replace_binary_operator_Assign_float_float(float* arg1, flo
   return (*arg1) = arg2;
 }
 
-static float __dredd_replace_binary_operator_Add_float_float(float arg1, float arg2, int local_mutation_id) {
+static float __dredd_replace_binary_operator_Add_arg1_float_arg2_float(float arg1, float arg2, int local_mutation_id) {
   if (!__dredd_some_mutation_enabled) return arg1 + arg2;
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return arg1 / arg2;
   if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg1 * arg2;
@@ -98,6 +98,6 @@ int main() {
   float x = __dredd_replace_expr_float(__dredd_replace_expr_double(5.235, 0), 4);
   float y = __dredd_replace_expr_float(__dredd_replace_expr_double(754.34623, 8), 12);
   float z;
-  if (!__dredd_enabled_mutation(45)) { __dredd_replace_expr_float(__dredd_replace_binary_operator_Assign_float_float(&(z) , __dredd_replace_expr_float(__dredd_replace_binary_operator_Add_float_float(__dredd_replace_expr_float(__dredd_replace_expr_float_lvalue(&(x), 16), 18) , __dredd_replace_expr_float(__dredd_replace_expr_float_lvalue(&(y), 22), 24), 28), 33), 37), 41); }
+  if (!__dredd_enabled_mutation(45)) { __dredd_replace_expr_float(__dredd_replace_binary_operator_Assign_arg1_float_arg2_float(&(z) , __dredd_replace_expr_float(__dredd_replace_binary_operator_Add_arg1_float_arg2_float(__dredd_replace_expr_float(__dredd_replace_expr_float_lvalue(&(x), 16), 18) , __dredd_replace_expr_float(__dredd_replace_expr_float_lvalue(&(y), 22), 24), 28), 33), 37), 41); }
   if (!__dredd_enabled_mutation(52)) { return __dredd_replace_expr_int(0, 46); }
 }

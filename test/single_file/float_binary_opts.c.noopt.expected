@@ -48,7 +48,7 @@ static double __dredd_replace_expr_double(double arg, int local_mutation_id) {
   return arg;
 }
 
-static double __dredd_replace_binary_operator_Add_double_double(double arg1, double arg2, int local_mutation_id) {
+static double __dredd_replace_binary_operator_Add_arg1_double_arg2_double(double arg1, double arg2, int local_mutation_id) {
   if (!__dredd_some_mutation_enabled) return arg1 + arg2;
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return arg1 / arg2;
   if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg1 * arg2;
@@ -59,6 +59,6 @@ static double __dredd_replace_binary_operator_Add_double_double(double arg1, dou
 }
 
 int main() {
-  double x = __dredd_replace_expr_double(__dredd_replace_binary_operator_Add_double_double(__dredd_replace_expr_double(0.0, 0) , __dredd_replace_expr_double(5.32, 4), 8), 13);
-  double y = __dredd_replace_expr_double(__dredd_replace_binary_operator_Add_double_double(__dredd_replace_expr_double(5.234, 17) , __dredd_replace_expr_double(2.352, 21), 25), 30);
+  double x = __dredd_replace_expr_double(__dredd_replace_binary_operator_Add_arg1_double_arg2_double(__dredd_replace_expr_double(0.0, 0) , __dredd_replace_expr_double(5.32, 4), 8), 13);
+  double y = __dredd_replace_expr_double(__dredd_replace_binary_operator_Add_arg1_double_arg2_double(__dredd_replace_expr_double(5.234, 17) , __dredd_replace_expr_double(2.352, 21), 25), 30);
 }

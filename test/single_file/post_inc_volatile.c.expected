@@ -77,7 +77,7 @@ static int __dredd_replace_expr_int(int arg, int local_mutation_id) {
   return arg;
 }
 
-static int __dredd_replace_binary_operator_Assign_int_int(int* arg1, int arg2, int local_mutation_id) {
+static int __dredd_replace_binary_operator_Assign_arg1_int_arg2_int(int* arg1, int arg2, int local_mutation_id) {
   if (!__dredd_some_mutation_enabled) return (*arg1) = arg2;
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return (*arg1) += arg2;
   if (__dredd_enabled_mutation(local_mutation_id + 1)) return (*arg1) &= arg2;
@@ -92,7 +92,7 @@ static int __dredd_replace_binary_operator_Assign_int_int(int* arg1, int arg2, i
   return (*arg1) = arg2;
 }
 
-static int __dredd_replace_binary_operator_Add_int_int(int arg1, int arg2, int local_mutation_id) {
+static int __dredd_replace_binary_operator_Add_arg1_int_arg2_int(int arg1, int arg2, int local_mutation_id) {
   if (!__dredd_some_mutation_enabled) return arg1 + arg2;
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return arg1 / arg2;
   if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg1 * arg2;
@@ -107,6 +107,6 @@ int main() {
   volatile int x = __dredd_replace_expr_int_constant(9, 0);
   volatile int y = __dredd_replace_expr_int_constant(43, 5);
   int z;
-  if (!__dredd_enabled_mutation(54)) { __dredd_replace_binary_operator_Assign_int_int(&(z) , __dredd_replace_expr_int(__dredd_replace_binary_operator_Add_int_int(__dredd_replace_expr_int(__dredd_replace_unary_operator_PostInc_volatile_int(&(x), 10), 15) , __dredd_replace_expr_int(__dredd_replace_unary_operator_PostInc_volatile_int(&(y), 21), 26), 32), 38), 44); }
+  if (!__dredd_enabled_mutation(54)) { __dredd_replace_binary_operator_Assign_arg1_int_arg2_int(&(z) , __dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_unary_operator_PostInc_volatile_int(&(x), 10), 15) , __dredd_replace_expr_int(__dredd_replace_unary_operator_PostInc_volatile_int(&(y), 21), 26), 32), 38), 44); }
   if (!__dredd_enabled_mutation(63)) { return __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(&(z), 55), 57); }
 }

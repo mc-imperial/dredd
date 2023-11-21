@@ -58,7 +58,7 @@ static int __dredd_replace_expr_int(int arg, int local_mutation_id) {
   return arg;
 }
 
-static int __dredd_replace_binary_operator_Assign_int_int(int* arg1, int arg2, int local_mutation_id) {
+static int __dredd_replace_binary_operator_Assign_arg1_int_arg2_int(int* arg1, int arg2, int local_mutation_id) {
   if (!__dredd_some_mutation_enabled) return (*arg1) = arg2;
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return (*arg1) += arg2;
   if (__dredd_enabled_mutation(local_mutation_id + 1)) return (*arg1) &= arg2;
@@ -73,7 +73,7 @@ static int __dredd_replace_binary_operator_Assign_int_int(int* arg1, int arg2, i
   return (*arg1) = arg2;
 }
 
-static int __dredd_replace_binary_operator_Add_int_int(int arg1, int arg2, int local_mutation_id) {
+static int __dredd_replace_binary_operator_Add_arg1_int_arg2_int(int arg1, int arg2, int local_mutation_id) {
   if (!__dredd_some_mutation_enabled) return arg1 + arg2;
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return arg1 / arg2;
   if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg1 * arg2;
@@ -85,11 +85,11 @@ static int __dredd_replace_binary_operator_Add_int_int(int arg1, int arg2, int l
 }
 
 int main() {
-  int x = __dredd_replace_expr_int(__dredd_replace_binary_operator_Add_int_int(__dredd_replace_expr_int(0, 0) , __dredd_replace_expr_int(0, 6), 12), 18);
-  if (!__dredd_enabled_mutation(64)) { __dredd_replace_expr_int(__dredd_replace_binary_operator_Assign_int_int(&(x) , __dredd_replace_expr_int(__dredd_replace_binary_operator_Add_int_int(__dredd_replace_expr_int(0, 24) , __dredd_replace_expr_int(1, 30), 36), 42), 48), 58); }
-  if (!__dredd_enabled_mutation(105)) { __dredd_replace_expr_int(__dredd_replace_binary_operator_Assign_int_int(&(x) , __dredd_replace_expr_int(__dredd_replace_binary_operator_Add_int_int(__dredd_replace_expr_int(1, 65) , __dredd_replace_expr_int(0, 71), 77), 83), 89), 99); }
-  if (!__dredd_enabled_mutation(155)) { __dredd_replace_expr_int(__dredd_replace_binary_operator_Assign_int_int(&(x) , __dredd_replace_expr_int(__dredd_replace_binary_operator_Add_int_int(__dredd_replace_expr_int(0, 106) , __dredd_replace_expr_int(__dredd_replace_unary_operator_Minus_int(__dredd_replace_expr_int(1, 112), 118), 121), 127), 133), 139), 149); }
-  if (!__dredd_enabled_mutation(205)) { __dredd_replace_expr_int(__dredd_replace_binary_operator_Assign_int_int(&(x) , __dredd_replace_expr_int(__dredd_replace_binary_operator_Add_int_int(__dredd_replace_expr_int(__dredd_replace_unary_operator_Minus_int(__dredd_replace_expr_int(1, 156), 162), 165) , __dredd_replace_expr_int(0, 171), 177), 183), 189), 199); }
-  if (!__dredd_enabled_mutation(255)) { __dredd_replace_expr_int(__dredd_replace_binary_operator_Assign_int_int(&(x) , __dredd_replace_expr_int(__dredd_replace_binary_operator_Add_int_int(__dredd_replace_expr_int(1, 206) , __dredd_replace_expr_int(__dredd_replace_unary_operator_Minus_int(__dredd_replace_expr_int(1, 212), 218), 221), 227), 233), 239), 249); }
-  if (!__dredd_enabled_mutation(305)) { __dredd_replace_expr_int(__dredd_replace_binary_operator_Assign_int_int(&(x) , __dredd_replace_expr_int(__dredd_replace_binary_operator_Add_int_int(__dredd_replace_expr_int(__dredd_replace_unary_operator_Minus_int(__dredd_replace_expr_int(1, 256), 262), 265) , __dredd_replace_expr_int(1, 271), 277), 283), 289), 299); }
+  int x = __dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(0, 0) , __dredd_replace_expr_int(0, 6), 12), 18);
+  if (!__dredd_enabled_mutation(64)) { __dredd_replace_expr_int(__dredd_replace_binary_operator_Assign_arg1_int_arg2_int(&(x) , __dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(0, 24) , __dredd_replace_expr_int(1, 30), 36), 42), 48), 58); }
+  if (!__dredd_enabled_mutation(105)) { __dredd_replace_expr_int(__dredd_replace_binary_operator_Assign_arg1_int_arg2_int(&(x) , __dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(1, 65) , __dredd_replace_expr_int(0, 71), 77), 83), 89), 99); }
+  if (!__dredd_enabled_mutation(155)) { __dredd_replace_expr_int(__dredd_replace_binary_operator_Assign_arg1_int_arg2_int(&(x) , __dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(0, 106) , __dredd_replace_expr_int(__dredd_replace_unary_operator_Minus_int(__dredd_replace_expr_int(1, 112), 118), 121), 127), 133), 139), 149); }
+  if (!__dredd_enabled_mutation(205)) { __dredd_replace_expr_int(__dredd_replace_binary_operator_Assign_arg1_int_arg2_int(&(x) , __dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_unary_operator_Minus_int(__dredd_replace_expr_int(1, 156), 162), 165) , __dredd_replace_expr_int(0, 171), 177), 183), 189), 199); }
+  if (!__dredd_enabled_mutation(255)) { __dredd_replace_expr_int(__dredd_replace_binary_operator_Assign_arg1_int_arg2_int(&(x) , __dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(1, 206) , __dredd_replace_expr_int(__dredd_replace_unary_operator_Minus_int(__dredd_replace_expr_int(1, 212), 218), 221), 227), 233), 239), 249); }
+  if (!__dredd_enabled_mutation(305)) { __dredd_replace_expr_int(__dredd_replace_binary_operator_Assign_arg1_int_arg2_int(&(x) , __dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_unary_operator_Minus_int(__dredd_replace_expr_int(1, 256), 262), 265) , __dredd_replace_expr_int(1, 271), 277), 283), 289), 299); }
 }
