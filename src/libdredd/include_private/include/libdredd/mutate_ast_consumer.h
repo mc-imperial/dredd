@@ -16,6 +16,7 @@
 #define LIBDREDD_MUTATE_AST_CONSUMER_H
 
 #include <memory>
+#include <optional>
 #include <string>
 #include <unordered_set>
 
