@@ -107,7 +107,7 @@ int main(int argc, const char** argv) {
 
   const int return_code = Tool.run(factory.get());
 
-  if (mutation_info && return_code == 0) {
+  if (mutation_info.has_value() && return_code == 0) {
     // Application of mutations was successful, so write out the mutation info
     // in JSON format.
     std::string json_string;

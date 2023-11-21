@@ -76,7 +76,7 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
   std::unordered_set<std::string> dredd_declarations;
 
   protobufs::MutationInfoForFile mutation_info_for_file;
-  if (mutation_info_) {
+  if (mutation_info_->has_value()) {
     mutation_info_for_file.set_filename(
         ast_context.getSourceManager()
             .getFileEntryForID(ast_context.getSourceManager().getMainFileID())
@@ -92,7 +92,7 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
     return;
   }
 
-  if (mutation_info_) {
+  if (mutation_info_->has_value()) {
     *mutation_info_->value().add_info_for_files() = mutation_info_for_file;
   }
 
