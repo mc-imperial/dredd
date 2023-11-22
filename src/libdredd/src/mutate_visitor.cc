@@ -35,7 +35,6 @@
 #include "clang/AST/TypeLoc.h"
 #include "clang/Basic/LangOptions.h"
 #include "clang/Basic/SourceLocation.h"
-#include "clang/Basic/SourceManager.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "libdredd/mutation.h"
 #include "libdredd/mutation_remove_stmt.h"
