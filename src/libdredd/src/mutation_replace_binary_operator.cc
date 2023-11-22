@@ -238,7 +238,7 @@ void MutationReplaceBinaryOperator::GenerateArgumentReplacement(
     bool only_track_mutant_coverage, int mutation_id_base,
     std::stringstream& new_function, int& mutation_id_offset,
     protobufs::MutationReplaceBinaryOperator& protobuf_message) const {
-  (void) dredd_macros;
+  (void)dredd_macros;
   if (optimise_mutations) {
     switch (binary_operator_->getOpcode()) {
       case clang::BO_GT:
@@ -282,10 +282,11 @@ void MutationReplaceBinaryOperator::GenerateArgumentReplacement(
             *binary_operator_->getLHS(), -1.0, ast_context))) {
     if (!only_track_mutant_coverage) {
       // TODO(JamesLee-Jones): Replace with arg replacement macro.
-//      const std::string macro_name = "REPLACE_BINARY_ARG1";
-      new_function << "  MUTATION(" << mutation_id_offset << ", " << arg1_evaluated << ");\n";
-//      dredd_macros.insert(
-//          GenerateArgumentReplacementMacro(macro_name, arg1_evaluated));
+      //      const std::string macro_name = "REPLACE_BINARY_ARG1";
+      new_function << "  MUTATION(" << mutation_id_offset << ", "
+                   << arg1_evaluated << ");\n";
+      //      dredd_macros.insert(
+      //          GenerateArgumentReplacementMacro(macro_name, arg1_evaluated));
       //      new_function << "  if (__dredd_enabled_mutation(local_mutation_id
       //      + "
       //                   << mutation_id_offset << ")) return " <<
@@ -315,10 +316,11 @@ void MutationReplaceBinaryOperator::GenerateArgumentReplacement(
         MutationReplaceExpr::ExprIsEquivalentToFloat(
             *binary_operator_->getRHS(), -1.0, ast_context))) {
     if (!only_track_mutant_coverage) {
-//      const std::string macro_name = "REPLACE_BINARY_ARG2";
-      new_function << "  MUTATION(" << mutation_id_offset << ", " << arg2_evaluated << ");\n";
-//      dredd_macros.insert(
-//          GenerateArgumentReplacementMacro(macro_name, arg2_evaluated));
+      //      const std::string macro_name = "REPLACE_BINARY_ARG2";
+      new_function << "  MUTATION(" << mutation_id_offset << ", "
+                   << arg2_evaluated << ");\n";
+      //      dredd_macros.insert(
+      //          GenerateArgumentReplacementMacro(macro_name, arg2_evaluated));
       //      new_function << "  if (__dredd_enabled_mutation(local_mutation_id
       //      + "
       //                   << mutation_id_offset << ")) return " <<
@@ -339,16 +341,20 @@ void MutationReplaceBinaryOperator::GenerateBinaryOperatorReplacement(
     bool only_track_mutant_coverage, int mutation_id_base,
     std::stringstream& new_function, int& mutation_id_offset,
     protobufs::MutationReplaceBinaryOperator& protobuf_message) const {
-  (void) dredd_macros;
+  (void)dredd_macros;
   for (auto operator_kind :
        GetReplacementOperators(optimise_mutations, ast_context)) {
     if (!only_track_mutant_coverage) {
       // TODO(JamesLee-Jones): Replace with replacement macro.
-//      const std::string macro_name = "REPLACE_" + OpKindToString(operator_kind);
-      new_function << "  MUTATION(" << mutation_id_offset  << ", " << arg1_evaluated << clang::BinaryOperator::getOpcodeStr(operator_kind).str() << arg2_evaluated << ");\n";
+      //      const std::string macro_name = "REPLACE_" +
+      //      OpKindToString(operator_kind);
+      new_function << "  MUTATION(" << mutation_id_offset << ", "
+                   << arg1_evaluated
+                   << clang::BinaryOperator::getOpcodeStr(operator_kind).str()
+                   << arg2_evaluated << ");\n";
 
-//      dredd_macros.insert(GenerateBinaryOperatorMacro(
-//          macro_name, arg1_evaluated, operator_kind, arg2_evaluated));
+      //      dredd_macros.insert(GenerateBinaryOperatorMacro(
+      //          macro_name, arg1_evaluated, operator_kind, arg2_evaluated));
       //      new_function << "  if (__dredd_enabled_mutation(local_mutation_id
       //      + "
       //                   << mutation_id_offset << ")) return " <<
@@ -488,18 +494,17 @@ std::string MutationReplaceBinaryOperator::GenerateMutatorFunction(
     // Quickly apply the original operator if no mutant is enabled (which will
     // be the common case).
     // TODO(JamesLee-Jones): Replace with pre-processing macro.
-    new_function << "  MUTATION_PRELUDE("
-                  << arg1_evaluated << " "
-                  << clang::BinaryOperator::getOpcodeStr(
-                      binary_operator_->getOpcode())
-                      .str()
-                  << " " << arg2_evaluated << ");\n";
-//    new_function << "  if (!__dredd_some_mutation_enabled) return "
-//                 << arg1_evaluated << " "
-//                 << clang::BinaryOperator::getOpcodeStr(
-//                        binary_operator_->getOpcode())
-//                        .str()
-//                 << " " << arg2_evaluated << ";\n";
+    new_function << "  MUTATION_PRELUDE(" << arg1_evaluated << " "
+                 << clang::BinaryOperator::getOpcodeStr(
+                        binary_operator_->getOpcode())
+                        .str()
+                 << " " << arg2_evaluated << ");\n";
+    //    new_function << "  if (!__dredd_some_mutation_enabled) return "
+    //                 << arg1_evaluated << " "
+    //                 << clang::BinaryOperator::getOpcodeStr(
+    //                        binary_operator_->getOpcode())
+    //                        .str()
+    //                 << " " << arg2_evaluated << ";\n";
   }
 
   GenerateBinaryOperatorReplacement(
