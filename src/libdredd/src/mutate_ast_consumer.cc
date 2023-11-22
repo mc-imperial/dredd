@@ -31,6 +31,7 @@
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Rewrite/Core/Rewriter.h"
 #include "libdredd/mutation.h"
+#include "libdredd/util.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/Support/raw_ostream.h"
 
@@ -112,6 +113,8 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
     assert(!rewriter_result && "Rewrite failed.\n");
   }
 
+  rewriter_.InsertTextBefore(start_of_source_file, GenerateMutationPrelude());
+
   std::set<std::string> sorted_dredd_macros;
   sorted_dredd_macros.insert(dredd_macros.begin(), dredd_macros.end());
   for (const auto& macro : sorted_dredd_macros) {
@@ -120,6 +123,8 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
     (void)rewriter_result;  // Keep release-mode compilers happy.
     assert(!rewriter_result && "Rewrite failed.\n");
   }
+
+  rewriter_.InsertTextBefore(start_of_source_file, GenerateMutationReturn());
 
   const std::string dredd_prelude =
       compiler_instance_->getLangOpts().CPlusPlus

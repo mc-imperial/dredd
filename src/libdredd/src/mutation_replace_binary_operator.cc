@@ -487,7 +487,7 @@ std::string MutationReplaceBinaryOperator::GenerateMutatorFunction(
                         std::to_string(mutation_id_offset) + ");\n";
   }
   // TODO(JamesLee-Jones): Replace with return macro.
-  new_function << "  return MUTATION_RESULT(" << arg1_evaluated << " "
+  new_function << "  return MUTATION_RETURN(" << arg1_evaluated << " "
                << clang::BinaryOperator::getOpcodeStr(
                       binary_operator_->getOpcode())
                       .str()

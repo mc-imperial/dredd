@@ -236,7 +236,7 @@ std::string MutationReplaceUnaryOperator::GenerateMutatorFunction(
 
   const std::string opcode_string =
       clang::UnaryOperator::getOpcodeStr(unary_operator_->getOpcode()).str();
-  new_function << "  return MUTATION_RESULT("
+  new_function << "  return MUTATION_RETURN("
                << (IsPrefix(unary_operator_->getOpcode()) ? opcode_string : "")
                << arg_evaluated
                << (IsPrefix(unary_operator_->getOpcode()) ? "" : opcode_string)

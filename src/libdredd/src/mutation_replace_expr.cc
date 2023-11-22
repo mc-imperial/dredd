@@ -510,7 +510,7 @@ std::string MutationReplaceExpr::GenerateMutatorFunction(
   }
 
   //  new_function << "  return " << arg_evaluated << ";\n";
-  new_function << "  return MUTATION_RESULT(" << arg_evaluated << ");\n";
+  new_function << "  return MUTATION_RETURN(" << arg_evaluated << ");\n";
   new_function << "}\n\n";
 
   mutation_id += mutation_id_offset;
