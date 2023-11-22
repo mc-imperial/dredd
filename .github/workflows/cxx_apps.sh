@@ -107,11 +107,11 @@ pushd SPIRV-Tools
     FILES+=("${DREDD_ROOT}/SPIRV-Tools/${f}")
   done
   ${DREDD_EXECUTABLE} --mutation-info-file temp.json -p "${DREDD_ROOT}/SPIRV-Tools/build/compile_commands.json" "${FILES[@]}"
-  cmake --build build --target test_val_abcde test_val_capability test_val_fghijklmnop test_val_limits test_val_stuvw
+  cmake --build build --target test_val_abcde test_val_capability test_val_fghijklmnop test_val_limits test_val_rstuvw
   ./build/test/val/test_val_abcde
   ./build/test/val/test_val_capability
   ./build/test/val/test_val_fghijklmnop
-  ./build/test/val/test_val_stuvw
+  ./build/test/val/test_val_rstuvw
 popd
 
 echo "LLVM: check that InstCombine builds after mutation"
