@@ -281,7 +281,8 @@ void MutationReplaceBinaryOperator::GenerateArgumentReplacement(
             *binary_operator_->getLHS(), -1.0, ast_context))) {
     if (!only_track_mutant_coverage) {
       std::string macro_name = "REPLACE_BINARY_ARG1";
-      if (binary_operator_->getLHS()->HasSideEffects(ast_context)) {
+      if (ast_context.getLangOpts().CPlusPlus &&
+          binary_operator_->getLHS()->HasSideEffects(ast_context)) {
         macro_name += "_EVALUATED";
       }
       new_function << "  " << macro_name << "(" << mutation_id_offset << ");\n";
@@ -311,7 +312,9 @@ void MutationReplaceBinaryOperator::GenerateArgumentReplacement(
             *binary_operator_->getRHS(), -1.0, ast_context))) {
     if (!only_track_mutant_coverage) {
       std::string macro_name = "REPLACE_BINARY_ARG2";
-      if (binary_operator_->getRHS()->HasSideEffects(ast_context)) {
+      if (ast_context.getLangOpts().CPlusPlus &&
+          (binary_operator_->isLogicalOp() ||
+           binary_operator_->getRHS()->HasSideEffects(ast_context))) {
         macro_name += "_EVALUATED";
       }
       new_function << "  " << macro_name << "(" << mutation_id_offset << ");\n";
@@ -336,10 +339,13 @@ void MutationReplaceBinaryOperator::GenerateBinaryOperatorReplacement(
     if (!only_track_mutant_coverage) {
       std::string macro_name =
           "REPLACE_BINARY_" + OpKindToString(operator_kind);
-      if (binary_operator_->getLHS()->HasSideEffects(ast_context)) {
-        macro_name += "_RHS_EVALUATED";
+      if (ast_context.getLangOpts().CPlusPlus &&
+          binary_operator_->getLHS()->HasSideEffects(ast_context)) {
+        macro_name += "_LHS_EVALUATED";
       }
-      if (binary_operator_->getLHS()->HasSideEffects(ast_context)) {
+      if (ast_context.getLangOpts().CPlusPlus &&
+          (binary_operator_->isLogicalOp() ||
+           binary_operator_->getRHS()->HasSideEffects(ast_context))) {
         macro_name += "_RHS_EVALUATED";
       }
       new_function << "  " << macro_name << "(" << mutation_id_offset << ");\n";
