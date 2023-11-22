@@ -373,6 +373,23 @@ void MutateVisitor::HandleExpr(clang::Expr* expr) {
     return;
   }
 
+  // Avoid mutating null pointer assignments, such as int* x = 0, as mutating
+  // these expressions in C++ is either not safe or not useful. This mutation
+  // is acceptable in C, but we avoid the mutation for consistency.
+  if (expr->isNullPointerConstant(
+          compiler_instance_->getASTContext(),
+          clang::Expr::NullPointerConstantValueDependence()) !=
+      clang::Expr::NPCK_NotNull) {
+    for (const auto& parent :
+         compiler_instance_->getASTContext().getParents<clang::Expr>(*expr)) {
+      const auto* cast_parent = parent.get<clang::CastExpr>();
+      if (cast_parent != nullptr &&
+          cast_parent->getType()->isAnyPointerType()) {
+        return;
+      }
+    }
+  }
+
   if (optimise_mutations_) {
     // If an expression is the direct child of a cast expression, do not mutate
     // it unless the cast is an l-value to r-value cast. In an l-value to
