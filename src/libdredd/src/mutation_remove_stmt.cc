@@ -42,10 +42,8 @@ protobufs::MutationGroup MutationRemoveStmt::Apply(
     clang::ASTContext& ast_context, const clang::Preprocessor& preprocessor,
     bool optimise_mutations, bool only_track_mutant_coverage,
     int first_mutation_id_in_file, int& mutation_id, clang::Rewriter& rewriter,
-    std::unordered_set<std::string>& dredd_declarations,
-    std::unordered_set<std::string>& dredd_macros) const {
+    std::unordered_set<std::string>& dredd_declarations) const {
   (void)dredd_declarations;  // Unused.
-  (void)dredd_macros;        // Unused.
   (void)optimise_mutations;  // Unused.
 
   // The protobuf object for the mutation, which will be wrapped in a

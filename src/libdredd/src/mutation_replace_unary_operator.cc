@@ -207,7 +207,6 @@ std::string MutationReplaceUnaryOperator::GenerateMutatorFunction(
   if (!only_track_mutant_coverage) {
     // Quickly apply the original operator if no mutant is enabled (which will
     // be the common case).
-    //    new_function << "  if (!__dredd_some_mutation_enabled) return ";
     new_function << "  MUTATION_PRELUDE(";
     if (IsPrefix(unary_operator_->getOpcode())) {
       new_function << clang::UnaryOperator::getOpcodeStr(
@@ -306,9 +305,6 @@ void MutationReplaceUnaryOperator::GenerateUnaryOperatorReplacement(
     }
     if (!only_track_mutant_coverage) {
       new_function << "  MUTATION(" << mutation_id_offset << ", ";
-      //      new_function << "  if (__dredd_enabled_mutation(local_mutation_id
-      //      + "
-      //                   << mutation_id_offset << ")) return ";
       if (IsPrefix(operator_kind)) {
         new_function << clang::UnaryOperator::getOpcodeStr(operator_kind).str()
                      << arg_evaluated + ";\n";
@@ -329,10 +325,6 @@ void MutationReplaceUnaryOperator::GenerateUnaryOperatorReplacement(
     if (!only_track_mutant_coverage) {
       new_function << "  MUTATION(" << mutation_id_offset << ", "
                    << arg_evaluated << ");\n";
-      //      new_function << "  if (__dredd_enabled_mutation(local_mutation_id
-      //      + "
-      //                   << mutation_id_offset
-      //                   << ")) return " + arg_evaluated + ";\n";
     }
     AddMutationInstance(
         mutation_id_base,
@@ -345,13 +337,11 @@ protobufs::MutationGroup MutationReplaceUnaryOperator::Apply(
     clang::ASTContext& ast_context, const clang::Preprocessor& preprocessor,
     bool optimise_mutations, bool only_track_mutant_coverage,
     int first_mutation_id_in_file, int& mutation_id, clang::Rewriter& rewriter,
-    std::unordered_set<std::string>& dredd_declarations,
-    std::unordered_set<std::string>& dredd_macros) const {
+    std::unordered_set<std::string>& dredd_declarations) const {
   // The protobuf object for the mutation, which will be wrapped in a
   // MutationGroup.
   protobufs::MutationReplaceUnaryOperator inner_result;
 
-  (void)dredd_macros;
   inner_result.set_operator_(
       ClangOperatorKindToProtobufOperatorKind(unary_operator_->getOpcode()));
 

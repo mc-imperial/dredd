@@ -47,11 +47,11 @@ class MutateAstConsumer : public clang::ASTConsumer {
   void HandleTranslationUnit(clang::ASTContext& ast_context) override;
 
  private:
-  std::string GetMutationMacro() const;
+  static std::string GetMutationMacro();
 
-  std::string GetMutationPreludeMacro() const;
+  static std::string GetMutationPreludeMacro();
 
-  std::string GetMutationResultMacro() const;
+  static std::string GetMutationResultMacro();
 
   [[nodiscard]] std::string GetDreddPreludeCpp(int initial_mutation_id) const;
 
@@ -72,8 +72,7 @@ class MutateAstConsumer : public clang::ASTConsumer {
   protobufs::MutationTreeNode ApplyMutations(
       const MutationTreeNode& mutation_tree_node, int initial_mutation_id,
       clang::ASTContext& context,
-      std::unordered_set<std::string>& dredd_declarations,
-      std::unordered_set<std::string>& dredd_macros);
+      std::unordered_set<std::string>& dredd_declarations);
 
   const clang::CompilerInstance* compiler_instance_;
 
