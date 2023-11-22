@@ -78,10 +78,10 @@ TEST(MutationReplaceUnaryOperatorTest, MutateMinus) {
       "void foo() { __dredd_replace_unary_operator_Minus_int(2, 0); }";
   const std::string expected_dredd_declaration_opt =
       R"(static int __dredd_replace_unary_operator_Minus_int(int arg, int local_mutation_id) {
-  if (!__dredd_some_mutation_enabled) return -arg;
-  if (__dredd_enabled_mutation(local_mutation_id + 0)) return ~arg;
-  if (__dredd_enabled_mutation(local_mutation_id + 1)) return !arg;
-  return -arg;
+  MUTATION_PRELUDE(-arg);
+  REPLACE_UNARY_Not(0);
+  REPLACE_UNARY_LNot(1);
+  return MUTATION_RETURN(-arg);
 }
 
 )";
@@ -95,11 +95,11 @@ TEST(MutationReplaceUnaryOperatorTest, MutateMinus) {
       "void foo() { __dredd_replace_unary_operator_Minus_int(2, 0); }";
   const std::string expected_dredd_declaration_no_opt =
       R"(static int __dredd_replace_unary_operator_Minus_int(int arg, int local_mutation_id) {
-  if (!__dredd_some_mutation_enabled) return -arg;
-  if (__dredd_enabled_mutation(local_mutation_id + 0)) return ~arg;
-  if (__dredd_enabled_mutation(local_mutation_id + 1)) return !arg;
-  if (__dredd_enabled_mutation(local_mutation_id + 2)) return arg;
-  return -arg;
+  MUTATION_PRELUDE(-arg);
+  REPLACE_UNARY_Not(0);
+  REPLACE_UNARY_LNot(1);
+  REPLACE_UNARY_ARG(2);
+  return MUTATION_RETURN(-arg);
 }
 
 )";
@@ -124,10 +124,10 @@ TEST(MutationReplaceUnaryOperatorTest, MutateNot) {
 )";
   const std::string expected_dredd_declaration_opt =
       R"(static bool __dredd_replace_unary_operator_LNot_bool(bool arg, int local_mutation_id) {
-  if (!__dredd_some_mutation_enabled) return !arg;
-  if (__dredd_enabled_mutation(local_mutation_id + 0)) return ~arg;
-  if (__dredd_enabled_mutation(local_mutation_id + 1)) return -arg;
-  return !arg;
+  MUTATION_PRELUDE(!arg);
+  REPLACE_UNARY_Not(0);
+  REPLACE_UNARY_Minus(1);
+  return MUTATION_RETURN(!arg);
 }
 
 )";
@@ -145,11 +145,11 @@ TEST(MutationReplaceUnaryOperatorTest, MutateNot) {
 )";
   const std::string expected_dredd_declaration_no_opt =
       R"(static bool __dredd_replace_unary_operator_LNot_bool(bool arg, int local_mutation_id) {
-  if (!__dredd_some_mutation_enabled) return !arg;
-  if (__dredd_enabled_mutation(local_mutation_id + 0)) return ~arg;
-  if (__dredd_enabled_mutation(local_mutation_id + 1)) return -arg;
-  if (__dredd_enabled_mutation(local_mutation_id + 2)) return arg;
-  return !arg;
+  MUTATION_PRELUDE(!arg);
+  REPLACE_UNARY_Not(0);
+  REPLACE_UNARY_Minus(1);
+  REPLACE_UNARY_ARG(2);
+  return MUTATION_RETURN(!arg);
 }
 
 )";
@@ -174,10 +174,10 @@ TEST(MutationReplaceUnaryOperatorTest, MutateIncrement) {
 )";
   const std::string expected_dredd_declaration_opt =
       R"(static double& __dredd_replace_unary_operator_PreInc_double(std::function<double&()> arg, int local_mutation_id) {
-  if (!__dredd_some_mutation_enabled) return ++arg();
-  if (__dredd_enabled_mutation(local_mutation_id + 0)) return --arg();
-  if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg();
-  return ++arg();
+  MUTATION_PRELUDE(++arg());
+  REPLACE_UNARY_PreDec_EVALUATED(0);
+  REPLACE_UNARY_ARG_EVALUATED(1);
+  return MUTATION_RETURN(++arg());
 }
 
 )";
@@ -195,10 +195,10 @@ TEST(MutationReplaceUnaryOperatorTest, MutateIncrement) {
 )";
   const std::string expected_dredd_declaration_noopt =
       R"(static double& __dredd_replace_unary_operator_PreInc_double(std::function<double&()> arg, int local_mutation_id) {
-  if (!__dredd_some_mutation_enabled) return ++arg();
-  if (__dredd_enabled_mutation(local_mutation_id + 0)) return --arg();
-  if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg();
-  return ++arg();
+  MUTATION_PRELUDE(++arg());
+  REPLACE_UNARY_PreDec_EVALUATED(0);
+  REPLACE_UNARY_ARG_EVALUATED(1);
+  return MUTATION_RETURN(++arg());
 }
 
 )";
@@ -223,13 +223,13 @@ TEST(MutationReplaceUnaryOperatorTest, MutateDecrement) {
 )";
   const std::string expected_dredd_declaration_opt =
       R"(static int __dredd_replace_unary_operator_PostDec_int(std::function<int&()> arg, int local_mutation_id) {
-  if (!__dredd_some_mutation_enabled) return arg()--;
-  if (__dredd_enabled_mutation(local_mutation_id + 0)) return arg()++;
-  if (__dredd_enabled_mutation(local_mutation_id + 1)) return ~arg();
-  if (__dredd_enabled_mutation(local_mutation_id + 2)) return -arg();
-  if (__dredd_enabled_mutation(local_mutation_id + 3)) return !arg();
-  if (__dredd_enabled_mutation(local_mutation_id + 4)) return arg();
-  return arg()--;
+  MUTATION_PRELUDE(arg()--);
+  REPLACE_UNARY_PostInc_EVALUATED(0);
+  REPLACE_UNARY_Not_EVALUATED(1);
+  REPLACE_UNARY_Minus_EVALUATED(2);
+  REPLACE_UNARY_LNot_EVALUATED(3);
+  REPLACE_UNARY_ARG_EVALUATED(4);
+  return MUTATION_RETURN(arg()--);
 }
 
 )";
@@ -247,13 +247,13 @@ TEST(MutationReplaceUnaryOperatorTest, MutateDecrement) {
 )";
   const std::string expected_dredd_declaration_no_opt =
       R"(static int __dredd_replace_unary_operator_PostDec_int(std::function<int&()> arg, int local_mutation_id) {
-  if (!__dredd_some_mutation_enabled) return arg()--;
-  if (__dredd_enabled_mutation(local_mutation_id + 0)) return arg()++;
-  if (__dredd_enabled_mutation(local_mutation_id + 1)) return ~arg();
-  if (__dredd_enabled_mutation(local_mutation_id + 2)) return -arg();
-  if (__dredd_enabled_mutation(local_mutation_id + 3)) return !arg();
-  if (__dredd_enabled_mutation(local_mutation_id + 4)) return arg();
-  return arg()--;
+  MUTATION_PRELUDE(arg()--);
+  REPLACE_UNARY_PostInc_EVALUATED(0);
+  REPLACE_UNARY_Not_EVALUATED(1);
+  REPLACE_UNARY_Minus_EVALUATED(2);
+  REPLACE_UNARY_LNot_EVALUATED(3);
+  REPLACE_UNARY_ARG_EVALUATED(4);
+  return MUTATION_RETURN(arg()--);
 }
 
 )";
@@ -278,10 +278,10 @@ TEST(MutationReplaceUnaryOperatorTest, MutateDecrementAssign) {
 )";
   const std::string expected_dredd_declaration_opt =
       R"(static int& __dredd_replace_unary_operator_PreDec_int(std::function<int&()> arg, int local_mutation_id) {
-  if (!__dredd_some_mutation_enabled) return --arg();
-  if (__dredd_enabled_mutation(local_mutation_id + 0)) return ++arg();
-  if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg();
-  return --arg();
+  MUTATION_PRELUDE(--arg());
+  REPLACE_UNARY_PreInc_EVALUATED(0);
+  REPLACE_UNARY_ARG_EVALUATED(1);
+  return MUTATION_RETURN(--arg());
 }
 
 )";
@@ -299,10 +299,10 @@ TEST(MutationReplaceUnaryOperatorTest, MutateDecrementAssign) {
 )";
   const std::string expected_dredd_declaration_no_opt =
       R"(static int& __dredd_replace_unary_operator_PreDec_int(std::function<int&()> arg, int local_mutation_id) {
-  if (!__dredd_some_mutation_enabled) return --arg();
-  if (__dredd_enabled_mutation(local_mutation_id + 0)) return ++arg();
-  if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg();
-  return --arg();
+  MUTATION_PRELUDE(--arg());
+  REPLACE_UNARY_PreInc_EVALUATED(0);
+  REPLACE_UNARY_ARG_EVALUATED(1);
+  return MUTATION_RETURN(--arg());
 }
 
 )";
