@@ -130,7 +130,7 @@ bool IsCxx11ConstantExpr(const clang::Expr& expr,
 
 std::string GenerateMutationPrelude();
 
-std::string GenerateMutationMacro(std::string& name,
+std::string GenerateMutationMacro(const std::string& name,
                                   const std::string& arg_evaluated);
 
 std::string GenerateMutationReturn();

@@ -134,7 +134,7 @@ std::string GenerateMutationPrelude() {
          "return arg\n";
 }
 
-std::string GenerateMutationMacro(std::string& name,
+std::string GenerateMutationMacro(const std::string& name,
                                   const std::string& args_evaluated) {
   return "#define " + name +
          "(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id "
