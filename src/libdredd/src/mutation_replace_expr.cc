@@ -41,7 +41,6 @@ dredd::MutationReplaceExpr::MutationReplaceExpr(
     : expr_(&expr),
       info_for_source_range_(GetSourceRangeInMainFile(preprocessor, expr),
                              ast_context) {}
-
 std::string MutationReplaceExpr::GetFunctionName(
     bool optimise_mutations, clang::ASTContext& ast_context) const {
   std::string result = "__dredd_replace_expr_";
@@ -187,7 +186,10 @@ void MutationReplaceExpr::GenerateUnaryOperatorInsertionBeforeLValue(
     return;
   }
   if (!only_track_mutant_coverage) {
-    const std::string macro_name = "MUTATION_EXPR_INC";
+    std::string macro_name = "MUTATION_EXPR_INC";
+    if (expr_->HasSideEffects(ast_context)) {
+      macro_name += "_EVALUATED";
+    }
     new_function << "  " << macro_name << "(" << mutation_id_offset << ");\n";
     dredd_macros.insert(
         GenerateMutationMacro(macro_name, "++(" + arg_evaluated + ")"));
@@ -197,7 +199,10 @@ void MutationReplaceExpr::GenerateUnaryOperatorInsertionBeforeLValue(
                       mutation_id_offset, protobuf_message);
 
   if (!only_track_mutant_coverage) {
-    const std::string macro_name = "MUTATION_EXPR_DEC";
+    std::string macro_name = "MUTATION_EXPR_DEC";
+    if (expr_->HasSideEffects(ast_context)) {
+      macro_name += "_EVALUATED";
+    }
     new_function << "  " << macro_name << "(" << mutation_id_offset << ");\n";
     dredd_macros.insert(
         GenerateMutationMacro(macro_name, "--(" + arg_evaluated + ")"));
@@ -223,7 +228,10 @@ void MutationReplaceExpr::GenerateUnaryOperatorInsertionBeforeNonLValue(
     if (!optimise_mutations ||
         !IsRedundantOperatorInsertion(ast_context, clang::UO_LNot)) {
       if (!only_track_mutant_coverage) {
-        const std::string macro_name = "MUTATION_EXPR_LNOT";
+        std::string macro_name = "MUTATION_EXPR_LNOT";
+        if (expr_->HasSideEffects(ast_context)) {
+          macro_name += "_EVALUATED";
+        }
         new_function << "  " << macro_name << "(" << mutation_id_offset
                      << ");\n";
         dredd_macros.insert(
@@ -240,7 +248,10 @@ void MutationReplaceExpr::GenerateUnaryOperatorInsertionBeforeNonLValue(
     if (!optimise_mutations ||
         !IsRedundantOperatorInsertion(ast_context, clang::UO_Not)) {
       if (!only_track_mutant_coverage) {
-        const std::string macro_name = "MUTATION_EXPR_NOT";
+        std::string macro_name = "MUTATION_EXPR_NOT";
+        if (expr_->HasSideEffects(ast_context)) {
+          macro_name += "_EVALUATED";
+        }
         new_function << "  " << macro_name << "(" << mutation_id_offset
                      << ");\n";
         dredd_macros.insert(
@@ -257,7 +268,10 @@ void MutationReplaceExpr::GenerateUnaryOperatorInsertionBeforeNonLValue(
     if (!optimise_mutations ||
         !IsRedundantOperatorInsertion(ast_context, clang::UO_Minus)) {
       if (!only_track_mutant_coverage) {
-        const std::string macro_name = "MUTATION_EXPR_MINUS";
+        std::string macro_name = "MUTATION_EXPR_MINUS";
+        if (expr_->HasSideEffects(ast_context)) {
+          macro_name += "_EVALUATED";
+        }
         new_function << "  " << macro_name << "(" << mutation_id_offset
                      << ");\n";
         dredd_macros.insert(
@@ -320,7 +334,7 @@ void MutationReplaceExpr::GenerateFloatConstantReplacement(
         !ExprIsEquivalentToFloat(*expr_, 0.0, ast_context)) {
       // Replace floating point expression with 0.0
       if (!only_track_mutant_coverage) {
-        const std::string macro_name = "REPLACE_EXPR_FLOAT_ZERO";
+        std::string macro_name = "REPLACE_EXPR_FLOAT_ZERO";
         new_function << "  " << macro_name << "(" << mutation_id_offset
                      << ");\n";
         dredd_macros.insert(GenerateMutationMacro(macro_name, "0.0"));
@@ -335,7 +349,7 @@ void MutationReplaceExpr::GenerateFloatConstantReplacement(
         !ExprIsEquivalentToFloat(*expr_, 1.0, ast_context)) {
       // Replace floating point expression with 1.0
       if (!only_track_mutant_coverage) {
-        const std::string macro_name = "REPLACE_EXPR_FLOAT_ONE";
+        std::string macro_name = "REPLACE_EXPR_FLOAT_ONE";
         new_function << "  " << macro_name << "(" << mutation_id_offset
                      << ");\n";
         dredd_macros.insert(GenerateMutationMacro(macro_name, "1.0"));
@@ -350,7 +364,7 @@ void MutationReplaceExpr::GenerateFloatConstantReplacement(
         !ExprIsEquivalentToFloat(*expr_, -1.0, ast_context)) {
       // Replace floating point expression with -1.0
       if (!only_track_mutant_coverage) {
-        const std::string macro_name = "REPLACE_EXPR_FLOAT_MINUS_ONE";
+        std::string macro_name = "REPLACE_EXPR_FLOAT_MINUS_ONE";
         new_function << "  " << macro_name << "(" << mutation_id_offset
                      << ");\n";
         dredd_macros.insert(GenerateMutationMacro(macro_name, "-1.0"));
@@ -374,7 +388,7 @@ void MutationReplaceExpr::GenerateIntegerConstantReplacement(
     if (!optimise_mutations || !ExprIsEquivalentToInt(*expr_, 0, ast_context)) {
       // Replace expression with 0
       if (!only_track_mutant_coverage) {
-        const std::string macro_name = "REPLACE_EXPR_INT_ZERO";
+        std::string macro_name = "REPLACE_EXPR_INT_ZERO";
         new_function << "  " << macro_name << "(" << mutation_id_offset
                      << ");\n";
         dredd_macros.insert(GenerateMutationMacro(macro_name, "0"));
@@ -388,7 +402,7 @@ void MutationReplaceExpr::GenerateIntegerConstantReplacement(
     if (!optimise_mutations || !ExprIsEquivalentToInt(*expr_, 1, ast_context)) {
       // Replace expression with 1
       if (!only_track_mutant_coverage) {
-        const std::string macro_name = "REPLACE_EXPR_INT_ONE";
+        std::string macro_name = "REPLACE_EXPR_INT_ONE";
         new_function << "  " << macro_name << "(" << mutation_id_offset
                      << ");\n";
         dredd_macros.insert(GenerateMutationMacro(macro_name, "1"));
@@ -405,7 +419,7 @@ void MutationReplaceExpr::GenerateIntegerConstantReplacement(
         !ExprIsEquivalentToInt(*expr_, -1, ast_context)) {
       // Replace signed integer expression with -1
       if (!only_track_mutant_coverage) {
-        const std::string macro_name = "REPLACE_EXPR_INT_MINUS_ONE";
+        std::string macro_name = "REPLACE_EXPR_INT_MINUS_ONE";
         new_function << "  " << macro_name << "(" << mutation_id_offset
                      << ");\n";
         dredd_macros.insert(GenerateMutationMacro(macro_name, "-1"));
@@ -431,7 +445,7 @@ void MutationReplaceExpr::GenerateBooleanConstantReplacement(
          !IsBooleanReplacementRedundantForBinaryOperator(true, ast_context))) {
       // Replace expression with true
       if (!only_track_mutant_coverage) {
-        const std::string macro_name = "REPLACE_EXPR_TRUE";
+        std::string macro_name = "REPLACE_EXPR_TRUE";
         new_function << "  " << macro_name << "(" << mutation_id_offset
                      << ");\n";
         dredd_macros.insert(GenerateMutationMacro(
@@ -447,7 +461,7 @@ void MutationReplaceExpr::GenerateBooleanConstantReplacement(
          !IsBooleanReplacementRedundantForBinaryOperator(false, ast_context))) {
       // Replace expression with false
       if (!only_track_mutant_coverage) {
-        const std::string macro_name = "REPLACE_EXPR_FALSE";
+        std::string macro_name = "REPLACE_EXPR_FALSE";
         new_function << "  " << macro_name << "(" << mutation_id_offset
                      << ");\n";
         dredd_macros.insert(GenerateMutationMacro(

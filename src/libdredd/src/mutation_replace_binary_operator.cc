@@ -280,7 +280,10 @@ void MutationReplaceBinaryOperator::GenerateArgumentReplacement(
         MutationReplaceExpr::ExprIsEquivalentToFloat(
             *binary_operator_->getLHS(), -1.0, ast_context))) {
     if (!only_track_mutant_coverage) {
-      const std::string macro_name = "REPLACE_BINARY_ARG1";
+      std::string macro_name = "REPLACE_BINARY_ARG1";
+      if (binary_operator_->getLHS()->HasSideEffects(ast_context)) {
+        macro_name += "_EVALUATED";
+      }
       new_function << "  " << macro_name << "(" << mutation_id_offset << ");\n";
       dredd_macros.insert(GenerateMutationMacro(macro_name, arg1_evaluated));
     }
@@ -307,7 +310,10 @@ void MutationReplaceBinaryOperator::GenerateArgumentReplacement(
         MutationReplaceExpr::ExprIsEquivalentToFloat(
             *binary_operator_->getRHS(), -1.0, ast_context))) {
     if (!only_track_mutant_coverage) {
-      const std::string macro_name = "REPLACE_BINARY_ARG2";
+      std::string macro_name = "REPLACE_BINARY_ARG2";
+      if (binary_operator_->getRHS()->HasSideEffects(ast_context)) {
+        macro_name += "_EVALUATED";
+      }
       new_function << "  " << macro_name << "(" << mutation_id_offset << ");\n";
       dredd_macros.insert(GenerateMutationMacro(macro_name, arg2_evaluated));
     }
@@ -328,8 +334,14 @@ void MutationReplaceBinaryOperator::GenerateBinaryOperatorReplacement(
   for (auto operator_kind :
        GetReplacementOperators(optimise_mutations, ast_context)) {
     if (!only_track_mutant_coverage) {
-      const std::string macro_name =
+      std::string macro_name =
           "REPLACE_BINARY_" + OpKindToString(operator_kind);
+      if (binary_operator_->getLHS()->HasSideEffects(ast_context)) {
+        macro_name += "_RHS_EVALUATED";
+      }
+      if (binary_operator_->getLHS()->HasSideEffects(ast_context)) {
+        macro_name += "_RHS_EVALUATED";
+      }
       new_function << "  " << macro_name << "(" << mutation_id_offset << ");\n";
       dredd_macros.insert(GenerateMutationMacro(
           macro_name,

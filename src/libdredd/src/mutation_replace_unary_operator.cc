@@ -305,9 +305,11 @@ void MutationReplaceUnaryOperator::GenerateUnaryOperatorReplacement(
       continue;
     }
     if (!only_track_mutant_coverage) {
-      const std::string macro_name =
-          "REPLACE_UNARY_" + OpKindToString(operator_kind);
-      new_function << "  " << macro_name << "(" << mutation_id_offset << ")\n";
+      std::string macro_name = "REPLACE_UNARY_" + OpKindToString(operator_kind);
+      if (unary_operator_->HasSideEffects(ast_context)) {
+        macro_name += "_EVALUATED";
+      }
+      new_function << "  " << macro_name << "(" << mutation_id_offset << ");\n";
       if (IsPrefix(operator_kind)) {
         dredd_macros.insert(GenerateMutationMacro(
             macro_name,
@@ -329,8 +331,12 @@ void MutationReplaceUnaryOperator::GenerateUnaryOperatorReplacement(
   // another mutation.
   if (!optimise_mutations || !IsOperatorSelfInverse()) {
     if (!only_track_mutant_coverage) {
-      new_function << "  MUTATION(" << mutation_id_offset << ", "
-                   << arg_evaluated << ");\n";
+      std::string macro_name = "REPLACE_UNARY_ARG";
+      if (unary_operator_->HasSideEffects(ast_context)) {
+        macro_name += "_EVALUATED";
+      }
+      new_function << "  " << macro_name << "(" << mutation_id_offset << ");\n";
+      dredd_macros.insert(GenerateMutationMacro(macro_name, arg_evaluated));
     }
     AddMutationInstance(
         mutation_id_base,
