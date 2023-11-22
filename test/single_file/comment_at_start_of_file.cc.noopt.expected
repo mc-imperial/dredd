@@ -25,7 +25,7 @@ static bool __dredd_enabled_mutation(int local_mutation_id) {
         if (!token.empty()) {
           int value = std::stoi(token);
           int local_value = value - 0;
-          if (local_value >= 0 && local_value < 13) {
+          if (local_value >= 0 && local_value < 7) {
             enabled_bitset[local_value / 64] |= (1 << (local_value % 64));
             some_mutation_enabled = true;
           }
@@ -53,15 +53,8 @@ static int __dredd_replace_expr_int(int arg, int local_mutation_id) {
   return arg;
 }
 
-#include <cstddef>
+// Hello
 
-struct A {
-  size_t x;
-  size_t y;
-};
-
-void foo(A arg);
-
-void bar() {
-  if (!__dredd_enabled_mutation(12)) { foo({static_cast<unsigned long>(__dredd_replace_expr_int(0, 0)), static_cast<unsigned long>(__dredd_replace_expr_int(0, 6))}); }
+int main() {
+  if (!__dredd_enabled_mutation(6)) { return __dredd_replace_expr_int(42, 0); }
 }

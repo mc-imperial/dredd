@@ -35,7 +35,6 @@
 #include "clang/AST/TypeLoc.h"
 #include "clang/Basic/LangOptions.h"
 #include "clang/Basic/SourceLocation.h"
-#include "clang/Basic/SourceManager.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "libdredd/mutation.h"
 #include "libdredd/mutation_remove_stmt.h"
@@ -108,23 +107,6 @@ bool MutateVisitor::TraverseDecl(clang::Decl* decl) {
     // This declaration is not wholly contained in the main file, so do not
     // consider it for mutation.
     return true;
-  }
-  const clang::BeforeThanCompare<clang::SourceLocation> comparator(
-      compiler_instance_->getSourceManager());
-  if (start_location_of_first_decl_in_source_file_.isInvalid() ||
-      comparator(source_range_in_main_file.getBegin(),
-                 start_location_of_first_decl_in_source_file_)) {
-    // This is the first declaration wholly contained in the main file that has
-    // been encountered so far: record it so that the dredd prelude can be
-    // inserted before it.
-    //
-    // The order in which declarations appear in the source file may not exactly
-    // match the order they are visited in the AST (for example, a typedef
-    // declaration is visited after the associated type declaration, even though
-    // the 'typedef' keyword occurs first in the AST), thus this location is
-    // updated each time a declaration that appears earlier is encountered.
-    start_location_of_first_decl_in_source_file_ =
-        source_range_in_main_file.getBegin();
   }
   if (llvm::dyn_cast<clang::StaticAssertDecl>(decl) != nullptr) {
     // It does not make sense to mutate static assertions, as (a) this will

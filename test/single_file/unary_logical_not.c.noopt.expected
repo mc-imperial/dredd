@@ -1,6 +1,5 @@
-#include <stdbool.h>
-
 #include <inttypes.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -67,6 +66,8 @@ static bool __dredd_replace_expr_bool(bool arg, int local_mutation_id) {
   if (__dredd_enabled_mutation(local_mutation_id + 2)) return 0;
   return arg;
 }
+
+#include <stdbool.h>
 
 int main() {
   bool y = __dredd_replace_expr_bool(__dredd_replace_expr_int(true, 0), 6);
