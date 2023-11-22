@@ -42,6 +42,8 @@ static bool __dredd_enabled_mutation(int local_mutation_id) {
   return (enabled_bitset[local_mutation_id / 64] & (1 << (local_mutation_id % 64))) != 0;
 }
 
+#define MUTATION_RETURN(arg) arg
+#define MUTATION_PRELUDE(arg) if (!__dredd_some_mutation_enabled) return arg
 void f(){
   if (!__dredd_enabled_mutation(0)) { try {
   } catch (...) {

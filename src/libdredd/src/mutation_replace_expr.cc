@@ -187,7 +187,7 @@ void MutationReplaceExpr::GenerateUnaryOperatorInsertionBeforeLValue(
   }
   if (!only_track_mutant_coverage) {
     std::string macro_name = "MUTATION_EXPR_INC";
-    if (expr_->HasSideEffects(ast_context)) {
+    if (ast_context.getLangOpts().CPlusPlus && expr_->HasSideEffects(ast_context)) {
       macro_name += "_EVALUATED";
     }
     new_function << "  " << macro_name << "(" << mutation_id_offset << ");\n";
@@ -200,7 +200,7 @@ void MutationReplaceExpr::GenerateUnaryOperatorInsertionBeforeLValue(
 
   if (!only_track_mutant_coverage) {
     std::string macro_name = "MUTATION_EXPR_DEC";
-    if (expr_->HasSideEffects(ast_context)) {
+    if (ast_context.getLangOpts().CPlusPlus && expr_->HasSideEffects(ast_context)) {
       macro_name += "_EVALUATED";
     }
     new_function << "  " << macro_name << "(" << mutation_id_offset << ");\n";
@@ -229,7 +229,7 @@ void MutationReplaceExpr::GenerateUnaryOperatorInsertionBeforeNonLValue(
         !IsRedundantOperatorInsertion(ast_context, clang::UO_LNot)) {
       if (!only_track_mutant_coverage) {
         std::string macro_name = "MUTATION_EXPR_LNOT";
-        if (expr_->HasSideEffects(ast_context)) {
+        if (ast_context.getLangOpts().CPlusPlus && expr_->HasSideEffects(ast_context)) {
           macro_name += "_EVALUATED";
         }
         new_function << "  " << macro_name << "(" << mutation_id_offset
@@ -249,7 +249,7 @@ void MutationReplaceExpr::GenerateUnaryOperatorInsertionBeforeNonLValue(
         !IsRedundantOperatorInsertion(ast_context, clang::UO_Not)) {
       if (!only_track_mutant_coverage) {
         std::string macro_name = "MUTATION_EXPR_NOT";
-        if (expr_->HasSideEffects(ast_context)) {
+        if (ast_context.getLangOpts().CPlusPlus && expr_->HasSideEffects(ast_context)) {
           macro_name += "_EVALUATED";
         }
         new_function << "  " << macro_name << "(" << mutation_id_offset
@@ -269,7 +269,7 @@ void MutationReplaceExpr::GenerateUnaryOperatorInsertionBeforeNonLValue(
         !IsRedundantOperatorInsertion(ast_context, clang::UO_Minus)) {
       if (!only_track_mutant_coverage) {
         std::string macro_name = "MUTATION_EXPR_MINUS";
-        if (expr_->HasSideEffects(ast_context)) {
+        if (ast_context.getLangOpts().CPlusPlus && expr_->HasSideEffects(ast_context)) {
           macro_name += "_EVALUATED";
         }
         new_function << "  " << macro_name << "(" << mutation_id_offset
