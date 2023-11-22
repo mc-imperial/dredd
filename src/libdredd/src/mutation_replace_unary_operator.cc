@@ -93,6 +93,29 @@ bool MutationReplaceUnaryOperator::IsValidReplacementOperator(
   return true;
 }
 
+std::string MutationReplaceUnaryOperator::OpKindToString(
+    clang::UnaryOperatorKind kind) {
+  switch (kind) {
+    case clang::UnaryOperatorKind::UO_Minus:
+      return "Minus";
+    case clang::UnaryOperatorKind::UO_Not:
+      return "Not";
+    case clang::UnaryOperatorKind::UO_PreDec:
+      return "PreDec";
+    case clang::UnaryOperatorKind::UO_PostDec:
+      return "PostDec";
+    case clang::UnaryOperatorKind::UO_PreInc:
+      return "PreInc";
+    case clang::UnaryOperatorKind::UO_PostInc:
+      return "PostInc";
+    case clang::UnaryOperatorKind::UO_LNot:
+      return "LNot";
+    default:
+      assert(false && "Unsupported opcode");
+      return "";
+  }
+}
+
 std::string MutationReplaceUnaryOperator::GetFunctionName(
     bool optimise_mutations, clang::ASTContext& ast_context) const {
   std::string result = "__dredd_replace_unary_operator_";
@@ -100,31 +123,7 @@ std::string MutationReplaceUnaryOperator::GetFunctionName(
   // A string corresponding to the unary operator forms part of the name of the
   // mutation function, to differentiate mutation functions for different
   // operators
-  switch (unary_operator_->getOpcode()) {
-    case clang::UnaryOperatorKind::UO_Minus:
-      result += "Minus";
-      break;
-    case clang::UnaryOperatorKind::UO_Not:
-      result += "Not";
-      break;
-    case clang::UnaryOperatorKind::UO_PreDec:
-      result += "PreDec";
-      break;
-    case clang::UnaryOperatorKind::UO_PostDec:
-      result += "PostDec";
-      break;
-    case clang::UnaryOperatorKind::UO_PreInc:
-      result += "PreInc";
-      break;
-    case clang::UnaryOperatorKind::UO_PostInc:
-      result += "PostInc";
-      break;
-    case clang::UnaryOperatorKind::UO_LNot:
-      result += "LNot";
-      break;
-    default:
-      assert(false && "Unsupported opcode");
-  }
+  result += OpKindToString(unary_operator_->getOpcode());
 
   if (unary_operator_->getSubExpr()->isLValue()) {
     const clang::QualType qualified_type =
@@ -179,9 +178,11 @@ std::string MutationReplaceUnaryOperator::GetFunctionName(
 }
 
 std::string MutationReplaceUnaryOperator::GenerateMutatorFunction(
-    clang::ASTContext& ast_context, const std::string& function_name,
-    const std::string& result_type, const std::string& input_type,
-    bool optimise_mutations, bool only_track_mutant_coverage, int& mutation_id,
+    clang::ASTContext& ast_context,
+    std::unordered_set<std::string>& dredd_macros,
+    const std::string& function_name, const std::string& result_type,
+    const std::string& input_type, bool optimise_mutations,
+    bool only_track_mutant_coverage, int& mutation_id,
     protobufs::MutationReplaceUnaryOperator& protobuf_message) const {
   std::stringstream new_function;
   new_function << "static " << result_type << " " << function_name << "(";
@@ -224,7 +225,7 @@ std::string MutationReplaceUnaryOperator::GenerateMutatorFunction(
 
   int mutation_id_offset = 0;
   GenerateUnaryOperatorReplacement(
-      arg_evaluated, ast_context, optimise_mutations,
+      arg_evaluated, ast_context, dredd_macros, optimise_mutations,
       only_track_mutant_coverage, mutation_id, new_function, mutation_id_offset,
       protobuf_message);
 
@@ -283,9 +284,9 @@ bool MutationReplaceUnaryOperator::IsRedundantReplacementOperator(
 
 void MutationReplaceUnaryOperator::GenerateUnaryOperatorReplacement(
     const std::string& arg_evaluated, const clang::ASTContext& ast_context,
-    bool optimise_mutations, bool only_track_mutant_coverage,
-    int mutation_id_base, std::stringstream& new_function,
-    int& mutation_id_offset,
+    std::unordered_set<std::string>& dredd_macros, bool optimise_mutations,
+    bool only_track_mutant_coverage, int mutation_id_base,
+    std::stringstream& new_function, int& mutation_id_offset,
     protobufs::MutationReplaceUnaryOperator& protobuf_message) const {
   const std::vector<clang::UnaryOperatorKind> candidate_replacement_operators =
       {clang::UnaryOperatorKind::UO_PreInc,
@@ -304,14 +305,19 @@ void MutationReplaceUnaryOperator::GenerateUnaryOperatorReplacement(
       continue;
     }
     if (!only_track_mutant_coverage) {
-      new_function << "  MUTATION(" << mutation_id_offset << ", ";
+      const std::string macro_name =
+          "REPLACE_UNARY_" + OpKindToString(operator_kind);
+      new_function << "  " << macro_name << "(" << mutation_id_offset << ")\n";
       if (IsPrefix(operator_kind)) {
-        new_function << clang::UnaryOperator::getOpcodeStr(operator_kind).str()
-                     << arg_evaluated + ";\n";
+        dredd_macros.insert(GenerateMutationMacro(
+            macro_name,
+            clang::UnaryOperator::getOpcodeStr(operator_kind).str() +
+                arg_evaluated));
       } else {
-        new_function << arg_evaluated
-                     << clang::UnaryOperator::getOpcodeStr(operator_kind).str()
-                     << ");\n";
+        dredd_macros.insert(GenerateMutationMacro(
+            macro_name,
+            arg_evaluated +
+                clang::UnaryOperator::getOpcodeStr(operator_kind).str()));
       }
     }
     AddMutationInstance(mutation_id_base, OperatorKindToAction(operator_kind),
@@ -337,7 +343,8 @@ protobufs::MutationGroup MutationReplaceUnaryOperator::Apply(
     clang::ASTContext& ast_context, const clang::Preprocessor& preprocessor,
     bool optimise_mutations, bool only_track_mutant_coverage,
     int first_mutation_id_in_file, int& mutation_id, clang::Rewriter& rewriter,
-    std::unordered_set<std::string>& dredd_declarations) const {
+    std::unordered_set<std::string>& dredd_declarations,
+    std::unordered_set<std::string>& dredd_macros) const {
   // The protobuf object for the mutation, which will be wrapped in a
   // MutationGroup.
   protobufs::MutationReplaceUnaryOperator inner_result;
@@ -447,7 +454,7 @@ protobufs::MutationGroup MutationReplaceUnaryOperator::Apply(
   (void)rewriter_result;  // Keep release-mode compilers happy.
 
   const std::string new_function = GenerateMutatorFunction(
-      ast_context, new_function_name, result_type, input_type,
+      ast_context, dredd_macros, new_function_name, result_type, input_type,
       optimise_mutations, only_track_mutant_coverage, mutation_id,
       inner_result);
   assert(!new_function.empty() && "Unsupported opcode.");

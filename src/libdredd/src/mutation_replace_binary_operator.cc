@@ -233,7 +233,8 @@ std::string MutationReplaceBinaryOperator::GetFunctionName(
 
 void MutationReplaceBinaryOperator::GenerateArgumentReplacement(
     const std::string& arg1_evaluated, const std::string& arg2_evaluated,
-    const clang::ASTContext& ast_context, bool optimise_mutations,
+    const clang::ASTContext& ast_context,
+    std::unordered_set<std::string>& dredd_macros, bool optimise_mutations,
     bool only_track_mutant_coverage, int mutation_id_base,
     std::stringstream& new_function, int& mutation_id_offset,
     protobufs::MutationReplaceBinaryOperator& protobuf_message) const {
@@ -279,8 +280,9 @@ void MutationReplaceBinaryOperator::GenerateArgumentReplacement(
         MutationReplaceExpr::ExprIsEquivalentToFloat(
             *binary_operator_->getLHS(), -1.0, ast_context))) {
     if (!only_track_mutant_coverage) {
-      new_function << "  MUTATION(" << mutation_id_offset << ", "
-                   << arg1_evaluated << ");\n";
+      const std::string macro_name = "REPLACE_BINARY_ARG1";
+      new_function << "  " << macro_name << "(" << mutation_id_offset << ");\n";
+      dredd_macros.insert(GenerateMutationMacro(macro_name, arg1_evaluated));
     }
     AddMutationInstance(
         mutation_id_base,
@@ -305,8 +307,9 @@ void MutationReplaceBinaryOperator::GenerateArgumentReplacement(
         MutationReplaceExpr::ExprIsEquivalentToFloat(
             *binary_operator_->getRHS(), -1.0, ast_context))) {
     if (!only_track_mutant_coverage) {
-      new_function << "  MUTATION(" << mutation_id_offset << ", "
-                   << arg2_evaluated << ");\n";
+      const std::string macro_name = "REPLACE_BINARY_ARG2";
+      new_function << "  " << macro_name << "(" << mutation_id_offset << ");\n";
+      dredd_macros.insert(GenerateMutationMacro(macro_name, arg2_evaluated));
     }
     AddMutationInstance(
         mutation_id_base,
@@ -317,17 +320,22 @@ void MutationReplaceBinaryOperator::GenerateArgumentReplacement(
 
 void MutationReplaceBinaryOperator::GenerateBinaryOperatorReplacement(
     const std::string& arg1_evaluated, const std::string& arg2_evaluated,
-    const clang::ASTContext& ast_context, bool optimise_mutations,
+    const clang::ASTContext& ast_context,
+    std::unordered_set<std::string>& dredd_macros, bool optimise_mutations,
     bool only_track_mutant_coverage, int mutation_id_base,
     std::stringstream& new_function, int& mutation_id_offset,
     protobufs::MutationReplaceBinaryOperator& protobuf_message) const {
   for (auto operator_kind :
        GetReplacementOperators(optimise_mutations, ast_context)) {
     if (!only_track_mutant_coverage) {
-      new_function << "  MUTATION(" << mutation_id_offset << ", "
-                   << arg1_evaluated
-                   << clang::BinaryOperator::getOpcodeStr(operator_kind).str()
-                   << arg2_evaluated << ");\n";
+      const std::string macro_name =
+          "REPLACE_BINARY_" + OpKindToString(operator_kind);
+      new_function << "  " << macro_name << "(" << mutation_id_offset << ");\n";
+      dredd_macros.insert(GenerateMutationMacro(
+          macro_name,
+          arg1_evaluated + " " +
+              clang::BinaryOperator::getOpcodeStr(operator_kind).str() + " " +
+              arg2_evaluated));
     }
     AddMutationInstance(mutation_id_base, OperatorKindToAction(operator_kind),
                         mutation_id_offset, protobuf_message);
@@ -409,10 +417,11 @@ MutationReplaceBinaryOperator::GetReplacementOperators(
 }
 
 std::string MutationReplaceBinaryOperator::GenerateMutatorFunction(
-    clang::ASTContext& ast_context, const std::string& function_name,
-    const std::string& result_type, const std::string& lhs_type,
-    const std::string& rhs_type, bool optimise_mutations,
-    bool only_track_mutant_coverage, int& mutation_id,
+    clang::ASTContext& ast_context,
+    std::unordered_set<std::string>& dredd_macros,
+    const std::string& function_name, const std::string& result_type,
+    const std::string& lhs_type, const std::string& rhs_type,
+    bool optimise_mutations, bool only_track_mutant_coverage, int& mutation_id,
     protobufs::MutationReplaceBinaryOperator& protobuf_message) const {
   std::stringstream new_function;
   new_function << "static " << result_type << " " << function_name << "(";
@@ -465,13 +474,13 @@ std::string MutationReplaceBinaryOperator::GenerateMutatorFunction(
   }
 
   GenerateBinaryOperatorReplacement(
-      arg1_evaluated, arg2_evaluated, ast_context, optimise_mutations,
-      only_track_mutant_coverage, mutation_id, new_function, mutation_id_offset,
-      protobuf_message);
-  GenerateArgumentReplacement(arg1_evaluated, arg2_evaluated, ast_context,
-                              optimise_mutations, only_track_mutant_coverage,
-                              mutation_id, new_function, mutation_id_offset,
-                              protobuf_message);
+      arg1_evaluated, arg2_evaluated, ast_context, dredd_macros,
+      optimise_mutations, only_track_mutant_coverage, mutation_id, new_function,
+      mutation_id_offset, protobuf_message);
+  GenerateArgumentReplacement(
+      arg1_evaluated, arg2_evaluated, ast_context, dredd_macros,
+      optimise_mutations, only_track_mutant_coverage, mutation_id, new_function,
+      mutation_id_offset, protobuf_message);
 
   if (only_track_mutant_coverage) {
     new_function << "  __dredd_record_covered_mutants(local_mutation_id, " +
@@ -497,7 +506,8 @@ protobufs::MutationGroup MutationReplaceBinaryOperator::Apply(
     clang::ASTContext& ast_context, const clang::Preprocessor& preprocessor,
     bool optimise_mutations, bool only_track_mutant_coverage,
     int first_mutation_id_in_file, int& mutation_id, clang::Rewriter& rewriter,
-    std::unordered_set<std::string>& dredd_declarations) const {
+    std::unordered_set<std::string>& dredd_declarations,
+    std::unordered_set<std::string>& dredd_macros) const {
   // The protobuf object for the mutation, which will be wrapped in a
   // MutationGroup.
   protobufs::MutationReplaceBinaryOperator inner_result;
@@ -583,8 +593,8 @@ protobufs::MutationGroup MutationReplaceBinaryOperator::Apply(
                   rewriter);
 
   const std::string new_function = GenerateMutatorFunction(
-      ast_context, new_function_name, result_type, lhs_type, rhs_type,
-      optimise_mutations, only_track_mutant_coverage, mutation_id,
+      ast_context, dredd_macros, new_function_name, result_type, lhs_type,
+      rhs_type, optimise_mutations, only_track_mutant_coverage, mutation_id,
       inner_result);
   assert(!new_function.empty() && "Unsupported opcode.");
 

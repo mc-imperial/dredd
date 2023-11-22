@@ -41,14 +41,16 @@ class MutationReplaceUnaryOperator : public Mutation {
       bool optimise_mutations, bool only_track_mutant_coverage,
       int first_mutation_id_in_file, int& mutation_id,
       clang::Rewriter& rewriter,
-      std::unordered_set<std::string>& dredd_declarations) const override;
+      std::unordered_set<std::string>& dredd_declarations,
+      std::unordered_set<std::string>& dredd_macros) const override;
 
  private:
   std::string GenerateMutatorFunction(
-      clang::ASTContext& ast_context, const std::string& function_name,
-      const std::string& result_type, const std::string& input_type,
-      bool optimise_mutations, bool only_track_mutant_coverage,
-      int& mutation_id,
+      clang::ASTContext& ast_context,
+      std::unordered_set<std::string>& dredd_macros,
+      const std::string& function_name, const std::string& result_type,
+      const std::string& input_type, bool optimise_mutations,
+      bool only_track_mutant_coverage, int& mutation_id,
       protobufs::MutationReplaceUnaryOperator& protobuf_message) const;
 
   [[nodiscard]] static bool IsPrefix(clang::UnaryOperatorKind operator_kind);
@@ -65,12 +67,14 @@ class MutationReplaceUnaryOperator : public Mutation {
   std::string GetFunctionName(bool optimise_mutations,
                               clang::ASTContext& ast_context) const;
 
+  static std::string OpKindToString(clang::UnaryOperatorKind kind);
+
   // Replaces unary operators with other valid unary operators.
   void GenerateUnaryOperatorReplacement(
       const std::string& arg_evaluated, const clang::ASTContext& ast_context,
-      bool optimise_mutations, bool only_track_mutant_coverage,
-      int mutation_id_base, std::stringstream& new_function,
-      int& mutation_id_offset,
+      std::unordered_set<std::string>& dredd_macros, bool optimise_mutations,
+      bool only_track_mutant_coverage, int mutation_id_base,
+      std::stringstream& new_function, int& mutation_id_offset,
       protobufs::MutationReplaceUnaryOperator& protobuf_message) const;
 
   static void AddMutationInstance(
