@@ -246,7 +246,7 @@ The following guide assumes that you are using Linux for development.
 ### Prerequisites
 
 - Python
-- cmake-format python package (used for `./check_format`)
+- cmake-format python package (used by `scripts/check_format`)
                                        
 ### Scripts Directory
 
