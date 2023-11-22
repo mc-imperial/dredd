@@ -95,7 +95,7 @@ date
 
 git clone https://github.com/KhronosGroup/SPIRV-Tools.git
 pushd SPIRV-Tools
-  git reset --hard c94501352d545e84c821ce031399e76d1af32d18
+  git reset --hard 2a238ed24dffd84fe3ed2e60d7aa5c28e2acf45a
   python3 utils/git-sync-deps
   cmake -S . -B build -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DSPIRV_WERROR=OFF -DCMAKE_CXX_FLAGS="-w"
   # Build something minimal to ensure all header files get generated.
