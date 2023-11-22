@@ -20,6 +20,12 @@ set -x
 
 cd "${DREDD_REPO_ROOT}"
 
+if ! cmake-format --version
+then
+  echo "cmake-format is not installed."
+  exit 1
+fi
+
 dredd_source_files.sh | xargs -t clang-format --dry-run --Werror
 for f in $(dredd_cmake_files.sh)
 do

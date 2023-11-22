@@ -243,6 +243,13 @@ This project uses the [Google C++ style guide](https://google.github.io/stylegui
 
 The following guide assumes that you are using Linux for development.
 
+### Prerequisites
+
+- Python
+- cmake-format python package (used for `./check_format`)
+                                       
+### Scripts Directory
+
 The `scripts` directory contains a number of commands that are useful for developers. To make use of these commands,
 you must first run `./dev_shell.sh.template` from the root of the Dredd repo. This will ensure that the necessary
 environment variables are set as well as building tools that are used in other check commands.
