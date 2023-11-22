@@ -112,14 +112,18 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
     assert(!rewriter_result && "Rewrite failed.\n");
   }
 
-  std::set<std::string> sorted_dredd_macros;
-  sorted_dredd_macros.insert(dredd_macros.begin(), dredd_macros.end());
-  for (const auto& macro : sorted_dredd_macros) {
-    const bool rewriter_result =
-        rewriter_.InsertTextBefore(start_of_source_file, macro);
-    (void)rewriter_result;  // Keep release-mode compilers happy.
-    assert(!rewriter_result && "Rewrite failed.\n");
-  }
+  (void) dredd_macros;
+  rewriter_.InsertTextBefore(start_of_source_file, GetMutationPreludeMacro());
+  rewriter_.InsertTextBefore(start_of_source_file, GetMutationMacro());
+  rewriter_.InsertTextBefore(start_of_source_file, GetMutationResultMacro());
+//  std::set<std::string> sorted_dredd_macros;
+//  sorted_dredd_macros.insert(dredd_macros.begin(), dredd_macros.end());
+//  for (const auto& macro : sorted_dredd_macros) {
+//    const bool rewriter_result =
+//        rewriter_.InsertTextBefore(start_of_source_file, macro);
+//    (void)rewriter_result;  // Keep release-mode compilers happy.
+//    assert(!rewriter_result && "Rewrite failed.\n");
+//  }
 
   const std::string dredd_prelude =
       compiler_instance_->getLangOpts().CPlusPlus
@@ -134,6 +138,18 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
   rewriter_result = rewriter_.overwriteChangedFiles();
   (void)rewriter_result;  // Keep release mode compilers happy
   assert(!rewriter_result && "Something went wrong emitting rewritten files.");
+}
+
+std::string MutateAstConsumer::GetMutationMacro() const {
+  return "#define MUTATION(mutation_id_offset, arg) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return arg\n\n";
+}
+
+std::string MutateAstConsumer::GetMutationPreludeMacro() const {
+  return "#define MUTATION_PRELUDE(arg) if (!__dredd_some_mutation_enabled) return arg\n\n";
+}
+
+std::string MutateAstConsumer::GetMutationResultMacro() const {
+  return "#define MUTATION_RESULT(arg) arg\n\n";
 }
 
 std::string MutateAstConsumer::GetRegularDreddPreludeCpp(

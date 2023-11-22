@@ -47,6 +47,12 @@ class MutateAstConsumer : public clang::ASTConsumer {
   void HandleTranslationUnit(clang::ASTContext& ast_context) override;
 
  private:
+  std::string GetMutationMacro() const;
+
+  std::string GetMutationPreludeMacro() const;
+
+  std::string GetMutationResultMacro() const;
+
   [[nodiscard]] std::string GetDreddPreludeCpp(int initial_mutation_id) const;
 
   [[nodiscard]] std::string GetRegularDreddPreludeCpp(

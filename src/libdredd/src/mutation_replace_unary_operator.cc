@@ -207,18 +207,19 @@ std::string MutationReplaceUnaryOperator::GenerateMutatorFunction(
   if (!only_track_mutant_coverage) {
     // Quickly apply the original operator if no mutant is enabled (which will
     // be the common case).
-    new_function << "  if (!__dredd_some_mutation_enabled) return ";
+//    new_function << "  if (!__dredd_some_mutation_enabled) return ";
+    new_function << "  MUTATION_PRELUDE(";
     if (IsPrefix(unary_operator_->getOpcode())) {
       new_function << clang::UnaryOperator::getOpcodeStr(
                           unary_operator_->getOpcode())
                           .str()
-                   << arg_evaluated + ";\n";
+                   << arg_evaluated + ");\n";
     } else {
       new_function << arg_evaluated
                    << clang::UnaryOperator::getOpcodeStr(
                           unary_operator_->getOpcode())
                           .str()
-                   << ";\n";
+                   << ");\n";
     }
   }
 
@@ -235,11 +236,11 @@ std::string MutationReplaceUnaryOperator::GenerateMutatorFunction(
 
   const std::string opcode_string =
       clang::UnaryOperator::getOpcodeStr(unary_operator_->getOpcode()).str();
-  new_function << "  return "
+  new_function << "  return MUTATION_RESULT("
                << (IsPrefix(unary_operator_->getOpcode()) ? opcode_string : "")
                << arg_evaluated
                << (IsPrefix(unary_operator_->getOpcode()) ? "" : opcode_string)
-               << ";\n";
+               << ");\n";
 
   new_function << "}\n\n";
 
@@ -304,15 +305,16 @@ void MutationReplaceUnaryOperator::GenerateUnaryOperatorReplacement(
       continue;
     }
     if (!only_track_mutant_coverage) {
-      new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
-                   << mutation_id_offset << ")) return ";
+      new_function << "  MUTATION(" << mutation_id_offset << ", ";
+//      new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
+//                   << mutation_id_offset << ")) return ";
       if (IsPrefix(operator_kind)) {
         new_function << clang::UnaryOperator::getOpcodeStr(operator_kind).str()
                      << arg_evaluated + ";\n";
       } else {
         new_function << arg_evaluated
                      << clang::UnaryOperator::getOpcodeStr(operator_kind).str()
-                     << ";\n";
+                     << ");\n";
       }
     }
     AddMutationInstance(mutation_id_base, OperatorKindToAction(operator_kind),
@@ -324,9 +326,10 @@ void MutationReplaceUnaryOperator::GenerateUnaryOperatorReplacement(
   // another mutation.
   if (!optimise_mutations || !IsOperatorSelfInverse()) {
     if (!only_track_mutant_coverage) {
-      new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
-                   << mutation_id_offset
-                   << ")) return " + arg_evaluated + ";\n";
+      new_function << "  MUTATION(" << mutation_id_offset << ", " << arg_evaluated << ");\n";
+//      new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
+//                   << mutation_id_offset
+//                   << ")) return " + arg_evaluated + ";\n";
     }
     AddMutationInstance(
         mutation_id_base,

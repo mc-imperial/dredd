@@ -95,25 +95,33 @@ class MutationReplaceExpr : public Mutation {
 
   // Replace expressions with constants.
   void GenerateConstantReplacement(
-      clang::ASTContext& ast_context, bool optimise_mutations,
+      clang::ASTContext& ast_context,
+      std::unordered_set<std::string>& dredd_macros,
+      bool optimise_mutations,
       bool only_track_mutant_coverage, int mutation_id_base,
       std::stringstream& new_function, int& mutation_id_offset,
       protobufs::MutationReplaceExpr& protobuf_message) const;
 
   void GenerateBooleanConstantReplacement(
-      clang::ASTContext& ast_context, bool optimise_mutations,
+      clang::ASTContext& ast_context,
+      std::unordered_set<std::string>& dredd_macros,
+      bool optimise_mutations,
       bool only_track_mutant_coverage, int mutation_id_base,
       std::stringstream& new_function, int& mutation_id_offset,
       protobufs::MutationReplaceExpr& protobuf_message) const;
 
   void GenerateIntegerConstantReplacement(
-      const clang::ASTContext& ast_context, bool optimise_mutations,
+      const clang::ASTContext& ast_context,
+      std::unordered_set<std::string>& dredd_macros,
+      bool optimise_mutations,
       bool only_track_mutant_coverage, int mutation_id_base,
       std::stringstream& new_function, int& mutation_id_offset,
       protobufs::MutationReplaceExpr& protobuf_message) const;
 
   void GenerateFloatConstantReplacement(
-      const clang::ASTContext& ast_context, bool optimise_mutations,
+      const clang::ASTContext& ast_context,
+      std::unordered_set<std::string>& dredd_macros,
+      bool optimise_mutations,
       bool only_track_mutant_coverage, int mutation_id_base,
       std::stringstream& new_function, int& mutation_id_offset,
       protobufs::MutationReplaceExpr& protobuf_message) const;
@@ -121,6 +129,7 @@ class MutationReplaceExpr : public Mutation {
   // Insert valid unary operators such as !, ~, ++ and --.
   void GenerateUnaryOperatorInsertion(
       const std::string& arg_evaluated, clang::ASTContext& ast_context,
+      std::unordered_set<std::string>& dredd_macros,
       bool optimise_mutations, bool only_track_mutant_coverage,
       int mutation_id_base, std::stringstream& new_function,
       int& mutation_id_offset,
@@ -128,6 +137,7 @@ class MutationReplaceExpr : public Mutation {
 
   void GenerateUnaryOperatorInsertionBeforeNonLValue(
       const std::string& arg_evaluated, clang::ASTContext& ast_context,
+      std::unordered_set<std::string>& dredd_macros,
       bool optimise_mutations, bool only_track_mutant_coverage,
       int mutation_id_base, std::stringstream& new_function,
       int& mutation_id_offset,
@@ -135,12 +145,14 @@ class MutationReplaceExpr : public Mutation {
 
   void GenerateUnaryOperatorInsertionBeforeLValue(
       const std::string& arg_evaluated, clang::ASTContext& ast_context,
+      std::unordered_set<std::string>& dredd_macros,
       bool only_track_mutant_coverage, int mutation_id_base,
       std::stringstream& new_function, int& mutation_id_offset,
       protobufs::MutationReplaceExpr& protobuf_message) const;
 
   std::string GenerateMutatorFunction(
-      clang::ASTContext& ast_context, const std::string& function_name,
+      clang::ASTContext& ast_context, std::unordered_set<std::string>& dredd_macros,
+      const std::string& function_name,
       const std::string& result_type, const std::string& input_type,
       bool optimise_mutations, bool only_track_mutant_coverage,
       int& mutation_id, protobufs::MutationReplaceExpr& protobuf_message) const;
