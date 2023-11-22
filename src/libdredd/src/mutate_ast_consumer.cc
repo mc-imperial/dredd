@@ -74,6 +74,7 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
   // converted to an ordered set so that declarations can be added to the source
   // file in a deterministic order.
   std::unordered_set<std::string> dredd_declarations;
+  std::unordered_set<std::string> dredd_macros;
 
   protobufs::MutationInfoForFile mutation_info_for_file;
   mutation_info_for_file.set_filename(
@@ -83,7 +84,7 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
           .str());
   *mutation_info_for_file.mutable_mutation_tree_root() =
       ApplyMutations(visitor_->GetMutations(), initial_mutation_id, ast_context,
-                     dredd_declarations);
+                     dredd_declarations, dredd_macros);
 
   if (initial_mutation_id == *mutation_id_) {
     // No possibilities for mutation were found; nothing else to do.
@@ -107,6 +108,15 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
   for (const auto& decl : sorted_dredd_declarations) {
     const bool rewriter_result =
         rewriter_.InsertTextBefore(start_of_source_file, decl);
+    (void)rewriter_result;  // Keep release-mode compilers happy.
+    assert(!rewriter_result && "Rewrite failed.\n");
+  }
+
+  std::set<std::string> sorted_dredd_macros;
+  sorted_dredd_macros.insert(dredd_macros.begin(), dredd_macros.end());
+  for (const auto& macro : sorted_dredd_macros) {
+    const bool rewriter_result =
+        rewriter_.InsertTextBefore(start_of_source_file, macro);
     (void)rewriter_result;  // Keep release-mode compilers happy.
     assert(!rewriter_result && "Rewrite failed.\n");
   }
@@ -361,7 +371,8 @@ std::string MutateAstConsumer::GetDreddPreludeC(int initial_mutation_id) const {
 protobufs::MutationTreeNode MutateAstConsumer::ApplyMutations(
     const MutationTreeNode& mutation_tree_node, int initial_mutation_id,
     clang::ASTContext& context,
-    std::unordered_set<std::string>& dredd_declarations) {
+    std::unordered_set<std::string>& dredd_declarations,
+    std::unordered_set<std::string>& dredd_macros) {
   assert(!(mutation_tree_node.IsEmpty() &&
            mutation_tree_node.GetChildren().size() == 1) &&
          "The mutation tree should already be compressed.");
@@ -369,15 +380,15 @@ protobufs::MutationTreeNode MutateAstConsumer::ApplyMutations(
   for (const auto& child : mutation_tree_node.GetChildren()) {
     assert(!child->IsEmpty() &&
            "The mutation tree should not have empty subtrees.");
-    *result.add_children() = ApplyMutations(*child, initial_mutation_id,
-                                            context, dredd_declarations);
+    *result.add_children() = ApplyMutations(
+        *child, initial_mutation_id, context, dredd_declarations, dredd_macros);
   }
   for (const auto& mutation : mutation_tree_node.GetMutations()) {
     const int mutation_id_old = *mutation_id_;
     const auto mutation_group = mutation->Apply(
         context, compiler_instance_->getPreprocessor(), optimise_mutations_,
         only_track_mutant_coverage_, initial_mutation_id, *mutation_id_,
-        rewriter_, dredd_declarations);
+        rewriter_, dredd_declarations, dredd_macros);
     if (*mutation_id_ > mutation_id_old) {
       // Only add the result of applying the mutation if it had an effect.
       *result.add_mutation_groups() = mutation_group;
