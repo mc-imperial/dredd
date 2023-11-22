@@ -1,6 +1,5 @@
-#include <stdio.h>
-
 #include <inttypes.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -51,6 +50,8 @@ static int __dredd_replace_expr_int(int arg, int local_mutation_id) {
   if (__dredd_enabled_mutation(local_mutation_id + 5)) return -1;
   return arg;
 }
+
+#include <stdio.h>
 
 int main() {
   if (!__dredd_enabled_mutation(6)) { __dredd_replace_expr_int(printf("%s\n", "A\n"), 0); }

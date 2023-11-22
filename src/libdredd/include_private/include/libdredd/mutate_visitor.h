@@ -101,11 +101,6 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
     return mutation_tree_root_;
   }
 
-  [[nodiscard]] clang::SourceLocation GetStartLocationOfFirstDeclInSourceFile()
-      const {
-    return start_location_of_first_decl_in_source_file_;
-  }
-
  private:
   // Helper class that uses the RAII pattern to support pushing a new mutation
   // tree node on to the stack of mutation tree nodes used during visitation,
@@ -169,10 +164,6 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
 
   const clang::CompilerInstance* compiler_instance_;
   bool optimise_mutations_;
-
-  // Records the start locat of the very first declaration in the source file,
-  // before which Dredd's prelude can be placed.
-  clang::SourceLocation start_location_of_first_decl_in_source_file_;
 
   // Tracks the nest of declarations currently being traversed. Any new Dredd
   // functions will be put before the start of the current nest, which avoids

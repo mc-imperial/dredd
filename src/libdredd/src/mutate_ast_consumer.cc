@@ -92,11 +92,12 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
 
   *mutation_info_->add_info_for_files() = mutation_info_for_file;
 
-  const clang::SourceLocation start_location_of_first_decl_in_source_file =
-      visitor_->GetStartLocationOfFirstDeclInSourceFile();
-  assert(start_location_of_first_decl_in_source_file.isValid() &&
-         "There is at least one mutation, therefore there must be at least one "
-         "declaration.");
+  auto& source_manager = ast_context.getSourceManager();
+  const clang::SourceLocation start_of_source_file =
+      source_manager.translateLineCol(source_manager.getMainFileID(), 1, 1);
+  assert(start_of_source_file.isValid() &&
+         "There is at least one mutation, therefore the file must have some "
+         "content.");
 
   // Convert the unordered set Dredd declarations into an ordered set and add
   // them to the source file before the first declaration.
@@ -104,8 +105,8 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
   sorted_dredd_declarations.insert(dredd_declarations.begin(),
                                    dredd_declarations.end());
   for (const auto& decl : sorted_dredd_declarations) {
-    const bool rewriter_result = rewriter_.InsertTextBefore(
-        start_location_of_first_decl_in_source_file, decl);
+    const bool rewriter_result =
+        rewriter_.InsertTextBefore(start_of_source_file, decl);
     (void)rewriter_result;  // Keep release-mode compilers happy.
     assert(!rewriter_result && "Rewrite failed.\n");
   }
@@ -115,8 +116,8 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
           ? GetDreddPreludeCpp(initial_mutation_id)
           : GetDreddPreludeC(initial_mutation_id);
 
-  bool rewriter_result = rewriter_.InsertTextBefore(
-      visitor_->GetStartLocationOfFirstDeclInSourceFile(), dredd_prelude);
+  bool rewriter_result =
+      rewriter_.InsertTextBefore(start_of_source_file, dredd_prelude);
   (void)rewriter_result;  // Keep release-mode compilers happy.
   assert(!rewriter_result && "Rewrite failed.\n");
 
@@ -270,6 +271,7 @@ std::string MutateAstConsumer::GetRegularDreddPreludeC(
 
   std::stringstream result;
   result << "#include <inttypes.h>\n";
+  result << "#include <stdbool.h>\n";
   result << "#include <stdlib.h>\n";
   result << "#include <string.h>\n";
   result << "\n";
@@ -327,6 +329,7 @@ std::string MutateAstConsumer::GetMutantTrackingDreddPreludeC(
   std::stringstream result;
   result << "#include <inttypes.h>\n";
   result << "#include <stdatomic.h>\n";
+  result << "#include <stdbool.h>\n";
   result << "#include <stdio.h>\n";
   result << "#include <stdlib.h>\n";
   result << "\n";
