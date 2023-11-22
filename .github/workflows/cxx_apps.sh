@@ -117,9 +117,9 @@ popd
 echo "LLVM: check that InstCombine builds after mutation"
 date
 
-git clone --branch llvmorg-14.0.6 --depth 1 https://github.com/llvm/llvm-project.git
+git clone --branch llvmorg-17.0.4 --depth 1 https://github.com/llvm/llvm-project.git
 pushd llvm-project
-  cmake -S llvm -B build -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_CXX_FLAGS="-w"
+  cmake -S llvm -B build -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_CXX_FLAGS="-w" -DCMAKE_BUILD_TYPE=Release
   # Build something minimal to ensure all header files get generated.
   cmake --build build --target LLVMCore
 
