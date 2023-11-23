@@ -131,7 +131,7 @@ bool IsCxx11ConstantExpr(const clang::Expr& expr,
 std::string GenerateMutationPrelude();
 
 std::string GenerateMutationMacro(const std::string& name,
-                                  const std::string& arg_evaluated);
+                                  const std::string& args_evaluated);
 
 std::string GenerateMutationReturn();
 }  // namespace dredd
