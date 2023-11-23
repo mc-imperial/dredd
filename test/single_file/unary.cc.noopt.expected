@@ -54,20 +54,20 @@ static bool __dredd_enabled_mutation(int local_mutation_id) {
 #define REPLACE_UNARY_LNot(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return !arg
 #define REPLACE_UNARY_ARG_EVALUATED(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return arg()
 #define REPLACE_UNARY_ARG(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return arg
+#define REPLACE_EXPR_NOT_EVALUATED(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return ~(arg())
+#define REPLACE_EXPR_NOT(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return ~(arg)
+#define REPLACE_EXPR_MINUS_EVALUATED(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return -(arg())
+#define REPLACE_EXPR_MINUS(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return -(arg)
+#define REPLACE_EXPR_LNOT_EVALUATED(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return !(arg())
+#define REPLACE_EXPR_LNOT(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return !(arg)
 #define REPLACE_EXPR_INT_ZERO(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return 0
 #define REPLACE_EXPR_INT_ONE(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return 1
 #define REPLACE_EXPR_INT_MINUS_ONE(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return -1
+#define REPLACE_EXPR_INC(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return ++(arg)
 #define REPLACE_EXPR_FLOAT_ZERO(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return 0.0
 #define REPLACE_EXPR_FLOAT_ONE(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return 1.0
 #define REPLACE_EXPR_FLOAT_MINUS_ONE(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return -1.0
-#define MUTATION_EXPR_NOT_EVALUATED(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return ~(arg())
-#define MUTATION_EXPR_NOT(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return ~(arg)
-#define MUTATION_EXPR_MINUS_EVALUATED(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return -(arg())
-#define MUTATION_EXPR_MINUS(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return -(arg)
-#define MUTATION_EXPR_LNOT_EVALUATED(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return !(arg())
-#define MUTATION_EXPR_LNOT(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return !(arg)
-#define MUTATION_EXPR_INC(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return ++(arg)
-#define MUTATION_EXPR_DEC(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return --(arg)
+#define REPLACE_EXPR_DEC(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return --(arg)
 #define MUTATION_PRELUDE(arg) if (!__dredd_some_mutation_enabled) return arg
 static int& __dredd_replace_unary_operator_PreInc_int(std::function<int&()> arg, int local_mutation_id) {
   MUTATION_PRELUDE(++arg());
@@ -113,16 +113,16 @@ static int __dredd_replace_unary_operator_Minus_int(int arg, int local_mutation_
 
 static int __dredd_replace_expr_int_lvalue(int& arg, int local_mutation_id) {
   MUTATION_PRELUDE(arg);
-  MUTATION_EXPR_INC(0);
-  MUTATION_EXPR_DEC(1);
+  REPLACE_EXPR_INC(0);
+  REPLACE_EXPR_DEC(1);
   return MUTATION_RETURN(arg);
 }
 
 static int __dredd_replace_expr_int(std::function<int()> arg, int local_mutation_id) {
   MUTATION_PRELUDE(arg());
-  MUTATION_EXPR_LNOT_EVALUATED(0);
-  MUTATION_EXPR_NOT_EVALUATED(1);
-  MUTATION_EXPR_MINUS_EVALUATED(2);
+  REPLACE_EXPR_LNOT_EVALUATED(0);
+  REPLACE_EXPR_NOT_EVALUATED(1);
+  REPLACE_EXPR_MINUS_EVALUATED(2);
   REPLACE_EXPR_INT_ZERO(3);
   REPLACE_EXPR_INT_ONE(4);
   REPLACE_EXPR_INT_MINUS_ONE(5);
@@ -131,9 +131,9 @@ static int __dredd_replace_expr_int(std::function<int()> arg, int local_mutation
 
 static int __dredd_replace_expr_int(int arg, int local_mutation_id) {
   MUTATION_PRELUDE(arg);
-  MUTATION_EXPR_LNOT(0);
-  MUTATION_EXPR_NOT(1);
-  MUTATION_EXPR_MINUS(2);
+  REPLACE_EXPR_LNOT(0);
+  REPLACE_EXPR_NOT(1);
+  REPLACE_EXPR_MINUS(2);
   REPLACE_EXPR_INT_ZERO(3);
   REPLACE_EXPR_INT_ONE(4);
   REPLACE_EXPR_INT_MINUS_ONE(5);
@@ -174,7 +174,7 @@ static float __dredd_replace_unary_operator_PostDec_float(std::function<float&()
 
 static float __dredd_replace_expr_float(std::function<float()> arg, int local_mutation_id) {
   MUTATION_PRELUDE(arg());
-  MUTATION_EXPR_MINUS_EVALUATED(0);
+  REPLACE_EXPR_MINUS_EVALUATED(0);
   REPLACE_EXPR_FLOAT_ZERO(1);
   REPLACE_EXPR_FLOAT_ONE(2);
   REPLACE_EXPR_FLOAT_MINUS_ONE(3);
@@ -183,7 +183,7 @@ static float __dredd_replace_expr_float(std::function<float()> arg, int local_mu
 
 static float __dredd_replace_expr_float(float arg, int local_mutation_id) {
   MUTATION_PRELUDE(arg);
-  MUTATION_EXPR_MINUS(0);
+  REPLACE_EXPR_MINUS(0);
   REPLACE_EXPR_FLOAT_ZERO(1);
   REPLACE_EXPR_FLOAT_ONE(2);
   REPLACE_EXPR_FLOAT_MINUS_ONE(3);
@@ -192,7 +192,7 @@ static float __dredd_replace_expr_float(float arg, int local_mutation_id) {
 
 static double __dredd_replace_expr_double(double arg, int local_mutation_id) {
   MUTATION_PRELUDE(arg);
-  MUTATION_EXPR_MINUS(0);
+  REPLACE_EXPR_MINUS(0);
   REPLACE_EXPR_FLOAT_ZERO(1);
   REPLACE_EXPR_FLOAT_ONE(2);
   REPLACE_EXPR_FLOAT_MINUS_ONE(3);

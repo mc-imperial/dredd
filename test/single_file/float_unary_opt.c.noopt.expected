@@ -43,10 +43,10 @@ static int __dredd_enabled_mutation(int local_mutation_id) {
 #define MUTATION_RETURN(arg) arg
 #define REPLACE_UNARY_LNot(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return !arg
 #define REPLACE_UNARY_ARG(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return arg
+#define REPLACE_EXPR_MINUS(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return -(arg)
 #define REPLACE_EXPR_FLOAT_ZERO(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return 0.0
 #define REPLACE_EXPR_FLOAT_ONE(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return 1.0
 #define REPLACE_EXPR_FLOAT_MINUS_ONE(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return -1.0
-#define MUTATION_EXPR_MINUS(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return -(arg)
 #define MUTATION_PRELUDE(arg) if (!__dredd_some_mutation_enabled) return arg
 static double __dredd_replace_unary_operator_Minus_double(double arg, int local_mutation_id) {
   MUTATION_PRELUDE(-arg);
@@ -57,7 +57,7 @@ static double __dredd_replace_unary_operator_Minus_double(double arg, int local_
 
 static double __dredd_replace_expr_double(double arg, int local_mutation_id) {
   MUTATION_PRELUDE(arg);
-  MUTATION_EXPR_MINUS(0);
+  REPLACE_EXPR_MINUS(0);
   REPLACE_EXPR_FLOAT_ZERO(1);
   REPLACE_EXPR_FLOAT_ONE(2);
   REPLACE_EXPR_FLOAT_MINUS_ONE(3);

@@ -69,6 +69,8 @@ class MutationReplaceUnaryOperator : public Mutation {
 
   static std::string OpKindToString(clang::UnaryOperatorKind kind);
 
+  [[nodiscard]] std::string GetUnaryMacroName(const std::string& operator_name, const clang::ASTContext &ast_context) const;
+
   // Replaces unary operators with other valid unary operators.
   void GenerateUnaryOperatorReplacement(
       const std::string& arg_evaluated, const clang::ASTContext& ast_context,

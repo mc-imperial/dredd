@@ -282,6 +282,18 @@ bool MutationReplaceUnaryOperator::IsRedundantReplacementOperator(
   return false;
 }
 
+std::string MutationReplaceUnaryOperator::GetUnaryMacroName(const std::string& operator_name, const clang::ASTContext& ast_context) const {
+  std::string result = "REPLACE_UNARY_" + operator_name;
+    if (ast_context.getLangOpts().CPlusPlus && unary_operator_->HasSideEffects(ast_context)) {
+      result += "_EVALUATED";
+    }
+  if (!ast_context.getLangOpts().CPlusPlus &&
+      unary_operator_->isIncrementDecrementOp()) {
+    result += "_POINTER";
+  }
+  return result;
+}
+
 void MutationReplaceUnaryOperator::GenerateUnaryOperatorReplacement(
     const std::string& arg_evaluated, const clang::ASTContext& ast_context,
     std::unordered_set<std::string>& dredd_macros, bool optimise_mutations,
@@ -305,10 +317,7 @@ void MutationReplaceUnaryOperator::GenerateUnaryOperatorReplacement(
       continue;
     }
     if (!only_track_mutant_coverage) {
-      std::string macro_name = "REPLACE_UNARY_" + OpKindToString(operator_kind);
-      if (unary_operator_->HasSideEffects(ast_context)) {
-        macro_name += "_EVALUATED";
-      }
+      const std::string macro_name = GetUnaryMacroName(OpKindToString(operator_kind), ast_context);
       new_function << "  " << macro_name << "(" << mutation_id_offset << ");\n";
       if (IsPrefix(operator_kind)) {
         dredd_macros.insert(GenerateMutationMacro(
@@ -331,10 +340,7 @@ void MutationReplaceUnaryOperator::GenerateUnaryOperatorReplacement(
   // another mutation.
   if (!optimise_mutations || !IsOperatorSelfInverse()) {
     if (!only_track_mutant_coverage) {
-      std::string macro_name = "REPLACE_UNARY_ARG";
-      if (unary_operator_->HasSideEffects(ast_context)) {
-        macro_name += "_EVALUATED";
-      }
+      const std::string macro_name = GetUnaryMacroName("ARG", ast_context);
       new_function << "  " << macro_name << "(" << mutation_id_offset << ");\n";
       dredd_macros.insert(GenerateMutationMacro(macro_name, arg_evaluated));
     }

@@ -115,6 +115,17 @@ void MutationReplaceExpr::AddOptimisationSpecifier(
   }
 }
 
+std::string MutationReplaceExpr::GetExprMacroName(const std::string& operator_name, const clang::ASTContext& ast_context) const {
+  std::string result = "REPLACE_EXPR_" + operator_name;
+  if (ast_context.getLangOpts().CPlusPlus &&
+        expr_->HasSideEffects(ast_context)) {
+    result += "_EVALUATED";
+  } else if (!ast_context.getLangOpts().CPlusPlus && expr_->isLValue()) {
+    result += "_POINTER";
+  }
+  return result;
+}
+
 bool MutationReplaceExpr::ExprIsEquivalentToInt(
     const clang::Expr& expr, int constant,
     const clang::ASTContext& ast_context) {
@@ -186,11 +197,7 @@ void MutationReplaceExpr::GenerateUnaryOperatorInsertionBeforeLValue(
     return;
   }
   if (!only_track_mutant_coverage) {
-    std::string macro_name = "MUTATION_EXPR_INC";
-    if (ast_context.getLangOpts().CPlusPlus &&
-        expr_->HasSideEffects(ast_context)) {
-      macro_name += "_EVALUATED";
-    }
+    const std::string macro_name = GetExprMacroName("INC", ast_context);
     new_function << "  " << macro_name << "(" << mutation_id_offset << ");\n";
     dredd_macros.insert(
         GenerateMutationMacro(macro_name, "++(" + arg_evaluated + ")"));
@@ -200,11 +207,7 @@ void MutationReplaceExpr::GenerateUnaryOperatorInsertionBeforeLValue(
                       mutation_id_offset, protobuf_message);
 
   if (!only_track_mutant_coverage) {
-    std::string macro_name = "MUTATION_EXPR_DEC";
-    if (ast_context.getLangOpts().CPlusPlus &&
-        expr_->HasSideEffects(ast_context)) {
-      macro_name += "_EVALUATED";
-    }
+    const std::string macro_name = GetExprMacroName("DEC", ast_context);
     new_function << "  " << macro_name << "(" << mutation_id_offset << ");\n";
     dredd_macros.insert(
         GenerateMutationMacro(macro_name, "--(" + arg_evaluated + ")"));
@@ -230,11 +233,7 @@ void MutationReplaceExpr::GenerateUnaryOperatorInsertionBeforeNonLValue(
     if (!optimise_mutations ||
         !IsRedundantOperatorInsertion(ast_context, clang::UO_LNot)) {
       if (!only_track_mutant_coverage) {
-        std::string macro_name = "MUTATION_EXPR_LNOT";
-        if (ast_context.getLangOpts().CPlusPlus &&
-            expr_->HasSideEffects(ast_context)) {
-          macro_name += "_EVALUATED";
-        }
+        const std::string macro_name = GetExprMacroName("LNOT", ast_context);
         new_function << "  " << macro_name << "(" << mutation_id_offset
                      << ");\n";
         dredd_macros.insert(
@@ -251,11 +250,7 @@ void MutationReplaceExpr::GenerateUnaryOperatorInsertionBeforeNonLValue(
     if (!optimise_mutations ||
         !IsRedundantOperatorInsertion(ast_context, clang::UO_Not)) {
       if (!only_track_mutant_coverage) {
-        std::string macro_name = "MUTATION_EXPR_NOT";
-        if (ast_context.getLangOpts().CPlusPlus &&
-            expr_->HasSideEffects(ast_context)) {
-          macro_name += "_EVALUATED";
-        }
+        const std::string macro_name = GetExprMacroName("NOT", ast_context);
         new_function << "  " << macro_name << "(" << mutation_id_offset
                      << ");\n";
         dredd_macros.insert(
@@ -272,11 +267,7 @@ void MutationReplaceExpr::GenerateUnaryOperatorInsertionBeforeNonLValue(
     if (!optimise_mutations ||
         !IsRedundantOperatorInsertion(ast_context, clang::UO_Minus)) {
       if (!only_track_mutant_coverage) {
-        std::string macro_name = "MUTATION_EXPR_MINUS";
-        if (ast_context.getLangOpts().CPlusPlus &&
-            expr_->HasSideEffects(ast_context)) {
-          macro_name += "_EVALUATED";
-        }
+        const std::string macro_name = GetExprMacroName("MINUS", ast_context);
         new_function << "  " << macro_name << "(" << mutation_id_offset
                      << ");\n";
         dredd_macros.insert(
