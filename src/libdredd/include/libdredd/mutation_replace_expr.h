@@ -44,7 +44,9 @@ class MutationReplaceExpr : public Mutation {
       std::unordered_set<std::string>& dredd_declarations,
       std::unordered_set<std::string>& dredd_macros) const override;
 
-  [[nodiscard]] std::string GetExprMacroName(const std::string& operator_name, const clang::ASTContext &ast_context) const;
+  [[nodiscard]] std::string GetExprMacroName(
+      const std::string& operator_name,
+      const clang::ASTContext& ast_context) const;
 
   static void ApplyCppTypeModifiers(const clang::Expr& expr, std::string& type);
 

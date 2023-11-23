@@ -67,7 +67,9 @@ class MutationReplaceBinaryOperator : public Mutation {
 
   static std::string OpKindToString(clang::BinaryOperatorKind kind);
 
-  [[nodiscard]] std::string GetBinaryMacroName(const std::string& operator_name, const clang::ASTContext &ast_context) const;
+  [[nodiscard]] std::string GetBinaryMacroName(
+      const std::string& operator_name,
+      const clang::ASTContext& ast_context) const;
 
   [[nodiscard]] bool IsRedundantReplacementOperator(
       clang::BinaryOperatorKind operator_kind,

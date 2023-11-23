@@ -115,10 +115,12 @@ void MutationReplaceExpr::AddOptimisationSpecifier(
   }
 }
 
-std::string MutationReplaceExpr::GetExprMacroName(const std::string& operator_name, const clang::ASTContext& ast_context) const {
+std::string MutationReplaceExpr::GetExprMacroName(
+    const std::string& operator_name,
+    const clang::ASTContext& ast_context) const {
   std::string result = "REPLACE_EXPR_" + operator_name;
   if (ast_context.getLangOpts().CPlusPlus &&
-        expr_->HasSideEffects(ast_context)) {
+      expr_->HasSideEffects(ast_context)) {
     result += "_EVALUATED";
   } else if (!ast_context.getLangOpts().CPlusPlus && expr_->isLValue()) {
     result += "_POINTER";
