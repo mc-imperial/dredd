@@ -96,6 +96,8 @@ date
 git clone https://github.com/KhronosGroup/SPIRV-Tools.git
 pushd SPIRV-Tools
   git reset --hard 2a238ed24dffd84fe3ed2e60d7aa5c28e2acf45a
+  # Make a copy of the source for purposes of mutant querying
+  cp -r source source-original
   python3 utils/git-sync-deps
   cmake -S . -B build -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DSPIRV_WERROR=OFF -DCMAKE_CXX_FLAGS="-w"
   # Build something minimal to ensure all header files get generated.
@@ -106,12 +108,26 @@ pushd SPIRV-Tools
     [[ -e "$f" ]] || break
     FILES+=("${DREDD_ROOT}/SPIRV-Tools/${f}")
   done
-  ${DREDD_EXECUTABLE} --mutation-info-file temp.json -p "${DREDD_ROOT}/SPIRV-Tools/build/compile_commands.json" "${FILES[@]}"
+  ${DREDD_EXECUTABLE} --mutation-info-file mutant-info.json -p "${DREDD_ROOT}/SPIRV-Tools/build/compile_commands.json" "${FILES[@]}"
   cmake --build build --target test_val_abcde test_val_capability test_val_fghijklmnop test_val_limits test_val_rstuvw
   ./build/test/val/test_val_abcde
   ./build/test/val/test_val_capability
   ./build/test/val/test_val_fghijklmnop
   ./build/test/val/test_val_rstuvw
+  NUM_MUTANTS=`python3 ${DREDD_ROOT}/scripts/query_mutant_info.py mutant-info.json --largest-mutant-id`
+  EXPECTED_NUM_MUTANTS=513
+  if [ ${NUM_MUTANTS} -ne ${EXPECTED_NUM_MUTANTS} ]
+  then
+     echo "Found ${NUM_MUTANTS} mutants when mutating the SPIR-V validator source code. Expected ${EXPECTED_NUM_MUTANTS}. If Dredd changed recently, the expected value may just need to be updated, if it still looks sensible. Otherwise, there is likely a problem."
+     exit 1
+  fi
+  for mutant in `seq 0 ${NUM_MUTANTS}`
+
+  # Display info about every mutant, just to check that the script that displays mutant info does not error.
+  do
+    python3 ${DREDD_ROOT}/scripts/query_mutant_info.py mutant-info.json --show-info-for-mutant ${mutant} --path-prefix-replacement ${DREDD_ROOT}/SPIRV-Tools/source ${DREDD_ROOT}/SPIRV-Tools/source-original
+  done
+
 popd
 
 echo "LLVM: check that InstCombine builds after mutation"
