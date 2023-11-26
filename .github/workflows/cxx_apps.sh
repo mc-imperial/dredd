@@ -108,6 +108,32 @@ pushd examples/math
   done
 popd
 
+echo "examples/threaded: check that a simple concurrent program runs OK after mutation"
+date
+
+pushd examples/threaded
+  # The CMake configuration enables thread sanitizer.
+  cmake -S . -B build -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+  FILES=()
+  for f in src/*.cc
+  do
+    [[ -e "$f" ]] || break
+    FILES+=("${DREDD_ROOT}/examples/threaded/${f}")
+  done
+  ${DREDD_EXECUTABLE} --mutation-info-file temp.json -p "${DREDD_ROOT}/examples/threaded/build/compile_commands.json" "${FILES[@]}"
+  cmake --build build
+  # Check that the application runs correctly and that there are no data races.
+  TSAN_OPTIONS=halt_on_error=1 ./build/threaded > threaded_output.txt
+  ACTUAL_THREADED_OUTPUT=`cat threaded_output.txt`
+  EXPECTED_THREADED_OUTPUT="8192"
+  if [ ${ACTUAL_THREADED_OUTPUT} -ne ${EXPECTED_THREADED_OUTPUT} ]
+  then
+      echo "Output mismatch for threaded program after mutation. Expected ${EXPECTED_THREADED_OUTPUT} but got ${ACTUAL_THREADED_OUTPUT}"
+      exit 1
+  fi
+  rm threaded_output.txt
+popd
+
 echo "SPIRV-Tools validator: check that the tests pass after mutating the validator"
 date
 
