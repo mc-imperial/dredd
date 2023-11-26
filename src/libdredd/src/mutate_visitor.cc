@@ -258,12 +258,11 @@ void MutateVisitor::HandleUnaryOperator(clang::UnaryOperator* unary_operator) {
   }
 
   // As it is not possible to pass bit-fields by reference, mutation of
-  // bit-field l-values is not supported.
+  // bit-fields is not supported.
   if (unary_operator->getSubExpr()->refersToBitField()) {
     return;
   }
 
-  // There is no useful way to mutate this expression.
   if (optimise_mutations_) {
     if (unary_operator->getOpcode() == clang::UO_Minus &&
         (MutationReplaceExpr::ExprIsEquivalentToInt(
@@ -323,7 +322,7 @@ void MutateVisitor::HandleBinaryOperator(
   }
 
   // As it is not possible to pass bit-fields by reference, mutation of
-  // bit-field l-values is not supported.
+  // bit-fields is not supported.
   if (binary_operator->getLHS()->refersToBitField()) {
     return;
   }
