@@ -66,14 +66,17 @@ if(DREDD_PROJECT_IS_ROOT)
 endif()
 
 # Third party targets.
+if(NOT DEFINED DREDD_CLANG_LLVM_DIR)
+  set(DREDD_CLANG_LLVM_DIR "${CMAKE_SOURCE_DIR}/third_party/clang+llvm")
+endif()
 
-set(LLVM_DIR "${CMAKE_SOURCE_DIR}/third_party/clang+llvm/lib/cmake/llvm")
+set(LLVM_DIR "${DREDD_CLANG_LLVM_DIR}/lib/cmake/llvm")
 
 # Unfortunately this disables this warning entirely. At present, cmake-lint does
 # not support disabling just for the following line.
 
 # cmake-lint: disable=C0103
-set(Clang_DIR "${CMAKE_SOURCE_DIR}/third_party/clang+llvm/lib/cmake/clang")
+set(Clang_DIR "${DREDD_CLANG_LLVM_DIR}/lib/cmake/clang")
 
 if(NOT EXISTS "${LLVM_DIR}/LLVMConfig.cmake")
   message(FATAL_ERROR "Could not find LLVMConfig.cmake under ${LLVM_DIR}. \
