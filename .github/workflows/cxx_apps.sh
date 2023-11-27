@@ -84,10 +84,25 @@ echo "examples/math: check that the tests pass after mutating the library"
 date
 
 pushd examples/math
+  # Make a copy of the source for purposes of mutant querying
+  cp -r math math-original
   cmake -S . -B build -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
-  ./mutate.sh
   cmake --build build
+  ${DREDD_EXECUTABLE} -p build/compile_commands.json --mutant-info-file mutant-info.json math/src/*.cc
   ./build/mathtest/mathtest
+  NUM_MUTANTS=`python3 ${DREDD_ROOT}/scripts/query_mutant_info.py mutant-info.json --largest-mutant-id`
+  EXPECTED_NUM_MUTANTS=67998
+  if [ ${NUM_MUTANTS} -ne ${EXPECTED_NUM_MUTANTS} ]
+  then
+     echo "Found ${NUM_MUTANTS} mutants when mutating the math library source code. Expected ${EXPECTED_NUM_MUTANTS}. If Dredd changed recently, the expected value may just need to be updated, if it still looks sensible. Otherwise, there is likely a problem."
+     exit 1
+  fi
+
+  # Display info about every mutant, just to check that the script that displays mutant info does not error.
+  for mutant in `seq 0 ${NUM_MUTANTS}`
+  do
+    python3 ${DREDD_ROOT}/scripts/query_mutant_info.py mutant-info.json --show-info-for-mutant ${mutant} --path-prefix-replacement ${DREDD_ROOT}/examples/math/math ${DREDD_ROOT}/examples/math/math-original > /dev/null
+  done
 popd
 
 echo "SPIRV-Tools validator: check that the tests pass after mutating the validator"
@@ -96,8 +111,6 @@ date
 git clone https://github.com/KhronosGroup/SPIRV-Tools.git
 pushd SPIRV-Tools
   git reset --hard 2a238ed24dffd84fe3ed2e60d7aa5c28e2acf45a
-  # Make a copy of the source for purposes of mutant querying
-  cp -r source source-original
   python3 utils/git-sync-deps
   cmake -S . -B build -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DSPIRV_WERROR=OFF -DCMAKE_CXX_FLAGS="-w"
   # Build something minimal to ensure all header files get generated.
@@ -121,13 +134,6 @@ pushd SPIRV-Tools
      echo "Found ${NUM_MUTANTS} mutants when mutating the SPIR-V validator source code. Expected ${EXPECTED_NUM_MUTANTS}. If Dredd changed recently, the expected value may just need to be updated, if it still looks sensible. Otherwise, there is likely a problem."
      exit 1
   fi
-
-  # Display info about every mutant, just to check that the script that displays mutant info does not error.
-  for mutant in `seq 0 ${NUM_MUTANTS}`
-  do
-    python3 ${DREDD_ROOT}/scripts/query_mutant_info.py mutant-info.json --show-info-for-mutant ${mutant} --path-prefix-replacement ${DREDD_ROOT}/SPIRV-Tools/source ${DREDD_ROOT}/SPIRV-Tools/source-original > /dev/null
-  done
-
 popd
 
 echo "LLVM: check that InstCombine builds after mutation"
@@ -145,8 +151,15 @@ pushd llvm-project
     [[ -e "$f" ]] || break
     FILES+=("${DREDD_ROOT}/llvm-project/${f}")
   done
-  ${DREDD_EXECUTABLE} --mutation-info-file temp.json -p "${DREDD_ROOT}/llvm-project/build/compile_commands.json" "${FILES[@]}"
+  ${DREDD_EXECUTABLE} --mutation-info-file mutant-info.json -p "${DREDD_ROOT}/llvm-project/build/compile_commands.json" "${FILES[@]}"
   cmake --build build --target LLVMInstCombine
+  NUM_MUTANTS=`python3 ${DREDD_ROOT}/scripts/query_mutant_info.py mutant-info.json --largest-mutant-id`
+  EXPECTED_NUM_MUTANTS=67998
+  if [ ${NUM_MUTANTS} -ne ${EXPECTED_NUM_MUTANTS} ]
+  then
+     echo "Found ${NUM_MUTANTS} mutants when mutating the LLVM source code. Expected ${EXPECTED_NUM_MUTANTS}. If Dredd changed recently, the expected value may just need to be updated, if it still looks sensible. Otherwise, there is likely a problem."
+     exit 1
+  fi
 popd
 
 echo "Finished"
