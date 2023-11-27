@@ -20,6 +20,7 @@
 
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/Stmt.h"
+#include "clang/Basic/SourceLocation.h"
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Rewrite/Core/Rewriter.h"
 #include "libdredd/mutation.h"
@@ -39,9 +40,18 @@ class MutationRemoveStmt : public Mutation {
       bool optimise_mutations, bool only_track_mutant_coverage,
       int first_mutation_id_in_file, int& mutation_id,
       clang::Rewriter& rewriter,
-      std::unordered_set<std::string>& dredd_declarations) const override;
+      std::unordered_set<std::string>& dredd_declarations,
+      std::unordered_set<std::string>& dredd_macros) const override;
 
  private:
+  // Helper method to determine whether the token immediately following the
+  // given source range is the '#' token. This is useful for working around
+  // issues where the placement of semicolons at the end of a statement that is
+  // wrapped in a conditional is challenging, due to a preprocessor directive
+  // occurring between the end of a statement and its associated semicolon.
+  static bool IsNextTokenHash(const clang::CharSourceRange& source_range,
+                              const clang::Preprocessor& preprocessor);
+
   const clang::Stmt* stmt_;
   InfoForSourceRange info_for_source_range_;
 };

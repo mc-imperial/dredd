@@ -31,6 +31,7 @@
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Rewrite/Core/Rewriter.h"
 #include "libdredd/mutation.h"
+#include "libdredd/util.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/Support/raw_ostream.h"
 
@@ -74,6 +75,7 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
   // converted to an ordered set so that declarations can be added to the source
   // file in a deterministic order.
   std::unordered_set<std::string> dredd_declarations;
+  std::unordered_set<std::string> dredd_macros;
 
   protobufs::MutationInfoForFile mutation_info_for_file;
   mutation_info_for_file.set_filename(
@@ -83,7 +85,7 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
           .str());
   *mutation_info_for_file.mutable_mutation_tree_root() =
       ApplyMutations(visitor_->GetMutations(), initial_mutation_id, ast_context,
-                     dredd_declarations);
+                     dredd_declarations, dredd_macros);
 
   if (initial_mutation_id == *mutation_id_) {
     // No possibilities for mutation were found; nothing else to do.
@@ -92,11 +94,12 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
 
   *mutation_info_->add_info_for_files() = mutation_info_for_file;
 
-  const clang::SourceLocation start_location_of_first_decl_in_source_file =
-      visitor_->GetStartLocationOfFirstDeclInSourceFile();
-  assert(start_location_of_first_decl_in_source_file.isValid() &&
-         "There is at least one mutation, therefore there must be at least one "
-         "declaration.");
+  auto& source_manager = ast_context.getSourceManager();
+  const clang::SourceLocation start_of_source_file =
+      source_manager.translateLineCol(source_manager.getMainFileID(), 1, 1);
+  assert(start_of_source_file.isValid() &&
+         "There is at least one mutation, therefore the file must have some "
+         "content.");
 
   // Convert the unordered set Dredd declarations into an ordered set and add
   // them to the source file before the first declaration.
@@ -104,19 +107,32 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
   sorted_dredd_declarations.insert(dredd_declarations.begin(),
                                    dredd_declarations.end());
   for (const auto& decl : sorted_dredd_declarations) {
-    const bool rewriter_result = rewriter_.InsertTextBefore(
-        start_location_of_first_decl_in_source_file, decl);
+    const bool rewriter_result =
+        rewriter_.InsertTextBefore(start_of_source_file, decl);
     (void)rewriter_result;  // Keep release-mode compilers happy.
     assert(!rewriter_result && "Rewrite failed.\n");
   }
+
+  rewriter_.InsertTextBefore(start_of_source_file, GenerateMutationPrelude());
+
+  std::set<std::string> sorted_dredd_macros;
+  sorted_dredd_macros.insert(dredd_macros.begin(), dredd_macros.end());
+  for (const auto& macro : sorted_dredd_macros) {
+    const bool rewriter_result =
+        rewriter_.InsertTextBefore(start_of_source_file, macro);
+    (void)rewriter_result;  // Keep release-mode compilers happy.
+    assert(!rewriter_result && "Rewrite failed.\n");
+  }
+
+  rewriter_.InsertTextBefore(start_of_source_file, GenerateMutationReturn());
 
   const std::string dredd_prelude =
       compiler_instance_->getLangOpts().CPlusPlus
           ? GetDreddPreludeCpp(initial_mutation_id)
           : GetDreddPreludeC(initial_mutation_id);
 
-  bool rewriter_result = rewriter_.InsertTextBefore(
-      visitor_->GetStartLocationOfFirstDeclInSourceFile(), dredd_prelude);
+  bool rewriter_result =
+      rewriter_.InsertTextBefore(start_of_source_file, dredd_prelude);
   (void)rewriter_result;  // Keep release-mode compilers happy.
   assert(!rewriter_result && "Rewrite failed.\n");
 
@@ -279,6 +295,7 @@ std::string MutateAstConsumer::GetRegularDreddPreludeC(
 
   std::stringstream result;
   result << "#include <inttypes.h>\n";
+  result << "#include <stdbool.h>\n";
   result << "#include <stdlib.h>\n";
   result << "#include <string.h>\n";
   result << "\n";
@@ -336,6 +353,7 @@ std::string MutateAstConsumer::GetMutantTrackingDreddPreludeC(
   std::stringstream result;
   result << "#include <inttypes.h>\n";
   result << "#include <stdatomic.h>\n";
+  result << "#include <stdbool.h>\n";
   result << "#include <stdio.h>\n";
   result << "#include <stdlib.h>\n";
   result << "\n";
@@ -367,7 +385,8 @@ std::string MutateAstConsumer::GetDreddPreludeC(int initial_mutation_id) const {
 protobufs::MutationTreeNode MutateAstConsumer::ApplyMutations(
     const MutationTreeNode& mutation_tree_node, int initial_mutation_id,
     clang::ASTContext& context,
-    std::unordered_set<std::string>& dredd_declarations) {
+    std::unordered_set<std::string>& dredd_declarations,
+    std::unordered_set<std::string>& dredd_macros) {
   assert(!(mutation_tree_node.IsEmpty() &&
            mutation_tree_node.GetChildren().size() == 1) &&
          "The mutation tree should already be compressed.");
@@ -375,15 +394,15 @@ protobufs::MutationTreeNode MutateAstConsumer::ApplyMutations(
   for (const auto& child : mutation_tree_node.GetChildren()) {
     assert(!child->IsEmpty() &&
            "The mutation tree should not have empty subtrees.");
-    *result.add_children() = ApplyMutations(*child, initial_mutation_id,
-                                            context, dredd_declarations);
+    *result.add_children() = ApplyMutations(
+        *child, initial_mutation_id, context, dredd_declarations, dredd_macros);
   }
   for (const auto& mutation : mutation_tree_node.GetMutations()) {
     const int mutation_id_old = *mutation_id_;
     const auto mutation_group = mutation->Apply(
         context, compiler_instance_->getPreprocessor(), optimise_mutations_,
         only_track_mutant_coverage_, initial_mutation_id, *mutation_id_,
-        rewriter_, dredd_declarations);
+        rewriter_, dredd_declarations, dredd_macros);
     if (*mutation_id_ > mutation_id_old) {
       // Only add the result of applying the mutation if it had an effect.
       *result.add_mutation_groups() = mutation_group;

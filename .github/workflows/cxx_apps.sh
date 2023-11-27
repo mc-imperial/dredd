@@ -95,7 +95,7 @@ date
 
 git clone https://github.com/KhronosGroup/SPIRV-Tools.git
 pushd SPIRV-Tools
-  git reset --hard c94501352d545e84c821ce031399e76d1af32d18
+  git reset --hard 2a238ed24dffd84fe3ed2e60d7aa5c28e2acf45a
   python3 utils/git-sync-deps
   cmake -S . -B build -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DSPIRV_WERROR=OFF -DCMAKE_CXX_FLAGS="-w"
   # Build something minimal to ensure all header files get generated.
@@ -107,19 +107,19 @@ pushd SPIRV-Tools
     FILES+=("${DREDD_ROOT}/SPIRV-Tools/${f}")
   done
   ${DREDD_EXECUTABLE} --mutation-info-file temp.json -p "${DREDD_ROOT}/SPIRV-Tools/build/compile_commands.json" "${FILES[@]}"
-  cmake --build build --target test_val_abcde test_val_capability test_val_fghijklmnop test_val_limits test_val_stuvw
+  cmake --build build --target test_val_abcde test_val_capability test_val_fghijklmnop test_val_limits test_val_rstuvw
   ./build/test/val/test_val_abcde
   ./build/test/val/test_val_capability
   ./build/test/val/test_val_fghijklmnop
-  ./build/test/val/test_val_stuvw
+  ./build/test/val/test_val_rstuvw
 popd
 
 echo "LLVM: check that InstCombine builds after mutation"
 date
 
-git clone --branch llvmorg-14.0.6 --depth 1 https://github.com/llvm/llvm-project.git
+git clone --branch llvmorg-17.0.4 --depth 1 https://github.com/llvm/llvm-project.git
 pushd llvm-project
-  cmake -S llvm -B build -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_CXX_FLAGS="-w"
+  cmake -S llvm -B build -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_CXX_FLAGS="-w" -DCMAKE_BUILD_TYPE=Release
   # Build something minimal to ensure all header files get generated.
   cmake --build build --target LLVMCore
 

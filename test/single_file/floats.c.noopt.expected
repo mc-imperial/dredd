@@ -1,4 +1,5 @@
 #include <inttypes.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -39,86 +40,110 @@ static int __dredd_enabled_mutation(int local_mutation_id) {
   return enabled_bitset[local_mutation_id / 64] & (1 << (local_mutation_id % 64));
 }
 
+#define MUTATION_RETURN(arg) arg
+#define REPLACE_EXPR_NOT(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return ~(arg)
+#define REPLACE_EXPR_MINUS(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return -(arg)
+#define REPLACE_EXPR_LNOT(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return !(arg)
+#define REPLACE_EXPR_INT_ZERO(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return 0
+#define REPLACE_EXPR_INT_ONE(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return 1
+#define REPLACE_EXPR_INT_MINUS_ONE(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return -1
+#define REPLACE_EXPR_INC_POINTER(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return ++((*arg))
+#define REPLACE_EXPR_FLOAT_ZERO(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return 0.0
+#define REPLACE_EXPR_FLOAT_ONE(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return 1.0
+#define REPLACE_EXPR_FLOAT_MINUS_ONE(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return -1.0
+#define REPLACE_EXPR_DEC_POINTER(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return --((*arg))
+#define REPLACE_BINARY_SubAssign_LHS_POINTER(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return (*arg1) -= arg2
+#define REPLACE_BINARY_Sub(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return arg1 - arg2
+#define REPLACE_BINARY_MulAssign_LHS_POINTER(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return (*arg1) *= arg2
+#define REPLACE_BINARY_Mul(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return arg1 * arg2
+#define REPLACE_BINARY_DivAssign_LHS_POINTER(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return (*arg1) /= arg2
+#define REPLACE_BINARY_Div(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return arg1 / arg2
+#define REPLACE_BINARY_Assign_LHS_POINTER(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return (*arg1) = arg2
+#define REPLACE_BINARY_AddAssign_LHS_POINTER(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return (*arg1) += arg2
+#define REPLACE_BINARY_Add(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return arg1 + arg2
+#define REPLACE_BINARY_ARG2(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return arg2
+#define REPLACE_BINARY_ARG1(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return arg1
+#define MUTATION_PRELUDE(arg) if (!__dredd_some_mutation_enabled) return arg
 static int __dredd_replace_expr_int(int arg, int local_mutation_id) {
-  if (!__dredd_some_mutation_enabled) return arg;
-  if (__dredd_enabled_mutation(local_mutation_id + 0)) return !(arg);
-  if (__dredd_enabled_mutation(local_mutation_id + 1)) return ~(arg);
-  if (__dredd_enabled_mutation(local_mutation_id + 2)) return -(arg);
-  if (__dredd_enabled_mutation(local_mutation_id + 3)) return 0;
-  if (__dredd_enabled_mutation(local_mutation_id + 4)) return 1;
-  if (__dredd_enabled_mutation(local_mutation_id + 5)) return -1;
-  return arg;
+  MUTATION_PRELUDE(arg);
+  REPLACE_EXPR_LNOT(0);
+  REPLACE_EXPR_NOT(1);
+  REPLACE_EXPR_MINUS(2);
+  REPLACE_EXPR_INT_ZERO(3);
+  REPLACE_EXPR_INT_ONE(4);
+  REPLACE_EXPR_INT_MINUS_ONE(5);
+  return MUTATION_RETURN(arg);
 }
 
 static float __dredd_replace_expr_float(float arg, int local_mutation_id) {
-  if (!__dredd_some_mutation_enabled) return arg;
-  if (__dredd_enabled_mutation(local_mutation_id + 0)) return -(arg);
-  if (__dredd_enabled_mutation(local_mutation_id + 1)) return 0.0;
-  if (__dredd_enabled_mutation(local_mutation_id + 2)) return 1.0;
-  if (__dredd_enabled_mutation(local_mutation_id + 3)) return -1.0;
-  return arg;
+  MUTATION_PRELUDE(arg);
+  REPLACE_EXPR_MINUS(0);
+  REPLACE_EXPR_FLOAT_ZERO(1);
+  REPLACE_EXPR_FLOAT_ONE(2);
+  REPLACE_EXPR_FLOAT_MINUS_ONE(3);
+  return MUTATION_RETURN(arg);
 }
 
-static float __dredd_replace_binary_operator_SubAssign_float_double(float* arg1, double arg2, int local_mutation_id) {
-  if (!__dredd_some_mutation_enabled) return (*arg1) -= arg2;
-  if (__dredd_enabled_mutation(local_mutation_id + 0)) return (*arg1) += arg2;
-  if (__dredd_enabled_mutation(local_mutation_id + 1)) return (*arg1) = arg2;
-  if (__dredd_enabled_mutation(local_mutation_id + 2)) return (*arg1) /= arg2;
-  if (__dredd_enabled_mutation(local_mutation_id + 3)) return (*arg1) *= arg2;
-  return (*arg1) -= arg2;
+static float __dredd_replace_binary_operator_SubAssign_arg1_float_arg2_double(float* arg1, double arg2, int local_mutation_id) {
+  MUTATION_PRELUDE((*arg1) -= arg2);
+  REPLACE_BINARY_AddAssign_LHS_POINTER(0);
+  REPLACE_BINARY_Assign_LHS_POINTER(1);
+  REPLACE_BINARY_DivAssign_LHS_POINTER(2);
+  REPLACE_BINARY_MulAssign_LHS_POINTER(3);
+  return MUTATION_RETURN((*arg1) -= arg2);
 }
 
 static double __dredd_replace_expr_double_lvalue(double* arg, int local_mutation_id) {
-  if (!__dredd_some_mutation_enabled) return (*arg);
-  if (__dredd_enabled_mutation(local_mutation_id + 0)) return ++((*arg));
-  if (__dredd_enabled_mutation(local_mutation_id + 1)) return --((*arg));
-  return (*arg);
+  MUTATION_PRELUDE((*arg));
+  REPLACE_EXPR_INC_POINTER(0);
+  REPLACE_EXPR_DEC_POINTER(1);
+  return MUTATION_RETURN((*arg));
 }
 
 static double __dredd_replace_expr_double(double arg, int local_mutation_id) {
-  if (!__dredd_some_mutation_enabled) return arg;
-  if (__dredd_enabled_mutation(local_mutation_id + 0)) return -(arg);
-  if (__dredd_enabled_mutation(local_mutation_id + 1)) return 0.0;
-  if (__dredd_enabled_mutation(local_mutation_id + 2)) return 1.0;
-  if (__dredd_enabled_mutation(local_mutation_id + 3)) return -1.0;
-  return arg;
+  MUTATION_PRELUDE(arg);
+  REPLACE_EXPR_MINUS(0);
+  REPLACE_EXPR_FLOAT_ZERO(1);
+  REPLACE_EXPR_FLOAT_ONE(2);
+  REPLACE_EXPR_FLOAT_MINUS_ONE(3);
+  return MUTATION_RETURN(arg);
 }
 
-static double __dredd_replace_binary_operator_Mul_double_double(double arg1, double arg2, int local_mutation_id) {
-  if (!__dredd_some_mutation_enabled) return arg1 * arg2;
-  if (__dredd_enabled_mutation(local_mutation_id + 0)) return arg1 + arg2;
-  if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg1 / arg2;
-  if (__dredd_enabled_mutation(local_mutation_id + 2)) return arg1 - arg2;
-  if (__dredd_enabled_mutation(local_mutation_id + 3)) return arg1;
-  if (__dredd_enabled_mutation(local_mutation_id + 4)) return arg2;
-  return arg1 * arg2;
+static double __dredd_replace_binary_operator_Mul_arg1_double_arg2_double(double arg1, double arg2, int local_mutation_id) {
+  MUTATION_PRELUDE(arg1 * arg2);
+  REPLACE_BINARY_Add(0);
+  REPLACE_BINARY_Div(1);
+  REPLACE_BINARY_Sub(2);
+  REPLACE_BINARY_ARG1(3);
+  REPLACE_BINARY_ARG2(4);
+  return MUTATION_RETURN(arg1 * arg2);
 }
 
-static double __dredd_replace_binary_operator_Add_double_double(double arg1, double arg2, int local_mutation_id) {
-  if (!__dredd_some_mutation_enabled) return arg1 + arg2;
-  if (__dredd_enabled_mutation(local_mutation_id + 0)) return arg1 / arg2;
-  if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg1 * arg2;
-  if (__dredd_enabled_mutation(local_mutation_id + 2)) return arg1 - arg2;
-  if (__dredd_enabled_mutation(local_mutation_id + 3)) return arg1;
-  if (__dredd_enabled_mutation(local_mutation_id + 4)) return arg2;
-  return arg1 + arg2;
+static double __dredd_replace_binary_operator_Add_arg1_double_arg2_double(double arg1, double arg2, int local_mutation_id) {
+  MUTATION_PRELUDE(arg1 + arg2);
+  REPLACE_BINARY_Div(0);
+  REPLACE_BINARY_Mul(1);
+  REPLACE_BINARY_Sub(2);
+  REPLACE_BINARY_ARG1(3);
+  REPLACE_BINARY_ARG2(4);
+  return MUTATION_RETURN(arg1 + arg2);
 }
 
-static double __dredd_replace_binary_operator_AddAssign_double_double(double* arg1, double arg2, int local_mutation_id) {
-  if (!__dredd_some_mutation_enabled) return (*arg1) += arg2;
-  if (__dredd_enabled_mutation(local_mutation_id + 0)) return (*arg1) = arg2;
-  if (__dredd_enabled_mutation(local_mutation_id + 1)) return (*arg1) /= arg2;
-  if (__dredd_enabled_mutation(local_mutation_id + 2)) return (*arg1) *= arg2;
-  if (__dredd_enabled_mutation(local_mutation_id + 3)) return (*arg1) -= arg2;
-  return (*arg1) += arg2;
+static double __dredd_replace_binary_operator_AddAssign_arg1_double_arg2_double(double* arg1, double arg2, int local_mutation_id) {
+  MUTATION_PRELUDE((*arg1) += arg2);
+  REPLACE_BINARY_Assign_LHS_POINTER(0);
+  REPLACE_BINARY_DivAssign_LHS_POINTER(1);
+  REPLACE_BINARY_MulAssign_LHS_POINTER(2);
+  REPLACE_BINARY_SubAssign_LHS_POINTER(3);
+  return MUTATION_RETURN((*arg1) += arg2);
 }
 
 int main() {
   double a = __dredd_replace_expr_double(1.0, 0);
   double x = __dredd_replace_expr_double(5.32, 4);
-  if (!__dredd_enabled_mutation(20)) { __dredd_replace_expr_double(__dredd_replace_binary_operator_AddAssign_double_double(&(x) , __dredd_replace_expr_double(0.5, 8), 12), 16); }
+  if (!__dredd_enabled_mutation(20)) { __dredd_replace_expr_double(__dredd_replace_binary_operator_AddAssign_arg1_double_arg2_double(&(x) , __dredd_replace_expr_double(0.5, 8), 12), 16); }
   float y = __dredd_replace_expr_float(__dredd_replace_expr_double(64343.7, 21), 25);
-  if (!__dredd_enabled_mutation(41)) { __dredd_replace_expr_float(__dredd_replace_binary_operator_SubAssign_float_double(&(y) , __dredd_replace_expr_double(1.2, 29), 33), 37); }
-  double z = __dredd_replace_expr_double(__dredd_replace_binary_operator_Mul_double_double(__dredd_replace_expr_double(__dredd_replace_expr_double_lvalue(&(x), 42), 44) , __dredd_replace_expr_double(5.5, 48), 52), 57);
-  if (!__dredd_enabled_mutation(88)) { return __dredd_replace_expr_int(__dredd_replace_expr_double(__dredd_replace_binary_operator_Add_double_double(__dredd_replace_expr_double(__dredd_replace_expr_double_lvalue(&(z), 61), 63) , __dredd_replace_expr_double(__dredd_replace_expr_double_lvalue(&(x), 67), 69), 73), 78), 82); }
+  if (!__dredd_enabled_mutation(41)) { __dredd_replace_expr_float(__dredd_replace_binary_operator_SubAssign_arg1_float_arg2_double(&(y) , __dredd_replace_expr_double(1.2, 29), 33), 37); }
+  double z = __dredd_replace_expr_double(__dredd_replace_binary_operator_Mul_arg1_double_arg2_double(__dredd_replace_expr_double(__dredd_replace_expr_double_lvalue(&(x), 42), 44) , __dredd_replace_expr_double(5.5, 48), 52), 57);
+  if (!__dredd_enabled_mutation(88)) { return __dredd_replace_expr_int(__dredd_replace_expr_double(__dredd_replace_binary_operator_Add_arg1_double_arg2_double(__dredd_replace_expr_double(__dredd_replace_expr_double_lvalue(&(z), 61), 63) , __dredd_replace_expr_double(__dredd_replace_expr_double_lvalue(&(x), 67), 69), 73), 78), 82); }
 }

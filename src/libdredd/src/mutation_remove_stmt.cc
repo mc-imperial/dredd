@@ -22,7 +22,9 @@
 #include "clang/AST/Stmt.h"
 #include "clang/Basic/SourceLocation.h"
 #include "clang/Basic/TokenKinds.h"
+#include "clang/Lex/Lexer.h"
 #include "clang/Lex/Preprocessor.h"
+#include "clang/Lex/Token.h"
 #include "clang/Rewrite/Core/Rewriter.h"
 #include "clang/Tooling/Transformer/SourceCode.h"
 #include "libdredd/util.h"
@@ -40,8 +42,10 @@ protobufs::MutationGroup MutationRemoveStmt::Apply(
     clang::ASTContext& ast_context, const clang::Preprocessor& preprocessor,
     bool optimise_mutations, bool only_track_mutant_coverage,
     int first_mutation_id_in_file, int& mutation_id, clang::Rewriter& rewriter,
-    std::unordered_set<std::string>& dredd_declarations) const {
+    std::unordered_set<std::string>& dredd_declarations,
+    std::unordered_set<std::string>& dredd_macros) const {
   (void)dredd_declarations;  // Unused.
+  (void)dredd_macros;        // Unused.
   (void)optimise_mutations;  // Unused.
 
   // The protobuf object for the mutation, which will be wrapped in a
@@ -58,12 +62,12 @@ protobufs::MutationGroup MutationRemoveStmt::Apply(
   clang::CharSourceRange source_range = clang::CharSourceRange::getTokenRange(
       GetSourceRangeInMainFile(preprocessor, *stmt_));
 
-  // If the statement is followed immediately by a semi-colon, possibly with
-  // intervening comments, that semi-colon should be part of the code that is
+  // If the statement is followed immediately by a semicolon, possibly with
+  // intervening comments, that semicolon should be part of the code that is
   // wrapped in an 'if'.
 
-  // First, skip over any intervening comments. It doesn't matter whether or not
-  // they end up getting wrapped in the 'if'.
+  // First, skip over any intervening comments. It doesn't matter whether they
+  // end up getting wrapped in the 'if'.
   bool is_extended_with_comment = false;
   while (true) {
     // Extend the source range in the case that the next token is a comment.
@@ -83,7 +87,7 @@ protobufs::MutationGroup MutationRemoveStmt::Apply(
   }
 
   // Now try to extend the source range further to include the next token, if it
-  // is a semi-colon.
+  // is a semicolon.
   const clang::CharSourceRange source_range_extended_with_semi =
       clang::tooling::maybeExtendRange(
           source_range, clang::tok::TokenKind::semi, ast_context);
@@ -110,18 +114,34 @@ protobufs::MutationGroup MutationRemoveStmt::Apply(
                                      std::to_string(local_mutation_id) +
                                      ")) { ");
     assert(!rewriter_result && "Rewrite failed.\n");
-    rewriter_result = rewriter.InsertTextAfterToken(
-        source_range.getEnd(),
-        // If the source range was extended with a comment but not with a
-        // semi-colon, it is possible that the end of the source range is on
-        // the same line as a single-line comment, in which case it's
-        // important to take a new line (otherwise the closing brace will form
-        // part of the comment). It would be possible to always take a new
-        // line, but this would make mutated files harder to read.
-        std::string(((is_extended_with_comment && !is_extended_with_semi)
-                         ? "\n"
-                         : " ")) +
-            "}");
+    std::string to_insert = " }";
+    if (!is_extended_with_semi && IsNextTokenHash(source_range, preprocessor)) {
+      // If we did not extend the range to capture an immediately-following
+      // semicolon, then we could have a problem if the statement is separated
+      // from its semicolon by a preprocessor directive. For example:
+      //
+      // ...
+      // x = 1
+      // #endif
+      // ;
+      //
+      // If we find a hash token - indicative of a preprocessor directive -
+      // having not extended the range with a semicolon, we conservatively add
+      // a semicolon to ensure that the code in the conditional that is
+      // introduced is well-formed.
+      to_insert = "; " + to_insert;
+    }
+    if (is_extended_with_comment && !is_extended_with_semi) {
+      // If the source range was extended with a comment but not with a
+      // semicolon, it is possible that the end of the source range is on
+      // the same line as a single-line comment, in which case it's
+      // important to take a new line (otherwise the closing brace will form
+      // part of the comment). It would be possible to always take a new
+      // line, but this would make mutated files harder to read.
+      to_insert = "\n" + to_insert;
+    }
+    rewriter_result =
+        rewriter.InsertTextAfterToken(source_range.getEnd(), to_insert);
     assert(!rewriter_result && "Rewrite failed.\n");
     (void)rewriter_result;  // Keep release-mode compilers happy.
   }
@@ -131,6 +151,21 @@ protobufs::MutationGroup MutationRemoveStmt::Apply(
   protobufs::MutationGroup result;
   *result.mutable_remove_stmt() = inner_result;
   return result;
+}
+
+bool MutationRemoveStmt::IsNextTokenHash(
+    const clang::CharSourceRange& source_range,
+    const clang::Preprocessor& preprocessor) {
+  const clang::CharSourceRange source_range_as_char_range =
+      clang::Lexer::getAsCharRange(source_range,
+                                   preprocessor.getSourceManager(),
+                                   preprocessor.getLangOpts());
+  clang::Token maybe_hash{};
+  return !clang::Lexer::getRawToken(source_range_as_char_range.getEnd(),
+                                    maybe_hash, preprocessor.getSourceManager(),
+                                    preprocessor.getLangOpts(),
+                                    /*IgnoreWhiteSpace=*/true) &&
+         maybe_hash.is(clang::tok::TokenKind::hash);
 }
 
 }  // namespace dredd

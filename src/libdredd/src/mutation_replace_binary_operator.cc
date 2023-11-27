@@ -84,6 +84,73 @@ bool MutationReplaceBinaryOperator::IsValidReplacementOperator(
             operator_kind == clang::BO_XorAssign));
 }
 
+std::string MutationReplaceBinaryOperator::OpKindToString(
+    clang::BinaryOperatorKind kind) {
+  switch (kind) {
+    case clang::BinaryOperatorKind::BO_Add:
+      return "Add";
+    case clang::BinaryOperatorKind::BO_Div:
+      return "Div";
+    case clang::BinaryOperatorKind::BO_Mul:
+      return "Mul";
+    case clang::BinaryOperatorKind::BO_Rem:
+      return "Rem";
+    case clang::BinaryOperatorKind::BO_Sub:
+      return "Sub";
+    case clang::BinaryOperatorKind::BO_AddAssign:
+      return "AddAssign";
+    case clang::BinaryOperatorKind::BO_AndAssign:
+      return "AndAssign";
+    case clang::BinaryOperatorKind::BO_Assign:
+      return "Assign";
+    case clang::BinaryOperatorKind::BO_DivAssign:
+      return "DivAssign";
+    case clang::BinaryOperatorKind::BO_MulAssign:
+      return "MulAssign";
+    case clang::BinaryOperatorKind::BO_OrAssign:
+      return "OrAssign";
+    case clang::BinaryOperatorKind::BO_RemAssign:
+      return "RemAssign";
+    case clang::BinaryOperatorKind::BO_ShlAssign:
+      return "ShlAssign";
+    case clang::BinaryOperatorKind::BO_ShrAssign:
+      return "ShrAssign";
+    case clang::BinaryOperatorKind::BO_SubAssign:
+      return "SubAssign";
+    case clang::BinaryOperatorKind::BO_XorAssign:
+      return "XorAssign";
+    case clang::BinaryOperatorKind::BO_And:
+      return "And";
+    case clang::BinaryOperatorKind::BO_Or:
+      return "Or";
+    case clang::BinaryOperatorKind::BO_Xor:
+      return "Xor";
+    case clang::BinaryOperatorKind::BO_LAnd:
+      return "LAnd";
+    case clang::BinaryOperatorKind::BO_LOr:
+      return "LOr";
+    case clang::BinaryOperatorKind::BO_EQ:
+      return "EQ";
+    case clang::BinaryOperatorKind::BO_GE:
+      return "GE";
+    case clang::BinaryOperatorKind::BO_GT:
+      return "GT";
+    case clang::BinaryOperatorKind::BO_LE:
+      return "LE";
+    case clang::BinaryOperatorKind::BO_LT:
+      return "LT";
+    case clang::BinaryOperatorKind::BO_NE:
+      return "NE";
+    case clang::BinaryOperatorKind::BO_Shl:
+      return "Shl";
+    case clang::BinaryOperatorKind::BO_Shr:
+      return "Shr";
+    default:
+      assert(false && "Unsupported opcode");
+      return "";
+  }
+}
+
 std::string MutationReplaceBinaryOperator::GetFunctionName(
     bool optimise_mutations, clang::ASTContext& ast_context) const {
   std::string result = "__dredd_replace_binary_operator_";
@@ -91,97 +158,7 @@ std::string MutationReplaceBinaryOperator::GetFunctionName(
   // A string corresponding to the binary operator forms part of the name of the
   // mutation function, to differentiate mutation functions for different
   // operators
-  switch (binary_operator_->getOpcode()) {
-    case clang::BinaryOperatorKind::BO_Add:
-      result += "Add";
-      break;
-    case clang::BinaryOperatorKind::BO_Div:
-      result += "Div";
-      break;
-    case clang::BinaryOperatorKind::BO_Mul:
-      result += "Mul";
-      break;
-    case clang::BinaryOperatorKind::BO_Rem:
-      result += "Rem";
-      break;
-    case clang::BinaryOperatorKind::BO_Sub:
-      result += "Sub";
-      break;
-    case clang::BinaryOperatorKind::BO_AddAssign:
-      result += "AddAssign";
-      break;
-    case clang::BinaryOperatorKind::BO_AndAssign:
-      result += "AndAssign";
-      break;
-    case clang::BinaryOperatorKind::BO_Assign:
-      result += "Assign";
-      break;
-    case clang::BinaryOperatorKind::BO_DivAssign:
-      result += "DivAssign";
-      break;
-    case clang::BinaryOperatorKind::BO_MulAssign:
-      result += "MulAssign";
-      break;
-    case clang::BinaryOperatorKind::BO_OrAssign:
-      result += "OrAssign";
-      break;
-    case clang::BinaryOperatorKind::BO_RemAssign:
-      result += "RemAssign";
-      break;
-    case clang::BinaryOperatorKind::BO_ShlAssign:
-      result += "ShlAssign";
-      break;
-    case clang::BinaryOperatorKind::BO_ShrAssign:
-      result += "ShrAssign";
-      break;
-    case clang::BinaryOperatorKind::BO_SubAssign:
-      result += "SubAssign";
-      break;
-    case clang::BinaryOperatorKind::BO_XorAssign:
-      result += "XorAssign";
-      break;
-    case clang::BinaryOperatorKind::BO_And:
-      result += "And";
-      break;
-    case clang::BinaryOperatorKind::BO_Or:
-      result += "Or";
-      break;
-    case clang::BinaryOperatorKind::BO_Xor:
-      result += "Xor";
-      break;
-    case clang::BinaryOperatorKind::BO_LAnd:
-      result += "LAnd";
-      break;
-    case clang::BinaryOperatorKind::BO_LOr:
-      result += "LOr";
-      break;
-    case clang::BinaryOperatorKind::BO_EQ:
-      result += "EQ";
-      break;
-    case clang::BinaryOperatorKind::BO_GE:
-      result += "GE";
-      break;
-    case clang::BinaryOperatorKind::BO_GT:
-      result += "GT";
-      break;
-    case clang::BinaryOperatorKind::BO_LE:
-      result += "LE";
-      break;
-    case clang::BinaryOperatorKind::BO_LT:
-      result += "LT";
-      break;
-    case clang::BinaryOperatorKind::BO_NE:
-      result += "NE";
-      break;
-    case clang::BinaryOperatorKind::BO_Shl:
-      result += "Shl";
-      break;
-    case clang::BinaryOperatorKind::BO_Shr:
-      result += "Shr";
-      break;
-    default:
-      assert(false && "Unsupported opcode");
-  }
+  result += OpKindToString(binary_operator_->getOpcode());
 
   std::string lhs_qualifier;
 
@@ -195,16 +172,17 @@ std::string MutationReplaceBinaryOperator::GetFunctionName(
   // To avoid problems of ambiguous function calls, the argument types (ignoring
   // whether they are references or not) are baked into the mutation function
   // name. Some type names have space in them (e.g. 'unsigned int'); such spaces
-  // are replaced with underscores.
-  result +=
-      "_" + SpaceToUnderscore(lhs_qualifier +
+  // are replaced with underscores. We add arg specifiers to avoid the ambiguous
+  // case when the arguments are `long long` and `long`.
+  result += "_arg1_" +
+            SpaceToUnderscore(lhs_qualifier +
                               binary_operator_->getLHS()
                                   ->getType()
                                   ->getAs<clang::BuiltinType>()
                                   ->getName(ast_context.getPrintingPolicy())
                                   .str());
-  result +=
-      "_" + SpaceToUnderscore(binary_operator_->getRHS()
+  result += "_arg2_" +
+            SpaceToUnderscore(binary_operator_->getRHS()
                                   ->getType()
                                   ->getAs<clang::BuiltinType>()
                                   ->getName(ast_context.getPrintingPolicy())
@@ -253,9 +231,30 @@ std::string MutationReplaceBinaryOperator::GetFunctionName(
   return result;
 }
 
+std::string MutationReplaceBinaryOperator::GetBinaryMacroName(
+    const std::string& operator_name,
+    const clang::ASTContext& ast_context) const {
+  std::string result = "REPLACE_BINARY_" + operator_name;
+  if (ast_context.getLangOpts().CPlusPlus &&
+      binary_operator_->getLHS()->HasSideEffects(ast_context)) {
+    result += "_LHS_EVALUATED";
+  }
+  if (ast_context.getLangOpts().CPlusPlus &&
+      (binary_operator_->isLogicalOp() ||
+       binary_operator_->getRHS()->HasSideEffects(ast_context))) {
+    result += "_RHS_EVALUATED";
+  }
+  if (!ast_context.getLangOpts().CPlusPlus &&
+      binary_operator_->isAssignmentOp()) {
+    result += "_LHS_POINTER";
+  }
+  return result;
+}
+
 void MutationReplaceBinaryOperator::GenerateArgumentReplacement(
     const std::string& arg1_evaluated, const std::string& arg2_evaluated,
-    const clang::ASTContext& ast_context, bool optimise_mutations,
+    const clang::ASTContext& ast_context,
+    std::unordered_set<std::string>& dredd_macros, bool optimise_mutations,
     bool only_track_mutant_coverage, int mutation_id_base,
     std::stringstream& new_function, int& mutation_id_offset,
     protobufs::MutationReplaceBinaryOperator& protobuf_message) const {
@@ -301,9 +300,16 @@ void MutationReplaceBinaryOperator::GenerateArgumentReplacement(
         MutationReplaceExpr::ExprIsEquivalentToFloat(
             *binary_operator_->getLHS(), -1.0, ast_context))) {
     if (!only_track_mutant_coverage) {
-      new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
-                   << mutation_id_offset << ")) return " << arg1_evaluated
-                   << ";\n";
+      std::string macro_name = "REPLACE_BINARY_ARG1";
+      if (ast_context.getLangOpts().CPlusPlus &&
+          binary_operator_->getLHS()->HasSideEffects(ast_context)) {
+        macro_name += "_EVALUATED";
+      } else if (!ast_context.getLangOpts().CPlusPlus &&
+                 binary_operator_->isAssignmentOp()) {
+        macro_name += "_POINTER";
+      }
+      new_function << "  " << macro_name << "(" << mutation_id_offset << ");\n";
+      dredd_macros.insert(GenerateMutationMacro(macro_name, arg1_evaluated));
     }
     AddMutationInstance(
         mutation_id_base,
@@ -328,9 +334,14 @@ void MutationReplaceBinaryOperator::GenerateArgumentReplacement(
         MutationReplaceExpr::ExprIsEquivalentToFloat(
             *binary_operator_->getRHS(), -1.0, ast_context))) {
     if (!only_track_mutant_coverage) {
-      new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
-                   << mutation_id_offset << ")) return " << arg2_evaluated
-                   << ";\n";
+      std::string macro_name = "REPLACE_BINARY_ARG2";
+      if (ast_context.getLangOpts().CPlusPlus &&
+          (binary_operator_->isLogicalOp() ||
+           binary_operator_->getRHS()->HasSideEffects(ast_context))) {
+        macro_name += "_EVALUATED";
+      }
+      new_function << "  " << macro_name << "(" << mutation_id_offset << ");\n";
+      dredd_macros.insert(GenerateMutationMacro(macro_name, arg2_evaluated));
     }
     AddMutationInstance(
         mutation_id_base,
@@ -341,18 +352,22 @@ void MutationReplaceBinaryOperator::GenerateArgumentReplacement(
 
 void MutationReplaceBinaryOperator::GenerateBinaryOperatorReplacement(
     const std::string& arg1_evaluated, const std::string& arg2_evaluated,
-    const clang::ASTContext& ast_context, bool optimise_mutations,
+    const clang::ASTContext& ast_context,
+    std::unordered_set<std::string>& dredd_macros, bool optimise_mutations,
     bool only_track_mutant_coverage, int mutation_id_base,
     std::stringstream& new_function, int& mutation_id_offset,
     protobufs::MutationReplaceBinaryOperator& protobuf_message) const {
   for (auto operator_kind :
        GetReplacementOperators(optimise_mutations, ast_context)) {
     if (!only_track_mutant_coverage) {
-      new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
-                   << mutation_id_offset << ")) return " << arg1_evaluated
-                   << " "
-                   << clang::BinaryOperator::getOpcodeStr(operator_kind).str()
-                   << " " << arg2_evaluated << ";\n";
+      const std::string macro_name =
+          GetBinaryMacroName(OpKindToString(operator_kind), ast_context);
+      new_function << "  " << macro_name << "(" << mutation_id_offset << ");\n";
+      dredd_macros.insert(GenerateMutationMacro(
+          macro_name,
+          arg1_evaluated + " " +
+              clang::BinaryOperator::getOpcodeStr(operator_kind).str() + " " +
+              arg2_evaluated));
     }
     AddMutationInstance(mutation_id_base, OperatorKindToAction(operator_kind),
                         mutation_id_offset, protobuf_message);
@@ -434,10 +449,11 @@ MutationReplaceBinaryOperator::GetReplacementOperators(
 }
 
 std::string MutationReplaceBinaryOperator::GenerateMutatorFunction(
-    clang::ASTContext& ast_context, const std::string& function_name,
-    const std::string& result_type, const std::string& lhs_type,
-    const std::string& rhs_type, bool optimise_mutations,
-    bool only_track_mutant_coverage, int& mutation_id,
+    clang::ASTContext& ast_context,
+    std::unordered_set<std::string>& dredd_macros,
+    const std::string& function_name, const std::string& result_type,
+    const std::string& lhs_type, const std::string& rhs_type,
+    bool optimise_mutations, bool only_track_mutant_coverage, int& mutation_id,
     protobufs::MutationReplaceBinaryOperator& protobuf_message) const {
   std::stringstream new_function;
   new_function << "static " << result_type << " " << function_name << "(";
@@ -482,32 +498,32 @@ std::string MutationReplaceBinaryOperator::GenerateMutatorFunction(
   if (!only_track_mutant_coverage) {
     // Quickly apply the original operator if no mutant is enabled (which will
     // be the common case).
-    new_function << "  if (!__dredd_some_mutation_enabled) return "
-                 << arg1_evaluated << " "
+    new_function << "  MUTATION_PRELUDE(" << arg1_evaluated << " "
                  << clang::BinaryOperator::getOpcodeStr(
                         binary_operator_->getOpcode())
                         .str()
-                 << " " << arg2_evaluated << ";\n";
+                 << " " << arg2_evaluated << ");\n";
   }
 
   GenerateBinaryOperatorReplacement(
-      arg1_evaluated, arg2_evaluated, ast_context, optimise_mutations,
-      only_track_mutant_coverage, mutation_id, new_function, mutation_id_offset,
-      protobuf_message);
-  GenerateArgumentReplacement(arg1_evaluated, arg2_evaluated, ast_context,
-                              optimise_mutations, only_track_mutant_coverage,
-                              mutation_id, new_function, mutation_id_offset,
-                              protobuf_message);
+      arg1_evaluated, arg2_evaluated, ast_context, dredd_macros,
+      optimise_mutations, only_track_mutant_coverage, mutation_id, new_function,
+      mutation_id_offset, protobuf_message);
+  GenerateArgumentReplacement(
+      arg1_evaluated, arg2_evaluated, ast_context, dredd_macros,
+      optimise_mutations, only_track_mutant_coverage, mutation_id, new_function,
+      mutation_id_offset, protobuf_message);
 
   if (only_track_mutant_coverage) {
     new_function << "  __dredd_record_covered_mutants(local_mutation_id, " +
                         std::to_string(mutation_id_offset) + ");\n";
   }
-  new_function << "  return " << arg1_evaluated << " "
+  // TODO(JamesLee-Jones): Replace with return macro.
+  new_function << "  return MUTATION_RETURN(" << arg1_evaluated << " "
                << clang::BinaryOperator::getOpcodeStr(
                       binary_operator_->getOpcode())
                       .str()
-               << " " << arg2_evaluated << ";\n";
+               << " " << arg2_evaluated << ");\n";
 
   new_function << "}\n\n";
 
@@ -522,7 +538,8 @@ protobufs::MutationGroup MutationReplaceBinaryOperator::Apply(
     clang::ASTContext& ast_context, const clang::Preprocessor& preprocessor,
     bool optimise_mutations, bool only_track_mutant_coverage,
     int first_mutation_id_in_file, int& mutation_id, clang::Rewriter& rewriter,
-    std::unordered_set<std::string>& dredd_declarations) const {
+    std::unordered_set<std::string>& dredd_declarations,
+    std::unordered_set<std::string>& dredd_macros) const {
   // The protobuf object for the mutation, which will be wrapped in a
   // MutationGroup.
   protobufs::MutationReplaceBinaryOperator inner_result;
@@ -608,8 +625,8 @@ protobufs::MutationGroup MutationReplaceBinaryOperator::Apply(
                   rewriter);
 
   const std::string new_function = GenerateMutatorFunction(
-      ast_context, new_function_name, result_type, lhs_type, rhs_type,
-      optimise_mutations, only_track_mutant_coverage, mutation_id,
+      ast_context, dredd_macros, new_function_name, result_type, lhs_type,
+      rhs_type, optimise_mutations, only_track_mutant_coverage, mutation_id,
       inner_result);
   assert(!new_function.empty() && "Unsupported opcode.");
 

@@ -128,6 +128,12 @@ bool EvaluateAsFloat(const clang::Expr& expr,
 bool IsCxx11ConstantExpr(const clang::Expr& expr,
                          const clang::ASTContext& ast_context);
 
+std::string GenerateMutationPrelude();
+
+std::string GenerateMutationMacro(const std::string& name,
+                                  const std::string& args_evaluated);
+
+std::string GenerateMutationReturn();
 }  // namespace dredd
 
 #endif  // LIBDREDD_UTIL_H
