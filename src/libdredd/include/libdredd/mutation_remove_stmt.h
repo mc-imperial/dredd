@@ -40,7 +40,8 @@ class MutationRemoveStmt : public Mutation {
       bool optimise_mutations, bool only_track_mutant_coverage,
       int first_mutation_id_in_file, int& mutation_id,
       clang::Rewriter& rewriter,
-      std::unordered_set<std::string>& dredd_declarations) const override;
+      std::unordered_set<std::string>& dredd_declarations,
+      std::unordered_set<std::string>& dredd_macros) const override;
 
  private:
   // Helper method to determine whether the token immediately following the
