@@ -214,7 +214,7 @@ rm -rf examples/math-original
 
 ## Building Dredd from source
 
-The following instructions have been tested on Ubuntu 20.04.
+The following instructions have been tested on Ubuntu 22.04.
 
 ### Prerequisites
 
