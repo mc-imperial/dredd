@@ -72,11 +72,7 @@ We first show how to apply Dredd to a simple stand-alone program. We will then s
 
 ```
 # This will modify pi.cc in-place.
-# The --mutation-info-file argument is used to specify a JSON file to
-# which Dredd will output machine-readable information about the
-# mutations it applied. For the purposes of this example, this file
-# can be ignored.
-${DREDD_EXECUTABLE} examples/simple/pi.cc --mutation-info-file temp.json
+${DREDD_EXECUTABLE} examples/simple/pi.cc
 # Now compile the mutated version of the example
 ${DREDD_CLANG_BIN_DIR}/clang++ examples/simple/pi.cc -o examples/simple/pi
 ```

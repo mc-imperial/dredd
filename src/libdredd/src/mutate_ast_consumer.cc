@@ -77,7 +77,7 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
 
   std::optional<protobufs::MutationTreeNode> mutable_mutation_tree_root =
       ApplyMutations(visitor_->GetMutations(), initial_mutation_id, ast_context,
-                     dredd_declarations, mutation_info_->use());
+                     dredd_declarations, mutation_info_->has_value());
 
   protobufs::MutationInfoForFile mutation_info_for_file;
   if (mutable_mutation_tree_root.has_value()) {
@@ -97,8 +97,8 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
     return;
   }
 
-  if (mutation_info_->use()) {
-    *mutation_info_->add_info_for_files() = mutation_info_for_file;
+  if (mutation_info_->has_value()) {
+    *mutation_info_->value().add_info_for_files() = mutation_info_for_file;
   }
 
   auto& source_manager = ast_context.getSourceManager();
