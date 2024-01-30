@@ -14,6 +14,7 @@
 
 #include <fstream>
 #include <memory>
+#include <optional>
 #include <string>
 
 #include "clang/Tooling/CommonOptionsParser.h"
@@ -99,7 +100,7 @@ int main(int argc, const char** argv) {
   if (mutation_info_file.empty()) {
     mutation_info = std::nullopt;
   } else {
-    mutation_info = std::optional<dredd::protobufs::MutationInfo>();
+    mutation_info = dredd::protobufs::MutationInfo();
   }
 
   const std::unique_ptr<clang::tooling::FrontendActionFactory> factory =
