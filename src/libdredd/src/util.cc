@@ -139,7 +139,7 @@ std::string GenerateMutationPrelude(bool semantics_preserving_mutation) {
   }
 
   // TODO(James Lee-Jones): Fix this.
-  return result + ",type) type actual_result = arg; type copy = actual_result\n";
+  return result + ",type) type actual_result = arg\n";
 }
 
 std::string GenerateMutationMacro(const std::string& name,

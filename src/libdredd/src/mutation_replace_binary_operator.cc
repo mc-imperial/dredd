@@ -324,7 +324,6 @@ MutationReplaceBinaryOperator::GenerateBinaryOperatorReplacementMacro(
 
   // TODO(James Lee-Jones): Add shift checks.
 
-
   result += "(" +
             ConvertToSemanticsPreservingBinaryExpression(
                 arg1_evaluated, operator_kind, arg2_evaluated) +
@@ -611,8 +610,6 @@ std::string MutationReplaceBinaryOperator::GenerateMutatorFunction(
                         std::to_string(mutation_id_offset) + ");\n";
   }
 
-  // TODO: REMOVE THIS
-  new_function << "  assert (copy == actual_result);";
   new_function << "  return MUTATION_RETURN(" << arg1_evaluated << " "
                << clang::BinaryOperator::getOpcodeStr(
                       binary_operator_->getOpcode())

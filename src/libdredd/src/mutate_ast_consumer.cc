@@ -179,7 +179,6 @@ std::string MutateAstConsumer::GetRegularDreddPreludeCpp(
   result << "#include <cinttypes>\n";
   result << "#include <cstddef>\n";
   result << "#include <functional>\n";
-  result << "#include <assert.h>\n"; // TODO: REMOVE THIS
   result << "#include <string>\n\n";
   result << "\n";
   result << "#ifdef _MSC_VER\n";
@@ -311,7 +310,6 @@ std::string MutateAstConsumer::GetRegularDreddPreludeC(
   result << "#include <inttypes.h>\n";
   result << "#include <stdbool.h>\n";
   result << "#include <stdlib.h>\n";
-  result << "#include <assert.h>\n"; // TODO: REMOVE THIS
   result << "#include <string.h>\n";
   result << "\n";
   result << "#ifdef _MSC_VER\n";
