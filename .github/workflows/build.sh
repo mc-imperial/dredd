@@ -25,12 +25,11 @@ help | head
 
 uname
 
-export DREDD_LLVM_SUFFIX=""
+DREDD_LLVM_TAG=$(./scripts/llvm_tag.sh)
 
 case "$(uname)" in
 "Linux")
   NINJA_OS="linux"
-  export DREDD_LLVM_SUFFIX="-stock-clang"
   # Provided by build.yml.
   export CC="${LINUX_CC}"
   export CXX="${LINUX_CXX}"
@@ -41,16 +40,38 @@ case "$(uname)" in
   docker rmi -f $(docker image ls -aq)
   sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
   df -h
+
+  # Install clang.
+  pushd ./third_party/clang+llvm
+    curl -fsSL -o clang+llvm.tar.xz "https://github.com/llvm/llvm-project/releases/download/llvmorg-${DREDD_LLVM_TAG}/clang+llvm-${DREDD_LLVM_TAG}-x86_64-linux-gnu-ubuntu-22.04.tar.xz"
+    tar xf clang+llvm.tar.xz
+    mv clang+llvm-${DREDD_LLVM_TAG}-x86_64-linux-gnu-ubuntu-22.04/* .
+    rm clang+llvm.tar.xz
+  popd
   ;;
 
 "Darwin")
   NINJA_OS="mac"
+
+  # Install clang.
+  pushd ./third_party/clang+llvm
+    curl -fsSL -o clang+llvm.zip "https://github.com/mc-imperial/build-clang/releases/download/llvmorg-${DREDD_LLVM_TAG}/build-clang-llvmorg-${DREDD_LLVM_TAG}-Mac_x64_Release.zip"
+    unzip clang+llvm.zip
+    rm clang+llvm.zip
+  popd
   ;;
 
 "MINGW"*|"MSYS_NT"*)
   NINJA_OS="win"
   CMAKE_OPTIONS+=("-DCMAKE_C_COMPILER=cl.exe" "-DCMAKE_CXX_COMPILER=cl.exe")
   choco install zip
+
+  # Install clang.
+  pushd ./third_party/clang+llvm
+    curl -fsSL -o clang+llvm.zip "https://github.com/mc-imperial/build-clang/releases/download/llvmorg-${DREDD_LLVM_TAG}/build-clang-llvmorg-${DREDD_LLVM_TAG}-Windows_x64_Release.zip"
+    unzip clang+llvm.zip
+    rm clang+llvm.zip
+  popd
   ;;
 
 *)
@@ -58,9 +79,6 @@ case "$(uname)" in
   exit 1
   ;;
 esac
-
-# Install clang.
-.github/workflows/install_clang.sh
 
 export PATH="${HOME}/bin:$PATH"
 

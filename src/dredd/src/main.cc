@@ -14,6 +14,7 @@
 
 #include <fstream>
 #include <memory>
+#include <optional>
 #include <string>
 
 #include "clang/Tooling/CommonOptionsParser.h"
@@ -68,7 +69,7 @@ static llvm::cl::opt<bool> dump_asts(
     llvm::cl::cat(mutate_category));
 // NOLINTNEXTLINE
 static llvm::cl::opt<std::string> mutation_info_file(
-    "mutation-info-file", llvm::cl::Required,
+    "mutation-info-file",
     llvm::cl::desc(
         ".json file into which mutation information should be written"),
     llvm::cl::cat(mutate_category));
@@ -101,7 +102,13 @@ int main(int argc, const char** argv) {
 
   // Keeps track of the mutations that are applied to each source file,
   // including their hierarchical structure.
-  dredd::protobufs::MutationInfo mutation_info;
+  std::optional<dredd::protobufs::MutationInfo> mutation_info;
+
+  if (mutation_info_file.empty()) {
+    mutation_info = std::nullopt;
+  } else {
+    mutation_info = dredd::protobufs::MutationInfo();
+  }
 
   const std::unique_ptr<clang::tooling::FrontendActionFactory> factory =
       dredd::NewMutateFrontendActionFactory(
@@ -110,7 +117,7 @@ int main(int argc, const char** argv) {
 
   const int return_code = Tool.run(factory.get());
 
-  if (return_code == 0) {
+  if (mutation_info.has_value() && return_code == 0) {
     // Application of mutations was successful, so write out the mutation info
     // in JSON format.
     std::string json_string;
@@ -118,7 +125,7 @@ int main(int argc, const char** argv) {
     json_options.add_whitespace = true;
     json_options.always_print_primitive_fields = true;
     auto json_generation_status = google::protobuf::util::MessageToJsonString(
-        mutation_info, &json_string, json_options);
+        mutation_info.value(), &json_string, json_options);
     if (json_generation_status.ok()) {
       std::ofstream transformations_json_file(mutation_info_file);
       transformations_json_file << json_string;

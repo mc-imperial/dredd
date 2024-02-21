@@ -23,12 +23,9 @@ help | head
 
 uname
 
-export DREDD_LLVM_SUFFIX=""
-
 case "$(uname)" in
 "Linux")
   NINJA_OS="linux"
-  export DREDD_LLVM_SUFFIX="-prebuilt-clang"
   df -h
   sudo swapoff -a
   sudo rm -f /swapfile
@@ -39,7 +36,7 @@ case "$(uname)" in
   ;;
 
 *)
-  echo "Unknown OS: only Linux is supported for the dev_build workflow"
+  echo "Unknown OS: only Linux is supported for the c_apps workflow"
   exit 1
   ;;
 esac
@@ -54,7 +51,13 @@ pushd "${HOME}/bin"
 popd
 
 # Install clang.
-.github/workflows/install_clang.sh
+DREDD_LLVM_TAG=$(./scripts/llvm_tag.sh)
+pushd ./third_party/clang+llvm
+  curl -fsSL -o clang+llvm.tar.xz "https://github.com/llvm/llvm-project/releases/download/llvmorg-${DREDD_LLVM_TAG}/clang+llvm-${DREDD_LLVM_TAG}-x86_64-linux-gnu-ubuntu-22.04.tar.xz"
+  tar xf clang+llvm.tar.xz
+  mv clang+llvm-${DREDD_LLVM_TAG}-x86_64-linux-gnu-ubuntu-22.04/* .
+  rm clang+llvm.tar.xz
+popd
 
 DREDD_ROOT=$(pwd)
 

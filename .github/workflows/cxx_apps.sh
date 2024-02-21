@@ -23,12 +23,9 @@ help | head
 
 uname
 
-export DREDD_LLVM_SUFFIX=""
-
 case "$(uname)" in
 "Linux")
   NINJA_OS="linux"
-  export DREDD_LLVM_SUFFIX="-prebuilt-clang"
   df -h
   sudo swapoff -a
   sudo rm -f /swapfile
@@ -39,7 +36,7 @@ case "$(uname)" in
   ;;
 
 *)
-  echo "Unknown OS: only Linux is supported for the dev_build workflow"
+  echo "Unknown OS: only Linux is supported for the cxx_apps workflow"
   exit 1
   ;;
 esac
@@ -54,7 +51,13 @@ pushd "${HOME}/bin"
 popd
 
 # Install clang.
-.github/workflows/install_clang.sh
+DREDD_LLVM_TAG=$(./scripts/llvm_tag.sh)
+pushd ./third_party/clang+llvm
+  curl -fsSL -o clang+llvm.tar.xz "https://github.com/llvm/llvm-project/releases/download/llvmorg-${DREDD_LLVM_TAG}/clang+llvm-${DREDD_LLVM_TAG}-x86_64-linux-gnu-ubuntu-22.04.tar.xz"
+  tar xf clang+llvm.tar.xz
+  mv clang+llvm-${DREDD_LLVM_TAG}-x86_64-linux-gnu-ubuntu-22.04/* .
+  rm clang+llvm.tar.xz
+popd
 
 DREDD_ROOT=$(pwd)
 
@@ -84,10 +87,51 @@ echo "examples/math: check that the tests pass after mutating the library"
 date
 
 pushd examples/math
+  # Make a copy of the source for purposes of mutant querying
+  cp -r math math-original
   cmake -S . -B build -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
-  ./mutate.sh
   cmake --build build
+  ${DREDD_EXECUTABLE} -p build/compile_commands.json --mutation-info-file mutation-info.json math/src/*.cc
   ./build/mathtest/mathtest
+  NUM_MUTANTS=`python3 ${DREDD_ROOT}/scripts/query_mutant_info.py mutation-info.json --largest-mutant-id`
+  EXPECTED_NUM_MUTANTS=1132
+  if [ ${NUM_MUTANTS} -ne ${EXPECTED_NUM_MUTANTS} ]
+  then
+     echo "Found ${NUM_MUTANTS} mutants when mutating the math library source code. Expected ${EXPECTED_NUM_MUTANTS}. If Dredd changed recently, the expected value may just need to be updated, if it still looks sensible. Otherwise, there is likely a problem."
+     exit 1
+  fi
+
+  # Display info about every mutant, just to check that the script that displays mutant info does not error.
+  for mutant in `seq 0 ${NUM_MUTANTS}`
+  do
+    python3 ${DREDD_ROOT}/scripts/query_mutant_info.py mutation-info.json --show-info-for-mutant ${mutant} --path-prefix-replacement ${DREDD_ROOT}/examples/math/math ${DREDD_ROOT}/examples/math/math-original > /dev/null
+  done
+popd
+
+echo "examples/threaded: check that a simple concurrent program runs OK after mutation"
+date
+
+pushd examples/threaded
+  # The CMake configuration enables thread sanitizer.
+  cmake -S . -B build -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+  FILES=()
+  for f in src/*.cc
+  do
+    [[ -e "$f" ]] || break
+    FILES+=("${DREDD_ROOT}/examples/threaded/${f}")
+  done
+  ${DREDD_EXECUTABLE} --mutation-info-file temp.json -p "${DREDD_ROOT}/examples/threaded/build/compile_commands.json" "${FILES[@]}"
+  cmake --build build
+  # Check that the application runs correctly and that there are no data races.
+  TSAN_OPTIONS=halt_on_error=1 ./build/threaded > threaded_output.txt
+  ACTUAL_THREADED_OUTPUT=`cat threaded_output.txt`
+  EXPECTED_THREADED_OUTPUT="8192"
+  if [ ${ACTUAL_THREADED_OUTPUT} -ne ${EXPECTED_THREADED_OUTPUT} ]
+  then
+      echo "Output mismatch for threaded program after mutation. Expected ${EXPECTED_THREADED_OUTPUT} but got ${ACTUAL_THREADED_OUTPUT}"
+      exit 1
+  fi
+  rm threaded_output.txt
 popd
 
 echo "SPIRV-Tools validator: check that the tests pass after mutating the validator"
@@ -106,12 +150,19 @@ pushd SPIRV-Tools
     [[ -e "$f" ]] || break
     FILES+=("${DREDD_ROOT}/SPIRV-Tools/${f}")
   done
-  ${DREDD_EXECUTABLE} --mutation-info-file temp.json -p "${DREDD_ROOT}/SPIRV-Tools/build/compile_commands.json" "${FILES[@]}"
+  ${DREDD_EXECUTABLE} --mutation-info-file mutation-info.json -p "${DREDD_ROOT}/SPIRV-Tools/build/compile_commands.json" "${FILES[@]}"
   cmake --build build --target test_val_abcde test_val_capability test_val_fghijklmnop test_val_limits test_val_rstuvw
   ./build/test/val/test_val_abcde
   ./build/test/val/test_val_capability
   ./build/test/val/test_val_fghijklmnop
   ./build/test/val/test_val_rstuvw
+  NUM_MUTANTS=`python3 ${DREDD_ROOT}/scripts/query_mutant_info.py mutation-info.json --largest-mutant-id`
+  EXPECTED_NUM_MUTANTS=67998
+  if [ ${NUM_MUTANTS} -ne ${EXPECTED_NUM_MUTANTS} ]
+  then
+     echo "Found ${NUM_MUTANTS} mutants when mutating the SPIR-V validator source code. Expected ${EXPECTED_NUM_MUTANTS}. If Dredd changed recently, the expected value may just need to be updated, if it still looks sensible. Otherwise, there is likely a problem."
+     exit 1
+  fi
 popd
 
 echo "LLVM: check that InstCombine builds after mutation"
@@ -129,8 +180,15 @@ pushd llvm-project
     [[ -e "$f" ]] || break
     FILES+=("${DREDD_ROOT}/llvm-project/${f}")
   done
-  ${DREDD_EXECUTABLE} --mutation-info-file temp.json -p "${DREDD_ROOT}/llvm-project/build/compile_commands.json" "${FILES[@]}"
+  ${DREDD_EXECUTABLE} --mutation-info-file mutation-info.json -p "${DREDD_ROOT}/llvm-project/build/compile_commands.json" "${FILES[@]}"
   cmake --build build --target LLVMInstCombine
+  NUM_MUTANTS=`python3 ${DREDD_ROOT}/scripts/query_mutant_info.py mutation-info.json --largest-mutant-id`
+  EXPECTED_NUM_MUTANTS=97675
+  if [ ${NUM_MUTANTS} -ne ${EXPECTED_NUM_MUTANTS} ]
+  then
+     echo "Found ${NUM_MUTANTS} mutants when mutating the LLVM source code. Expected ${EXPECTED_NUM_MUTANTS}. If Dredd changed recently, the expected value may just need to be updated, if it still looks sensible. Otherwise, there is likely a problem."
+     exit 1
+  fi
 popd
 
 echo "Finished"

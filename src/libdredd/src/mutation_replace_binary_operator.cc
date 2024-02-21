@@ -251,7 +251,7 @@ std::string MutationReplaceBinaryOperator::GetBinaryMacroName(
   return result;
 }
 
- std::string
+std::string
 MutationReplaceBinaryOperator::ConvertToSemanticsPreservingExpression(
     const std::string& arg1_evaluated, clang::BinaryOperatorKind operator_kind,
     const std::string& arg2_evaluated) {

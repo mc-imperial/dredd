@@ -21,7 +21,7 @@ void Producer(queue::LockedQueue &producer_to_consumers,
               size_t num_consumers, int &result) {
   assert((num_elems % num_consumers) == 0);
   for (int i = 0; i < num_elems; i++) {
-    producer_to_consumers.Enq(i);
+    producer_to_consumers.Enq(1);
   }
   result = 0;
   for (int i = 0; i < num_consumers; i++) {

@@ -54,8 +54,13 @@ pushd "${HOME}/bin"
 popd
 
 # Install clang.
-export DREDD_LLVM_SUFFIX="-stock-clang"
-.github/workflows/install_clang.sh
+DREDD_LLVM_TAG=$(./scripts/llvm_tag.sh)
+pushd ./third_party/clang+llvm
+  curl -fsSL -o clang+llvm.tar.xz "https://github.com/llvm/llvm-project/releases/download/llvmorg-${DREDD_LLVM_TAG}/clang+llvm-${DREDD_LLVM_TAG}-x86_64-linux-gnu-ubuntu-22.04.tar.xz"
+  tar xf clang+llvm.tar.xz
+  mv clang+llvm-${DREDD_LLVM_TAG}-x86_64-linux-gnu-ubuntu-22.04/* .
+  rm clang+llvm.tar.xz
+popd
 
 # Source the dev shell to download clang-tidy and other tools.
 # Developers should *run* the dev shell, but we want to continue executing this script.

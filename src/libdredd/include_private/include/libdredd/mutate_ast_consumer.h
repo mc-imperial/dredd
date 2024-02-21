@@ -16,6 +16,7 @@
 #define LIBDREDD_MUTATE_AST_CONSUMER_H
 
 #include <memory>
+#include <optional>
 #include <string>
 #include <unordered_set>
 
@@ -34,7 +35,8 @@ class MutateAstConsumer : public clang::ASTConsumer {
   MutateAstConsumer(const clang::CompilerInstance& compiler_instance,
                     bool optimise_mutations, bool semantics_preserving_mutation,
                     bool dump_ast, bool only_track_mutant_coverage,
-                    int& mutation_id, protobufs::MutationInfo& mutation_info)
+                    int& mutation_id,
+                    std::optional<protobufs::MutationInfo>& mutation_info)
       : compiler_instance_(&compiler_instance),
         optimise_mutations_(optimise_mutations),
         semantics_preserving_mutation_(semantics_preserving_mutation),
@@ -64,11 +66,11 @@ class MutateAstConsumer : public clang::ASTConsumer {
   [[nodiscard]] std::string GetMutantTrackingDreddPreludeC(
       int initial_mutation_id) const;
 
-  protobufs::MutationTreeNode ApplyMutations(
+  std::optional<protobufs::MutationTreeNode> ApplyMutations(
       const MutationTreeNode& mutation_tree_node, int initial_mutation_id,
       clang::ASTContext& context,
       std::unordered_set<std::string>& dredd_declarations,
-      std::unordered_set<std::string>& dredd_macros);
+      std::unordered_set<std::string>& dredd_macros, bool build_tree);
 
   const clang::CompilerInstance* compiler_instance_;
 
@@ -91,7 +93,7 @@ class MutateAstConsumer : public clang::ASTConsumer {
   // for different translation units.
   int* mutation_id_;
 
-  protobufs::MutationInfo* mutation_info_;
+  std::optional<protobufs::MutationInfo>* mutation_info_;
 };
 
 }  // namespace dredd
