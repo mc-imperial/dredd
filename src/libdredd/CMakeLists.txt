@@ -35,9 +35,6 @@ add_custom_command(
 add_library(
   libdredd STATIC
   include/libdredd/mutation.h
-  include/libdredd/mutation_coverage_binary_operator.h
-  include/libdredd/mutation_coverage_expr.h
-  include/libdredd/mutation_coverage_unary_operator.h
   include/libdredd/mutation_remove_stmt.h
   include/libdredd/mutation_replace_binary_operator.h
   include/libdredd/mutation_replace_expr.h
@@ -52,9 +49,6 @@ add_library(
   src/mutate_ast_consumer.cc
   src/mutate_visitor.cc
   src/mutation.cc
-  src/mutation_coverage_binary_operator.cc
-  src/mutation_coverage_expr.cc
-  src/mutation_coverage_unary_operator.cc
   src/mutation_remove_stmt.cc
   src/mutation_replace_binary_operator.cc
   src/mutation_replace_expr.cc

@@ -40,7 +40,7 @@ namespace dredd {
 class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
  public:
   MutateVisitor(const clang::CompilerInstance& compiler_instance,
-                bool optimise_mutations, bool semantics_preserving_mutation);
+                bool semantics_preserving_mutation);
 
   bool TraverseDecl(clang::Decl* decl);
 
@@ -164,7 +164,6 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
 
   const clang::CompilerInstance* compiler_instance_;
   bool optimise_mutations_;
-  bool semantics_preserving_mutation_;
 
   // Tracks the nest of declarations currently being traversed. Any new Dredd
   // functions will be put before the start of the current nest, which avoids

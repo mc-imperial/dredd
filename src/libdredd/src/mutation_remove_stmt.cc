@@ -40,8 +40,9 @@ MutationRemoveStmt::MutationRemoveStmt(const clang::Stmt& stmt,
 
 protobufs::MutationGroup MutationRemoveStmt::Apply(
     clang::ASTContext& ast_context, const clang::Preprocessor& preprocessor,
-    bool optimise_mutations, bool only_track_mutant_coverage,
-    int first_mutation_id_in_file, int& mutation_id, clang::Rewriter& rewriter,
+    bool optimise_mutations, bool semantics_preserving_mutation,
+    bool only_track_mutant_coverage, int first_mutation_id_in_file,
+    int& mutation_id, clang::Rewriter& rewriter,
     std::unordered_set<std::string>& dredd_declarations,
     std::unordered_set<std::string>& dredd_macros) const {
   (void)dredd_declarations;  // Unused.
@@ -101,7 +102,7 @@ protobufs::MutationGroup MutationRemoveStmt::Apply(
   // |mutation_id|, into a file-local mutation id.
   const int local_mutation_id = mutation_id - first_mutation_id_in_file;
 
-  if (only_track_mutant_coverage) {
+  if (only_track_mutant_coverage || semantics_preserving_mutation) {
     const bool rewriter_result = rewriter.InsertTextBefore(
         source_range.getBegin(), "__dredd_record_covered_mutants(" +
                                      std::to_string(local_mutation_id) +

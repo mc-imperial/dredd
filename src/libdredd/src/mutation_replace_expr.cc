@@ -192,8 +192,9 @@ bool MutationReplaceExpr::IsRedundantOperatorInsertion(
 void MutationReplaceExpr::GenerateUnaryOperatorInsertionBeforeLValue(
     const std::string& arg_evaluated, clang::ASTContext& ast_context,
     std::unordered_set<std::string>& dredd_macros,
-    bool only_track_mutant_coverage, int mutation_id_base,
-    std::stringstream& new_function, int& mutation_id_offset,
+    bool semantics_preserving_mutation, bool only_track_mutant_coverage,
+    int mutation_id_base, std::stringstream& new_function,
+    int& mutation_id_offset,
     protobufs::MutationReplaceExpr& protobuf_message) const {
   if (!expr_->isLValue() || !CanMutateLValue(ast_context, *expr_)) {
     return;
@@ -201,8 +202,9 @@ void MutationReplaceExpr::GenerateUnaryOperatorInsertionBeforeLValue(
   if (!only_track_mutant_coverage) {
     const std::string macro_name = GetExprMacroName("INC", ast_context);
     new_function << "  " << macro_name << "(" << mutation_id_offset << ");\n";
-    dredd_macros.insert(
-        GenerateMutationMacro(macro_name, "++(" + arg_evaluated + ")"));
+    dredd_macros.insert(GenerateMutationMacro(macro_name,
+                                              "++(" + arg_evaluated + ")",
+                                              semantics_preserving_mutation));
   }
   AddMutationInstance(mutation_id_base,
                       protobufs::MutationReplaceExprAction::InsertPreInc,
@@ -211,8 +213,9 @@ void MutationReplaceExpr::GenerateUnaryOperatorInsertionBeforeLValue(
   if (!only_track_mutant_coverage) {
     const std::string macro_name = GetExprMacroName("DEC", ast_context);
     new_function << "  " << macro_name << "(" << mutation_id_offset << ");\n";
-    dredd_macros.insert(
-        GenerateMutationMacro(macro_name, "--(" + arg_evaluated + ")"));
+    dredd_macros.insert(GenerateMutationMacro(macro_name,
+                                              "--(" + arg_evaluated + ")",
+                                              semantics_preserving_mutation));
   }
   AddMutationInstance(mutation_id_base,
                       protobufs::MutationReplaceExprAction::InsertPreDec,
@@ -222,8 +225,9 @@ void MutationReplaceExpr::GenerateUnaryOperatorInsertionBeforeLValue(
 void MutationReplaceExpr::GenerateUnaryOperatorInsertionBeforeNonLValue(
     const std::string& arg_evaluated, clang::ASTContext& ast_context,
     std::unordered_set<std::string>& dredd_macros, bool optimise_mutations,
-    bool only_track_mutant_coverage, int mutation_id_base,
-    std::stringstream& new_function, int& mutation_id_offset,
+    bool semantics_preserving_mutation, bool only_track_mutant_coverage,
+    int mutation_id_base, std::stringstream& new_function,
+    int& mutation_id_offset,
     protobufs::MutationReplaceExpr& protobuf_message) const {
   if (expr_->isLValue()) {
     return;
@@ -239,7 +243,8 @@ void MutationReplaceExpr::GenerateUnaryOperatorInsertionBeforeNonLValue(
         new_function << "  " << macro_name << "(" << mutation_id_offset
                      << ");\n";
         dredd_macros.insert(
-            GenerateMutationMacro(macro_name, "!(" + arg_evaluated + ")"));
+            GenerateMutationMacro(macro_name, "!(" + arg_evaluated + ")",
+                                  semantics_preserving_mutation));
       }
       AddMutationInstance(mutation_id_base,
                           protobufs::MutationReplaceExprAction::InsertLNot,
@@ -256,7 +261,8 @@ void MutationReplaceExpr::GenerateUnaryOperatorInsertionBeforeNonLValue(
         new_function << "  " << macro_name << "(" << mutation_id_offset
                      << ");\n";
         dredd_macros.insert(
-            GenerateMutationMacro(macro_name, "~(" + arg_evaluated + ")"));
+            GenerateMutationMacro(macro_name, "~(" + arg_evaluated + ")",
+                                  semantics_preserving_mutation));
       }
       AddMutationInstance(mutation_id_base,
                           protobufs::MutationReplaceExprAction::InsertNot,
@@ -273,7 +279,8 @@ void MutationReplaceExpr::GenerateUnaryOperatorInsertionBeforeNonLValue(
         new_function << "  " << macro_name << "(" << mutation_id_offset
                      << ");\n";
         dredd_macros.insert(
-            GenerateMutationMacro(macro_name, "-(" + arg_evaluated + ")"));
+            GenerateMutationMacro(macro_name, "-(" + arg_evaluated + ")",
+                                  semantics_preserving_mutation));
       }
       AddMutationInstance(mutation_id_base,
                           protobufs::MutationReplaceExprAction::InsertMinus,
@@ -285,45 +292,49 @@ void MutationReplaceExpr::GenerateUnaryOperatorInsertionBeforeNonLValue(
 void MutationReplaceExpr::GenerateUnaryOperatorInsertion(
     const std::string& arg_evaluated, clang::ASTContext& ast_context,
     std::unordered_set<std::string>& dredd_macros, bool optimise_mutations,
-    bool only_track_mutant_coverage, int mutation_id_base,
-    std::stringstream& new_function, int& mutation_id_offset,
+    bool semantics_preserving_mutation, bool only_track_mutant_coverage,
+    int mutation_id_base, std::stringstream& new_function,
+    int& mutation_id_offset,
     protobufs::MutationReplaceExpr& protobuf_message) const {
   GenerateUnaryOperatorInsertionBeforeLValue(
-      arg_evaluated, ast_context, dredd_macros, only_track_mutant_coverage,
-      mutation_id_base, new_function, mutation_id_offset, protobuf_message);
-  GenerateUnaryOperatorInsertionBeforeNonLValue(
-      arg_evaluated, ast_context, dredd_macros, optimise_mutations,
+      arg_evaluated, ast_context, dredd_macros, semantics_preserving_mutation,
       only_track_mutant_coverage, mutation_id_base, new_function,
       mutation_id_offset, protobuf_message);
+  GenerateUnaryOperatorInsertionBeforeNonLValue(
+      arg_evaluated, ast_context, dredd_macros, optimise_mutations,
+      semantics_preserving_mutation, only_track_mutant_coverage,
+      mutation_id_base, new_function, mutation_id_offset, protobuf_message);
 }
 
 void MutationReplaceExpr::GenerateConstantReplacement(
     clang::ASTContext& ast_context,
     std::unordered_set<std::string>& dredd_macros, bool optimise_mutations,
-    bool only_track_mutant_coverage, int mutation_id_base,
-    std::stringstream& new_function, int& mutation_id_offset,
+    bool semantics_preserving_mutation, bool only_track_mutant_coverage,
+    int mutation_id_base, std::stringstream& new_function,
+    int& mutation_id_offset,
     protobufs::MutationReplaceExpr& protobuf_message) const {
   if (!expr_->isLValue()) {
     GenerateBooleanConstantReplacement(
         ast_context, dredd_macros, optimise_mutations,
-        only_track_mutant_coverage, mutation_id_base, new_function,
-        mutation_id_offset, protobuf_message);
+        semantics_preserving_mutation, only_track_mutant_coverage,
+        mutation_id_base, new_function, mutation_id_offset, protobuf_message);
     GenerateIntegerConstantReplacement(
         ast_context, dredd_macros, optimise_mutations,
-        only_track_mutant_coverage, mutation_id_base, new_function,
-        mutation_id_offset, protobuf_message);
+        semantics_preserving_mutation, only_track_mutant_coverage,
+        mutation_id_base, new_function, mutation_id_offset, protobuf_message);
     GenerateFloatConstantReplacement(
         ast_context, dredd_macros, optimise_mutations,
-        only_track_mutant_coverage, mutation_id_base, new_function,
-        mutation_id_offset, protobuf_message);
+        semantics_preserving_mutation, only_track_mutant_coverage,
+        mutation_id_base, new_function, mutation_id_offset, protobuf_message);
   }
 }
 
 void MutationReplaceExpr::GenerateFloatConstantReplacement(
     const clang::ASTContext& ast_context,
     std::unordered_set<std::string>& dredd_macros, bool optimise_mutations,
-    bool only_track_mutant_coverage, int mutation_id_base,
-    std::stringstream& new_function, int& mutation_id_offset,
+    bool semantics_preserving_mutation, bool only_track_mutant_coverage,
+    int mutation_id_base, std::stringstream& new_function,
+    int& mutation_id_offset,
     protobufs::MutationReplaceExpr& protobuf_message) const {
   const clang::BuiltinType& exprType =
       *expr_->getType()->getAs<clang::BuiltinType>();
@@ -335,7 +346,8 @@ void MutationReplaceExpr::GenerateFloatConstantReplacement(
         const std::string macro_name = "REPLACE_EXPR_FLOAT_ZERO";
         new_function << "  " << macro_name << "(" << mutation_id_offset
                      << ");\n";
-        dredd_macros.insert(GenerateMutationMacro(macro_name, "0.0"));
+        dredd_macros.insert(GenerateMutationMacro(
+            macro_name, "0.0", semantics_preserving_mutation));
       }
       AddMutationInstance(
           mutation_id_base,
@@ -350,7 +362,8 @@ void MutationReplaceExpr::GenerateFloatConstantReplacement(
         const std::string macro_name = "REPLACE_EXPR_FLOAT_ONE";
         new_function << "  " << macro_name << "(" << mutation_id_offset
                      << ");\n";
-        dredd_macros.insert(GenerateMutationMacro(macro_name, "1.0"));
+        dredd_macros.insert(GenerateMutationMacro(
+            macro_name, "1.0", semantics_preserving_mutation));
       }
       AddMutationInstance(
           mutation_id_base,
@@ -365,7 +378,8 @@ void MutationReplaceExpr::GenerateFloatConstantReplacement(
         const std::string macro_name = "REPLACE_EXPR_FLOAT_MINUS_ONE";
         new_function << "  " << macro_name << "(" << mutation_id_offset
                      << ");\n";
-        dredd_macros.insert(GenerateMutationMacro(macro_name, "-1.0"));
+        dredd_macros.insert(GenerateMutationMacro(
+            macro_name, "-1.0", semantics_preserving_mutation));
       }
       AddMutationInstance(
           mutation_id_base,
@@ -377,8 +391,9 @@ void MutationReplaceExpr::GenerateFloatConstantReplacement(
 void MutationReplaceExpr::GenerateIntegerConstantReplacement(
     const clang::ASTContext& ast_context,
     std::unordered_set<std::string>& dredd_macros, bool optimise_mutations,
-    bool only_track_mutant_coverage, int mutation_id_base,
-    std::stringstream& new_function, int& mutation_id_offset,
+    bool semantics_preserving_mutation, bool only_track_mutant_coverage,
+    int mutation_id_base, std::stringstream& new_function,
+    int& mutation_id_offset,
     protobufs::MutationReplaceExpr& protobuf_message) const {
   const clang::BuiltinType& exprType =
       *expr_->getType()->getAs<clang::BuiltinType>();
@@ -389,7 +404,8 @@ void MutationReplaceExpr::GenerateIntegerConstantReplacement(
         const std::string macro_name = "REPLACE_EXPR_INT_ZERO";
         new_function << "  " << macro_name << "(" << mutation_id_offset
                      << ");\n";
-        dredd_macros.insert(GenerateMutationMacro(macro_name, "0"));
+        dredd_macros.insert(GenerateMutationMacro(
+            macro_name, "0", semantics_preserving_mutation));
       }
       AddMutationInstance(
           mutation_id_base,
@@ -403,7 +419,8 @@ void MutationReplaceExpr::GenerateIntegerConstantReplacement(
         const std::string macro_name = "REPLACE_EXPR_INT_ONE";
         new_function << "  " << macro_name << "(" << mutation_id_offset
                      << ");\n";
-        dredd_macros.insert(GenerateMutationMacro(macro_name, "1"));
+        dredd_macros.insert(GenerateMutationMacro(
+            macro_name, "1", semantics_preserving_mutation));
       }
       AddMutationInstance(
           mutation_id_base,
@@ -420,7 +437,8 @@ void MutationReplaceExpr::GenerateIntegerConstantReplacement(
         const std::string macro_name = "REPLACE_EXPR_INT_MINUS_ONE";
         new_function << "  " << macro_name << "(" << mutation_id_offset
                      << ");\n";
-        dredd_macros.insert(GenerateMutationMacro(macro_name, "-1"));
+        dredd_macros.insert(GenerateMutationMacro(
+            macro_name, "-1", semantics_preserving_mutation));
       }
       AddMutationInstance(
           mutation_id_base,
@@ -432,8 +450,9 @@ void MutationReplaceExpr::GenerateIntegerConstantReplacement(
 void MutationReplaceExpr::GenerateBooleanConstantReplacement(
     clang::ASTContext& ast_context,
     std::unordered_set<std::string>& dredd_macros, bool optimise_mutations,
-    bool only_track_mutant_coverage, int mutation_id_base,
-    std::stringstream& new_function, int& mutation_id_offset,
+    bool semantics_preserving_mutation, bool only_track_mutant_coverage,
+    int mutation_id_base, std::stringstream& new_function,
+    int& mutation_id_offset,
     protobufs::MutationReplaceExpr& protobuf_message) const {
   const clang::BuiltinType& exprType =
       *expr_->getType()->getAs<clang::BuiltinType>();
@@ -447,7 +466,8 @@ void MutationReplaceExpr::GenerateBooleanConstantReplacement(
         new_function << "  " << macro_name << "(" << mutation_id_offset
                      << ");\n";
         dredd_macros.insert(GenerateMutationMacro(
-            macro_name, (ast_context.getLangOpts().CPlusPlus ? "true" : "1")));
+            macro_name, (ast_context.getLangOpts().CPlusPlus ? "true" : "1"),
+            semantics_preserving_mutation));
       }
       AddMutationInstance(mutation_id_base,
                           protobufs::MutationReplaceExprAction::ReplaceWithTrue,
@@ -463,7 +483,8 @@ void MutationReplaceExpr::GenerateBooleanConstantReplacement(
         new_function << "  " << macro_name << "(" << mutation_id_offset
                      << ");\n";
         dredd_macros.insert(GenerateMutationMacro(
-            macro_name, (ast_context.getLangOpts().CPlusPlus ? "false" : "0")));
+            macro_name, (ast_context.getLangOpts().CPlusPlus ? "false" : "0"),
+            semantics_preserving_mutation));
       }
       AddMutationInstance(
           mutation_id_base,
@@ -478,8 +499,8 @@ std::string MutationReplaceExpr::GenerateMutatorFunction(
     std::unordered_set<std::string>& dredd_macros,
     const std::string& function_name, const std::string& result_type,
     const std::string& input_type, bool optimise_mutations,
-    bool only_track_mutant_coverage, int& mutation_id,
-    protobufs::MutationReplaceExpr& protobuf_message) const {
+    bool semantics_preserving_mutation, bool only_track_mutant_coverage,
+    int& mutation_id, protobufs::MutationReplaceExpr& protobuf_message) const {
   std::stringstream new_function;
   new_function << "static " << result_type << " " << function_name << "(";
   if (ast_context.getLangOpts().CPlusPlus &&
@@ -508,13 +529,14 @@ std::string MutationReplaceExpr::GenerateMutatorFunction(
 
   int mutation_id_offset = 0;
 
-  GenerateUnaryOperatorInsertion(arg_evaluated, ast_context, dredd_macros,
-                                 optimise_mutations, only_track_mutant_coverage,
-                                 mutation_id, new_function, mutation_id_offset,
-                                 protobuf_message);
+  GenerateUnaryOperatorInsertion(
+      arg_evaluated, ast_context, dredd_macros, optimise_mutations,
+      semantics_preserving_mutation, only_track_mutant_coverage, mutation_id,
+      new_function, mutation_id_offset, protobuf_message);
   GenerateConstantReplacement(
-      ast_context, dredd_macros, optimise_mutations, only_track_mutant_coverage,
-      mutation_id, new_function, mutation_id_offset, protobuf_message);
+      ast_context, dredd_macros, optimise_mutations,
+      semantics_preserving_mutation, only_track_mutant_coverage, mutation_id,
+      new_function, mutation_id_offset, protobuf_message);
 
   if (only_track_mutant_coverage) {
     new_function << "  __dredd_record_covered_mutants(local_mutation_id, " +
@@ -638,8 +660,9 @@ void MutationReplaceExpr::ReplaceExprWithFunctionCall(
 
 protobufs::MutationGroup MutationReplaceExpr::Apply(
     clang::ASTContext& ast_context, const clang::Preprocessor& preprocessor,
-    bool optimise_mutations, bool only_track_mutant_coverage,
-    int first_mutation_id_in_file, int& mutation_id, clang::Rewriter& rewriter,
+    bool optimise_mutations, bool semantics_preserving_mutation,
+    bool only_track_mutant_coverage, int first_mutation_id_in_file,
+    int& mutation_id, clang::Rewriter& rewriter,
     std::unordered_set<std::string>& dredd_declarations,
     std::unordered_set<std::string>& dredd_macros) const {
   // The protobuf object for the mutation, which will be wrapped in a
@@ -680,8 +703,8 @@ protobufs::MutationGroup MutationReplaceExpr::Apply(
 
   const std::string new_function = GenerateMutatorFunction(
       ast_context, dredd_macros, new_function_name, result_type, input_type,
-      optimise_mutations, only_track_mutant_coverage, mutation_id,
-      inner_result);
+      optimise_mutations, semantics_preserving_mutation,
+      only_track_mutant_coverage, mutation_id, inner_result);
   assert(!new_function.empty() && "Unsupported expression.");
 
   dredd_declarations.insert(new_function);

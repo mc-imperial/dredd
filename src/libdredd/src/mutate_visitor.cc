@@ -37,9 +37,6 @@
 #include "clang/Basic/SourceLocation.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "libdredd/mutation.h"
-#include "libdredd/mutation_coverage_binary_operator.h"
-#include "libdredd/mutation_coverage_expr.h"
-#include "libdredd/mutation_coverage_unary_operator.h"
 #include "libdredd/mutation_remove_stmt.h"
 #include "libdredd/mutation_replace_binary_operator.h"
 #include "libdredd/mutation_replace_expr.h"
@@ -50,11 +47,9 @@
 namespace dredd {
 
 MutateVisitor::MutateVisitor(const clang::CompilerInstance& compiler_instance,
-                             bool optimise_mutations,
-                             bool semantics_preserving_mutation)
+                             bool optimise_mutations)
     : compiler_instance_(&compiler_instance),
       optimise_mutations_(optimise_mutations),
-      semantics_preserving_mutation_(semantics_preserving_mutation),
       mutation_tree_root_() {
   mutation_tree_path_.push_back(&mutation_tree_root_);
 }
@@ -263,12 +258,11 @@ void MutateVisitor::HandleUnaryOperator(clang::UnaryOperator* unary_operator) {
   }
 
   // As it is not possible to pass bit-fields by reference, mutation of
-  // bit-field l-values is not supported.
+  // bit-fields is not supported.
   if (unary_operator->getSubExpr()->refersToBitField()) {
     return;
   }
 
-  // There is no useful way to mutate this expression.
   if (optimise_mutations_) {
     if (unary_operator->getOpcode() == clang::UO_Minus &&
         (MutationReplaceExpr::ExprIsEquivalentToInt(
@@ -297,17 +291,10 @@ void MutateVisitor::HandleUnaryOperator(clang::UnaryOperator* unary_operator) {
     }
   }
 
-  if (semantics_preserving_mutation_) {
-    mutation_tree_path_.back()->AddMutation(
-        std::make_unique<MutationCoverageUnaryOperator>(
-            *unary_operator, compiler_instance_->getPreprocessor(),
-            compiler_instance_->getASTContext()));
-  } else {
-    mutation_tree_path_.back()->AddMutation(
-        std::make_unique<MutationReplaceUnaryOperator>(
-            *unary_operator, compiler_instance_->getPreprocessor(),
-            compiler_instance_->getASTContext()));
-  }
+  mutation_tree_path_.back()->AddMutation(
+      std::make_unique<MutationReplaceUnaryOperator>(
+          *unary_operator, compiler_instance_->getPreprocessor(),
+          compiler_instance_->getASTContext()));
 }
 
 void MutateVisitor::HandleBinaryOperator(
@@ -335,7 +322,7 @@ void MutateVisitor::HandleBinaryOperator(
   }
 
   // As it is not possible to pass bit-fields by reference, mutation of
-  // bit-field l-values is not supported.
+  // bit-fields is not supported.
   if (binary_operator->getLHS()->refersToBitField()) {
     return;
   }
@@ -364,17 +351,10 @@ void MutateVisitor::HandleBinaryOperator(
     return;
   }
 
-  if (semantics_preserving_mutation_) {
-    mutation_tree_path_.back()->AddMutation(
-        std::make_unique<MutationCoverageBinaryOperator>(
-            *binary_operator, compiler_instance_->getPreprocessor(),
-            compiler_instance_->getASTContext()));
-  } else {
-    mutation_tree_path_.back()->AddMutation(
-        std::make_unique<MutationReplaceBinaryOperator>(
-            *binary_operator, compiler_instance_->getPreprocessor(),
-            compiler_instance_->getASTContext()));
-  }
+  mutation_tree_path_.back()->AddMutation(
+      std::make_unique<MutationReplaceBinaryOperator>(
+          *binary_operator, compiler_instance_->getPreprocessor(),
+          compiler_instance_->getASTContext()));
 }
 
 void MutateVisitor::HandleExpr(clang::Expr* expr) {
@@ -392,16 +372,6 @@ void MutateVisitor::HandleExpr(clang::Expr* expr) {
     return;
   }
 
-<<<<<<< HEAD
-  clang::Expr::NullPointerConstantKind const kind = expr->isNullPointerConstant(
-      compiler_instance_->getASTContext(),
-      clang::Expr::NullPointerConstantValueDependence());
-  for (const auto& parent :
-       compiler_instance_->getASTContext().getParents<clang::Expr>(*expr)) {
-    const auto* cast_parent = parent.get<clang::CastExpr>();
-    if (cast_parent != nullptr && kind != clang::Expr::NPCK_NotNull &&
-        cast_parent->getType()->isAnyPointerType()) {
-      return;
   // Avoid mutating null pointer assignments, such as int* x = 0, as mutating
   // these expressions in C++ is either not safe or not useful. This mutation
   // is acceptable in C, but we avoid the mutation for consistency.
@@ -454,17 +424,9 @@ void MutateVisitor::HandleExpr(clang::Expr* expr) {
     }
   }
 
-  if (semantics_preserving_mutation_) {
-    mutation_tree_path_.back()->AddMutation(
-        std::make_unique<MutationCoverageExpr>(
-            *expr, compiler_instance_->getPreprocessor(),
-            compiler_instance_->getASTContext()));
-  } else {
-    mutation_tree_path_.back()->AddMutation(
-        std::make_unique<MutationReplaceExpr>(
-            *expr, compiler_instance_->getPreprocessor(),
-            compiler_instance_->getASTContext()));
-  }
+  mutation_tree_path_.back()->AddMutation(std::make_unique<MutationReplaceExpr>(
+      *expr, compiler_instance_->getPreprocessor(),
+      compiler_instance_->getASTContext()));
 }
 
 bool MutateVisitor::VisitExpr(clang::Expr* expr) {
@@ -487,11 +449,6 @@ bool MutateVisitor::VisitExpr(clang::Expr* expr) {
     // condition expression for the if statement. It must not be mutated,
     // because this would lead to invalid code of the form:
     // "if (auto __dredd_fun(v) = ...)".
-    return true;
-  }
-
-  if (GetSourceRangeInMainFile(compiler_instance_->getPreprocessor(), *expr)
-          .isInvalid()) {
     return true;
   }
 

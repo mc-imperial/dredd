@@ -40,9 +40,8 @@ class MutateAstConsumer : public clang::ASTConsumer {
         semantics_preserving_mutation_(semantics_preserving_mutation),
         dump_ast_(dump_ast),
         only_track_mutant_coverage_(only_track_mutant_coverage),
-        visitor_(std::make_unique<MutateVisitor>(
-            compiler_instance, optimise_mutations,
-            semantics_preserving_mutation)),
+        visitor_(std::make_unique<MutateVisitor>(compiler_instance,
+                                                 optimise_mutations)),
         mutation_id_(&mutation_id),
         mutation_info_(&mutation_info) {}
 

@@ -182,7 +182,8 @@ std::string MutationReplaceUnaryOperator::GenerateMutatorFunction(
     std::unordered_set<std::string>& dredd_macros,
     const std::string& function_name, const std::string& result_type,
     const std::string& input_type, bool optimise_mutations,
-    bool only_track_mutant_coverage, int& mutation_id,
+    bool semantics_preserving_mutation, bool only_track_mutant_coverage,
+    int& mutation_id,
     protobufs::MutationReplaceUnaryOperator& protobuf_message) const {
   std::stringstream new_function;
   new_function << "static " << result_type << " " << function_name << "(";
@@ -226,8 +227,8 @@ std::string MutationReplaceUnaryOperator::GenerateMutatorFunction(
   int mutation_id_offset = 0;
   GenerateUnaryOperatorReplacement(
       arg_evaluated, ast_context, dredd_macros, optimise_mutations,
-      only_track_mutant_coverage, mutation_id, new_function, mutation_id_offset,
-      protobuf_message);
+      semantics_preserving_mutation, only_track_mutant_coverage, mutation_id,
+      new_function, mutation_id_offset, protobuf_message);
 
   if (only_track_mutant_coverage) {
     new_function << "  __dredd_record_covered_mutants(local_mutation_id, " +
@@ -300,8 +301,9 @@ std::string MutationReplaceUnaryOperator::GetUnaryMacroName(
 void MutationReplaceUnaryOperator::GenerateUnaryOperatorReplacement(
     const std::string& arg_evaluated, const clang::ASTContext& ast_context,
     std::unordered_set<std::string>& dredd_macros, bool optimise_mutations,
-    bool only_track_mutant_coverage, int mutation_id_base,
-    std::stringstream& new_function, int& mutation_id_offset,
+    bool semantics_preserving_mutation, bool only_track_mutant_coverage,
+    int mutation_id_base, std::stringstream& new_function,
+    int& mutation_id_offset,
     protobufs::MutationReplaceUnaryOperator& protobuf_message) const {
   const std::vector<clang::UnaryOperatorKind> candidate_replacement_operators =
       {clang::UnaryOperatorKind::UO_PreInc,
@@ -327,12 +329,14 @@ void MutationReplaceUnaryOperator::GenerateUnaryOperatorReplacement(
         dredd_macros.insert(GenerateMutationMacro(
             macro_name,
             clang::UnaryOperator::getOpcodeStr(operator_kind).str() +
-                arg_evaluated));
+                arg_evaluated,
+            semantics_preserving_mutation));
       } else {
         dredd_macros.insert(GenerateMutationMacro(
             macro_name,
             arg_evaluated +
-                clang::UnaryOperator::getOpcodeStr(operator_kind).str()));
+                clang::UnaryOperator::getOpcodeStr(operator_kind).str(),
+            semantics_preserving_mutation));
       }
     }
     AddMutationInstance(mutation_id_base, OperatorKindToAction(operator_kind),
@@ -346,7 +350,8 @@ void MutationReplaceUnaryOperator::GenerateUnaryOperatorReplacement(
     if (!only_track_mutant_coverage) {
       const std::string macro_name = GetUnaryMacroName("ARG", ast_context);
       new_function << "  " << macro_name << "(" << mutation_id_offset << ");\n";
-      dredd_macros.insert(GenerateMutationMacro(macro_name, arg_evaluated));
+      dredd_macros.insert(GenerateMutationMacro(macro_name, arg_evaluated,
+                                                semantics_preserving_mutation));
     }
     AddMutationInstance(
         mutation_id_base,
@@ -357,8 +362,9 @@ void MutationReplaceUnaryOperator::GenerateUnaryOperatorReplacement(
 
 protobufs::MutationGroup MutationReplaceUnaryOperator::Apply(
     clang::ASTContext& ast_context, const clang::Preprocessor& preprocessor,
-    bool optimise_mutations, bool only_track_mutant_coverage,
-    int first_mutation_id_in_file, int& mutation_id, clang::Rewriter& rewriter,
+    bool optimise_mutations, bool semantics_preserving_mutation,
+    bool only_track_mutant_coverage, int first_mutation_id_in_file,
+    int& mutation_id, clang::Rewriter& rewriter,
     std::unordered_set<std::string>& dredd_declarations,
     std::unordered_set<std::string>& dredd_macros) const {
   // The protobuf object for the mutation, which will be wrapped in a
@@ -471,8 +477,8 @@ protobufs::MutationGroup MutationReplaceUnaryOperator::Apply(
 
   const std::string new_function = GenerateMutatorFunction(
       ast_context, dredd_macros, new_function_name, result_type, input_type,
-      optimise_mutations, only_track_mutant_coverage, mutation_id,
-      inner_result);
+      optimise_mutations, semantics_preserving_mutation,
+      only_track_mutant_coverage, mutation_id, inner_result);
   assert(!new_function.empty() && "Unsupported opcode.");
 
   dredd_declarations.insert(new_function);

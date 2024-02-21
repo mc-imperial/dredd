@@ -50,9 +50,9 @@ class Mutation {
   // avoiding redundant repeat declarations.
   virtual protobufs::MutationGroup Apply(
       clang::ASTContext& ast_context, const clang::Preprocessor& preprocessor,
-      bool optimise_mutations, bool only_track_mutant_coverage,
-      int first_mutation_id_in_file, int& mutation_id,
-      clang::Rewriter& rewriter,
+      bool optimise_mutations, bool semantics_preserving_mutation,
+      bool only_track_mutant_coverage, int first_mutation_id_in_file,
+      int& mutation_id, clang::Rewriter& rewriter,
       std::unordered_set<std::string>& dredd_declarations,
       std::unordered_set<std::string>& dredd_macros) const = 0;
 };

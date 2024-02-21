@@ -113,7 +113,9 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
     assert(!rewriter_result && "Rewrite failed.\n");
   }
 
-  rewriter_.InsertTextBefore(start_of_source_file, GenerateMutationPrelude());
+  rewriter_.InsertTextBefore(
+      start_of_source_file,
+      GenerateMutationPrelude(semantics_preserving_mutation_));
 
   std::set<std::string> sorted_dredd_macros;
   sorted_dredd_macros.insert(dredd_macros.begin(), dredd_macros.end());
@@ -124,7 +126,9 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
     assert(!rewriter_result && "Rewrite failed.\n");
   }
 
-  rewriter_.InsertTextBefore(start_of_source_file, GenerateMutationReturn());
+  rewriter_.InsertTextBefore(
+      start_of_source_file,
+      GenerateMutationReturn(semantics_preserving_mutation_));
 
   const std::string dredd_prelude =
       compiler_instance_->getLangOpts().CPlusPlus
@@ -139,7 +143,7 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
   if (semantics_preserving_mutation_) {
     // TODO(JamesLeeJones): Possibly modify this variable.
     rewriter_result = rewriter_.InsertTextBefore(
-        visitor_->GetStartLocationOfFirstDeclInSourceFile(),
+        start_of_source_file,
         "static thread_local unsigned long long int no_op = 0;\n\n");
     (void)rewriter_result;  // Keep release-mode compilers happy.
     assert(!rewriter_result && "Rewrite failed.\n");
@@ -401,8 +405,9 @@ protobufs::MutationTreeNode MutateAstConsumer::ApplyMutations(
     const int mutation_id_old = *mutation_id_;
     const auto mutation_group = mutation->Apply(
         context, compiler_instance_->getPreprocessor(), optimise_mutations_,
-        only_track_mutant_coverage_, initial_mutation_id, *mutation_id_,
-        rewriter_, dredd_declarations, dredd_macros);
+        semantics_preserving_mutation_, only_track_mutant_coverage_,
+        initial_mutation_id, *mutation_id_, rewriter_, dredd_declarations,
+        dredd_macros);
     if (*mutation_id_ > mutation_id_old) {
       // Only add the result of applying the mutation if it had an effect.
       *result.add_mutation_groups() = mutation_group;
