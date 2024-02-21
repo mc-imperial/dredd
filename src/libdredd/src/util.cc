@@ -131,38 +131,37 @@ bool IsCxx11ConstantExpr(const clang::Expr& expr,
 
 std::string GenerateMutationPrelude(bool semantics_preserving_mutation) {
   (void)semantics_preserving_mutation;
-  std::string result = "#define MUTATION_PRELUDE(arg) ";
+  std::string result = "#define MUTATION_PRELUDE(arg";
   if (!semantics_preserving_mutation) {
     return result +
-           "if (!__dredd_some_mutation_enabled) "
+           ") if (!__dredd_some_mutation_enabled) "
            "return arg\n";
   }
 
   // TODO(James Lee-Jones): Fix this.
-  return result;
+  return result + ",type) type actual_result = arg\n";
 }
 
 std::string GenerateMutationMacro(const std::string& name,
                                   const std::string& args_evaluated,
                                   bool semantics_preserving_mutation) {
-  std::string const result = "#define " + name;
+  std::string const result = "#define " + name + "(mutation_id_offset) ";
   if (semantics_preserving_mutation) {
-    return result + "if (" + args_evaluated + " != actual_result) no_op++\n";
+    return result + "if ((" + args_evaluated + ") != actual_result) no_op++\n";
   }
 
   return result +
-         "(mutation_id_offset) if "
-         "(__dredd_enabled_mutation(local_mutation_id "
+         "if (__dredd_enabled_mutation(local_mutation_id "
          "+ mutation_id_offset)) return " +
          args_evaluated + "\n";
 }
 
 std::string GenerateMutationReturn(bool semantics_preserving_mutation) {
-  std::string result = "#define MUTATION_RETURN";
+  std::string result = "#define MUTATION_RETURN(arg) ";
   if (!semantics_preserving_mutation) {
-    result += "(arg) arg\n";
+    result += "arg\n";
   } else {
-    result += " actual_result\n";
+    result += "actual_result\n";
   }
 
   return result;

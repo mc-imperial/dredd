@@ -251,6 +251,50 @@ std::string MutationReplaceBinaryOperator::GetBinaryMacroName(
   return result;
 }
 
+ std::string
+MutationReplaceBinaryOperator::ConvertToSemanticsPreservingExpression(
+    const std::string& arg1_evaluated, clang::BinaryOperatorKind operator_kind,
+    const std::string& arg2_evaluated) {
+  std::string result = arg1_evaluated + " ";
+  switch (operator_kind) {
+    case clang::BinaryOperatorKind::BO_AddAssign:
+      result += "+";
+      break;
+    case clang::BinaryOperatorKind::BO_AndAssign:
+      result += "&";
+      break;
+    case clang::BinaryOperatorKind::BO_Assign:
+      return arg2_evaluated;
+    case clang::BinaryOperatorKind::BO_DivAssign:
+      result += "/";
+      break;
+    case clang::BinaryOperatorKind::BO_MulAssign:
+      result += "*";
+      break;
+    case clang::BinaryOperatorKind::BO_RemAssign:
+      result += "%";
+      break;
+    case clang::BinaryOperatorKind::BO_OrAssign:
+      result += "|";
+      break;
+    case clang::BinaryOperatorKind::BO_ShlAssign:
+      result += "<<";
+      break;
+    case clang::BinaryOperatorKind::BO_ShrAssign:
+      result += ">>";
+      break;
+    case clang::BinaryOperatorKind::BO_SubAssign:
+      result += "-";
+      break;
+    case clang::BinaryOperatorKind::BO_XorAssign:
+      result += "^";
+      break;
+    default:
+      result += clang::BinaryOperator::getOpcodeStr(operator_kind).str();
+  }
+  return result += " " + arg2_evaluated;
+}
+
 std::string
 MutationReplaceBinaryOperator::GenerateBinaryOperatorReplacementMacro(
     const std::string& name, const std::string& arg1_evaluated,
@@ -268,15 +312,22 @@ MutationReplaceBinaryOperator::GenerateBinaryOperatorReplacementMacro(
            args_evaluated + "\n";
   }
 
-  std::string result = "#define " + name + "if (";
+  std::string result = "#define " + name + "(mutation_id_offset) if (";
 
   // TODO(James Lee-Jones): Add more safe math checks.
   if (operator_kind == clang::BinaryOperatorKind::BO_Div ||
-      operator_kind == clang::BinaryOperatorKind::BO_Rem) {
+      operator_kind == clang::BinaryOperatorKind::BO_Rem ||
+      operator_kind == clang::BinaryOperatorKind::BO_DivAssign ||
+      operator_kind == clang::BinaryOperatorKind::BO_DivAssign) {
     result += "(" + arg2_evaluated + " != 0) &&";
   }
 
-  result += args_evaluated + " != actual_result) no_op++\n";
+  // TODO(James Lee-Jones): Prevent modification.
+
+  result += "(" +
+            ConvertToSemanticsPreservingExpression(
+                arg1_evaluated, operator_kind, arg2_evaluated) +
+            ") != actual_result) no_op++\n";
 
   return result;
 }
@@ -535,7 +586,12 @@ std::string MutationReplaceBinaryOperator::GenerateMutatorFunction(
                  << clang::BinaryOperator::getOpcodeStr(
                         binary_operator_->getOpcode())
                         .str()
-                 << " " << arg2_evaluated << ");\n";
+                 << " " << arg2_evaluated;
+    if (semantics_preserving_mutation) {
+      new_function << "," << result_type;
+    }
+
+    new_function << ");\n";
   }
 
   GenerateBinaryOperatorReplacement(

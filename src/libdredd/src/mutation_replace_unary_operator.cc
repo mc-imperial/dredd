@@ -214,7 +214,13 @@ std::string MutationReplaceUnaryOperator::GenerateMutatorFunction(
       new_function << clang::UnaryOperator::getOpcodeStr(
                           unary_operator_->getOpcode())
                           .str()
-                   << arg_evaluated + ");\n";
+                   << arg_evaluated;
+
+      if (semantics_preserving_mutation) {
+        new_function << "," << result_type;
+      }
+
+      new_function << ");\n";
     } else {
       new_function << arg_evaluated
                    << clang::UnaryOperator::getOpcodeStr(

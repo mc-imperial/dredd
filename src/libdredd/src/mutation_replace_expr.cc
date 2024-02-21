@@ -203,7 +203,9 @@ void MutationReplaceExpr::GenerateUnaryOperatorInsertionBeforeLValue(
     const std::string macro_name = GetExprMacroName("INC", ast_context);
     new_function << "  " << macro_name << "(" << mutation_id_offset << ");\n";
     dredd_macros.insert(GenerateMutationMacro(macro_name,
-                                              "++(" + arg_evaluated + ")",
+                                              semantics_preserving_mutation
+                                                  ? arg_evaluated + " + 1"
+                                                  : "++(" + arg_evaluated + ")",
                                               semantics_preserving_mutation));
   }
   AddMutationInstance(mutation_id_base,
@@ -214,7 +216,9 @@ void MutationReplaceExpr::GenerateUnaryOperatorInsertionBeforeLValue(
     const std::string macro_name = GetExprMacroName("DEC", ast_context);
     new_function << "  " << macro_name << "(" << mutation_id_offset << ");\n";
     dredd_macros.insert(GenerateMutationMacro(macro_name,
-                                              "--(" + arg_evaluated + ")",
+                                              semantics_preserving_mutation
+                                                  ? arg_evaluated + " - 1"
+                                                  : "--(" + arg_evaluated + ")",
                                               semantics_preserving_mutation));
   }
   AddMutationInstance(mutation_id_base,
@@ -524,7 +528,13 @@ std::string MutationReplaceExpr::GenerateMutatorFunction(
   if (!only_track_mutant_coverage) {
     // Quickly apply the original operator if no mutant is enabled (which will
     // be the common case).
-    new_function << "  MUTATION_PRELUDE(" << arg_evaluated << ");\n";
+    new_function << "  MUTATION_PRELUDE(" << arg_evaluated;
+
+    if (semantics_preserving_mutation) {
+      new_function << "," << result_type;
+    }
+
+    new_function << ");\n";
   }
 
   int mutation_id_offset = 0;

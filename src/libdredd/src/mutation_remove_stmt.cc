@@ -102,14 +102,14 @@ protobufs::MutationGroup MutationRemoveStmt::Apply(
   // |mutation_id|, into a file-local mutation id.
   const int local_mutation_id = mutation_id - first_mutation_id_in_file;
 
-  if (only_track_mutant_coverage || semantics_preserving_mutation) {
+  if (only_track_mutant_coverage) {
     const bool rewriter_result = rewriter.InsertTextBefore(
         source_range.getBegin(), "__dredd_record_covered_mutants(" +
                                      std::to_string(local_mutation_id) +
                                      ", 1); ");
     assert(!rewriter_result && "Rewrite failed.\n");
     (void)rewriter_result;  // Keep release-mode compilers happy.
-  } else {
+  } else if (!semantics_preserving_mutation) {
     bool rewriter_result = rewriter.InsertTextBefore(
         source_range.getBegin(), "if (!__dredd_enabled_mutation(" +
                                      std::to_string(local_mutation_id) +
