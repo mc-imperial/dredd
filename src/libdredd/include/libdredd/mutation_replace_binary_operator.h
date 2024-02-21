@@ -67,7 +67,7 @@ class MutationReplaceBinaryOperator : public Mutation {
 
   static std::string OpKindToString(clang::BinaryOperatorKind kind);
 
-  static std::string ConvertToSemanticsPreservingExpression(
+  static std::string ConvertToSemanticsPreservingBinaryExpression(
       const std::string& arg1_evaluated,
       clang::BinaryOperatorKind operator_kind,
       const std::string& arg2_evaluated);

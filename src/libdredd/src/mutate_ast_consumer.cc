@@ -153,8 +153,7 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
   if (semantics_preserving_mutation_) {
     // TODO(JamesLeeJones): Possibly modify this variable.
     rewriter_result = rewriter_.InsertTextBefore(
-        start_of_source_file,
-        "static thread_local unsigned long long int no_op = 0;\n\n");
+        start_of_source_file, "static unsigned long long int no_op = 0;\n\n");
     (void)rewriter_result;  // Keep release-mode compilers happy.
     assert(!rewriter_result && "Rewrite failed.\n");
   }
@@ -180,6 +179,7 @@ std::string MutateAstConsumer::GetRegularDreddPreludeCpp(
   result << "#include <cinttypes>\n";
   result << "#include <cstddef>\n";
   result << "#include <functional>\n";
+  result << "#include <assert.h>\n"; // TODO: REMOVE THIS
   result << "#include <string>\n\n";
   result << "\n";
   result << "#ifdef _MSC_VER\n";
@@ -311,6 +311,7 @@ std::string MutateAstConsumer::GetRegularDreddPreludeC(
   result << "#include <inttypes.h>\n";
   result << "#include <stdbool.h>\n";
   result << "#include <stdlib.h>\n";
+  result << "#include <assert.h>\n"; // TODO: REMOVE THIS
   result << "#include <string.h>\n";
   result << "\n";
   result << "#ifdef _MSC_VER\n";

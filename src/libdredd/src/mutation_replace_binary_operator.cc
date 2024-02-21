@@ -252,7 +252,7 @@ std::string MutationReplaceBinaryOperator::GetBinaryMacroName(
 }
 
 std::string
-MutationReplaceBinaryOperator::ConvertToSemanticsPreservingExpression(
+MutationReplaceBinaryOperator::ConvertToSemanticsPreservingBinaryExpression(
     const std::string& arg1_evaluated, clang::BinaryOperatorKind operator_kind,
     const std::string& arg2_evaluated) {
   std::string result = arg1_evaluated + " ";
@@ -318,14 +318,15 @@ MutationReplaceBinaryOperator::GenerateBinaryOperatorReplacementMacro(
   if (operator_kind == clang::BinaryOperatorKind::BO_Div ||
       operator_kind == clang::BinaryOperatorKind::BO_Rem ||
       operator_kind == clang::BinaryOperatorKind::BO_DivAssign ||
-      operator_kind == clang::BinaryOperatorKind::BO_DivAssign) {
-    result += "(" + arg2_evaluated + " != 0) &&";
+      operator_kind == clang::BinaryOperatorKind::BO_RemAssign) {
+    result += "(" + arg2_evaluated + " != 0) && ";
   }
 
-  // TODO(James Lee-Jones): Prevent modification.
+  // TODO(James Lee-Jones): Add shift checks.
+
 
   result += "(" +
-            ConvertToSemanticsPreservingExpression(
+            ConvertToSemanticsPreservingBinaryExpression(
                 arg1_evaluated, operator_kind, arg2_evaluated) +
             ") != actual_result) no_op++\n";
 
@@ -609,7 +610,9 @@ std::string MutationReplaceBinaryOperator::GenerateMutatorFunction(
     new_function << "  __dredd_record_covered_mutants(local_mutation_id, " +
                         std::to_string(mutation_id_offset) + ");\n";
   }
-  // TODO(JamesLee-Jones): Replace with return macro.
+
+  // TODO: REMOVE THIS
+  new_function << "  assert (copy == actual_result);";
   new_function << "  return MUTATION_RETURN(" << arg1_evaluated << " "
                << clang::BinaryOperator::getOpcodeStr(
                       binary_operator_->getOpcode())
