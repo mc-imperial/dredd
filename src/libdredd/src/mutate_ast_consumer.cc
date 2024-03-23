@@ -179,6 +179,7 @@ std::string MutateAstConsumer::GetRegularDreddPreludeCpp(
   result << "#include <cinttypes>\n";
   result << "#include <cstddef>\n";
   result << "#include <functional>\n";
+  if (semantics_preserving_mutation_) result << "#include <limits>\n";
   result << "#include <string>\n\n";
   result << "\n";
   result << "#ifdef _MSC_VER\n";

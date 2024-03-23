@@ -90,11 +90,6 @@ class MutationReplaceBinaryOperator : public Mutation {
   [[nodiscard]] bool IsValidReplacementOperator(
       clang::BinaryOperatorKind operator_kind) const;
 
-  // Generates macro for argument replacement.
-  static std::string GenerateArgumentReplacementMacro(
-      std::string& name, const std::string& arg,
-      bool semantics_preserving_mutation);
-
   // Replaces binary expressions with either the left or right operand.
   void GenerateArgumentReplacement(
       const std::string& arg1_evaluated, const std::string& arg2_evaluated,

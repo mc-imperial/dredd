@@ -131,15 +131,14 @@ bool IsCxx11ConstantExpr(const clang::Expr& expr,
 
 std::string GenerateMutationPrelude(bool semantics_preserving_mutation) {
   (void)semantics_preserving_mutation;
-  std::string result = "#define MUTATION_PRELUDE(arg";
+  const std::string result = "#define MUTATION_PRELUDE(arg";
   if (!semantics_preserving_mutation) {
     return result +
            ") if (!__dredd_some_mutation_enabled) "
            "return arg\n";
   }
 
-  // TODO(James Lee-Jones): Fix this.
-  return result + ",type) type actual_result = arg\n";
+  return result + ",type) type actual_result = arg;\n";
 }
 
 std::string GenerateMutationMacro(const std::string& name,

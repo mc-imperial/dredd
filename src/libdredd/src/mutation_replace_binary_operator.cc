@@ -312,17 +312,58 @@ MutationReplaceBinaryOperator::GenerateBinaryOperatorReplacementMacro(
            args_evaluated + "\n";
   }
 
-  std::string result = "#define " + name + "(mutation_id_offset) if (";
+  std::string result = "#define " + name + "(type) if (";
 
   // TODO(James Lee-Jones): Add more safe math checks.
+  switch (operator_kind) {
+    case clang::BO_PtrMemD:break;
+    case clang::BO_PtrMemI:break;
+    case clang::BO_Mul:break;
+    case clang::BO_Div:break;
+    case clang::BO_Rem:break;
+    case clang::BO_Add:
+      result += "(((" + arg1_evaluated + ") > 0 && (" + arg2_evaluated + ") > 0 && (" + arg1_evaluated + ") < (std::numeric_limits<type>::max() - (" + arg2_evaluated + ")))";
+      result += " || ";
+      result += "((" + arg1_evaluated + ") < 0 && (" + arg2_evaluated + ") < 0 && (" + arg1_evaluated + ") < (std::numeric_limits<type>::lowest() - (" + arg2_evaluated + "))))";
+      result += " && ";
+      break;
+    case clang::BO_Sub:
+//      result += "((((" + arg1_evaluated + ") ^ (" + arg2_evaluated + ")) & (((" + arg1_evaluated + ") ^ (((" + arg1_evaluated + ") ^ (" + arg2_evaluated + ")) & (~max))) ^ -(" + arg2_evaluated + ")) ^ (" + arg2_evaluated + "))) > 0 && ";
+      break;
+    case clang::BO_Shl:break;
+    case clang::BO_Shr:break;
+    case clang::BO_Cmp:break;
+    case clang::BO_LT:break;
+    case clang::BO_GT:break;
+    case clang::BO_LE:break;
+    case clang::BO_GE:break;
+    case clang::BO_EQ:break;
+    case clang::BO_NE:break;
+    case clang::BO_And:break;
+    case clang::BO_Xor:break;
+    case clang::BO_Or:break;
+    case clang::BO_LAnd:break;
+    case clang::BO_LOr:break;
+    case clang::BO_Assign:break;
+    case clang::BO_MulAssign:break;
+    case clang::BO_DivAssign:break;
+    case clang::BO_RemAssign:break;
+    case clang::BO_AddAssign:break;
+    case clang::BO_SubAssign:break;
+    case clang::BO_ShlAssign:break;
+    case clang::BO_ShrAssign:break;
+    case clang::BO_AndAssign:break;
+    case clang::BO_XorAssign:break;
+    case clang::BO_OrAssign:break;
+    case clang::BO_Comma:break;
+  }
+
   if (operator_kind == clang::BinaryOperatorKind::BO_Div ||
       operator_kind == clang::BinaryOperatorKind::BO_Rem ||
       operator_kind == clang::BinaryOperatorKind::BO_DivAssign ||
       operator_kind == clang::BinaryOperatorKind::BO_RemAssign) {
     result += "(" + arg2_evaluated + " != 0) && ";
   }
-
-  // TODO(James Lee-Jones): Add shift checks.
 
   result += "(" +
             ConvertToSemanticsPreservingBinaryExpression(
@@ -447,7 +488,15 @@ void MutationReplaceBinaryOperator::GenerateBinaryOperatorReplacement(
     if (!only_track_mutant_coverage) {
       const std::string macro_name =
           GetBinaryMacroName(OpKindToString(operator_kind), ast_context);
-      new_function << "  " << macro_name << "(" << mutation_id_offset << ");\n";
+      if (!semantics_preserving_mutation) {
+        new_function << "  " << macro_name << "(" << mutation_id_offset << ");\n";
+      } else {
+        new_function << "  " << macro_name << "(" << binary_operator_->getType()
+            ->getAs<clang::BuiltinType>()
+            ->getName(ast_context.getPrintingPolicy())
+            .str() << ");\n";
+      }
+
       dredd_macros.insert(GenerateBinaryOperatorReplacementMacro(
           macro_name, arg1_evaluated, operator_kind, arg2_evaluated,
           semantics_preserving_mutation));
@@ -540,6 +589,11 @@ std::string MutationReplaceBinaryOperator::GenerateMutatorFunction(
     bool only_track_mutant_coverage, int& mutation_id,
     protobufs::MutationReplaceBinaryOperator& protobuf_message) const {
   std::stringstream new_function;
+
+  if (semantics_preserving_mutation) {
+    new_function << "__attribute__((always_inline)) ";
+  }
+
   new_function << "static " << result_type << " " << function_name << "(";
 
   if (ast_context.getLangOpts().CPlusPlus &&
