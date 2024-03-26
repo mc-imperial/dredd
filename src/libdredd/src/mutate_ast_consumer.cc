@@ -92,6 +92,8 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
 
   *mutation_info_->add_info_for_files() = mutation_info_for_file;
 
+  if (mutation_pass_) return;
+
   auto& source_manager = ast_context.getSourceManager();
   const clang::SourceLocation start_of_source_file =
       source_manager.translateLineCol(source_manager.getMainFileID(), 1, 1);
@@ -374,10 +376,11 @@ protobufs::MutationTreeNode MutateAstConsumer::ApplyMutations(
   }
   for (const auto& mutation : mutation_tree_node.GetMutations()) {
     const int mutation_id_old = *mutation_id_;
-    const auto mutation_group = mutation->Apply(
-        context, compiler_instance_->getPreprocessor(), optimise_mutations_,
-        only_track_mutant_coverage_, initial_mutation_id, *mutation_id_,
-        rewriter_, dredd_declarations);
+    // TODO(James Lee-Jones): Don't do this if we are only generating the mutation tree.
+      const auto mutation_group = mutation->Apply(
+          context, compiler_instance_->getPreprocessor(), optimise_mutations_,
+          only_track_mutant_coverage_, mutation_pass_, initial_mutation_id, *mutation_id_,
+          rewriter_, dredd_declarations);
     if (*mutation_id_ > mutation_id_old) {
       // Only add the result of applying the mutation if it had an effect.
       *result.add_mutation_groups() = mutation_group;

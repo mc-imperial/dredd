@@ -36,12 +36,15 @@ class MutationReplaceUnaryOperator : public Mutation {
                                const clang::Preprocessor& preprocessor,
                                const clang::ASTContext& ast_context);
 
-  protobufs::MutationGroup Apply(
-      clang::ASTContext& ast_context, const clang::Preprocessor& preprocessor,
-      bool optimise_mutations, bool only_track_mutant_coverage,
-      int first_mutation_id_in_file, int& mutation_id,
-      clang::Rewriter& rewriter,
-      std::unordered_set<std::string>& dredd_declarations) const override;
+  protobufs::MutationGroup Apply(clang::ASTContext &ast_context,
+                                 const clang::Preprocessor &preprocessor,
+                                 bool optimise_mutations,
+                                 bool only_track_mutant_coverage,
+                                 bool mutation_pass,
+                                 int first_mutation_id_in_file,
+                                 int &mutation_id,
+                                 clang::Rewriter &rewriter,
+                                 std::unordered_set<std::string> &dredd_declarations) const override;
 
  private:
   std::string GenerateMutatorFunction(

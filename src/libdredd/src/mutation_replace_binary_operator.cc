@@ -519,11 +519,15 @@ std::string MutationReplaceBinaryOperator::GenerateMutatorFunction(
   return new_function.str();
 }
 
-protobufs::MutationGroup MutationReplaceBinaryOperator::Apply(
-    clang::ASTContext& ast_context, const clang::Preprocessor& preprocessor,
-    bool optimise_mutations, bool only_track_mutant_coverage,
-    int first_mutation_id_in_file, int& mutation_id, clang::Rewriter& rewriter,
-    std::unordered_set<std::string>& dredd_declarations) const {
+protobufs::MutationGroup MutationReplaceBinaryOperator::Apply(clang::ASTContext &ast_context,
+                                                              const clang::Preprocessor &preprocessor,
+                                                              bool optimise_mutations,
+                                                              bool only_track_mutant_coverage,
+                                                              bool mutation_pass,
+                                                              int first_mutation_id_in_file,
+                                                              int &mutation_id,
+                                                              clang::Rewriter &rewriter,
+                                                              std::unordered_set<std::string> &dredd_declarations) const {
   // The protobuf object for the mutation, which will be wrapped in a
   // MutationGroup.
   protobufs::MutationReplaceBinaryOperator inner_result;
@@ -552,6 +556,7 @@ protobufs::MutationGroup MutationReplaceBinaryOperator::Apply(
   inner_result.mutable_rhs_end()->set_line(info_for_rhs_.GetEndLine());
   inner_result.mutable_rhs_end()->set_column(info_for_rhs_.GetEndColumn());
   *inner_result.mutable_rhs_snippet() = info_for_rhs_.GetSnippet();
+
 
   const std::string new_function_name =
       GetFunctionName(optimise_mutations, ast_context);
@@ -604,9 +609,7 @@ protobufs::MutationGroup MutationReplaceBinaryOperator::Apply(
     }
   }
 
-  ReplaceOperator(lhs_type, rhs_type, new_function_name, ast_context,
-                  preprocessor, first_mutation_id_in_file, mutation_id,
-                  rewriter);
+
 
   const std::string new_function = GenerateMutatorFunction(
       ast_context, new_function_name, result_type, lhs_type, rhs_type,
@@ -614,12 +617,17 @@ protobufs::MutationGroup MutationReplaceBinaryOperator::Apply(
       inner_result);
   assert(!new_function.empty() && "Unsupported opcode.");
 
+  protobufs::MutationGroup result;
+  *result.mutable_replace_binary_operator() = inner_result;
+  if (mutation_pass) return result;
+
+  ReplaceOperator(lhs_type, rhs_type, new_function_name, ast_context,
+                  preprocessor, first_mutation_id_in_file, mutation_id,
+                  rewriter);
   // Add the mutation function to the set of Dredd declarations - there may
   // already be a matching function, in which case duplication will be avoided.
   dredd_declarations.insert(new_function);
 
-  protobufs::MutationGroup result;
-  *result.mutable_replace_binary_operator() = inner_result;
   return result;
 }
 

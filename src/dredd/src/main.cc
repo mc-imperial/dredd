@@ -60,6 +60,12 @@ static llvm::cl::opt<bool> dump_asts(
     llvm::cl::desc("Dump each AST that is processed; useful for debugging"),
     llvm::cl::cat(mutate_category));
 // NOLINTNEXTLINE
+// TODO(James Lee-Jones): Finish
+static llvm::cl::opt<bool> mutant_pass(
+    "mutant-pass",
+    llvm::cl::desc("Perform a pass to build the mutation tree. Must be passed with --mutation_info_file."),
+    llvm::cl::cat(mutate_category));
+// NOLINTNEXTLINE
 static llvm::cl::opt<std::string> mutation_info_file(
     "mutation-info-file", llvm::cl::Required,
     llvm::cl::desc(
@@ -98,7 +104,7 @@ int main(int argc, const char** argv) {
 
   const std::unique_ptr<clang::tooling::FrontendActionFactory> factory =
       dredd::NewMutateFrontendActionFactory(!no_mutation_opts, dump_asts,
-                                            only_track_mutant_coverage,
+                                            only_track_mutant_coverage, mutant_pass,
                                             mutation_id, mutation_info);
 
   const int return_code = Tool.run(factory.get());

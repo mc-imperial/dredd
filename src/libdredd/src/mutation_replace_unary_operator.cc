@@ -335,11 +335,15 @@ void MutationReplaceUnaryOperator::GenerateUnaryOperatorReplacement(
   }
 }
 
-protobufs::MutationGroup MutationReplaceUnaryOperator::Apply(
-    clang::ASTContext& ast_context, const clang::Preprocessor& preprocessor,
-    bool optimise_mutations, bool only_track_mutant_coverage,
-    int first_mutation_id_in_file, int& mutation_id, clang::Rewriter& rewriter,
-    std::unordered_set<std::string>& dredd_declarations) const {
+protobufs::MutationGroup MutationReplaceUnaryOperator::Apply(clang::ASTContext &ast_context,
+                                                             const clang::Preprocessor &preprocessor,
+                                                             bool optimise_mutations,
+                                                             bool only_track_mutant_coverage,
+                                                             bool mutation_pass,
+                                                             int first_mutation_id_in_file,
+                                                             int &mutation_id,
+                                                             clang::Rewriter &rewriter,
+                                                             std::unordered_set<std::string> &dredd_declarations) const {
   // The protobuf object for the mutation, which will be wrapped in a
   // MutationGroup.
   protobufs::MutationReplaceUnaryOperator inner_result;
@@ -365,6 +369,8 @@ protobufs::MutationGroup MutationReplaceUnaryOperator::Apply(
   inner_result.mutable_operand_end()->set_column(
       info_for_sub_expr_.GetEndColumn());
   *inner_result.mutable_operand_snippet() = info_for_sub_expr_.GetSnippet();
+
+
 
   const std::string new_function_name =
       GetFunctionName(optimise_mutations, ast_context);
@@ -439,6 +445,17 @@ protobufs::MutationGroup MutationReplaceUnaryOperator::Apply(
   }
   suffix.append(", " + std::to_string(local_mutation_id) + ")");
 
+  const std::string new_function = GenerateMutatorFunction(
+      ast_context, new_function_name, result_type, input_type,
+      optimise_mutations, only_track_mutant_coverage, mutation_id,
+      inner_result);
+  assert(!new_function.empty() && "Unsupported opcode.");
+
+  protobufs::MutationGroup result;
+  *result.mutable_replace_unary_operator() = inner_result;
+
+  if (mutation_pass) return result;
+
   // The prefix and suffix are ready, so make the relevant insertions.
   bool rewriter_result = rewriter.InsertTextBefore(
       unary_operator_source_range_in_main_file.getBegin(), prefix);
@@ -448,16 +465,8 @@ protobufs::MutationGroup MutationReplaceUnaryOperator::Apply(
   assert(!rewriter_result && "Rewrite failed.\n");
   (void)rewriter_result;  // Keep release-mode compilers happy.
 
-  const std::string new_function = GenerateMutatorFunction(
-      ast_context, new_function_name, result_type, input_type,
-      optimise_mutations, only_track_mutant_coverage, mutation_id,
-      inner_result);
-  assert(!new_function.empty() && "Unsupported opcode.");
-
   dredd_declarations.insert(new_function);
 
-  protobufs::MutationGroup result;
-  *result.mutable_replace_unary_operator() = inner_result;
   return result;
 }
 

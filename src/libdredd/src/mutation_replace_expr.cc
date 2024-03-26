@@ -592,11 +592,15 @@ void MutationReplaceExpr::ReplaceExprWithFunctionCall(
   (void)rewriter_result;  // Keep release mode compilers happy.
 }
 
-protobufs::MutationGroup MutationReplaceExpr::Apply(
-    clang::ASTContext& ast_context, const clang::Preprocessor& preprocessor,
-    bool optimise_mutations, bool only_track_mutant_coverage,
-    int first_mutation_id_in_file, int& mutation_id, clang::Rewriter& rewriter,
-    std::unordered_set<std::string>& dredd_declarations) const {
+protobufs::MutationGroup MutationReplaceExpr::Apply(clang::ASTContext &ast_context,
+                                                    const clang::Preprocessor &preprocessor,
+                                                    bool optimise_mutations,
+                                                    bool only_track_mutant_coverage,
+                                                    bool mutation_pass,
+                                                    int first_mutation_id_in_file,
+                                                    int &mutation_id,
+                                                    clang::Rewriter &rewriter,
+                                                    std::unordered_set<std::string> &dredd_declarations) const {
   // The protobuf object for the mutation, which will be wrapped in a
   // MutationGroup.
   protobufs::MutationReplaceExpr inner_result;
@@ -607,6 +611,8 @@ protobufs::MutationGroup MutationReplaceExpr::Apply(
   inner_result.mutable_end()->set_line(info_for_source_range_.GetEndLine());
   inner_result.mutable_end()->set_column(info_for_source_range_.GetEndColumn());
   *inner_result.mutable_snippet() = info_for_source_range_.GetSnippet();
+
+
 
   const std::string new_function_name =
       GetFunctionName(optimise_mutations, ast_context);
@@ -626,6 +632,17 @@ protobufs::MutationGroup MutationReplaceExpr::Apply(
     ApplyCTypeModifiers(*expr_, input_type);
   }
 
+  const std::string new_function = GenerateMutatorFunction(
+      ast_context, new_function_name, result_type, input_type,
+      optimise_mutations, only_track_mutant_coverage, mutation_id,
+      inner_result);
+  assert(!new_function.empty() && "Unsupported expression.");
+
+  protobufs::MutationGroup result;
+  *result.mutable_replace_expr() = inner_result;
+
+  if (mutation_pass) return result;
+
   // Replace the expression with a function call.
   // Subtracting |first_mutation_id_in_file| turns the global mutation id,
   // |mutation_id|, into a file-local mutation id.
@@ -633,16 +650,9 @@ protobufs::MutationGroup MutationReplaceExpr::Apply(
                               mutation_id - first_mutation_id_in_file,
                               ast_context, preprocessor, rewriter);
 
-  const std::string new_function = GenerateMutatorFunction(
-      ast_context, new_function_name, result_type, input_type,
-      optimise_mutations, only_track_mutant_coverage, mutation_id,
-      inner_result);
-  assert(!new_function.empty() && "Unsupported expression.");
 
   dredd_declarations.insert(new_function);
 
-  protobufs::MutationGroup result;
-  *result.mutable_replace_expr() = inner_result;
   return result;
 }
 
