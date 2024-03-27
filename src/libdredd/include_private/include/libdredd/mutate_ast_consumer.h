@@ -16,6 +16,7 @@
 #define LIBDREDD_MUTATE_AST_CONSUMER_H
 
 #include <memory>
+#include <optional>
 #include <string>
 #include <unordered_set>
 
@@ -31,18 +32,21 @@ namespace dredd {
 
 class MutateAstConsumer : public clang::ASTConsumer {
  public:
-  MutateAstConsumer(const clang::CompilerInstance& compiler_instance,
-                    bool optimise_mutations, bool dump_ast,
-                    bool only_track_mutant_coverage, int& mutation_id,
-                    protobufs::MutationInfo& mutation_info)
+  MutateAstConsumer(
+      const clang::CompilerInstance& compiler_instance, bool optimise_mutations,
+      bool mutation_pass, bool dump_ast, bool only_track_mutant_coverage,
+      int& mutation_id, protobufs::MutationInfo& mutation_info,
+      const std::optional<protobufs::MutationInfo>& enabled_mutation_info)
       : compiler_instance_(&compiler_instance),
         optimise_mutations_(optimise_mutations),
+        mutation_pass_(mutation_pass),
         dump_ast_(dump_ast),
         only_track_mutant_coverage_(only_track_mutant_coverage),
         visitor_(std::make_unique<MutateVisitor>(compiler_instance,
                                                  optimise_mutations)),
         mutation_id_(&mutation_id),
-        mutation_info_(&mutation_info) {}
+        mutation_info_(&mutation_info),
+        enabled_mutation_info_(&enabled_mutation_info) {}
 
   void HandleTranslationUnit(clang::ASTContext& ast_context) override;
 
@@ -64,14 +68,17 @@ class MutateAstConsumer : public clang::ASTConsumer {
       int initial_mutation_id) const;
 
   protobufs::MutationTreeNode ApplyMutations(
-      const MutationTreeNode& mutation_tree_node, int initial_mutation_id,
-      clang::ASTContext& context,
+      const MutationTreeNode& mutation_tree_node,
+      std::optional<protobufs::MutationTreeNode>& enabled_mutation_tree_node,
+      int initial_mutation_id, clang::ASTContext& context,
       std::unordered_set<std::string>& dredd_declarations);
 
   const clang::CompilerInstance* compiler_instance_;
 
   // True if and only if Dredd's optimisations are enabled.
   bool optimise_mutations_;
+
+  bool mutation_pass_;
 
   // True if and only if the AST being consumed should be dumped; useful for
   // debugging.
@@ -88,6 +95,8 @@ class MutateAstConsumer : public clang::ASTConsumer {
   int* mutation_id_;
 
   protobufs::MutationInfo* mutation_info_;
+
+  const std::optional<protobufs::MutationInfo>* enabled_mutation_info_;
 };
 
 }  // namespace dredd

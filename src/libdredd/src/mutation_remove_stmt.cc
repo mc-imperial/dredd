@@ -41,7 +41,8 @@ MutationRemoveStmt::MutationRemoveStmt(const clang::Stmt& stmt,
 protobufs::MutationGroup MutationRemoveStmt::Apply(
     clang::ASTContext& ast_context, const clang::Preprocessor& preprocessor,
     bool optimise_mutations, bool only_track_mutant_coverage,
-    int first_mutation_id_in_file, int& mutation_id, clang::Rewriter& rewriter,
+    bool mutation_pass, int first_mutation_id_in_file, int& mutation_id,
+    clang::Rewriter& rewriter,
     std::unordered_set<std::string>& dredd_declarations) const {
   (void)dredd_declarations;  // Unused.
   (void)optimise_mutations;  // Unused.
@@ -56,6 +57,20 @@ protobufs::MutationGroup MutationRemoveStmt::Apply(
   inner_result.mutable_end()->set_line(info_for_source_range_.GetEndLine());
   inner_result.mutable_end()->set_column(info_for_source_range_.GetEndColumn());
   *inner_result.mutable_snippet() = info_for_source_range_.GetSnippet();
+  inner_result.set_enabled(true);
+
+  // Subtracting |first_mutation_id_in_file| turns the global mutation id,
+  // |mutation_id|, into a file-local mutation id.
+  const int local_mutation_id = mutation_id - first_mutation_id_in_file;
+
+  mutation_id++;
+
+  protobufs::MutationGroup result;
+  *result.mutable_remove_stmt() = inner_result;
+
+  if (mutation_pass) {
+    return result;
+  }
 
   clang::CharSourceRange source_range = clang::CharSourceRange::getTokenRange(
       GetSourceRangeInMainFile(preprocessor, *stmt_));
@@ -94,10 +109,6 @@ protobufs::MutationGroup MutationRemoveStmt::Apply(
   if (is_extended_with_semi) {
     source_range = source_range_extended_with_semi;
   }
-
-  // Subtracting |first_mutation_id_in_file| turns the global mutation id,
-  // |mutation_id|, into a file-local mutation id.
-  const int local_mutation_id = mutation_id - first_mutation_id_in_file;
 
   if (only_track_mutant_coverage) {
     const bool rewriter_result = rewriter.InsertTextBefore(
@@ -144,10 +155,6 @@ protobufs::MutationGroup MutationRemoveStmt::Apply(
     (void)rewriter_result;  // Keep release-mode compilers happy.
   }
 
-  mutation_id++;
-
-  protobufs::MutationGroup result;
-  *result.mutable_remove_stmt() = inner_result;
   return result;
 }
 
