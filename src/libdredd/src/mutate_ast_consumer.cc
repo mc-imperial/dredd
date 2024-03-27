@@ -115,7 +115,9 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
 
   *mutation_info_->add_info_for_files() = mutation_info_for_file;
 
-  if (mutation_pass_) return;
+  if (mutation_pass_) {
+    return;
+  }
 
   auto& source_manager = ast_context.getSourceManager();
   const clang::SourceLocation start_of_source_file =
@@ -395,22 +397,22 @@ protobufs::MutationTreeNode MutateAstConsumer::ApplyMutations(
   std::vector<const MutationTreeNode*> mutation_tree_node_children =
       mutation_tree_node.GetChildren();
   // TODO(James Lee-Jones): Check list size matches or throw an error.
-  if (enabled_mutation_tree_node.has_value())
+  if (enabled_mutation_tree_node.has_value()) {
     assert(mutation_tree_node_children.size() ==
            static_cast<std::uint64_t>(
                enabled_mutation_tree_node->children_size()));
+  }
   for (int i = 0;
        static_cast<std::uint64_t>(i) < mutation_tree_node_children.size();
        i++) {
-    auto child = mutation_tree_node_children.at(static_cast<std::uint64_t>(i));
+    const auto* child =
+        mutation_tree_node_children.at(static_cast<std::uint64_t>(i));
     assert(!child->IsEmpty() &&
            "The mutation tree should not have empty subtrees.");
     std::optional<protobufs::MutationTreeNode> enabled_child;
     if (enabled_mutation_tree_node == std::nullopt) {
       enabled_child = std::nullopt;
     } else {
-      // TODO(James Lee-Jones): Save the call to children to avoid repeat
-      // processing.
       enabled_child = enabled_mutation_tree_node.value().children(i);
       // TODO(James Lee-Jones): Check that this is equal to child.
     }
@@ -424,12 +426,8 @@ protobufs::MutationTreeNode MutateAstConsumer::ApplyMutations(
       mutation_tree_node.GetMutations();
   for (int i = 0; static_cast<std::uint64_t>(i) < mutations.size(); i++) {
     const int mutation_id_old = *mutation_id_;
-    // TODO(James Lee-Jones): Check if the current mutation is enabled and or
-    // with mutation_pass_.
     bool enabled = true;
     if (enabled_mutation_tree_node.has_value()) {
-      // TODO(James Lee-Jones): Save the call to children to avoid repeat
-      // processing.
       const protobufs::MutationGroup& kMutationGroup =
           enabled_mutation_tree_node.value().mutation_groups(i);
       if (kMutationGroup.has_remove_stmt()) {

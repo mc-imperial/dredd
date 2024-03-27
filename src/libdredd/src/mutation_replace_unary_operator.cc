@@ -451,7 +451,9 @@ protobufs::MutationGroup MutationReplaceUnaryOperator::Apply(
   protobufs::MutationGroup result;
   *result.mutable_replace_unary_operator() = inner_result;
 
-  if (mutation_pass) return result;
+  if (mutation_pass) {
+    return result;
+  }
 
   // The prefix and suffix are ready, so make the relevant insertions.
   bool rewriter_result = rewriter.InsertTextBefore(

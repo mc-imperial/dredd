@@ -127,7 +127,7 @@ int main(int argc, const char** argv) {
     std::stringstream enabled_mutations_json;
     enabled_mutations_json_file.open(enabled_mutations_file);
     enabled_mutations_json << enabled_mutations_json_file.rdbuf();
-    std::string enabled_mutations_string = enabled_mutations_json.str();
+    const std::string enabled_mutations_string = enabled_mutations_json.str();
 
     auto json_read_status = google::protobuf::util::JsonStringToMessage(
         enabled_mutations_string, &*enabled_mutation_info);

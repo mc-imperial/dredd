@@ -68,7 +68,9 @@ protobufs::MutationGroup MutationRemoveStmt::Apply(
   protobufs::MutationGroup result;
   *result.mutable_remove_stmt() = inner_result;
 
-  if (mutation_pass) return result;
+  if (mutation_pass) {
+    return result;
+  }
 
   clang::CharSourceRange source_range = clang::CharSourceRange::getTokenRange(
       GetSourceRangeInMainFile(preprocessor, *stmt_));

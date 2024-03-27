@@ -48,6 +48,8 @@ class Mutation {
   // The |dredd_declarations| argument provides a set of declarations that will
   // be added to the start of the source file being mutated. This allows
   // avoiding redundant repeat declarations.
+  // TODO(James Lee-Jones): Change 'mutation_pass' to something like
+  // 'apply_mutations'.
   virtual protobufs::MutationGroup Apply(
       clang::ASTContext& ast_context, const clang::Preprocessor& preprocessor,
       bool optimise_mutations, bool only_track_mutant_coverage,

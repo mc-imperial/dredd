@@ -621,7 +621,9 @@ protobufs::MutationGroup MutationReplaceBinaryOperator::Apply(
 
   // Add the mutation function to the set of Dredd declarations - there may
   // already be a matching function, in which case duplication will be avoided.
-  if (!mutation_pass) dredd_declarations.insert(new_function);
+  if (!mutation_pass) {
+    dredd_declarations.insert(new_function);
+  }
 
   protobufs::MutationGroup result;
   *result.mutable_replace_binary_operator() = inner_result;

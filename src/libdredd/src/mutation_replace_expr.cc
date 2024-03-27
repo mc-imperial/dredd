@@ -643,7 +643,9 @@ protobufs::MutationGroup MutationReplaceExpr::Apply(
       inner_result);
   assert(!new_function.empty() && "Unsupported expression.");
 
-  if (!mutation_pass) dredd_declarations.insert(new_function);
+  if (!mutation_pass) {
+    dredd_declarations.insert(new_function);
+  }
 
   protobufs::MutationGroup result;
   *result.mutable_replace_expr() = inner_result;
