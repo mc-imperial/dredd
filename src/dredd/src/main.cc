@@ -60,7 +60,6 @@ static llvm::cl::opt<bool> dump_asts(
     llvm::cl::desc("Dump each AST that is processed; useful for debugging"),
     llvm::cl::cat(mutate_category));
 // NOLINTNEXTLINE
-// TODO(James Lee-Jones): Finish
 static llvm::cl::opt<bool> mutant_pass(
     "mutant-pass",
     llvm::cl::desc("Perform a pass to build the mutation tree. Must be passed with --mutation_info_file."),

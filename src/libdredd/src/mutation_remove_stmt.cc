@@ -60,6 +60,7 @@ protobufs::MutationGroup MutationRemoveStmt::Apply(clang::ASTContext &ast_contex
   inner_result.mutable_end()->set_line(info_for_source_range_.GetEndLine());
   inner_result.mutable_end()->set_column(info_for_source_range_.GetEndColumn());
   *inner_result.mutable_snippet() = info_for_source_range_.GetSnippet();
+  inner_result.set_enabled(true);
 
   // Subtracting |first_mutation_id_in_file| turns the global mutation id,
   // |mutation_id|, into a file-local mutation id.

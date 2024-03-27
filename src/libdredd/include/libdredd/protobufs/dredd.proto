@@ -46,6 +46,7 @@ message MutationRemoveStmt {
   SourceLocation start = 2;
   SourceLocation end = 3;
   string snippet = 4;
+  bool enabled = 5;
 }
 
 enum MutationReplaceExprAction {
@@ -67,6 +68,7 @@ enum MutationReplaceExprAction {
 message MutationReplaceExprInstance {
   MutationReplaceExprAction action = 1;
   int32 mutation_id = 2;
+  bool enabled = 3;
 }
 
 message MutationReplaceExpr {
@@ -113,6 +115,7 @@ enum MutationReplaceBinaryOperatorAction {
 message MutationReplaceBinaryOperatorInstance {
   MutationReplaceBinaryOperatorAction action = 1;
   int32 mutation_id = 2;
+  bool enabled = 3;
 }
 
 enum BinaryOperator {
@@ -175,6 +178,7 @@ enum MutationReplaceUnaryOperatorAction {
 message MutationReplaceUnaryOperatorInstance {
   MutationReplaceUnaryOperatorAction action = 1;
   int32 mutation_id = 2;
+  bool enabled = 3;
 }
 
 enum UnaryOperator {

@@ -376,7 +376,6 @@ protobufs::MutationTreeNode MutateAstConsumer::ApplyMutations(
   }
   for (const auto& mutation : mutation_tree_node.GetMutations()) {
     const int mutation_id_old = *mutation_id_;
-    // TODO(James Lee-Jones): Don't do this if we are only generating the mutation tree.
       const auto mutation_group = mutation->Apply(
           context, compiler_instance_->getPreprocessor(), optimise_mutations_,
           only_track_mutant_coverage_, mutation_pass_, initial_mutation_id, *mutation_id_,

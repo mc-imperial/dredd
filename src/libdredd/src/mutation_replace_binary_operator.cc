@@ -880,6 +880,7 @@ void MutationReplaceBinaryOperator::AddMutationInstance(
   protobufs::MutationReplaceBinaryOperatorInstance instance;
   instance.set_mutation_id(mutation_id_base + mutation_id_offset);
   instance.set_action(action);
+  instance.set_enabled(true);
   *protobuf_message.add_instances() = instance;
   mutation_id_offset++;
 }
