@@ -16,6 +16,7 @@
 #define LIBDREDD_MUTATE_AST_CONSUMER_H
 
 #include <memory>
+#include <optional>
 #include <string>
 #include <unordered_set>
 
@@ -31,14 +32,11 @@ namespace dredd {
 
 class MutateAstConsumer : public clang::ASTConsumer {
  public:
-  MutateAstConsumer(const clang::CompilerInstance &compiler_instance,
-                    bool optimise_mutations,
-                    bool mutation_pass,
-                    bool dump_ast,
-                    bool only_track_mutant_coverage,
-                    int &mutation_id,
-                    protobufs::MutationInfo &mutation_info,
-                    const std::optional<protobufs::MutationInfo> &enabled_mutation_info)
+  MutateAstConsumer(
+      const clang::CompilerInstance& compiler_instance, bool optimise_mutations,
+      bool mutation_pass, bool dump_ast, bool only_track_mutant_coverage,
+      int& mutation_id, protobufs::MutationInfo& mutation_info,
+      const std::optional<protobufs::MutationInfo>& enabled_mutation_info)
       : compiler_instance_(&compiler_instance),
         optimise_mutations_(optimise_mutations),
         mutation_pass_(mutation_pass),
@@ -69,11 +67,11 @@ class MutateAstConsumer : public clang::ASTConsumer {
   [[nodiscard]] std::string GetMutantTrackingDreddPreludeC(
       int initial_mutation_id) const;
 
-  protobufs::MutationTreeNode ApplyMutations(const MutationTreeNode &mutation_tree_node,
-                                             std::optional<protobufs::MutationTreeNode> &enabled_mutation_tree_node,
-                                             int initial_mutation_id,
-                                             clang::ASTContext &context,
-                                             std::unordered_set<std::string> &dredd_declarations);
+  protobufs::MutationTreeNode ApplyMutations(
+      const MutationTreeNode& mutation_tree_node,
+      std::optional<protobufs::MutationTreeNode>& enabled_mutation_tree_node,
+      int initial_mutation_id, clang::ASTContext& context,
+      std::unordered_set<std::string>& dredd_declarations);
 
   const clang::CompilerInstance* compiler_instance_;
 

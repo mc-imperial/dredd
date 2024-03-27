@@ -335,15 +335,12 @@ void MutationReplaceUnaryOperator::GenerateUnaryOperatorReplacement(
   }
 }
 
-protobufs::MutationGroup MutationReplaceUnaryOperator::Apply(clang::ASTContext &ast_context,
-                                                             const clang::Preprocessor &preprocessor,
-                                                             bool optimise_mutations,
-                                                             bool only_track_mutant_coverage,
-                                                             bool mutation_pass,
-                                                             int first_mutation_id_in_file,
-                                                             int &mutation_id,
-                                                             clang::Rewriter &rewriter,
-                                                             std::unordered_set<std::string> &dredd_declarations) const {
+protobufs::MutationGroup MutationReplaceUnaryOperator::Apply(
+    clang::ASTContext& ast_context, const clang::Preprocessor& preprocessor,
+    bool optimise_mutations, bool only_track_mutant_coverage,
+    bool mutation_pass, int first_mutation_id_in_file, int& mutation_id,
+    clang::Rewriter& rewriter,
+    std::unordered_set<std::string>& dredd_declarations) const {
   // The protobuf object for the mutation, which will be wrapped in a
   // MutationGroup.
   protobufs::MutationReplaceUnaryOperator inner_result;
@@ -371,7 +368,6 @@ protobufs::MutationGroup MutationReplaceUnaryOperator::Apply(clang::ASTContext &
   *inner_result.mutable_operand_snippet() = info_for_sub_expr_.GetSnippet();
 
   inner_result.set_enabled(true);
-
 
   const std::string new_function_name =
       GetFunctionName(optimise_mutations, ast_context);

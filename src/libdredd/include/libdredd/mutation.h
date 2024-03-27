@@ -48,15 +48,12 @@ class Mutation {
   // The |dredd_declarations| argument provides a set of declarations that will
   // be added to the start of the source file being mutated. This allows
   // avoiding redundant repeat declarations.
-  virtual protobufs::MutationGroup Apply(clang::ASTContext &ast_context,
-                                         const clang::Preprocessor &preprocessor,
-                                         bool optimise_mutations,
-                                         bool only_track_mutant_coverage,
-                                         bool mutation_pass,
-                                         int first_mutation_id_in_file,
-                                         int &mutation_id,
-                                         clang::Rewriter &rewriter,
-                                         std::unordered_set<std::string> &dredd_declarations) const = 0;
+  virtual protobufs::MutationGroup Apply(
+      clang::ASTContext& ast_context, const clang::Preprocessor& preprocessor,
+      bool optimise_mutations, bool only_track_mutant_coverage,
+      bool mutation_pass, int first_mutation_id_in_file, int& mutation_id,
+      clang::Rewriter& rewriter,
+      std::unordered_set<std::string>& dredd_declarations) const = 0;
 };
 
 }  // namespace dredd

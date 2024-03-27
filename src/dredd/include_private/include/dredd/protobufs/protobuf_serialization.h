@@ -33,7 +33,7 @@
 #endif
 
 // The following should be the only place in the project where protobuf files
-// related to serialization are are directly included. This is so that they can
+// related to serialization are directly included. This is so that they can
 // be compiled in a manner where warnings are ignored.
 #include "google/protobuf/stubs/status.h"
 #include "google/protobuf/util/json_util.h"

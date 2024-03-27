@@ -38,15 +38,12 @@ MutationRemoveStmt::MutationRemoveStmt(const clang::Stmt& stmt,
       info_for_source_range_(GetSourceRangeInMainFile(preprocessor, stmt),
                              ast_context) {}
 
-protobufs::MutationGroup MutationRemoveStmt::Apply(clang::ASTContext &ast_context,
-                                                   const clang::Preprocessor &preprocessor,
-                                                   bool optimise_mutations,
-                                                   bool only_track_mutant_coverage,
-                                                   bool mutation_pass,
-                                                   int first_mutation_id_in_file,
-                                                   int &mutation_id,
-                                                   clang::Rewriter &rewriter,
-                                                   std::unordered_set<std::string> &dredd_declarations) const {
+protobufs::MutationGroup MutationRemoveStmt::Apply(
+    clang::ASTContext& ast_context, const clang::Preprocessor& preprocessor,
+    bool optimise_mutations, bool only_track_mutant_coverage,
+    bool mutation_pass, int first_mutation_id_in_file, int& mutation_id,
+    clang::Rewriter& rewriter,
+    std::unordered_set<std::string>& dredd_declarations) const {
   (void)dredd_declarations;  // Unused.
   (void)optimise_mutations;  // Unused.
 
@@ -72,7 +69,6 @@ protobufs::MutationGroup MutationRemoveStmt::Apply(clang::ASTContext &ast_contex
   *result.mutable_remove_stmt() = inner_result;
 
   if (mutation_pass) return result;
-
 
   clang::CharSourceRange source_range = clang::CharSourceRange::getTokenRange(
       GetSourceRangeInMainFile(preprocessor, *stmt_));

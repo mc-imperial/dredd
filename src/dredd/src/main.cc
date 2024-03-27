@@ -15,6 +15,7 @@
 #include <fstream>
 #include <memory>
 #include <optional>
+#include <sstream>
 #include <string>
 
 #include "clang/Tooling/CommonOptionsParser.h"
@@ -63,14 +64,15 @@ static llvm::cl::opt<bool> dump_asts(
 // NOLINTNEXTLINE
 static llvm::cl::opt<bool> mutant_pass(
     "mutant-pass",
-    llvm::cl::desc("Perform a pass to build the mutation tree. Must be passed with --mutation_info_file."),
+    llvm::cl::desc("Perform a pass to build the mutation tree. Must be passed "
+                   "with --mutation_info_file."),
     llvm::cl::cat(mutate_category));
-// TODO(James Lee-Jones): Rename this to something more representative of what it does.
-// NOLINTNEXTLINE
+// TODO(James Lee-Jones): Rename this to something more representative of what
+// it does. NOLINTNEXTLINE
 static llvm::cl::opt<std::string> enabled_mutations_file(
     "enabled-mutations-file",
-    llvm::cl::desc(
-        ".json file containing information on which mutations should be performed"),
+    llvm::cl::desc(".json file containing information on which mutations "
+                   "should be performed"),
     llvm::cl::cat(mutate_category));
 // NOLINTNEXTLINE
 static llvm::cl::opt<std::string> mutation_info_file(
@@ -127,19 +129,19 @@ int main(int argc, const char** argv) {
     enabled_mutations_json << enabled_mutations_json_file.rdbuf();
     std::string enabled_mutations_string = enabled_mutations_json.str();
 
-    auto json_read_status = google::protobuf::util::JsonStringToMessage(enabled_mutations_string, &*enabled_mutation_info);
+    auto json_read_status = google::protobuf::util::JsonStringToMessage(
+        enabled_mutations_string, &*enabled_mutation_info);
     if (!json_read_status.ok()) {
       llvm::errs() << "Error reading JSON data from " << enabled_mutations_file
                    << "\n";
-      llvm::errs() << json_read_status.ToString();
       return 1;
     }
   }
 
   const std::unique_ptr<clang::tooling::FrontendActionFactory> factory =
-      dredd::NewMutateFrontendActionFactory(!no_mutation_opts, dump_asts,
-                                            only_track_mutant_coverage, mutant_pass,
-                                            mutation_id, mutation_info, enabled_mutation_info);
+      dredd::NewMutateFrontendActionFactory(
+          !no_mutation_opts, dump_asts, only_track_mutant_coverage, mutant_pass,
+          mutation_id, mutation_info, enabled_mutation_info);
 
   const int return_code = Tool.run(factory.get());
 

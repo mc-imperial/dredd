@@ -15,6 +15,7 @@
 #include "libdredd/mutate_ast_consumer.h"
 
 #include <cassert>
+#include <cstdint>
 #include <set>
 #include <sstream>
 #include <string>
@@ -78,25 +79,34 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
   protobufs::MutationInfoForFile mutation_info_for_file;
   mutation_info_for_file.set_filename(filename);
 
-  std::optional<protobufs::MutationTreeNode> enabled_mutation_tree_node;
+  std::optional<protobufs::MutationTreeNode> enabled_mutation_tree_node =
+      std::nullopt;
   if (enabled_mutation_info_->has_value()) {
-    auto it = std::find_if(enabled_mutation_info_->value().info_for_files().begin(),
-                 enabled_mutation_info_->value().info_for_files().end(), [&filename](const protobufs::MutationInfoForFile& i) { return i.filename() == filename; });
-    if (it != enabled_mutation_info_->value().info_for_files().end()) {
-      const protobufs::MutationInfoForFile& enabled_mutation_info_for_file = *it;
-      enabled_mutation_tree_node = enabled_mutation_info_for_file.mutation_tree_root();
-    } else {
-      // TODO(James Lee-Jones): Throw an error as the provided enabled mutation file does not contain this file.
+    // This is used instead of find_if to avoid using protobufs internal
+    // pointers.
+    for (int i = 0; i < enabled_mutation_info_->value().info_for_files_size();
+         i++) {
+      if (enabled_mutation_info_->value().info_for_files(i).filename() ==
+          filename) {
+        enabled_mutation_tree_node = enabled_mutation_info_->value()
+                                         .info_for_files(i)
+                                         .mutation_tree_root();
+      }
     }
-  } else {
-    enabled_mutation_tree_node = std::nullopt;
+
+    // The enabled mutation file doesn't contain information about the current
+    // file, so skip it.
+    if (enabled_mutation_tree_node == std::nullopt) {
+      // TODO(James Lee-Jones): Throw an error as the provided enabled mutation
+      // file does not contain this file.
+      llvm::errs() << "Skipping due to errors\n";
+      return;
+    }
   }
 
   *mutation_info_for_file.mutable_mutation_tree_root() =
-      ApplyMutations(visitor_->GetMutations(), enabled_mutation_tree_node, initial_mutation_id, ast_context,
-                     dredd_declarations);
-
-
+      ApplyMutations(visitor_->GetMutations(), enabled_mutation_tree_node,
+                     initial_mutation_id, ast_context, dredd_declarations);
 
   if (initial_mutation_id == *mutation_id_) {
     // No possibilities for mutation were found; nothing else to do.
@@ -373,49 +383,55 @@ std::string MutateAstConsumer::GetDreddPreludeC(int initial_mutation_id) const {
   return GetRegularDreddPreludeC(initial_mutation_id);
 }
 
-protobufs::MutationTreeNode MutateAstConsumer::ApplyMutations(const MutationTreeNode &mutation_tree_node,
-                                                              std::optional<protobufs::MutationTreeNode> &enabled_mutation_tree_node,
-                                                              int initial_mutation_id,
-                                                              clang::ASTContext &context,
-                                                              std::unordered_set<std::string> &dredd_declarations) {
+protobufs::MutationTreeNode MutateAstConsumer::ApplyMutations(
+    const MutationTreeNode& mutation_tree_node,
+    std::optional<protobufs::MutationTreeNode>& enabled_mutation_tree_node,
+    int initial_mutation_id, clang::ASTContext& context,
+    std::unordered_set<std::string>& dredd_declarations) {
   assert(!(mutation_tree_node.IsEmpty() &&
            mutation_tree_node.GetChildren().size() == 1) &&
          "The mutation tree should already be compressed.");
   protobufs::MutationTreeNode result;
-  std::vector<const MutationTreeNode*> mutation_tree_node_children = mutation_tree_node.GetChildren();
+  std::vector<const MutationTreeNode*> mutation_tree_node_children =
+      mutation_tree_node.GetChildren();
   // TODO(James Lee-Jones): Check list size matches or throw an error.
-  if (enabled_mutation_tree_node.has_value()) assert(mutation_tree_node_children.size() == (unsigned long) enabled_mutation_tree_node->children_size());
-  for (int i = 0; (unsigned long) i < mutation_tree_node_children.size(); i++) {
-    auto child = mutation_tree_node_children.at(i);
+  if (enabled_mutation_tree_node.has_value())
+    assert(mutation_tree_node_children.size() ==
+           static_cast<std::uint64_t>(
+               enabled_mutation_tree_node->children_size()));
+  for (int i = 0;
+       static_cast<std::uint64_t>(i) < mutation_tree_node_children.size();
+       i++) {
+    auto child = mutation_tree_node_children.at(static_cast<std::uint64_t>(i));
     assert(!child->IsEmpty() &&
-        "The mutation tree should not have empty subtrees.");
+           "The mutation tree should not have empty subtrees.");
     std::optional<protobufs::MutationTreeNode> enabled_child;
     if (enabled_mutation_tree_node == std::nullopt) {
       enabled_child = std::nullopt;
     } else {
-      // TODO(James Lee-Jones): Save the call to children to avoid repeat processing.
-      enabled_child = enabled_mutation_tree_node.value().children().Get(i);
+      // TODO(James Lee-Jones): Save the call to children to avoid repeat
+      // processing.
+      enabled_child = enabled_mutation_tree_node.value().children(i);
       // TODO(James Lee-Jones): Check that this is equal to child.
     }
-    *result.add_children() = ApplyMutations(*child, enabled_child, initial_mutation_id,
-                                            context, dredd_declarations);
+    *result.add_children() =
+        ApplyMutations(*child, enabled_child, initial_mutation_id, context,
+                       dredd_declarations);
   }
-//  for (const auto& child : mutation_tree_node.GetChildren()) {
-//    assert(!child->IsEmpty() &&
-//           "The mutation tree should not have empty subtrees.");
-//    // TODO(James Lee-Jones): Pass on the childs MutationTreeNode.
-//    *result.add_children() = ApplyMutations(*child, , initial_mutation_id,
-//                                            context, dredd_declarations);
-//  }
+
   // TODO(James Lee-Jones): Check list size matches or throw an error.
-  const std::vector<std::unique_ptr<Mutation>>& mutations = mutation_tree_node.GetMutations();
-  for (int i = 0; (unsigned long) i < mutations.size(); i++) {
+  const std::vector<std::unique_ptr<Mutation>>& mutations =
+      mutation_tree_node.GetMutations();
+  for (int i = 0; static_cast<std::uint64_t>(i) < mutations.size(); i++) {
     const int mutation_id_old = *mutation_id_;
-    // TODO(James Lee-Jones): Check if the current mutation is enabled and or with mutation_pass_.
+    // TODO(James Lee-Jones): Check if the current mutation is enabled and or
+    // with mutation_pass_.
     bool enabled = true;
     if (enabled_mutation_tree_node.has_value()) {
-      // TODO(James Lee-Jones): Save the call to children to avoid repeat processing.
-      const protobufs::MutationGroup& kMutationGroup = enabled_mutation_tree_node.value().mutation_groups().at(i);
+      // TODO(James Lee-Jones): Save the call to children to avoid repeat
+      // processing.
+      const protobufs::MutationGroup& kMutationGroup =
+          enabled_mutation_tree_node.value().mutation_groups(i);
       if (kMutationGroup.has_remove_stmt()) {
         enabled = kMutationGroup.remove_stmt().enabled();
       } else if (kMutationGroup.has_replace_binary_operator()) {
@@ -427,13 +443,15 @@ protobufs::MutationTreeNode MutateAstConsumer::ApplyMutations(const MutationTree
       }
     }
 
-    const auto mutation_group = mutations.at(i)->Apply(
-        context, compiler_instance_->getPreprocessor(), optimise_mutations_,
-        only_track_mutant_coverage_, mutation_pass_ || !enabled, initial_mutation_id, *mutation_id_,
-        rewriter_, dredd_declarations);
-    if (*mutation_id_ > mutation_id_old) {
-      // TODO(James Lee-Jones): Only do this if the mutation is enabled.
-      // Only add the result of applying the mutation if it had an effect.
+    const auto mutation_group =
+        mutations.at(static_cast<std::uint64_t>(i))
+            ->Apply(context, compiler_instance_->getPreprocessor(),
+                    optimise_mutations_, only_track_mutant_coverage_,
+                    mutation_pass_ || !enabled, initial_mutation_id,
+                    *mutation_id_, rewriter_, dredd_declarations);
+    if (enabled && *mutation_id_ > mutation_id_old) {
+      // Only add the result of applying the mutation if it is enabled and had
+      // an effect.
       *result.add_mutation_groups() = mutation_group;
     }
   }
