@@ -14,6 +14,7 @@
 
 #include <fstream>
 #include <memory>
+#include <optional>
 #include <string>
 
 #include "clang/Tooling/CommonOptionsParser.h"
@@ -64,6 +65,13 @@ static llvm::cl::opt<bool> mutant_pass(
     "mutant-pass",
     llvm::cl::desc("Perform a pass to build the mutation tree. Must be passed with --mutation_info_file."),
     llvm::cl::cat(mutate_category));
+// TODO(James Lee-Jones): Rename this to something more representative of what it does.
+// NOLINTNEXTLINE
+static llvm::cl::opt<std::string> enabled_mutations_file(
+    "enabled-mutations-file",
+    llvm::cl::desc(
+        ".json file containing information on which mutations should be performed"),
+    llvm::cl::cat(mutate_category));
 // NOLINTNEXTLINE
 static llvm::cl::opt<std::string> mutation_info_file(
     "mutation-info-file", llvm::cl::Required,
@@ -101,10 +109,37 @@ int main(int argc, const char** argv) {
   // including their hierarchical structure.
   dredd::protobufs::MutationInfo mutation_info;
 
+  // Contains the mutations that the user wants to apply in each source
+  // file, including their hierarchical structure.
+  std::optional<dredd::protobufs::MutationInfo> enabled_mutation_info;
+
+  // If a set of mutants to instrument has been provided, convert them to
+  // a protobufs representation.
+  if (enabled_mutations_file.empty()) {
+    enabled_mutation_info = std::nullopt;
+  } else {
+    // TODO(James Lee-Jones): See if there is a nicer way to do this.
+    // TODO(James Lee-Jones): Add extra error checks if read fails.
+    enabled_mutation_info = dredd::protobufs::MutationInfo();
+    std::ifstream enabled_mutations_json_file;
+    std::stringstream enabled_mutations_json;
+    enabled_mutations_json_file.open(enabled_mutations_file);
+    enabled_mutations_json << enabled_mutations_json_file.rdbuf();
+    std::string enabled_mutations_string = enabled_mutations_json.str();
+
+    auto json_read_status = google::protobuf::util::JsonStringToMessage(enabled_mutations_string, &*enabled_mutation_info);
+    if (!json_read_status.ok()) {
+      llvm::errs() << "Error reading JSON data from " << enabled_mutations_file
+                   << "\n";
+      llvm::errs() << json_read_status.ToString();
+      return 1;
+    }
+  }
+
   const std::unique_ptr<clang::tooling::FrontendActionFactory> factory =
       dredd::NewMutateFrontendActionFactory(!no_mutation_opts, dump_asts,
                                             only_track_mutant_coverage, mutant_pass,
-                                            mutation_id, mutation_info);
+                                            mutation_id, mutation_info, enabled_mutation_info);
 
   const int return_code = Tool.run(factory.get());
 

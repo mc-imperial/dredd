@@ -31,10 +31,14 @@ namespace dredd {
 
 class MutateAstConsumer : public clang::ASTConsumer {
  public:
-  MutateAstConsumer(const clang::CompilerInstance& compiler_instance,
-                    bool optimise_mutations, bool mutation_pass, bool dump_ast,
-                    bool only_track_mutant_coverage, int& mutation_id,
-                    protobufs::MutationInfo& mutation_info)
+  MutateAstConsumer(const clang::CompilerInstance &compiler_instance,
+                    bool optimise_mutations,
+                    bool mutation_pass,
+                    bool dump_ast,
+                    bool only_track_mutant_coverage,
+                    int &mutation_id,
+                    protobufs::MutationInfo &mutation_info,
+                    const std::optional<protobufs::MutationInfo> &enabled_mutation_info)
       : compiler_instance_(&compiler_instance),
         optimise_mutations_(optimise_mutations),
         mutation_pass_(mutation_pass),
@@ -43,7 +47,8 @@ class MutateAstConsumer : public clang::ASTConsumer {
         visitor_(std::make_unique<MutateVisitor>(compiler_instance,
                                                  optimise_mutations)),
         mutation_id_(&mutation_id),
-        mutation_info_(&mutation_info) {}
+        mutation_info_(&mutation_info),
+        enabled_mutation_info_(&enabled_mutation_info) {}
 
   void HandleTranslationUnit(clang::ASTContext& ast_context) override;
 
@@ -64,10 +69,11 @@ class MutateAstConsumer : public clang::ASTConsumer {
   [[nodiscard]] std::string GetMutantTrackingDreddPreludeC(
       int initial_mutation_id) const;
 
-  protobufs::MutationTreeNode ApplyMutations(
-      const MutationTreeNode& mutation_tree_node, int initial_mutation_id,
-      clang::ASTContext& context,
-      std::unordered_set<std::string>& dredd_declarations);
+  protobufs::MutationTreeNode ApplyMutations(const MutationTreeNode &mutation_tree_node,
+                                             std::optional<protobufs::MutationTreeNode> &enabled_mutation_tree_node,
+                                             int initial_mutation_id,
+                                             clang::ASTContext &context,
+                                             std::unordered_set<std::string> &dredd_declarations);
 
   const clang::CompilerInstance* compiler_instance_;
 
@@ -91,6 +97,8 @@ class MutateAstConsumer : public clang::ASTConsumer {
   int* mutation_id_;
 
   protobufs::MutationInfo* mutation_info_;
+
+  const std::optional<protobufs::MutationInfo>* enabled_mutation_info_;
 };
 
 }  // namespace dredd

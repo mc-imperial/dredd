@@ -370,6 +370,7 @@ protobufs::MutationGroup MutationReplaceUnaryOperator::Apply(clang::ASTContext &
       info_for_sub_expr_.GetEndColumn());
   *inner_result.mutable_operand_snippet() = info_for_sub_expr_.GetSnippet();
 
+  inner_result.set_enabled(true);
 
 
   const std::string new_function_name =
@@ -477,7 +478,6 @@ void MutationReplaceUnaryOperator::AddMutationInstance(
   protobufs::MutationReplaceUnaryOperatorInstance instance;
   instance.set_mutation_id(mutation_id_base + mutation_id_offset);
   instance.set_action(action);
-  instance.set_enabled(true);
   *protobuf_message.add_instances() = instance;
   mutation_id_offset++;
 }

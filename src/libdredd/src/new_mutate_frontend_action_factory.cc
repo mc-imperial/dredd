@@ -37,6 +37,7 @@ class MutateFrontendAction : public clang::ASTFrontendAction {
                        bool mutation_pass,
                        int &mutation_id,
                        protobufs::MutationInfo &mutation_info,
+                       const std::optional<protobufs::MutationInfo> &enabled_mutation_info,
                        std::set<std::string> &processed_files)
       : optimise_mutations_(optimise_mutations),
         dump_asts_(dump_asts),
@@ -44,6 +45,7 @@ class MutateFrontendAction : public clang::ASTFrontendAction {
         mutation_pass_(mutation_pass),
         mutation_id_(&mutation_id),
         mutation_info_(&mutation_info),
+        enabled_mutation_info_(&enabled_mutation_info),
         processed_files_(&processed_files) {}
 
   std::unique_ptr<clang::ASTConsumer> CreateASTConsumer(
@@ -71,6 +73,7 @@ class MutateFrontendAction : public clang::ASTFrontendAction {
   bool mutation_pass_;
   int* mutation_id_;
   protobufs::MutationInfo* mutation_info_;
+  const std::optional<protobufs::MutationInfo>* enabled_mutation_info_;
   std::set<std::string>* processed_files_;
 };
 
@@ -80,7 +83,8 @@ NewMutateFrontendActionFactory(bool optimise_mutations,
                                bool only_track_mutant_coverage,
                                bool mutation_pass,
                                int &mutation_id,
-                               protobufs::MutationInfo &mutation_info) {
+                               protobufs::MutationInfo &mutation_info,
+                               const std::optional<protobufs::MutationInfo> &enabled_mutation_info) {
   class MutateFrontendActionFactory
       : public clang::tooling::FrontendActionFactory {
    public:
@@ -89,18 +93,20 @@ NewMutateFrontendActionFactory(bool optimise_mutations,
                                 bool only_track_mutant_coverage,
                                 bool mutation_pass,
                                 int &mutation_id,
-                                protobufs::MutationInfo &mutation_info)
+                                protobufs::MutationInfo &mutation_info,
+                                const std::optional<protobufs::MutationInfo> &enabled_mutation_info)
         : optimise_mutations_(optimise_mutations),
           dump_asts_(dump_asts),
           only_track_mutant_coverage_(only_track_mutant_coverage),
           mutation_pass_(mutation_pass),
           mutation_id_(&mutation_id),
-          mutation_info_(&mutation_info) {}
+          mutation_info_(&mutation_info),
+          enabled_mutation_info_(&enabled_mutation_info) {}
 
     std::unique_ptr<clang::FrontendAction> create() override {
       return std::make_unique<MutateFrontendAction>(
           optimise_mutations_, dump_asts_, only_track_mutant_coverage_, mutation_pass_,
-          *mutation_id_, *mutation_info_, processed_files_);
+          *mutation_id_, *mutation_info_, *enabled_mutation_info_, processed_files_);
     }
 
    private:
@@ -110,6 +116,7 @@ NewMutateFrontendActionFactory(bool optimise_mutations,
     bool mutation_pass_;
     int* mutation_id_;
     protobufs::MutationInfo* mutation_info_;
+    const std::optional<protobufs::MutationInfo>* enabled_mutation_info_;
 
     // Stores the ids of the files that have been processed so far, to avoid
     // processing a file multiple times.
@@ -118,7 +125,7 @@ NewMutateFrontendActionFactory(bool optimise_mutations,
 
   return std::make_unique<MutateFrontendActionFactory>(
       optimise_mutations, dump_asts, only_track_mutant_coverage, mutation_pass, mutation_id,
-      mutation_info);
+      mutation_info, enabled_mutation_info);
 }
 
 std::unique_ptr<clang::ASTConsumer> MutateFrontendAction::CreateASTConsumer(
@@ -126,7 +133,7 @@ std::unique_ptr<clang::ASTConsumer> MutateFrontendAction::CreateASTConsumer(
   (void)file;  // Unused.
   return std::make_unique<MutateAstConsumer>(
       compiler_instance, optimise_mutations_, mutation_pass_, dump_asts_,
-      only_track_mutant_coverage_, *mutation_id_, *mutation_info_);
+      only_track_mutant_coverage_, *mutation_id_, *mutation_info_, *enabled_mutation_info_);
 }
 
 }  // namespace dredd

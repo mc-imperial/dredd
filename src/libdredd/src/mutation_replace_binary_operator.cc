@@ -557,6 +557,8 @@ protobufs::MutationGroup MutationReplaceBinaryOperator::Apply(clang::ASTContext 
   inner_result.mutable_rhs_end()->set_column(info_for_rhs_.GetEndColumn());
   *inner_result.mutable_rhs_snippet() = info_for_rhs_.GetSnippet();
 
+  inner_result.set_enabled(true);
+
 
   const std::string new_function_name =
       GetFunctionName(optimise_mutations, ast_context);
@@ -880,7 +882,6 @@ void MutationReplaceBinaryOperator::AddMutationInstance(
   protobufs::MutationReplaceBinaryOperatorInstance instance;
   instance.set_mutation_id(mutation_id_base + mutation_id_offset);
   instance.set_action(action);
-  instance.set_enabled(true);
   *protobuf_message.add_instances() = instance;
   mutation_id_offset++;
 }

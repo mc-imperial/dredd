@@ -28,7 +28,8 @@ NewMutateFrontendActionFactory(bool optimise_mutations,
                                bool only_track_mutant_coverage,
                                bool mutation_pass,
                                int &mutation_id,
-                               protobufs::MutationInfo &mutation_info);
+                               protobufs::MutationInfo &mutation_info,
+                               const std::optional<protobufs::MutationInfo> &enabled_mutation_info);
 
 }
 

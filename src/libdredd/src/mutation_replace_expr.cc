@@ -611,6 +611,7 @@ protobufs::MutationGroup MutationReplaceExpr::Apply(clang::ASTContext &ast_conte
   inner_result.mutable_end()->set_line(info_for_source_range_.GetEndLine());
   inner_result.mutable_end()->set_column(info_for_source_range_.GetEndColumn());
   *inner_result.mutable_snippet() = info_for_source_range_.GetSnippet();
+  inner_result.set_enabled(true);
 
 
 
@@ -682,7 +683,6 @@ void MutationReplaceExpr::AddMutationInstance(
   protobufs::MutationReplaceExprInstance instance;
   instance.set_mutation_id(mutation_id_base + mutation_id_offset);
   instance.set_action(action);
-  instance.set_enabled(true);
   *protobuf_message.add_instances() = instance;
   mutation_id_offset++;
 }
