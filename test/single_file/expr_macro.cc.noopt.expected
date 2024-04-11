@@ -1,3 +1,7 @@
+#define E (1, 2, 3)
+
+void foo(int, int, int);
+
 #include <cinttypes>
 #include <cstddef>
 #include <functional>
@@ -41,10 +45,6 @@ static bool __dredd_enabled_mutation(int local_mutation_id) {
   }
   return (enabled_bitset[local_mutation_id / 64] & (1 << (local_mutation_id % 64))) != 0;
 }
-
-#define E (1, 2, 3)
-
-void foo(int, int, int);
 
 int main() {
   if (!__dredd_enabled_mutation(0)) { foo E; }
