@@ -1,3 +1,10 @@
+struct foo {
+  foo(int) {};
+  operator int();
+};
+
+enum baz { bar };
+
 #include <cinttypes>
 #include <cstddef>
 #include <functional>
@@ -54,13 +61,6 @@ static bool __dredd_replace_expr_bool_false(bool arg, int local_mutation_id) {
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return true;
   return arg;
 }
-
-struct foo {
-  foo(int) {};
-  operator int();
-};
-
-enum baz { bar };
 
 int main() { 
   if (!__dredd_enabled_mutation(3)) { __dredd_replace_expr_bool_false(0, 0) ? foo(__dredd_replace_expr_int_zero(0, 1)) : baz::bar; }

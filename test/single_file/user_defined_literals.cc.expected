@@ -1,3 +1,6 @@
+#include <cstdint>
+
+// Number wraps integer, enforcing explicit casting
 #include <cinttypes>
 #include <cstddef>
 #include <functional>
@@ -74,9 +77,6 @@ static int __dredd_replace_expr_int_zero(int arg, int local_mutation_id) {
   return arg;
 }
 
-#include <cstdint>
-
-// Number wraps integer, enforcing explicit casting
 struct Number {
     
     uint32_t value = {};

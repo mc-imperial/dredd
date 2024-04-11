@@ -1,3 +1,5 @@
+#define BEGIN_ x = 
+
 #include <inttypes.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -50,8 +52,6 @@ static int __dredd_replace_expr_int(int arg, int local_mutation_id) {
   if (__dredd_enabled_mutation(local_mutation_id + 5)) return -1;
   return arg;
 }
-
-#define BEGIN_ x = 
 
 int main() {
   int x, y;

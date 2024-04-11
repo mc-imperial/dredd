@@ -63,6 +63,25 @@ bool MutateVisitor::IsTypeSupported(const clang::QualType qual_type) {
          (builtin_type->isInteger() || builtin_type->isFloatingPoint());
 }
 
+void MutateVisitor::UpdateStartLocationOfFirstFunctionInSourceFile() {
+  for (int index = static_cast<int>(enclosing_decls_.size()) - 1; index >= 0;
+       index--) {
+    const auto* decl = enclosing_decls_[static_cast<size_t>(index)];
+    if (llvm::dyn_cast<clang::FunctionDecl>(decl) != nullptr) {
+      const clang::BeforeThanCompare<clang::SourceLocation> comparator(
+          compiler_instance_->getSourceManager());
+      auto source_range_in_main_file = GetSourceRangeInMainFile(
+          compiler_instance_->getPreprocessor(), *enclosing_decls_[0]);
+      if (start_location_of_first_function_in_source_file_.isInvalid() ||
+          comparator(source_range_in_main_file.getBegin(),
+                     start_location_of_first_function_in_source_file_)) {
+        start_location_of_first_function_in_source_file_ =
+            source_range_in_main_file.getBegin();
+      }
+    }
+  }
+}
+
 bool MutateVisitor::IsInFunction() {
   // Walk up the next of enclosing declarations
   for (int index = static_cast<int>(enclosing_decls_.size()) - 1; index >= 0;
@@ -555,6 +574,7 @@ bool MutateVisitor::VisitExpr(clang::Expr* expr) {
     return true;
   }
 
+  UpdateStartLocationOfFirstFunctionInSourceFile();
   if (auto* unary_operator = llvm::dyn_cast<clang::UnaryOperator>(expr)) {
     HandleUnaryOperator(unary_operator);
   }
@@ -621,6 +641,7 @@ bool MutateVisitor::TraverseCompoundStmt(clang::CompoundStmt* compound_stmt) {
     assert(!enclosing_decls_.empty() &&
            "Statements can only be removed if they are nested in some "
            "declaration.");
+    UpdateStartLocationOfFirstFunctionInSourceFile();
     mutation_tree_path_.back()->AddMutation(
         std::make_unique<MutationRemoveStmt>(
             *target_stmt, compiler_instance_->getPreprocessor(),

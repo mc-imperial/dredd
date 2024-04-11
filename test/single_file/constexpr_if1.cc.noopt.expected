@@ -1,3 +1,5 @@
+#include <iostream>
+
 #include <cinttypes>
 #include <cstddef>
 #include <functional>
@@ -41,8 +43,6 @@ static bool __dredd_enabled_mutation(int local_mutation_id) {
   }
   return (enabled_bitset[local_mutation_id / 64] & (static_cast<uint64_t>(1) << (local_mutation_id % 64))) != 0;
 }
-
-#include <iostream>
 
 template <int a> void foo() {
   if (!__dredd_enabled_mutation(1)) { if constexpr (a) {

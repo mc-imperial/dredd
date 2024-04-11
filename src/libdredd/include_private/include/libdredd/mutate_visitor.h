@@ -108,6 +108,11 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
     return constant_sized_arrays_to_rewrite_;
   }
 
+  [[nodiscard]] clang::SourceLocation
+  GetStartLocationOfFirstFunctionInSourceFile() const {
+    return start_location_of_first_function_in_source_file_;
+  }
+
  private:
   // Helper class that uses the RAII pattern to support pushing a new mutation
   // tree node on to the stack of mutation tree nodes used during visitation,
@@ -174,8 +179,14 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
   // this special case, so that it can be ignored.
   bool IsConversionOfEnumToConstructor(const clang::Expr& expr) const;
 
+  void UpdateStartLocationOfFirstFunctionInSourceFile();
+
   const clang::CompilerInstance* compiler_instance_;
   bool optimise_mutations_;
+
+  // Records the start location of the very first function definition in the
+  // source file, before which Dredd's prelude can be placed.
+  clang::SourceLocation start_location_of_first_function_in_source_file_;
 
   // Tracks the nest of declarations currently being traversed. Any new Dredd
   // functions will be put before the start of the current nest, which avoids
