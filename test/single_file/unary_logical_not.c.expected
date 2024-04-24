@@ -1,3 +1,5 @@
+#include <stdbool.h>
+
 #include <inttypes.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -41,8 +43,8 @@ static int __dredd_enabled_mutation(int local_mutation_id) {
 }
 
 #define MUTATION_RETURN(arg) arg
-#define REPLACE_UNARY_Not(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return ~arg
-#define REPLACE_UNARY_Minus(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return -arg
+#define REPLACE_UNARY_Not(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return arg
+#define REPLACE_UNARY_Minus(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return arg
 #define REPLACE_EXPR_TRUE(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return 1
 #define REPLACE_EXPR_NOT(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return ~(arg)
 #define REPLACE_EXPR_MINUS(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return -(arg)
@@ -83,8 +85,6 @@ static bool __dredd_replace_expr_bool(bool arg, int local_mutation_id) {
   REPLACE_EXPR_FALSE(2);
   return MUTATION_RETURN(arg);
 }
-
-#include <stdbool.h>
 
 int main() {
   bool y = __dredd_replace_expr_bool_true(true, 0);

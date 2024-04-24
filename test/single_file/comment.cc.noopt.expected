@@ -1,3 +1,5 @@
+void g();
+
 #include <cinttypes>
 #include <cstddef>
 #include <functional>
@@ -54,8 +56,6 @@ static bool __dredd_replace_expr_bool(bool arg, int local_mutation_id) {
   REPLACE_EXPR_FALSE(2);
   return MUTATION_RETURN(arg);
 }
-
-void g();
 
 void f()
 {

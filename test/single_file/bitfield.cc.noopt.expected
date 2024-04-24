@@ -1,3 +1,8 @@
+struct S {
+  int a : 3;
+  int b : 3;
+};
+
 #include <cinttypes>
 #include <cstddef>
 #include <functional>
@@ -74,11 +79,6 @@ static int __dredd_replace_expr_int(int arg, int local_mutation_id) {
   REPLACE_EXPR_INT_MINUS_ONE(5);
   return MUTATION_RETURN(arg);
 }
-
-struct S {
-  int a : 3;
-  int b : 3;
-};
 
 void foo() {
   S myS;

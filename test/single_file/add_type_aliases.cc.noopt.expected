@@ -1,5 +1,8 @@
 #include <cinttypes>
 #include <cstddef>
+
+#include <cinttypes>
+#include <cstddef>
 #include <functional>
 #include <string>
 
@@ -169,9 +172,6 @@ static int __dredd_replace_binary_operator_Add_arg1_int_arg2_int(int arg1, int a
   REPLACE_BINARY_ARG2(5);
   return MUTATION_RETURN(arg1 + arg2);
 }
-
-#include <cinttypes>
-#include <cstddef>
 
 int main() {
   unsigned a;

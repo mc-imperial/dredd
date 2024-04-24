@@ -43,7 +43,7 @@ static bool __dredd_enabled_mutation(int local_mutation_id) {
 }
 
 #define MUTATION_RETURN(arg) arg
-#define REPLACE_UNARY_PreInc_EVALUATED(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return ++arg()
+#define REPLACE_UNARY_PreInc_EVALUATED(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return arg()
 #define REPLACE_UNARY_ARG_EVALUATED(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return arg()
 #define REPLACE_EXPR_NOT(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return ~(arg)
 #define REPLACE_EXPR_MINUS(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return -(arg)

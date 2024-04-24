@@ -107,11 +107,11 @@ static int __dredd_replace_expr_int(int arg, int local_mutation_id) {
 
 static int __dredd_replace_binary_operator_LAnd_arg1_long_long_arg2_long_outer(int arg, int local_mutation_id) {
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return !arg;
-  return arg;
+  return MUTATION_RETURN(arg);
 }
 static int __dredd_replace_binary_operator_LAnd_arg1_long_arg2_long_long_outer(int arg, int local_mutation_id) {
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return !arg;
-  return arg;
+  return MUTATION_RETURN(arg);
 }
 int main() {
     if (!__dredd_enabled_mutation(21)) { __dredd_replace_expr_int(__dredd_replace_binary_operator_LAnd_arg1_long_long_arg2_long_outer(__dredd_replace_binary_operator_LAnd_arg1_long_long_arg2_long_lhs(__dredd_replace_expr_long_long(5LL, 0), 12) && __dredd_replace_binary_operator_LAnd_arg1_long_long_arg2_long_rhs(__dredd_replace_expr_long(4L, 6), 12), 12), 15); }

@@ -1,3 +1,5 @@
+#define TYPE int
+
 #include <inttypes.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -75,8 +77,6 @@ static int __dredd_replace_binary_operator_Add_arg1_int_arg2_int(int arg1, int a
   REPLACE_BINARY_ARG2(5);
   return MUTATION_RETURN(arg1 + arg2);
 }
-
-#define TYPE int
 
 TYPE foo() {
   if (!__dredd_enabled_mutation(24)) { return __dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(1, 0) , __dredd_replace_expr_int(2, 6), 12), 18); }

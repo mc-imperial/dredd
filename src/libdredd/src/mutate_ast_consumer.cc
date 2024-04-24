@@ -104,12 +104,11 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
     *mutation_info_->value().add_info_for_files() = mutation_info_for_file;
   }
 
-  auto& source_manager = ast_context.getSourceManager();
-  const clang::SourceLocation start_of_source_file =
-      source_manager.translateLineCol(source_manager.getMainFileID(), 1, 1);
-  assert(start_of_source_file.isValid() &&
-         "There is at least one mutation, therefore the file must have some "
-         "content.");
+  const clang::SourceLocation start_location_of_first_function_in_source_file =
+      visitor_->GetStartLocationOfFirstFunctionInSourceFile();
+  assert(start_location_of_first_function_in_source_file.isValid() &&
+         "There is at least one mutation, therefore there must be at least one "
+         "function.");
 
   // Convert the unordered set Dredd declarations into an ordered set and add
   // them to the source file before the first declaration.
@@ -117,27 +116,27 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
   sorted_dredd_declarations.insert(dredd_declarations.begin(),
                                    dredd_declarations.end());
   for (const auto& decl : sorted_dredd_declarations) {
-    const bool rewriter_result =
-        rewriter_.InsertTextBefore(start_of_source_file, decl);
+    const bool rewriter_result = rewriter_.InsertTextBefore(
+        start_location_of_first_function_in_source_file, decl);
     (void)rewriter_result;  // Keep release-mode compilers happy.
     assert(!rewriter_result && "Rewrite failed.\n");
   }
 
   rewriter_.InsertTextBefore(
-      start_of_source_file,
+      start_location_of_first_function_in_source_file,
       GenerateMutationPrelude(semantics_preserving_mutation_));
 
   std::set<std::string> sorted_dredd_macros;
   sorted_dredd_macros.insert(dredd_macros.begin(), dredd_macros.end());
   for (const auto& macro : sorted_dredd_macros) {
     const bool rewriter_result =
-        rewriter_.InsertTextBefore(start_of_source_file, macro);
+        rewriter_.InsertTextBefore(start_location_of_first_function_in_source_file, macro);
     (void)rewriter_result;  // Keep release-mode compilers happy.
     assert(!rewriter_result && "Rewrite failed.\n");
   }
 
   rewriter_.InsertTextBefore(
-      start_of_source_file,
+      start_location_of_first_function_in_source_file,
       GenerateMutationReturn(semantics_preserving_mutation_));
 
   const std::string dredd_prelude =
@@ -145,15 +144,15 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
           ? GetDreddPreludeCpp(initial_mutation_id)
           : GetDreddPreludeC(initial_mutation_id);
 
-  bool rewriter_result =
-      rewriter_.InsertTextBefore(start_of_source_file, dredd_prelude);
+  bool rewriter_result = rewriter_.InsertTextBefore(
+      start_location_of_first_function_in_source_file, dredd_prelude);
   (void)rewriter_result;  // Keep release-mode compilers happy.
   assert(!rewriter_result && "Rewrite failed.\n");
 
   if (semantics_preserving_mutation_) {
     // TODO(JamesLeeJones): Possibly modify this variable.
     rewriter_result = rewriter_.InsertTextBefore(
-        start_of_source_file, "static unsigned long long int no_op = 0;\n\n");
+        start_location_of_first_function_in_source_file, "static unsigned long long int no_op = 0;\n\n");
     (void)rewriter_result;  // Keep release-mode compilers happy.
     assert(!rewriter_result && "Rewrite failed.\n");
   }

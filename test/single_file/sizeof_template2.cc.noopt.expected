@@ -1,3 +1,5 @@
+bool f(int);
+
 #include <cinttypes>
 #include <cstddef>
 #include <functional>
@@ -80,8 +82,6 @@ static bool __dredd_replace_expr_bool(std::function<bool()> arg, int local_mutat
   REPLACE_EXPR_FALSE(2);
   return MUTATION_RETURN(arg());
 }
-
-bool f(int);
 
 template <typename a> struct b {
   bool c() { if (!__dredd_enabled_mutation(13)) { return __dredd_replace_expr_bool([&]() -> bool { return static_cast<bool>(f(__dredd_replace_expr_int(__dredd_replace_expr_unsigned_long(sizeof(a), 0), 4))); }, 10); } }

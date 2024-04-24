@@ -76,7 +76,7 @@ static int __dredd_replace_binary_operator_LAnd_arg1_int_arg2_int_rhs(int arg, i
 }
 static int __dredd_replace_binary_operator_LAnd_arg1_int_arg2_int_outer(int arg, int local_mutation_id) {
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return !arg;
-  return arg;
+  return MUTATION_RETURN(arg);
 }
 static int __dredd_replace_binary_operator_LAnd_arg1_int_arg2_int_lhs(int arg, int local_mutation_id) {
   if (!__dredd_some_mutation_enabled) return arg;

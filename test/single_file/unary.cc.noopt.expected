@@ -43,15 +43,15 @@ static bool __dredd_enabled_mutation(int local_mutation_id) {
 }
 
 #define MUTATION_RETURN(arg) arg
-#define REPLACE_UNARY_PreInc_EVALUATED(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return ++arg()
-#define REPLACE_UNARY_PreDec_EVALUATED(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return --arg()
-#define REPLACE_UNARY_PostInc_EVALUATED(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return arg()++
-#define REPLACE_UNARY_PostDec_EVALUATED(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return arg()--
-#define REPLACE_UNARY_Not_EVALUATED(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return ~arg()
-#define REPLACE_UNARY_Not(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return ~arg
-#define REPLACE_UNARY_Minus_EVALUATED(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return -arg()
-#define REPLACE_UNARY_LNot_EVALUATED(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return !arg()
-#define REPLACE_UNARY_LNot(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return !arg
+#define REPLACE_UNARY_PreInc_EVALUATED(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return arg()
+#define REPLACE_UNARY_PreDec_EVALUATED(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return arg()
+#define REPLACE_UNARY_PostInc_EVALUATED(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return arg()
+#define REPLACE_UNARY_PostDec_EVALUATED(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return arg()
+#define REPLACE_UNARY_Not_EVALUATED(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return arg()
+#define REPLACE_UNARY_Not(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return arg
+#define REPLACE_UNARY_Minus_EVALUATED(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return arg()
+#define REPLACE_UNARY_LNot_EVALUATED(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return arg()
+#define REPLACE_UNARY_LNot(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return arg
 #define REPLACE_UNARY_ARG_EVALUATED(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return arg()
 #define REPLACE_UNARY_ARG(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return arg
 #define REPLACE_EXPR_NOT_EVALUATED(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return ~(arg())

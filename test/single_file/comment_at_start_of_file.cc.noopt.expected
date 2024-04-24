@@ -1,3 +1,5 @@
+// Hello
+
 #include <cinttypes>
 #include <cstddef>
 #include <functional>
@@ -60,8 +62,6 @@ static int __dredd_replace_expr_int(int arg, int local_mutation_id) {
   REPLACE_EXPR_INT_MINUS_ONE(5);
   return MUTATION_RETURN(arg);
 }
-
-// Hello
 
 int main() {
   if (!__dredd_enabled_mutation(6)) { return __dredd_replace_expr_int(42, 0); }
