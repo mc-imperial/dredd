@@ -166,4 +166,110 @@ std::string GenerateMutationReturn(bool semantics_preserving_mutation) {
   return result;
 }
 
+std::string TypeToUpperLimit(const clang::BuiltinType* type, const clang::ASTContext& ast_context) {
+    std::string type_string = type->getName(ast_context.getPrintingPolicy()).str();
+
+    if (ast_context.getLangOpts().CPlusPlus) {
+        return "std::numeric_limits<" + type_string + ">::max()";
+    }
+
+    std::string result;
+
+    switch (type->getKind()) {
+        case clang::BuiltinType::Bool:
+            break;
+        case clang::BuiltinType::SChar:
+            result = "SCHAR";
+            break;
+        case clang::BuiltinType::UChar:
+            result = "UCHAR";
+            break;
+        case clang::BuiltinType::UShort:
+            result = "USHRT";
+            break;
+        case clang::BuiltinType::UInt:
+            result = "UINT";
+            break;
+        case clang::BuiltinType::ULong:
+            result = "ULONG";
+            break;
+        case clang::BuiltinType::ULongLong:
+            result = "ULLONG";
+            break;
+        case clang::BuiltinType::Short:
+            result = "SHRT";
+            break;
+        case clang::BuiltinType::Int:
+            result = "INT";
+            break;
+        case clang::BuiltinType::Long:
+            result = "LONG";
+            break;
+        case clang::BuiltinType::LongLong:
+            result = "LLONG";
+            break;
+        case clang::BuiltinType::Float:
+            result = "FLT";
+            break;
+        case clang::BuiltinType::Double:
+            result = "DBL";
+            break;
+        case clang::BuiltinType::LongDouble:
+            result = "LDBL";
+            break;
+        default:
+            assert(false && "Unknown type");
+            break;
+    }
+
+    return result + "_MAX";
+}
+
+std::string TypeToLowerLimit(const clang::BuiltinType* type, const clang::ASTContext& ast_context) {
+    std::string type_string = type->getName(ast_context.getPrintingPolicy()).str();
+
+    if (ast_context.getLangOpts().CPlusPlus) {
+        return "std::numeric_limits<" + type_string + ">::lowest()";
+    }
+
+    // The minimum of unsigned types is 0.
+    if (type_string[0] == 'u') return "0";
+
+    std::string result;
+
+    switch (type->getKind()) {
+        case clang::BuiltinType::Bool:
+            break;
+        case clang::BuiltinType::SChar:
+            result = "SCHAR";
+            break;
+        case clang::BuiltinType::Short:
+            result = "SHRT";
+            break;
+        case clang::BuiltinType::Int:
+            result = "INT";
+            break;
+        case clang::BuiltinType::Long:
+            result = "LONG";
+            break;
+        case clang::BuiltinType::LongLong:
+            result = "LLONG";
+            break;
+        case clang::BuiltinType::Float:
+            result = "FLT";
+            break;
+        case clang::BuiltinType::Double:
+            result = "DBL";
+            break;
+        case clang::BuiltinType::LongDouble:
+            result = "LDBL";
+            break;
+        default:
+            assert(false && "Unknown type");
+            break;
+    }
+
+    return result + "_MIN";
+}
+
 }  // namespace dredd

@@ -101,10 +101,12 @@ class MutationReplaceBinaryOperator : public Mutation {
       protobufs::MutationReplaceBinaryOperator& protobuf_message) const;
 
   // Generates macro for operator replacement.
-  static std::string GenerateBinaryOperatorReplacementMacro(
-      const std::string& name, const std::string& arg1_evaluated,
-      clang::BinaryOperatorKind operator_kind,
-      const std::string& arg2_evaluated, bool semantics_preserving_mutation);
+  std::string GenerateBinaryOperatorReplacementMacro(const std::string &name,
+                                                     const std::string &arg1_evaluated,
+                                                     clang::BinaryOperatorKind operator_kind,
+                                                     const std::string &arg2_evaluated,
+                                                     bool semantics_preserving_mutation,
+                                                     const clang::ASTContext &ast_context) const;
 
   // Replaces binary operators with other valid binary operators.
   void GenerateBinaryOperatorReplacement(

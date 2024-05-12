@@ -71,14 +71,13 @@ class MutationReplaceUnaryOperator : public Mutation {
   static std::string OpKindToString(clang::UnaryOperatorKind kind);
 
   [[nodiscard]] std::string GetUnaryMacroName(
-      const std::string& operator_name,
-      const clang::ASTContext& ast_context) const;
+      const std::string& operator_name, const clang::ASTContext& ast_context,
+      bool semantics_preserving_mutation) const;
 
-  static std::string GenerateUnaryOperatorReplacementMacro(
-      const std::string& name,
-      clang::UnaryOperatorKind operator_kind,
-      const std::string& arg_evaluated,
-      bool semantics_preserving_mutation);
+  std::string GenerateUnaryOperatorReplacementMacro(
+      const std::string& name, clang::UnaryOperatorKind operator_kind,
+      const std::string& arg_evaluated, bool semantics_preserving_mutation,
+      const clang::ASTContext& ast_context) const;
 
   // Replaces unary operators with other valid unary operators.
   void GenerateUnaryOperatorReplacement(

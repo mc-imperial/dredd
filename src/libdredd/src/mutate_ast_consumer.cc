@@ -129,8 +129,8 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
   std::set<std::string> sorted_dredd_macros;
   sorted_dredd_macros.insert(dredd_macros.begin(), dredd_macros.end());
   for (const auto& macro : sorted_dredd_macros) {
-    const bool rewriter_result =
-        rewriter_.InsertTextBefore(start_location_of_first_function_in_source_file, macro);
+    const bool rewriter_result = rewriter_.InsertTextBefore(
+        start_location_of_first_function_in_source_file, macro);
     (void)rewriter_result;  // Keep release-mode compilers happy.
     assert(!rewriter_result && "Rewrite failed.\n");
   }
@@ -152,7 +152,8 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
   if (semantics_preserving_mutation_) {
     // TODO(JamesLeeJones): Possibly modify this variable.
     rewriter_result = rewriter_.InsertTextBefore(
-        start_location_of_first_function_in_source_file, "static unsigned long long int no_op = 0;\n\n");
+        start_location_of_first_function_in_source_file,
+        "static unsigned long long int no_op = 0;\n\n");
     (void)rewriter_result;  // Keep release-mode compilers happy.
     assert(!rewriter_result && "Rewrite failed.\n");
   }
@@ -310,6 +311,7 @@ std::string MutateAstConsumer::GetRegularDreddPreludeC(
   result << "#include <inttypes.h>\n";
   result << "#include <stdbool.h>\n";
   result << "#include <stdlib.h>\n";
+  if (semantics_preserving_mutation_) result << "#include <limits.h>\n";
   result << "#include <string.h>\n";
   result << "\n";
   result << "#ifdef _MSC_VER\n";

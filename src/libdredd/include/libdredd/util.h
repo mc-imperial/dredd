@@ -135,6 +135,10 @@ std::string GenerateMutationMacro(const std::string& name,
                                   bool semantics_preserving_mutation);
 
 std::string GenerateMutationReturn(bool semantics_preserving_mutation);
+
+std::string TypeToUpperLimit(const clang::BuiltinType* type, const clang::ASTContext& ast_context);
+
+std::string TypeToLowerLimit(const clang::BuiltinType* type, const clang::ASTContext& ast_context);
 }  // namespace dredd
 
 #endif  // LIBDREDD_UTIL_H

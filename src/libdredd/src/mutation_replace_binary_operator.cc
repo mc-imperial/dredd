@@ -296,10 +296,12 @@ MutationReplaceBinaryOperator::ConvertToSemanticsPreservingBinaryExpression(
 }
 
 std::string
-MutationReplaceBinaryOperator::GenerateBinaryOperatorReplacementMacro(
-    const std::string& name, const std::string& arg1_evaluated,
-    clang::BinaryOperatorKind operator_kind, const std::string& arg2_evaluated,
-    bool semantics_preserving_mutation) {
+MutationReplaceBinaryOperator::GenerateBinaryOperatorReplacementMacro(const std::string &name,
+                                                                      const std::string &arg1_evaluated,
+                                                                      clang::BinaryOperatorKind operator_kind,
+                                                                      const std::string &arg2_evaluated,
+                                                                      bool semantics_preserving_mutation,
+                                                                      const clang::ASTContext &ast_context) const {
   const std::string args_evaluated =
       arg1_evaluated + " " +
       clang::BinaryOperator::getOpcodeStr(operator_kind).str() + " " +
@@ -315,47 +317,75 @@ MutationReplaceBinaryOperator::GenerateBinaryOperatorReplacementMacro(
   std::string result = "#define " + name + "(type) if (";
 
   // TODO(James Lee-Jones): Add more safe math checks.
+  const clang::BuiltinType* type = binary_operator_->getType()->getAs<clang::BuiltinType>();
+
   switch (operator_kind) {
-    case clang::BO_PtrMemD:break;
-    case clang::BO_PtrMemI:break;
-    case clang::BO_Mul:break;
-    case clang::BO_Div:break;
-    case clang::BO_Rem:break;
+    case clang::BO_MulAssign:
+    case clang::BO_Mul:
+      break;
+    case clang::BO_DivAssign:
+    case clang::BO_Div:
+      break;
+    case clang::BO_RemAssign:
+    case clang::BO_Rem:
+      break;
+    case clang::BO_AddAssign:
     case clang::BO_Add:
-      result += "(((" + arg1_evaluated + ") > 0 && (" + arg2_evaluated + ") > 0 && (" + arg1_evaluated + ") < (std::numeric_limits<type>::max() - (" + arg2_evaluated + ")))";
+      result += "(((" + arg1_evaluated + ") > 0 && (" + arg2_evaluated +
+                ") > 0 && (" + arg1_evaluated +
+                ") < (" + TypeToUpperLimit(type, ast_context) + "- (" + arg2_evaluated +
+                ")))";
       result += " || ";
-      result += "((" + arg1_evaluated + ") < 0 && (" + arg2_evaluated + ") < 0 && (" + arg1_evaluated + ") < (std::numeric_limits<type>::lowest() - (" + arg2_evaluated + "))))";
+      result += "((" + arg1_evaluated + ") < 0 && (" + arg2_evaluated +
+                ") < 0 && (" + arg1_evaluated +
+                ") < (" + TypeToLowerLimit(type, ast_context) + "- (" +
+                arg2_evaluated + "))))";
       result += " && ";
       break;
+    case clang::BO_SubAssign:
     case clang::BO_Sub:
-//      result += "((((" + arg1_evaluated + ") ^ (" + arg2_evaluated + ")) & (((" + arg1_evaluated + ") ^ (((" + arg1_evaluated + ") ^ (" + arg2_evaluated + ")) & (~max))) ^ -(" + arg2_evaluated + ")) ^ (" + arg2_evaluated + "))) > 0 && ";
+      //      result += "((((" + arg1_evaluated + ") ^ (" + arg2_evaluated + "))
+      //      & (((" + arg1_evaluated + ") ^ (((" + arg1_evaluated + ") ^ (" +
+      //      arg2_evaluated + ")) & (~max))) ^ -(" + arg2_evaluated + ")) ^ ("
+      //      + arg2_evaluated + "))) > 0 && ";
       break;
-    case clang::BO_Shl:break;
-    case clang::BO_Shr:break;
-    case clang::BO_Cmp:break;
-    case clang::BO_LT:break;
-    case clang::BO_GT:break;
-    case clang::BO_LE:break;
-    case clang::BO_GE:break;
-    case clang::BO_EQ:break;
-    case clang::BO_NE:break;
-    case clang::BO_And:break;
-    case clang::BO_Xor:break;
-    case clang::BO_Or:break;
-    case clang::BO_LAnd:break;
-    case clang::BO_LOr:break;
-    case clang::BO_Assign:break;
-    case clang::BO_MulAssign:break;
-    case clang::BO_DivAssign:break;
-    case clang::BO_RemAssign:break;
-    case clang::BO_AddAssign:break;
-    case clang::BO_SubAssign:break;
-    case clang::BO_ShlAssign:break;
-    case clang::BO_ShrAssign:break;
-    case clang::BO_AndAssign:break;
-    case clang::BO_XorAssign:break;
-    case clang::BO_OrAssign:break;
-    case clang::BO_Comma:break;
+    case clang::BO_ShlAssign:
+    case clang::BO_Shl:
+      break;
+    case clang::BO_Shr:
+      break;
+    case clang::BO_ShrAssign:
+    case clang::BO_Cmp:
+      break;
+    case clang::BO_LT:
+      break;
+    case clang::BO_GT:
+      break;
+    case clang::BO_LE:
+      break;
+    case clang::BO_GE:
+      break;
+    case clang::BO_EQ:
+      break;
+    case clang::BO_NE:
+      break;
+    case clang::BO_And:
+      break;
+    case clang::BO_XorAssign:
+    case clang::BO_Xor:
+      break;
+    case clang::BO_Or:
+      break;
+    case clang::BO_AndAssign:
+    case clang::BO_LAnd:
+      break;
+    case clang::BO_OrAssign:
+    case clang::BO_LOr:
+      break;
+    case clang::BO_Assign:
+      break;
+    default:
+      break;
   }
 
   if (operator_kind == clang::BinaryOperatorKind::BO_Div ||
@@ -489,17 +519,20 @@ void MutationReplaceBinaryOperator::GenerateBinaryOperatorReplacement(
       const std::string macro_name =
           GetBinaryMacroName(OpKindToString(operator_kind), ast_context);
       if (!semantics_preserving_mutation) {
-        new_function << "  " << macro_name << "(" << mutation_id_offset << ");\n";
+        new_function << "  " << macro_name << "(" << mutation_id_offset
+                     << ");\n";
       } else {
-        new_function << "  " << macro_name << "(" << binary_operator_->getType()
-            ->getAs<clang::BuiltinType>()
-            ->getName(ast_context.getPrintingPolicy())
-            .str() << ");\n";
+        new_function << "  " << macro_name << "("
+                     << binary_operator_->getType()
+                            ->getAs<clang::BuiltinType>()
+                            ->getName(ast_context.getPrintingPolicy())
+                            .str()
+                     << ");\n";
       }
 
       dredd_macros.insert(GenerateBinaryOperatorReplacementMacro(
-          macro_name, arg1_evaluated, operator_kind, arg2_evaluated,
-          semantics_preserving_mutation));
+              macro_name, arg1_evaluated, operator_kind, arg2_evaluated,
+              semantics_preserving_mutation, ast_context));
     }
     AddMutationInstance(mutation_id_base, OperatorKindToAction(operator_kind),
                         mutation_id_offset, protobuf_message);
