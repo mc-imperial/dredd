@@ -181,10 +181,12 @@ std::string TypeToUpperLimit(const clang::BuiltinType* type,
 
   switch (type->getKind()) {
     case clang::BuiltinType::Bool:
-      break;
+      return "1";
+    case clang::BuiltinType::Char_S:
     case clang::BuiltinType::SChar:
       result = "SCHAR";
       break;
+    case clang::BuiltinType::Char_U:
     case clang::BuiltinType::UChar:
       result = "UCHAR";
       break;
@@ -247,7 +249,13 @@ std::string TypeToLowerLimit(const clang::BuiltinType* type,
 
   switch (type->getKind()) {
     case clang::BuiltinType::Bool:
+      return "0";
+    case clang::BuiltinType::Char8:
+    case clang::BuiltinType::Char16:
+    case clang::BuiltinType::Char32:
+      result = "CHAR";
       break;
+    case clang::BuiltinType::Char_S:
     case clang::BuiltinType::SChar:
       result = "SCHAR";
       break;

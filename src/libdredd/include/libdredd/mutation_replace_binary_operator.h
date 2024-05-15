@@ -73,8 +73,8 @@ class MutationReplaceBinaryOperator : public Mutation {
       const std::string& arg2_evaluated);
 
   [[nodiscard]] std::string GetBinaryMacroName(
-      const std::string& operator_name,
-      const clang::ASTContext& ast_context) const;
+      const std::string& operator_name, const clang::ASTContext& ast_context,
+      const bool semantics_preserving_mutation) const;
 
   [[nodiscard]] bool IsRedundantReplacementOperator(
       clang::BinaryOperatorKind operator_kind,

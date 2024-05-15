@@ -232,8 +232,8 @@ std::string MutationReplaceBinaryOperator::GetFunctionName(
 }
 
 std::string MutationReplaceBinaryOperator::GetBinaryMacroName(
-    const std::string& operator_name,
-    const clang::ASTContext& ast_context) const {
+    const std::string& operator_name, const clang::ASTContext& ast_context,
+    const bool semantics_preserving_mutation) const {
   std::string result = "REPLACE_BINARY_" + operator_name;
   if (ast_context.getLangOpts().CPlusPlus &&
       binary_operator_->getLHS()->HasSideEffects(ast_context)) {
@@ -247,6 +247,13 @@ std::string MutationReplaceBinaryOperator::GetBinaryMacroName(
   if (!ast_context.getLangOpts().CPlusPlus &&
       binary_operator_->isAssignmentOp()) {
     result += "_LHS_POINTER";
+  }
+  if (semantics_preserving_mutation) {
+    result +=
+        "_" + SpaceToUnderscore(binary_operator_->getType()
+                                    ->getAs<clang::BuiltinType>()
+                                    ->getName(ast_context.getPrintingPolicy())
+                                    .str());
   }
   return result;
 }
@@ -313,7 +320,7 @@ MutationReplaceBinaryOperator::GenerateBinaryOperatorReplacementMacro(
            args_evaluated + "\n";
   }
 
-  std::string result = "#define " + name + "(type) if (";
+  std::string result = "#define " + name + " if (";
 
   // TODO(James Lee-Jones): Add more safe math checks.
   const clang::BuiltinType* type =
@@ -348,14 +355,14 @@ MutationReplaceBinaryOperator::GenerateBinaryOperatorReplacementMacro(
         result += "!(fabsl((0x1.0p-100 * (" + arg1_evaluated +
                   ")) * (0x1.0p-924 * (" + arg2_evaluated +
                   "))) > (0x1.0p-100 * (0x1.0p-924 * " +
-                  TypeToUpperLimit(type, ast_context) + "))";
+                  TypeToUpperLimit(type, ast_context) + ")))";
         result += " && ";
       } else if (lhs_type->getKind() == clang::BuiltinType::Double &&
                  rhs_type->getKind() == clang::BuiltinType::Double) {
         result += "!(fabs((0x1.0p-100 * (" + arg1_evaluated +
                   ")) * (0x1.0p-924 * (" + arg2_evaluated +
                   "))) > (0x1.0p-100 * (0x1.0p-924 * " +
-                  TypeToUpperLimit(type, ast_context) + "))";
+                  TypeToUpperLimit(type, ast_context) + ")))";
         result += " && ";
       } else if (lhs_type->isFloatingPoint() && rhs_type->isFloatingPoint()) {
         result += "!(fabsf((0x1.0p-100f * (" + arg1_evaluated +
@@ -682,17 +689,13 @@ void MutationReplaceBinaryOperator::GenerateBinaryOperatorReplacement(
        GetReplacementOperators(optimise_mutations, ast_context)) {
     if (!only_track_mutant_coverage) {
       const std::string macro_name =
-          GetBinaryMacroName(OpKindToString(operator_kind), ast_context);
+          GetBinaryMacroName(OpKindToString(operator_kind), ast_context,
+                             semantics_preserving_mutation);
       if (!semantics_preserving_mutation) {
         new_function << "  " << macro_name << "(" << mutation_id_offset
                      << ");\n";
       } else {
-        new_function << "  " << macro_name << "("
-                     << binary_operator_->getType()
-                            ->getAs<clang::BuiltinType>()
-                            ->getName(ast_context.getPrintingPolicy())
-                            .str()
-                     << ");\n";
+        new_function << "  " << macro_name << ";\n";
       }
 
       dredd_macros.insert(GenerateBinaryOperatorReplacementMacro(
