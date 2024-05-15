@@ -19,6 +19,7 @@
 
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/Expr.h"
+#include "clang/AST/Type.h"
 #include "clang/Basic/SourceLocation.h"
 #include "clang/Basic/SourceManager.h"
 #include "clang/Lex/Preprocessor.h"
@@ -136,9 +137,11 @@ std::string GenerateMutationMacro(const std::string& name,
 
 std::string GenerateMutationReturn(bool semantics_preserving_mutation);
 
-std::string TypeToUpperLimit(const clang::BuiltinType* type, const clang::ASTContext& ast_context);
+std::string TypeToUpperLimit(const clang::BuiltinType* type,
+                             const clang::ASTContext& ast_context);
 
-std::string TypeToLowerLimit(const clang::BuiltinType* type, const clang::ASTContext& ast_context);
+std::string TypeToLowerLimit(const clang::BuiltinType* type,
+                             const clang::ASTContext& ast_context);
 }  // namespace dredd
 
 #endif  // LIBDREDD_UTIL_H

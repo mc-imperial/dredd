@@ -304,10 +304,11 @@ std::string MutationReplaceUnaryOperator::GetUnaryMacroName(
     result += "_POINTER";
   }
   if (semantics_preserving_mutation) {
-    result += "_" + SpaceToUnderscore(unary_operator_->getType()
-                        ->getAs<clang::BuiltinType>()
-                        ->getName(ast_context.getPrintingPolicy())
-                        .str());
+    result +=
+        "_" + SpaceToUnderscore(unary_operator_->getType()
+                                    ->getAs<clang::BuiltinType>()
+                                    ->getName(ast_context.getPrintingPolicy())
+                                    .str());
   }
   return result;
 }
@@ -325,26 +326,31 @@ std::string MutationReplaceUnaryOperator::GenerateUnaryOperatorReplacementMacro(
   }
 
   std::string result = "#define " + name + " if (";
-  const clang::BuiltinType* type = unary_operator_->getType()
-                         ->getAs<clang::BuiltinType>();
+  const clang::BuiltinType* type =
+      unary_operator_->getType()->getAs<clang::BuiltinType>();
 
   // These are the safe math checks.
   switch (operator_kind) {
     case clang::UnaryOperatorKind::UO_Minus:
-      result += "(" + arg_evaluated + ") != " + TypeToLowerLimit(type, ast_context) + " && ";
+      result += "(" + arg_evaluated +
+                ") != " + TypeToLowerLimit(type, ast_context) + " && ";
       break;
     // The following are always trivially killed.
     case clang::UO_PostInc:
-      return result + "(" + arg_evaluated + ") != " + TypeToUpperLimit(type, ast_context) + " && (" +
+      return result + "(" + arg_evaluated +
+             ") != " + TypeToUpperLimit(type, ast_context) + " && (" +
              arg_evaluated + " + 1) != actual_result) no_op++\n";
     case clang::UO_PostDec:
-      return result + "(" + arg_evaluated + ") != " + TypeToLowerLimit(type, ast_context) + " && (" +
+      return result + "(" + arg_evaluated +
+             ") != " + TypeToLowerLimit(type, ast_context) + " && (" +
              arg_evaluated + " - 1) != actual_result) no_op++\n";
     case clang::UO_PreInc:
-      return result + "(" + arg_evaluated + ") != " + TypeToUpperLimit(type, ast_context) + " && (" +
+      return result + "(" + arg_evaluated +
+             ") != " + TypeToUpperLimit(type, ast_context) + " && (" +
              arg_evaluated + " + 1) != actual_result) no_op++\n";
     case clang::UO_PreDec:
-      return result + "(" + arg_evaluated + ") != " + TypeToLowerLimit(type, ast_context) + " && (" +
+      return result + "(" + arg_evaluated +
+             ") != " + TypeToLowerLimit(type, ast_context) + " && (" +
              arg_evaluated + " - 1) != actual_result) no_op++\n";
     default:
       break;
@@ -401,7 +407,8 @@ void MutationReplaceUnaryOperator::GenerateUnaryOperatorReplacement(
   // another mutation.
   if (!optimise_mutations || !IsOperatorSelfInverse()) {
     if (!only_track_mutant_coverage) {
-      const std::string macro_name = GetUnaryMacroName("ARG", ast_context, 0);
+      const std::string macro_name =
+          GetUnaryMacroName("ARG", ast_context, semantics_preserving_mutation);
       new_function << "  " << macro_name << "(" << mutation_id_offset << ");\n";
       dredd_macros.insert(GenerateMutationMacro(macro_name, arg_evaluated,
                                                 semantics_preserving_mutation));

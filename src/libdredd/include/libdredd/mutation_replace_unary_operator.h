@@ -74,7 +74,7 @@ class MutationReplaceUnaryOperator : public Mutation {
       const std::string& operator_name, const clang::ASTContext& ast_context,
       bool semantics_preserving_mutation) const;
 
-  std::string GenerateUnaryOperatorReplacementMacro(
+  [[nodiscard]] std::string GenerateUnaryOperatorReplacementMacro(
       const std::string& name, clang::UnaryOperatorKind operator_kind,
       const std::string& arg_evaluated, bool semantics_preserving_mutation,
       const clang::ASTContext& ast_context) const;

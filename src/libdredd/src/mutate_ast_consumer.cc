@@ -179,7 +179,9 @@ std::string MutateAstConsumer::GetRegularDreddPreludeCpp(
   result << "#include <cinttypes>\n";
   result << "#include <cstddef>\n";
   result << "#include <functional>\n";
-  if (semantics_preserving_mutation_) result << "#include <limits>\n";
+  if (semantics_preserving_mutation_) {
+    result << "#include <limits>\n";
+  }
   result << "#include <string>\n\n";
   result << "\n";
   result << "#ifdef _MSC_VER\n";
@@ -311,7 +313,10 @@ std::string MutateAstConsumer::GetRegularDreddPreludeC(
   result << "#include <inttypes.h>\n";
   result << "#include <stdbool.h>\n";
   result << "#include <stdlib.h>\n";
-  if (semantics_preserving_mutation_) result << "#include <limits.h>\n";
+  if (semantics_preserving_mutation_) {
+    result << "#include <limits.h>\n";
+    result << "#include <float.h>\n";
+  }
   result << "#include <string.h>\n";
   result << "\n";
   result << "#ifdef _MSC_VER\n";
