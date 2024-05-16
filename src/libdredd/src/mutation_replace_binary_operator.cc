@@ -437,8 +437,8 @@ MutationReplaceBinaryOperator::GenerateBinaryOperatorReplacementMacro(
                   arg2_evaluated + "))) > (0.5 * " +
                   TypeToUpperLimit(type, ast_context) + "))";
         result += " && ";
-      } else if (lhs_type->getKind() == clang::BuiltinType::LongDouble &&
-                 rhs_type->getKind() == clang::BuiltinType::LongDouble) {
+      } else if (lhs_type->getKind() == clang::BuiltinType::Double &&
+                 rhs_type->getKind() == clang::BuiltinType::Double) {
         result += "!(fabs((0.5 * (" + arg1_evaluated + ")) + (0.5 * (" +
                   arg2_evaluated + "))) > (0.5 * " +
                   TypeToUpperLimit(type, ast_context) + "))";
