@@ -146,12 +146,12 @@ std::string GenerateMutationPrelude(bool semantics_preserving_mutation) {
 std::string GenerateMutationMacro(const std::string& name,
                                   const std::string& args_evaluated,
                                   bool semantics_preserving_mutation) {
-  std::string const result = "#define " + name + "(mutation_id_offset) ";
+  std::string const result = "#define " + name;
   if (semantics_preserving_mutation) {
-    return result + "if ((" + args_evaluated + ") != actual_result) no_op++\n";
+    return result + " if ((" + args_evaluated + ") != actual_result) no_op++\n";
   }
 
-  return result +
+  return result + "(mutation_id_offset) " +
          "if (__dredd_enabled_mutation(local_mutation_id "
          "+ mutation_id_offset)) return " +
          args_evaluated + "\n";

@@ -176,21 +176,22 @@ std::string MutateAstConsumer::GetRegularDreddPreludeCpp(
       (num_mutations + kWordSize - 1) / kWordSize;
 
   std::stringstream result;
+  result << "#include <cinttypes>\n";
+  result << "#include <cstddef>\n";
+  result << "#include <functional>\n";
+  result << "#include <string>\n\n";
+  result << "\n";
+  result << "#ifdef _MSC_VER\n";
+  result << "#define thread_local __declspec(thread)\n";
+  result << "#elif __APPLE__\n";
+  result << "#define thread_local __thread\n";
+  result << "#endif\n";
+  result << "\n";
+
   if (semantics_preserving_mutation_) {
     result << "#include <limits>\n";
     result << "#include <cmath>\n";
   } else {
-    result << "#include <cinttypes>\n";
-    result << "#include <cstddef>\n";
-    result << "#include <functional>\n";
-    result << "#include <string>\n\n";
-    result << "\n";
-    result << "#ifdef _MSC_VER\n";
-    result << "#define thread_local __declspec(thread)\n";
-    result << "#elif __APPLE__\n";
-    result << "#define thread_local __thread\n";
-    result << "#endif\n";
-    result << "\n";
     // This allows for fast checking that at least *some* mutation in the file
     // is enabled. It is set to true initially so that __dredd_enabled_mutation
     // gets invoked the first time enabledness is queried. At that point it will
@@ -314,25 +315,25 @@ std::string MutateAstConsumer::GetRegularDreddPreludeC(
       (num_mutations + kWordSize - 1) / kWordSize;
 
   std::stringstream result;
+  result << "#include <inttypes.h>\n";
+  result << "#include <stdbool.h>\n";
+  result << "#include <stdlib.h>\n";
+  result << "#include <string.h>\n";
+  result << "\n";
+  result << "#ifdef _MSC_VER\n";
+  result << "#define thread_local __declspec(thread)\n";
+  result << "#elif __APPLE__\n";
+  result << "#define thread_local __thread\n";
+  result << "#else\n";
+  result << "#include <threads.h>\n";
+  result << "#endif\n";
+  result << "\n";
+
   if (semantics_preserving_mutation_) {
     result << "#include <limits.h>\n";
     result << "#include <float.h>\n";
     result << "#include <math.h>\n";
   } else {
-    result << "#include <inttypes.h>\n";
-    result << "#include <stdbool.h>\n";
-    result << "#include <stdlib.h>\n";
-
-    result << "#include <string.h>\n";
-    result << "\n";
-    result << "#ifdef _MSC_VER\n";
-    result << "#define thread_local __declspec(thread)\n";
-    result << "#elif __APPLE__\n";
-    result << "#define thread_local __thread\n";
-    result << "#else\n";
-    result << "#include <threads.h>\n";
-    result << "#endif\n";
-    result << "\n";
     result << "static thread_local int __dredd_some_mutation_enabled = 1;\n";
     result << "static int __dredd_enabled_mutation(int local_mutation_id) {\n";
     result << "  static thread_local int initialized = 0;\n";

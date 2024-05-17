@@ -409,7 +409,11 @@ void MutationReplaceUnaryOperator::GenerateUnaryOperatorReplacement(
     if (!only_track_mutant_coverage) {
       const std::string macro_name =
           GetUnaryMacroName("ARG", ast_context, semantics_preserving_mutation);
-      new_function << "  " << macro_name << "(" << mutation_id_offset << ");\n";
+      new_function << "  " << macro_name;
+      if (!semantics_preserving_mutation) {
+        new_function << "(" << mutation_id_offset << ")";
+      }
+      new_function << ";\n";
       dredd_macros.insert(GenerateMutationMacro(macro_name, arg_evaluated,
                                                 semantics_preserving_mutation));
     }
