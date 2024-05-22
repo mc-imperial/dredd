@@ -57,37 +57,17 @@ jobs:
       LINUX_CC: ${{ matrix.linux_cc }}
       LINUX_CXX: ${{ matrix.linux_cxx }}
     steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: 'true'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
 
       - name: cancel_previous
         uses: styfle/cancel-workflow-action@0.8.0
         with:
           access_token: ${{ github.token }}
-
-      - name: get_actions
-        run: |
-          mkdir -p ./../.github/actions/
-          pushd ./../.github/actions/
-            git clone https://github.com/actions/setup-python.git
-            pushd setup-python/
-              git checkout v2
-            popd
-            git clone https://github.com/actions/checkout.git
-            pushd checkout/
-              git checkout v2
-            popd
-          popd
-        shell: bash
-
-      - name: checkout
-        uses: ./../.github/actions/checkout
-        with:
-          submodules: true
-
-      - name: setup_python
-        uses: ./../.github/actions/setup-python
-        with:
-          python-version: 3.9
-          architecture: x64
 
       - name: build_step_nix
         run: |
