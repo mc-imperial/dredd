@@ -212,6 +212,15 @@ std::string MutationReplaceUnaryOperator::GenerateMutatorFunction(
   }
 
   if (!only_track_mutant_coverage) {
+    // For pre-increment and pre-decrement ops, we need to store the value
+    // before it is modified to use in the mutation killing checks.
+    if (semantics_preserving_mutation &&
+        (unary_operator_->getOpcode() == clang::UnaryOperatorKind::UO_PreInc ||
+         unary_operator_->getOpcode() == clang::UnaryOperatorKind::UO_PreDec)) {
+      new_function << "  " << result_type << " arg_original = " << arg_evaluated
+                   << ";\n";
+    }
+
     new_function << "  MUTATION_PRELUDE(";
     if (IsPrefix(unary_operator_->getOpcode())) {
       new_function << clang::UnaryOperator::getOpcodeStr(
@@ -230,6 +239,12 @@ std::string MutationReplaceUnaryOperator::GenerateMutatorFunction(
     }
 
     new_function << ");\n";
+  }
+
+  if (semantics_preserving_mutation &&
+      (unary_operator_->getOpcode() == clang::UnaryOperatorKind::UO_PreInc ||
+       unary_operator_->getOpcode() == clang::UnaryOperatorKind::UO_PreDec)) {
+    arg_evaluated = "arg_original";
   }
 
   int mutation_id_offset = 0;
@@ -387,12 +402,11 @@ void MutationReplaceUnaryOperator::GenerateUnaryOperatorReplacement(
       const std::string macro_name =
           GetUnaryMacroName(OpKindToString(operator_kind), ast_context,
                             semantics_preserving_mutation);
+      new_function << "  " << macro_name;
       if (!semantics_preserving_mutation) {
-        new_function << "  " << macro_name << "(" << mutation_id_offset
-                     << ");\n";
-      } else {
-        new_function << "  " << macro_name << ";\n";
+        new_function << "(" << mutation_id_offset << ")";
       }
+      new_function << ";\n";
 
       dredd_macros.insert(GenerateUnaryOperatorReplacementMacro(
           macro_name, operator_kind, arg_evaluated,

@@ -414,6 +414,8 @@ MutationReplaceBinaryOperator::GenerateBinaryOperatorReplacementMacro(
             ")))) > (0x1.0p-100f * (0x1.0p-49f * " +
             TypeToUpperLimit(type, ast_context) + ")))))";
         safe_math_check += " && ";
+      } else {
+        safe_math_check += "(" + arg2_evaluated + " != 0) &&";
       }
       break;
     case clang::BO_RemAssign:
@@ -429,6 +431,8 @@ MutationReplaceBinaryOperator::GenerateBinaryOperatorReplacementMacro(
                  rhs_type->isUnsignedInteger()) {
         safe_math_check += "(" + arg2_evaluated + ") != 0";
         safe_math_check += " && ";
+      } else {
+        safe_math_check += "(" + arg2_evaluated + " != 0) &&";
       }
       break;
     case clang::BO_AddAssign:
