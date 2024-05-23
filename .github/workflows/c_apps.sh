@@ -96,7 +96,7 @@ pushd curl
       FILES+=("${f}")
   done
 
-  "${DREDD_EXECUTABLE}" --mutation-info-file temp.json -p "build/compile_commands.json" "${FILES[@]}"
+  "${DREDD_EXECUTABLE}" --mutation-info-file temp.json -p "build" "${FILES[@]}"
   pushd build
     ninja
     # TODO: run some tests
@@ -125,7 +125,7 @@ pushd zstd
   do
     FILES+=("${f}")
   done
-  "${DREDD_EXECUTABLE}" --mutation-info-file temp.json -p "temp/compile_commands.json" "${FILES[@]}"
+  "${DREDD_EXECUTABLE}" --mutation-info-file temp.json -p "temp" "${FILES[@]}"
   # Build mutated zstd
   make clean
   CFLAGS=-O0 make zstd-release
