@@ -372,6 +372,11 @@ void MutateVisitor::HandleExpr(clang::Expr* expr) {
     return;
   }
 
+  // It is incorrect to attempt to mutate braced initializer lists.
+  if (llvm::dyn_cast<clang::InitListExpr>(expr) != nullptr) {
+    return;
+  }
+
   // Avoid mutating null pointer assignments, such as int* x = 0, as mutating
   // these expressions in C++ is either not safe or not useful. This mutation
   // is acceptable in C, but we avoid the mutation for consistency.
