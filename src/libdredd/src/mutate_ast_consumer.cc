@@ -215,8 +215,9 @@ std::string MutateAstConsumer::GetRegularDreddPreludeCpp(
   result << "  }\n";
   // Similar to the above, a combination of division, modulo and bit-shifting
   // is used to look up whether this mutant is enabled in the bitset.
-  result << "  return (enabled_bitset[local_mutation_id / 64] & ((uint64_t) 1 << "
-            "(local_mutation_id % 64))) != 0;\n";
+  result
+      << "  return (enabled_bitset[local_mutation_id / 64] & ((uint64_t) 1 << "
+         "(local_mutation_id % 64))) != 0;\n";
   result << "}\n\n";
   return result.str();
 }
@@ -315,8 +316,9 @@ std::string MutateAstConsumer::GetRegularDreddPreludeC(
   result << "    initialized = 1;\n";
   result << "    __dredd_some_mutation_enabled = some_mutation_enabled;\n";
   result << "  }\n";
-  result << "  return enabled_bitset[local_mutation_id / 64] & ((uint64_t) 1 << "
-            "(local_mutation_id % 64));\n";
+  result
+      << "  return enabled_bitset[local_mutation_id / 64] & ((uint64_t) 1 << "
+         "(local_mutation_id % 64));\n";
   result << "}\n\n";
   return result.str();
 }
