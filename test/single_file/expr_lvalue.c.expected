@@ -12,7 +12,7 @@
 #endif
 
 static thread_local int __dredd_some_mutation_enabled = 1;
-static int __dredd_enabled_mutation(int local_mutation_id) {
+static bool __dredd_enabled_mutation(int local_mutation_id) {
   static thread_local int initialized = 0;
   static thread_local uint64_t enabled_bitset[1];
   if (!initialized) {
@@ -27,7 +27,7 @@ static int __dredd_enabled_mutation(int local_mutation_id) {
         int value = atoi(token);
         int local_value = value - 0;
         if (local_value >= 0 && local_value < 29) {
-          enabled_bitset[local_value / 64] |= (1 << (local_value % 64));
+          enabled_bitset[local_value / 64] |= ((uint64_t) 1 << (local_value % 64));
           some_mutation_enabled = 1;
         }
         token = strtok(NULL, ",");
@@ -37,7 +37,7 @@ static int __dredd_enabled_mutation(int local_mutation_id) {
     initialized = 1;
     __dredd_some_mutation_enabled = some_mutation_enabled;
   }
-  return enabled_bitset[local_mutation_id / 64] & (1 << (local_mutation_id % 64));
+  return enabled_bitset[local_mutation_id / 64] & ((uint64_t) 1 << (local_mutation_id % 64));
 }
 
 static int __dredd_replace_expr_int_lvalue(int* arg, int local_mutation_id) {
