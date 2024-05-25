@@ -203,7 +203,6 @@ std::string MutationReplaceBinaryOperator::GetFunctionName(
   // operators
   result += OpKindToString(binary_operator_->getOpcode());
 
-  // TODO(JLJ): Add side-effecting specifier to each arg.
   result += GetTypeSpecifier(ast_context);
 
   // In the case that we can optimise out some binary expressions, it is
@@ -327,7 +326,6 @@ MutationReplaceBinaryOperator::GenerateBinaryOperatorReplacementMacro(
            " arg2;\n";
   }
 
-  // TODO(James Lee-Jones): Add more safe math checks.
   const clang::BuiltinType* type =
       binary_operator_->getType()->getAs<clang::BuiltinType>();
   const clang::BuiltinType* lhs_type =
@@ -648,11 +646,6 @@ void MutationReplaceBinaryOperator::GenerateArgumentReplacement(
             *binary_operator_->getRHS(), -1.0, ast_context))) {
     if (!only_track_mutant_coverage) {
       std::string macro_name = "REPLACE_BINARY_ARG2";
-      //      if (ast_context.getLangOpts().CPlusPlus &&
-      //          (binary_operator_->isLogicalOp() ||
-      //           binary_operator_->getRHS()->HasSideEffects(ast_context))) {
-      //        macro_name += "_EVALUATED";
-      //      }
       new_function << "  " << macro_name;
 
       std::string macro;
@@ -681,7 +674,8 @@ void MutationReplaceBinaryOperator::GenerateArgumentReplacement(
         }
         macro += "(arg2) != actual_result) no_op++\n";
       } else {
-        new_function << "(" << mutation_id_offset << ")";
+        new_function << "(" << arg2_evaluated << ", " << mutation_id_offset
+                     << ")";
         macro =
             GenerateMutationMacro(macro_name, semantics_preserving_mutation);
       }

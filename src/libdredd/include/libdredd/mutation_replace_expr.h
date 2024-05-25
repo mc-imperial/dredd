@@ -165,13 +165,13 @@ class MutationReplaceExpr : public Mutation {
   [[nodiscard]] std::string GetFunctionName(
       bool optimise_mutations, clang::ASTContext& ast_context) const;
 
-  void ReplaceExprWithFunctionCall(const std::string& new_function_name,
-                                   const std::string& input_type,
+  void ReplaceExprWithFunctionCall(const std::string &new_function_name,
+                                   const std::string &input_type,
                                    bool semantics_preserving_mutation,
                                    int local_mutation_id,
-                                   clang::ASTContext& ast_context,
-                                   const clang::Preprocessor& preprocessor,
-                                   clang::Rewriter& rewriter) const;
+                                   clang::ASTContext &ast_context,
+                                   const clang::Preprocessor &preprocessor,
+                                   clang::Rewriter &rewriter) const;
 
   static void AddMutationInstance(
       int mutation_id_base, protobufs::MutationReplaceExprAction action,

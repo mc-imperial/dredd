@@ -137,6 +137,13 @@ bool MutateVisitor::TraverseDecl(clang::Decl* decl) {
     // associated with static assertions anyway.
     return true;
   }
+  if (const auto* function_decl = llvm::dyn_cast<clang::FunctionDecl>(decl)) {
+    if (function_decl->isConstexpr()) {
+      // Because Dredd's mutations occur dynamically, they cannot be applied to
+      // C++ constexpr functions, which require compile-time evaluation.
+      return true;
+    }
+  }
   if (const auto* var_decl = llvm::dyn_cast<clang::VarDecl>(decl)) {
     if (var_decl->isConstexpr()) {
       // Because Dredd's mutations occur dynamically, they cannot be applied to
