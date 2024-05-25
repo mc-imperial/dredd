@@ -62,8 +62,11 @@ class MutationReplaceBinaryOperator : public Mutation {
                        int first_mutation_id_in_file, int& mutation_id,
                        clang::Rewriter& rewriter) const;
 
-  std::string GetFunctionName(bool optimise_mutations,
-                              clang::ASTContext& ast_context) const;
+  [[nodiscard]] std::string GetTypeSpecifier(
+      const clang::ASTContext& ast_context) const;
+
+  [[nodiscard]] std::string GetFunctionName(
+      bool optimise_mutations, const clang::ASTContext& ast_context) const;
 
   static std::string OpKindToString(clang::BinaryOperatorKind kind);
 
@@ -73,9 +76,9 @@ class MutationReplaceBinaryOperator : public Mutation {
       const std::string& arg2_evaluated);
 
   [[nodiscard]] std::string GetBinaryMacroName(
-      const clang::BinaryOperatorKind operator_kind,
+      clang::BinaryOperatorKind operator_kind,
       const clang::ASTContext& ast_context,
-      const bool semantics_preserving_mutation) const;
+      bool semantics_preserving_mutation) const;
 
   [[nodiscard]] bool IsRedundantReplacementOperator(
       clang::BinaryOperatorKind operator_kind,
@@ -103,9 +106,8 @@ class MutationReplaceBinaryOperator : public Mutation {
 
   // Generates macro for operator replacement.
   [[nodiscard]] std::string GenerateBinaryOperatorReplacementMacro(
-      const std::string& name, const std::string& arg1_evaluated,
-      clang::BinaryOperatorKind operator_kind,
-      const std::string& arg2_evaluated, bool semantics_preserving_mutation,
+      const std::string& name, clang::BinaryOperatorKind operator_kind,
+      bool semantics_preserving_mutation,
       const clang::ASTContext& ast_context) const;
 
   // Replaces binary operators with other valid binary operators.
@@ -138,7 +140,7 @@ class MutationReplaceBinaryOperator : public Mutation {
       const clang::Preprocessor& preprocessor,
       const std::string& new_function_prefix, const std::string& result_type,
       const std::string& lhs_type, const std::string& rhs_type,
-      const bool semantics_preserving_mutation, bool only_track_mutant_coverage,
+      bool semantics_preserving_mutation, bool only_track_mutant_coverage,
       int first_mutation_id_in_file, int& mutation_id,
       clang::Rewriter& rewriter,
       std::unordered_set<std::string>& dredd_declarations) const;

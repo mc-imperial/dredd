@@ -143,18 +143,29 @@ std::string GenerateMutationPrelude(bool semantics_preserving_mutation) {
   return result + ",type) type actual_result = arg;\n";
 }
 
+std::string GenerateUnaryMacroCall(const std::string& macro_name,
+                                   const std::string& arg_evaluated,
+                                   int& mutation_id_offset,
+                                   const bool semantics_preserving_mutation) {
+  std::string result;
+  result = macro_name + "(" + arg_evaluated;
+  if (!semantics_preserving_mutation) {
+    result += ", " + std::to_string(mutation_id_offset);
+  }
+  result += ");\n";
+  return result;
+}
+
 std::string GenerateMutationMacro(const std::string& name,
-                                  const std::string& args_evaluated,
                                   bool semantics_preserving_mutation) {
-  std::string const result = "#define " + name;
+  std::string const result = "#define " + name + "(args";
   if (semantics_preserving_mutation) {
-    return result + " if ((" + args_evaluated + ") != actual_result) no_op++\n";
+    return result + ") if ((args) != actual_result) no_op++\n";
   }
 
-  return result + "(mutation_id_offset) " +
+  return result + ", mutation_id_offset) " +
          "if (__dredd_enabled_mutation(local_mutation_id "
-         "+ mutation_id_offset)) return " +
-         args_evaluated + "\n";
+         "+ mutation_id_offset)) return args\n";
 }
 
 std::string GenerateMutationReturn(bool semantics_preserving_mutation) {

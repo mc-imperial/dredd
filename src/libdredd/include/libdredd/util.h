@@ -131,8 +131,12 @@ bool IsCxx11ConstantExpr(const clang::Expr& expr,
 
 std::string GenerateMutationPrelude(bool semantics_preserving_mutation);
 
+std::string GenerateUnaryMacroCall(const std::string& macro_name,
+                                   const std::string& arg_evaluated,
+                                   int& mutation_id_offset,
+                                   const bool semantics_preserving_mutation);
+
 std::string GenerateMutationMacro(const std::string& name,
-                                  const std::string& args_evaluated,
                                   bool semantics_preserving_mutation);
 
 std::string GenerateMutationReturn(bool semantics_preserving_mutation);
