@@ -609,13 +609,11 @@ void MutationReplaceExpr::ApplyCTypeModifiers(const clang::Expr& expr,
   }
 }
 
-void MutationReplaceExpr::ReplaceExprWithFunctionCall(const std::string &new_function_name,
-                                                      const std::string &input_type,
-                                                      bool semantics_preserving_mutation,
-                                                      int local_mutation_id,
-                                                      clang::ASTContext &ast_context,
-                                                      const clang::Preprocessor &preprocessor,
-                                                      clang::Rewriter &rewriter) const {
+void MutationReplaceExpr::ReplaceExprWithFunctionCall(
+    const std::string& new_function_name, const std::string& input_type,
+    bool semantics_preserving_mutation, int local_mutation_id,
+    clang::ASTContext& ast_context, const clang::Preprocessor& preprocessor,
+    clang::Rewriter& rewriter) const {
   // Replacement of an expression with a function call is simulated by
   // Inserting suitable text before and after the expression.
   // This is preferable over the (otherwise more intuitive) approach of directly
@@ -632,15 +630,14 @@ void MutationReplaceExpr::ReplaceExprWithFunctionCall(const std::string &new_fun
     if (!semantics_preserving_mutation) {
       prefix.append(+"[&]() -> " + input_type + " { return ");
     }
-    prefix.append(// We don't need to static cast constant expressions
-                  (IsCxx11ConstantExpr(*expr_, ast_context)
-                       ? ""
-                       : "static_cast<" + input_type + ">("));
+    prefix.append(  // We don't need to static cast constant expressions
+        (IsCxx11ConstantExpr(*expr_, ast_context)
+             ? ""
+             : "static_cast<" + input_type + ">("));
     suffix.append(IsCxx11ConstantExpr(*expr_, ast_context) ? "" : ")");
     if (!semantics_preserving_mutation) {
       suffix.append("; }");
     }
-
   }
 
   if (!ast_context.getLangOpts().CPlusPlus) {
@@ -736,7 +733,8 @@ protobufs::MutationGroup MutationReplaceExpr::Apply(
   // Replace the expression with a function call.
   // Subtracting |first_mutation_id_in_file| turns the global mutation id,
   // |mutation_id|, into a file-local mutation id.
-  ReplaceExprWithFunctionCall(new_function_name, input_type, semantics_preserving_mutation,
+  ReplaceExprWithFunctionCall(new_function_name, input_type,
+                              semantics_preserving_mutation,
                               mutation_id - first_mutation_id_in_file,
                               ast_context, preprocessor, rewriter);
 
