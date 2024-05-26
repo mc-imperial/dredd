@@ -1502,9 +1502,9 @@ bool MutationReplaceBinaryOperator::IsRedundantReplacementForArithmeticOperator(
     const clang::ASTContext& ast_context) const {
   // In the case where both operands are 0, the only case that isn't covered
   // by constant replacement is undefined behaviour, this is achieved by /.
-  if ((MutationReplaceExpr::ExprIsEquivalentToInt(*binary_operator_->getRHS(),
+  if ((MutationReplaceExpr::ExprIsEquivalentToInt(*binary_operator_->getLHS(),
                                                   0, ast_context) ||
-       MutationReplaceExpr::ExprIsEquivalentToFloat(*binary_operator_->getRHS(),
+       MutationReplaceExpr::ExprIsEquivalentToFloat(*binary_operator_->getLHS(),
                                                     0.0, ast_context)) &&
       (MutationReplaceExpr::ExprIsEquivalentToInt(*binary_operator_->getRHS(),
                                                   0, ast_context) ||
