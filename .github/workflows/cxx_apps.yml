@@ -68,4 +68,5 @@ jobs:
       - name: build_step_nix
         run: |
           .github/workflows/cxx_apps.sh
+          .github/workflows/cxx_apps_semantics_preserving.sh
         shell: bash
