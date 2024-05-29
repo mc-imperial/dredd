@@ -530,10 +530,10 @@ void MutationReplaceExpr::ReplaceExprWithFunctionCall(
   if (ast_context.getLangOpts().CPlusPlus &&
       expr_->HasSideEffects(ast_context)) {
     prefix.append(+"[&]() -> " + input_type + " { return " +
-                  // We don't need to static cast constant expressions
-                  (IsCxx11ConstantExpr(*expr_, ast_context)
-                       ? ""
-                       : "static_cast<" + input_type + ">("));
+        // We don't need to static cast constant expressions
+        (IsCxx11ConstantExpr(*expr_, ast_context)
+         ? ""
+         : "static_cast<" + input_type + ">("));
     suffix.append(IsCxx11ConstantExpr(*expr_, ast_context) ? "" : ")");
     suffix.append("; }");
   }
@@ -541,7 +541,7 @@ void MutationReplaceExpr::ReplaceExprWithFunctionCall(
   if (!ast_context.getLangOpts().CPlusPlus && expr_->isLValue() &&
       input_type.ends_with('*')) {
     prefix.append("&(");
-    suffix.append(")");
+    suffix = ")" + suffix;
   }
 
   if (const auto* binary_expr = llvm::dyn_cast<clang::BinaryOperator>(expr_)) {
@@ -549,7 +549,7 @@ void MutationReplaceExpr::ReplaceExprWithFunctionCall(
     // provide multiple parameters for an enclosing function call.
     if (binary_expr->isCommaOp()) {
       prefix.append("(");
-      suffix.append(")");
+      suffix = ")" + suffix;
     }
   }
 
