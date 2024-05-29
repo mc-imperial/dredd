@@ -5,11 +5,7 @@ struct Number {
     
     uint32_t value = {};
     
-    // Constructors
-    Number() = default;
     explicit Number(unsigned long long int v) : value(static_cast<uint32_t>(v)) {}
-
-    operator uint32_t() const { return value; }
 
 };
 
