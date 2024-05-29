@@ -25,7 +25,7 @@ static bool __dredd_enabled_mutation(int local_mutation_id) {
         if (!token.empty()) {
           int value = std::stoi(token);
           int local_value = value - 0;
-          if (local_value >= 0 && local_value < 21) {
+          if (local_value >= 0 && local_value < 16) {
             enabled_bitset[local_value / 64] |= (1 << (local_value % 64));
             some_mutation_enabled = true;
           }
@@ -81,23 +81,19 @@ struct Number {
     
     uint32_t value = {};
     
-    // Constructors
-    Number() = default;
     explicit Number(unsigned long long int v) : value(__dredd_replace_expr_unsigned_int(static_cast<uint32_t>(__dredd_replace_expr_unsigned_long_long_lvalue(v, 0)), 2)) {}
-
-    operator uint32_t() const { if (!__dredd_enabled_mutation(10)) { return __dredd_replace_expr_unsigned_int(value, 6); } }
 
 };
 
 using u32 = Number;
 
 inline u32 operator""_u(unsigned long long int value) {
-    if (!__dredd_enabled_mutation(17)) { return u32(__dredd_replace_expr_unsigned_long_long(static_cast<uint32_t>(__dredd_replace_expr_unsigned_long_long_lvalue(value, 11)), 13)); }
+    if (!__dredd_enabled_mutation(12)) { return u32(__dredd_replace_expr_unsigned_long_long(static_cast<uint32_t>(__dredd_replace_expr_unsigned_long_long_lvalue(value, 6)), 8)); }
 }
 
 int main() {
     
     u32 foo = 1_u;
 
-    if (!__dredd_enabled_mutation(20)) { return __dredd_replace_expr_int_zero(0, 18); }
+    if (!__dredd_enabled_mutation(15)) { return __dredd_replace_expr_int_zero(0, 13); }
 }
