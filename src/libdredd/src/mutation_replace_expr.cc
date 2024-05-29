@@ -530,10 +530,10 @@ void MutationReplaceExpr::ReplaceExprWithFunctionCall(
   if (ast_context.getLangOpts().CPlusPlus &&
       expr_->HasSideEffects(ast_context)) {
     prefix.append(+"[&]() -> " + input_type + " { return " +
-        // We don't need to static cast constant expressions
-        (IsCxx11ConstantExpr(*expr_, ast_context)
-         ? ""
-         : "static_cast<" + input_type + ">("));
+                  // We don't need to static cast constant expressions
+                  (IsCxx11ConstantExpr(*expr_, ast_context)
+                       ? ""
+                       : "static_cast<" + input_type + ">("));
     suffix.append(IsCxx11ConstantExpr(*expr_, ast_context) ? "" : ")");
     suffix.append("; }");
   }

@@ -103,23 +103,25 @@ int main(int argc, const char** argv) {
 
   const int return_code = Tool.run(factory.get());
 
-//  if (return_code == 0) {
-//    // Application of mutations was successful, so write out the mutation info
-//    // in JSON format.
-//    std::string json_string;
-//    auto json_options = google::protobuf::util::JsonOptions();
-//    json_options.add_whitespace = true;
-//    json_options.always_print_primitive_fields = true;
-//    auto json_generation_status = google::protobuf::util::MessageToJsonString(
-//        mutation_info, &json_string, json_options);
-//    if (json_generation_status.ok()) {
-//      std::ofstream transformations_json_file(mutation_info_file);
-//      transformations_json_file << json_string;
-//    } else {
-//      llvm::errs() << "Error writing JSON data to " << mutation_info_file
-//                   << "\n";
-//      return 1;
-//    }
-//  }
+  //  if (return_code == 0) {
+  //    // Application of mutations was successful, so write out the mutation
+  //    info
+  //    // in JSON format.
+  //    std::string json_string;
+  //    auto json_options = google::protobuf::util::JsonOptions();
+  //    json_options.add_whitespace = true;
+  //    json_options.always_print_primitive_fields = true;
+  //    auto json_generation_status =
+  //    google::protobuf::util::MessageToJsonString(
+  //        mutation_info, &json_string, json_options);
+  //    if (json_generation_status.ok()) {
+  //      std::ofstream transformations_json_file(mutation_info_file);
+  //      transformations_json_file << json_string;
+  //    } else {
+  //      llvm::errs() << "Error writing JSON data to " << mutation_info_file
+  //                   << "\n";
+  //      return 1;
+  //    }
+  //  }
   return return_code;
 }
