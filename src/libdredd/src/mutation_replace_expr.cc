@@ -538,18 +538,18 @@ void MutationReplaceExpr::ReplaceExprWithFunctionCall(
     suffix.append("; }");
   }
 
-  if (!ast_context.getLangOpts().CPlusPlus) {
-    if (expr_->isLValue() && input_type.ends_with('*')) {
-      prefix.append("&(");
+  if (!ast_context.getLangOpts().CPlusPlus && expr_->isLValue() &&
+      input_type.ends_with('*')) {
+    prefix.append("&(");
+    suffix.append(")");
+  }
+
+  if (const auto* binary_expr = llvm::dyn_cast<clang::BinaryOperator>(expr_)) {
+    // The comma operator requires special care in C, to avoid it appearing to
+    // provide multiple parameters for an enclosing function call.
+    if (binary_expr->isCommaOp()) {
+      prefix.append("(");
       suffix.append(")");
-    } else if (const auto* binary_expr =
-                   llvm::dyn_cast<clang::BinaryOperator>(expr_)) {
-      // The comma operator requires special care in C, to avoid it appearing to
-      // provide multiple parameters for an enclosing function call.
-      if (binary_expr->isCommaOp()) {
-        prefix.append("(");
-        suffix.append(")");
-      }
     }
   }
 
