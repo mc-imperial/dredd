@@ -144,6 +144,13 @@ bool MutateVisitor::TraverseStmt(clang::Stmt* stmt) {
     return true;
   }
 
+  // Do not mutate user defined literals.
+  // TODO(https://github.com/mc-imperial/dredd/issues/223): Consider supporting
+  // them.
+  if (llvm::dyn_cast<clang::UserDefinedLiteral>(stmt) != nullptr) {
+    return true;
+  }
+
   // Do not mutate under a constant expression, since mutation logic is
   // inherently non-constant.
   if (llvm::dyn_cast<clang::ConstantExpr>(stmt) != nullptr) {
