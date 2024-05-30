@@ -26,7 +26,7 @@ static bool __dredd_enabled_mutation(int local_mutation_id) {
           int value = std::stoi(token);
           int local_value = value - 0;
           if (local_value >= 0 && local_value < 16) {
-            enabled_bitset[local_value / 64] |= (1 << (local_value % 64));
+            enabled_bitset[local_value / 64] |= ((uint64_t) 1 << (local_value % 64));
             some_mutation_enabled = true;
           }
         }
@@ -39,7 +39,7 @@ static bool __dredd_enabled_mutation(int local_mutation_id) {
     initialized = true;
     __dredd_some_mutation_enabled = some_mutation_enabled;
   }
-  return (enabled_bitset[local_mutation_id / 64] & (1 << (local_mutation_id % 64))) != 0;
+  return (enabled_bitset[local_mutation_id / 64] & ((uint64_t) 1 << (local_mutation_id % 64))) != 0;
 }
 
 static volatile int& __dredd_replace_binary_operator_AddAssign_arg1_volatile_int_arg2_int(volatile int& arg1, int arg2, int local_mutation_id) {
