@@ -523,35 +523,21 @@ MutationReplaceBinaryOperator::GenerateBinaryOperatorReplacementMacro(
         safe_math_check += " && ";
       }
       break;
-    case clang::BO_LAnd:
-      // It is only safe to replace || with && if the first argument is false
-      // otherwise the second argument wouldn't normally be evaluated and doing
-      // so may be dangerous.
-      safe_math_check += "!(arg1) &&";
-      break;
-    case clang::BO_LOr:
-      // It is only safe to replace && with || if the first argument is true
-      // otherwise the second argument wouldn't normally be evaluated and doing
-      // so may be dangerous.
-      safe_math_check += "(arg1) &&";
-      break;
-    case clang::BO_Cmp:
-    case clang::BO_NE:
-      if (binary_operator_->getOpcode() == clang::BinaryOperatorKind::BO_LAnd) {
-        // It is only safe to replace && with a comparison operator if the first
-        // argument is true otherwise the second argument wouldn't normally be
-        // evaluated and doing so may be dangerous.
-        safe_math_check += "(arg1) && ";
-      } else if (binary_operator_->getOpcode() ==
-                 clang::BinaryOperatorKind::BO_LOr) {
-        // It is only safe to replace || with a comparison operator if the first
-        // argument is false otherwise the second argument wouldn't normally be
-        // evaluated and doing so may be dangerous.
-        safe_math_check += "!(arg1) && ";
-      }
-      break;
     default:
       break;
+  }
+
+  if (binary_operator_->getOpcode() == clang::BinaryOperatorKind::BO_LAnd) {
+    // It is only safe to replace && with a comparison operator if the first
+    // argument is true otherwise the second argument wouldn't normally be
+    // evaluated and doing so may be dangerous.
+    safe_math_check += "(arg1) && ";
+  } else if (binary_operator_->getOpcode() ==
+             clang::BinaryOperatorKind::BO_LOr) {
+    // It is only safe to replace || with a comparison operator if the first
+    // argument is false otherwise the second argument wouldn't normally be
+    // evaluated and doing so may be dangerous.
+    safe_math_check += "!(arg1) && ";
   }
 
   const std::string result = "#define " + name + "(arg1, arg2) if (" +
@@ -847,31 +833,55 @@ std::string MutationReplaceBinaryOperator::GenerateMutatorFunction(
   }
 
   if (!only_track_mutant_coverage) {
-    // If the first operand to a logical operator is side-effecting, store the
-    // result to avoid having to evaluate it multiple times.
-    if (semantics_preserving_mutation && binary_operator_->isLogicalOp() &&
-        binary_operator_->getLHS()->HasSideEffects(ast_context)) {
-      new_function << "  " + lhs_type + " arg1_evaluated = " + arg1_evaluated +
-                          ";\n";
-      arg1_evaluated = "arg1_evaluated";
-    }
-
-    // If the second operand to a logical operator is side-effecting, store the
-    // result only if the second operand would normally be evaluated to avoid
-    // having to evaluate it multiple times.
-    if (semantics_preserving_mutation && binary_operator_->isLogicalOp() &&
-        binary_operator_->getRHS()->HasSideEffects(ast_context)) {
-      new_function << "  " + rhs_type + " arg2_evaluated;\n";
-      new_function << "  if (";
-      // TODO(JLJ): This is hidden in too many places.
-      if (binary_operator_->getOpcode() == clang::BinaryOperatorKind::BO_LAnd) {
-        new_function << arg1_evaluated;
-      } else if (binary_operator_->getOpcode() ==
-                 clang::BinaryOperatorKind::BO_LOr) {
-        new_function << "!" + arg1_evaluated;
+    if (semantics_preserving_mutation) {
+      // For assignment operators, we must store the value of arg1 before
+      // assigning to it so that the mutant killing checks are correct.
+      // TODO(JLJ): For now we will not store the result of evaluating the right
+      // argument to avoid evaluating it multiple time but check if this is
+      // actually necessary (probably not).
+      if (binary_operator_->isAssignmentOp()) {
+        // We need to assign to a non reference type to avoid the copy getting
+        // updated.
+        // TODO(JLJ): The knowledge that the last char of the type of an
+        // assignment will always be & or * is duplicated.
+        std::string non_reference_type =
+            lhs_type.substr(0, lhs_type.size() - 1);
+        new_function << "  " << non_reference_type
+                     << " arg1_original = " << arg1_evaluated << ";\n";
       }
-      new_function << ") arg2_evaluated = " + arg2_evaluated + ";\n";
-      arg2_evaluated = "arg2_evaluated";
+
+      // If the first operand to a logical operator is side-effecting, store the
+      // result to avoid having to evaluate it multiple times.
+      if (binary_operator_->getLHS()->HasSideEffects(ast_context)) {
+        new_function << "  " << lhs_type
+                     << " arg1_evaluated = " << arg1_evaluated << ";\n";
+        arg1_evaluated = "arg1_evaluated";
+      }
+
+      // If the second operand to a logical operator is side-effecting, store
+      // the result only if the second operand would normally be evaluated to
+      // avoid having to evaluate it multiple times.
+      if (binary_operator_->getRHS()->HasSideEffects(ast_context)) {
+        new_function << "  " << rhs_type << " arg2_evaluated";
+
+        // For logical operators, we can't guarantee the second operand will be
+        // evaluated, so we have to treat them differently.
+        if (binary_operator_->isLogicalOp()) {
+          new_function << ";\n  if (";
+          // TODO(JLJ): This is hidden in too many places.
+          if (binary_operator_->getOpcode() ==
+              clang::BinaryOperatorKind::BO_LAnd) {
+            new_function << arg1_evaluated;
+          } else if (binary_operator_->getOpcode() ==
+                     clang::BinaryOperatorKind::BO_LOr) {
+            new_function << "!" << arg1_evaluated;
+          }
+          new_function << ") arg2_evaluated = " << arg2_evaluated << ";\n";
+        } else {
+          new_function << " = " << arg2_evaluated << ";\n";
+        }
+        arg2_evaluated = "arg2_evaluated";
+      }
     }
 
     // Quickly apply the original operator if no mutant is enabled (which will
@@ -883,6 +893,12 @@ std::string MutationReplaceBinaryOperator::GenerateMutatorFunction(
                  << " " << arg2_evaluated;
     if (semantics_preserving_mutation) {
       new_function << "," << result_type;
+      if (binary_operator_->isAssignmentOp()) {
+        // After doing the original mutation with MUTATION_PRELUDE, use
+        // arg1_original so the mutants are checked against the value of arg1
+        // before being assigned to.
+        arg1_evaluated = "arg1_original";
+      }
     }
 
     new_function << ");\n";

@@ -406,7 +406,6 @@ void MutateVisitor::HandleExpr(clang::Expr* expr) {
     return;
   }
 
-
   // It is incorrect to attempt to mutate braced initializer lists.
   if (llvm::dyn_cast<clang::InitListExpr>(expr) != nullptr) {
     return;

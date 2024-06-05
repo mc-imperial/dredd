@@ -528,7 +528,7 @@ std::string MutationReplaceExpr::GenerateMutatorFunction(
     int& mutation_id, protobufs::MutationReplaceExpr& protobuf_message) const {
   std::stringstream new_function;
   new_function << "static " << result_type << " " << function_name << "(";
-  if (!semantics_preserving_mutation && ast_context.getLangOpts().CPlusPlus &&
+  if (ast_context.getLangOpts().CPlusPlus &&
       expr_->HasSideEffects(ast_context)) {
     new_function << "std::function<" << input_type << "()>";
   } else {
@@ -537,7 +537,7 @@ std::string MutationReplaceExpr::GenerateMutatorFunction(
   new_function << " arg, int local_mutation_id) {\n";
 
   std::string arg_evaluated = "arg";
-  if (!semantics_preserving_mutation && ast_context.getLangOpts().CPlusPlus &&
+  if (ast_context.getLangOpts().CPlusPlus &&
       expr_->HasSideEffects(ast_context)) {
     arg_evaluated += "()";
   }
@@ -547,6 +547,14 @@ std::string MutationReplaceExpr::GenerateMutatorFunction(
   }
 
   if (!only_track_mutant_coverage) {
+    // If the expression has side-effects, store the result of evaluating it so
+    // we don't evaluate it multiple times.
+    if (expr_->HasSideEffects(ast_context)) {
+      new_function << "  " << input_type << " arg_evaluated = " << arg_evaluated
+                   << ";\n";
+      arg_evaluated = "arg_evaluated";
+    }
+
     // Quickly apply the original operator if no mutant is enabled (which will
     // be the common case).
     new_function << "  MUTATION_PRELUDE(" << arg_evaluated;
@@ -611,9 +619,8 @@ void MutationReplaceExpr::ApplyCTypeModifiers(const clang::Expr& expr,
 
 void MutationReplaceExpr::ReplaceExprWithFunctionCall(
     const std::string& new_function_name, const std::string& input_type,
-    bool semantics_preserving_mutation, int local_mutation_id,
-    clang::ASTContext& ast_context, const clang::Preprocessor& preprocessor,
-    clang::Rewriter& rewriter) const {
+    int local_mutation_id, clang::ASTContext& ast_context,
+    const clang::Preprocessor& preprocessor, clang::Rewriter& rewriter) const {
   // Replacement of an expression with a function call is simulated by
   // Inserting suitable text before and after the expression.
   // This is preferable over the (otherwise more intuitive) approach of directly
@@ -627,31 +634,26 @@ void MutationReplaceExpr::ReplaceExprWithFunctionCall(
 
   if (ast_context.getLangOpts().CPlusPlus &&
       expr_->HasSideEffects(ast_context)) {
-    if (!semantics_preserving_mutation) {
-      prefix.append(+"[&]() -> " + input_type + " { return ");
-    }
+    prefix.append(+"[&]() -> " + input_type + " { return ");
     prefix.append(  // We don't need to static cast constant expressions
         (IsCxx11ConstantExpr(*expr_, ast_context)
              ? ""
              : "static_cast<" + input_type + ">("));
     suffix.append(IsCxx11ConstantExpr(*expr_, ast_context) ? "" : ")");
-    if (!semantics_preserving_mutation) {
-      suffix.append("; }");
-    }
+    suffix.append("; }");
   }
 
-  if (!ast_context.getLangOpts().CPlusPlus) {
-    if (expr_->isLValue() && input_type.ends_with('*')) {
-      prefix.append("&(");
-      suffix.append(")");
-    } else if (const auto* binary_expr =
-                   llvm::dyn_cast<clang::BinaryOperator>(expr_)) {
-      // The comma operator requires special care in C, to avoid it appearing to
-      // provide multiple parameters for an enclosing function call.
-      if (binary_expr->isCommaOp()) {
-        prefix.append("(");
-        suffix.append(")");
-      }
+  if (!ast_context.getLangOpts().CPlusPlus && expr_->isLValue() &&
+      input_type.ends_with('*')) {
+    prefix.append("&(");
+    suffix = ")" + suffix;
+  }
+  if (const auto* binary_expr = llvm::dyn_cast<clang::BinaryOperator>(expr_)) {
+    // The comma operator requires special care in C, to avoid it appearing to
+    // provide multiple parameters for an enclosing function call.
+    if (binary_expr->isCommaOp()) {
+      prefix.append("(");
+      suffix = ")" + suffix;
     }
   }
 
@@ -734,7 +736,6 @@ protobufs::MutationGroup MutationReplaceExpr::Apply(
   // Subtracting |first_mutation_id_in_file| turns the global mutation id,
   // |mutation_id|, into a file-local mutation id.
   ReplaceExprWithFunctionCall(new_function_name, input_type,
-                              semantics_preserving_mutation,
                               mutation_id - first_mutation_id_in_file,
                               ast_context, preprocessor, rewriter);
 

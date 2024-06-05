@@ -167,7 +167,6 @@ class MutationReplaceExpr : public Mutation {
 
   void ReplaceExprWithFunctionCall(const std::string& new_function_name,
                                    const std::string& input_type,
-                                   bool semantics_preserving_mutation,
                                    int local_mutation_id,
                                    clang::ASTContext& ast_context,
                                    const clang::Preprocessor& preprocessor,
