@@ -333,13 +333,17 @@ MutationReplaceBinaryOperator::GenerateBinaryOperatorReplacementMacro(
   const clang::BuiltinType* rhs_type =
       binary_operator_->getRHS()->getType()->getAs<clang::BuiltinType>();
 
+  std::string result = "#define " + name + "(arg1, arg2) if (";
   std::string safe_math_check;
   switch (operator_kind) {
     case clang::BO_MulAssign:
     case clang::BO_Mul:
-      // int:
-      if (lhs_type->isSignedInteger() && rhs_type->isSignedInteger()) {
-        safe_math_check +=
+      if (lhs_type->isUnsignedInteger() && rhs_type->isUnsignedInteger()) {
+        // TODO(JLJ): Check if using this big of an unsigned type is okay instead of unsigned int.
+        // It should be because we only need to check if it's equal to actual_result.
+        return result + "(" + ConvertToSemanticsPreservingBinaryExpression("(unsigned long long)arg1", operator_kind, "(unsigned long long)arg2") + ") != actual_result) no_op++\n";
+      } else if (lhs_type->isSignedInteger() || rhs_type->isSignedInteger()) {
+        result +=
             "!((((arg1) > 0) && ((arg2) > 0) && ((arg1) > (" +
             TypeToUpperLimit(type, ast_context) +
             " / (arg2)))) || (((arg1) > 0) && ((arg2) <= 0) && ((arg2) < (" +
@@ -349,178 +353,178 @@ MutationReplaceBinaryOperator::GenerateBinaryOperatorReplacementMacro(
             " / (arg2)))) || (((arg1) <= 0) && ((arg2) <= 0) && ((arg1) != 0) "
             "&& ((arg2) < (" +
             TypeToUpperLimit(type, ast_context) + " / (arg1)))))";
-        safe_math_check += " && ";
+        result += " && ";
       } else if (lhs_type->getKind() == clang::BuiltinType::LongDouble &&
                  rhs_type->getKind() == clang::BuiltinType::LongDouble) {
-        safe_math_check +=
+        result +=
             "!(fabsl((0x1.0p-100 * (arg1)) * (0x1.0p-924 * (arg2))) > "
             "(0x1.0p-100 * (0x1.0p-924 * " +
             TypeToUpperLimit(type, ast_context) + ")))";
-        safe_math_check += " && ";
+        result += " && ";
       } else if (lhs_type->getKind() == clang::BuiltinType::Double &&
                  rhs_type->getKind() == clang::BuiltinType::Double) {
-        safe_math_check +=
+        result +=
             "!(fabs((0x1.0p-100 * (arg1)) * (0x1.0p-924 * (arg2))) > "
             "(0x1.0p-100 * (0x1.0p-924 * " +
             TypeToUpperLimit(type, ast_context) + ")))";
-        safe_math_check += " && ";
+        result += " && ";
       } else if (lhs_type->isFloatingPoint() && rhs_type->isFloatingPoint()) {
-        safe_math_check +=
+        result +=
             "!(fabsf((0x1.0p-100f * (arg1)) * (0x1.0p-28f * (arg2))) > "
             "(0x1.0p-100f * (0x1.0p-28f * " +
             TypeToUpperLimit(type, ast_context) + ")))";
-        safe_math_check += " && ";
+        result += " && ";
       }
       break;
     case clang::BO_DivAssign:
     case clang::BO_Div:
       // int:
       if (lhs_type->isSignedInteger() && rhs_type->isSignedInteger()) {
-        safe_math_check += "!(((arg2) == 0) || (((arg1) == " +
+        result += "!(((arg2) == 0) || (((arg1) == " +
                            TypeToLowerLimit(type, ast_context) +
                            ") && ((arg2) == (-1))))";
-        safe_math_check += " && ";
+        result += " && ";
       } else if (lhs_type->getKind() == clang::BuiltinType::LongDouble &&
                  rhs_type->getKind() == clang::BuiltinType::LongDouble) {
-        safe_math_check +=
+        result +=
             "!((fabsl((arg2)) < 1.0) && ((((arg2) == 0.0) || "
             "(fabsl((0x1.0p-974 * (arg1)) / (0x1.0p100 * (arg2)))) > "
             "(0x1.0p-100 * (0x1.0p-974 * " +
             TypeToUpperLimit(type, ast_context) + ")))))";
-        safe_math_check += " && ";
+        result += " && ";
       } else if (lhs_type->getKind() == clang::BuiltinType::Double &&
                  rhs_type->getKind() == clang::BuiltinType::Double) {
-        safe_math_check +=
+        result +=
             "!((fabs((arg2)) < 1.0) && ((((arg2) == 0.0) || (fabs((0x1.0p-974 "
             "* (arg1)) / (0x1.0p100 * (arg2)))) > (0x1.0p-100 * (0x1.0p-974 "
             "* " +
             TypeToUpperLimit(type, ast_context) + ")))))";
-        safe_math_check += " && ";
+        result += " && ";
       } else if (lhs_type->isFloatingPoint() && rhs_type->isFloatingPoint()) {
-        safe_math_check +=
+        result +=
             "!((fabsf((arg2)) < 1.0f) && ((((arg2) == 0.0f) || "
             "(fabsf((0x1.0p-49f * (arg1)) / (0x1.0p100f * (arg2)))) > "
             "(0x1.0p-100f * (0x1.0p-49f * " +
             TypeToUpperLimit(type, ast_context) + ")))))";
-        safe_math_check += " && ";
+        result += " && ";
       } else {
-        safe_math_check += "(arg2 != 0) &&";
+        result += "(arg2 != 0) &&";
       }
       break;
     case clang::BO_RemAssign:
     case clang::BO_Rem:
       // int:
       if (lhs_type->isSignedInteger() && rhs_type->isSignedInteger()) {
-        safe_math_check += "!(((arg2) == 0) || (((arg1) == " +
+        result += "!(((arg2) == 0) || (((arg1) == " +
                            TypeToLowerLimit(type, ast_context) +
                            ") && ((arg2) == (-1))))";
-        safe_math_check += " && ";
+        result += " && ";
       } else if (lhs_type->isUnsignedInteger() &&
                  rhs_type->isUnsignedInteger()) {
-        safe_math_check += "(arg2) != 0";
-        safe_math_check += " && ";
+        result += "(arg2) != 0";
+        result += " && ";
       } else {
-        safe_math_check += "(arg2 != 0) &&";
+        result += "(arg2 != 0) &&";
       }
       break;
     case clang::BO_AddAssign:
     case clang::BO_Add:
       // int:
       if (lhs_type->isSignedInteger() && rhs_type->isSignedInteger()) {
-        safe_math_check +=
+        result +=
             "!((((arg1)>0) && ((arg2)>0) && ((arg1) > (" +
             TypeToUpperLimit(type, ast_context) +
             "-(arg2)))) || (((arg1)<0) && ((arg2)<0) && ((arg1) < (" +
             TypeToLowerLimit(type, ast_context) + "-(arg2)))))";
-        safe_math_check += " && ";
+        result += " && ";
       } else if (lhs_type->getKind() == clang::BuiltinType::LongDouble &&
                  rhs_type->getKind() == clang::BuiltinType::LongDouble) {
-        safe_math_check +=
+        result +=
             "!(fabsl((0.5 * (arg1)) + (0.5 * (arg2))) > (0.5 * " +
             TypeToUpperLimit(type, ast_context) + "))";
-        safe_math_check += " && ";
+        result += " && ";
       } else if (lhs_type->getKind() == clang::BuiltinType::Double &&
                  rhs_type->getKind() == clang::BuiltinType::Double) {
-        safe_math_check += "!(fabs((0.5 * (arg1)) + (0.5 * (arg2))) > (0.5 * " +
+        result += "!(fabs((0.5 * (arg1)) + (0.5 * (arg2))) > (0.5 * " +
                            TypeToUpperLimit(type, ast_context) + "))";
-        safe_math_check += " && ";
+        result += " && ";
       } else if (lhs_type->isFloatingPoint() && rhs_type->isFloatingPoint()) {
-        safe_math_check +=
+        result +=
             "!(fabsf((0.5f * (arg1)) + (0.5f * (arg2))) > (0.5f * " +
             TypeToUpperLimit(type, ast_context) + "))";
-        safe_math_check += " && ";
+        result += " && ";
       }
       break;
     case clang::BO_SubAssign:
     case clang::BO_Sub:
       // int:
       if (lhs_type->isSignedInteger() && rhs_type->isSignedInteger()) {
-        safe_math_check +=
+        result +=
             "!((((arg1)^(arg2)) & ((((arg1) ^ (((arg1)^(arg2)) & (~" +
             TypeToUpperLimit(type, ast_context) + ")))-(arg2))^(arg2))) < 0)";
-        safe_math_check += " && ";
+        result += " && ";
       } else if (lhs_type->getKind() == clang::BuiltinType::LongDouble &&
                  rhs_type->getKind() == clang::BuiltinType::LongDouble) {
-        safe_math_check +=
+        result +=
             "!(fabsl((0.5 * (arg1)) - (0.5 * (arg2))) > (0.5 * " +
             TypeToUpperLimit(type, ast_context) + "))";
-        safe_math_check += " && ";
+        result += " && ";
       } else if (lhs_type->getKind() == clang::BuiltinType::Double &&
                  rhs_type->getKind() == clang::BuiltinType::Double) {
-        safe_math_check += "!(fabs((0.5 * (arg1)) - (0.5 * (arg2))) > (0.5 * " +
+        result += "!(fabs((0.5 * (arg1)) - (0.5 * (arg2))) > (0.5 * " +
                            TypeToUpperLimit(type, ast_context) + "))";
-        safe_math_check += " && ";
+        result += " && ";
       } else if (lhs_type->isFloatingPoint() && rhs_type->isFloatingPoint()) {
-        safe_math_check +=
+        result +=
             "!(fabsf((0.5f * (arg1)) - (0.5f * (arg2))) > (0.5f * " +
             TypeToUpperLimit(type, ast_context) + "))";
-        safe_math_check += " && ";
+        result += " && ";
       }
       break;
     case clang::BO_ShlAssign:
     case clang::BO_Shl:
       // int:
       if (lhs_type->isSignedInteger() && rhs_type->isSignedInteger()) {
-        safe_math_check +=
+        result +=
             "!(((arg1) < 0) || ((arg2) < 0) || ((arg2) >= 32) || ((arg1) "
             "> (" +
             TypeToUpperLimit(type, ast_context) + " >> (arg2))))";
-        safe_math_check += " && ";
+        result += " && ";
       } else if (lhs_type->isSignedInteger() && rhs_type->isUnsignedInteger()) {
-        safe_math_check +=
+        result +=
             "!(((arg1) < 0) || ((arg2) >= 32) || ((arg1) "
             "> (" +
             TypeToUpperLimit(type, ast_context) + " >> (arg2))))";
-        safe_math_check += " && ";
+        result += " && ";
       } else if (lhs_type->isUnsignedInteger() && rhs_type->isSignedInteger()) {
-        safe_math_check += "!(((arg2) < 0) || ((arg2) >= 32) || ((arg1) > (" +
+        result += "!(((arg2) < 0) || ((arg2) >= 32) || ((arg1) > (" +
                            TypeToUpperLimit(type, ast_context) +
                            " >> (arg2))))";
-        safe_math_check += " && ";
+        result += " && ";
       } else if (lhs_type->isUnsignedInteger() &&
                  rhs_type->isUnsignedInteger()) {
-        safe_math_check += "!(((arg2) >= 32) || ((arg1) > (" +
+        result += "!(((arg2) >= 32) || ((arg1) > (" +
                            TypeToUpperLimit(type, ast_context) +
                            " >> (arg2))))";
-        safe_math_check += " && ";
+        result += " && ";
       }
       break;
     case clang::BO_ShrAssign:
     case clang::BO_Shr:
       // int:
       if (lhs_type->isSignedInteger() && rhs_type->isSignedInteger()) {
-        safe_math_check += "!(((arg1) < 0) || ((arg2) < 0) || ((arg2) >= 32))";
-        safe_math_check += " && ";
+        result += "!(((arg1) < 0) || ((arg2) < 0) || ((arg2) >= 32))";
+        result += " && ";
       } else if (lhs_type->isSignedInteger() && rhs_type->isUnsignedInteger()) {
-        safe_math_check += "!(((arg1) < 0) || ((arg2) >= 32))";
-        safe_math_check += " && ";
+        result += "!(((arg1) < 0) || ((arg2) >= 32))";
+        result += " && ";
       } else if (lhs_type->isUnsignedInteger() && rhs_type->isSignedInteger()) {
-        safe_math_check += "!(((arg2) < 0) || ((arg2) >= 32))";
-        safe_math_check += " && ";
+        result += "!(((arg2) < 0) || ((arg2) >= 32))";
+        result += " && ";
       } else if (lhs_type->isUnsignedInteger() &&
                  rhs_type->isUnsignedInteger()) {
-        safe_math_check += "!((arg2) >= 32)";
-        safe_math_check += " && ";
+        result += "!((arg2) >= 32)";
+        result += " && ";
       }
       break;
     default:
@@ -531,20 +535,17 @@ MutationReplaceBinaryOperator::GenerateBinaryOperatorReplacementMacro(
     // It is only safe to replace && with a comparison operator if the first
     // argument is true otherwise the second argument wouldn't normally be
     // evaluated and doing so may be dangerous.
-    safe_math_check += "(arg1) && ";
+    result += "(arg1) && ";
   } else if (binary_operator_->getOpcode() ==
              clang::BinaryOperatorKind::BO_LOr) {
     // It is only safe to replace || with a comparison operator if the first
     // argument is false otherwise the second argument wouldn't normally be
     // evaluated and doing so may be dangerous.
-    safe_math_check += "!(arg1) && ";
+    result += "!(arg1) && ";
   }
 
-  const std::string result = "#define " + name + "(arg1, arg2) if (" +
-                             safe_math_check + "(" +
-                             ConvertToSemanticsPreservingBinaryExpression(
-                                 "arg1", operator_kind, "arg2") +
-                             ") != actual_result) no_op++\n";
+  result += "(" + ConvertToSemanticsPreservingBinaryExpression("arg1", operator_kind, "arg2") + ") != actual_result) no_op++\n";
+
   return result;
 }
 
