@@ -192,7 +192,8 @@ std::string MutationReplaceUnaryOperator::GenerateMutatorFunction(
   }
 
   new_function << "static " << result_type << " " << function_name << "(";
-  // We don't need to use lambdas if the mutations are semantics preserving because the unary operator will always be evaluated anyway.
+  // We don't need to use lambdas if the mutations are semantics preserving
+  // because the unary operator will always be evaluated anyway.
   if (!semantics_preserving_mutation && ast_context.getLangOpts().CPlusPlus &&
       unary_operator_->HasSideEffects(ast_context)) {
     new_function << "std::function<" << input_type << "()>";
@@ -202,7 +203,8 @@ std::string MutationReplaceUnaryOperator::GenerateMutatorFunction(
   new_function << " arg, int local_mutation_id) {\n";
 
   std::string arg_evaluated = "arg";
-  // We don't need to use lambdas if the mutations are semantics preserving because the unary operator will always be evaluated anyway.
+  // We don't need to use lambdas if the mutations are semantics preserving
+  // because the unary operator will always be evaluated anyway.
   if (!semantics_preserving_mutation && ast_context.getLangOpts().CPlusPlus &&
       unary_operator_->HasSideEffects(ast_context)) {
     arg_evaluated += "()";
@@ -224,7 +226,7 @@ std::string MutationReplaceUnaryOperator::GenerateMutatorFunction(
       // TODO(JLJ): The knowledge that the last char of the type of an
       // assignment will always be & or * is duplicated.
       std::string non_reference_type =
-          result_type.substr(0, result_type.size() - 1);
+          input_type.substr(0, input_type.size() - 1);
       new_function << "  " << non_reference_type
                    << " arg_original = " << arg_evaluated << ";\n";
     }
@@ -250,7 +252,7 @@ std::string MutationReplaceUnaryOperator::GenerateMutatorFunction(
   }
 
   // TODO(JLJ): Come up with a better way than repeating this either side of
-  // MUTATION_PRELUDE. P.S I think this is done elsewhere.
+  // MUTATION_PRELUDE. P.S I think this pattern is repeated elsewhere.
   if (semantics_preserving_mutation &&
       (unary_operator_->getOpcode() == clang::UnaryOperatorKind::UO_PreInc ||
        unary_operator_->getOpcode() == clang::UnaryOperatorKind::UO_PreDec)) {
@@ -524,7 +526,8 @@ protobufs::MutationGroup MutationReplaceUnaryOperator::Apply(
   // These record the text that should be inserted before and after the operand.
   std::string prefix = new_function_name + "(";
   std::string suffix;
-  // We don't need to use lambdas if the mutations are semantics preserving because the unary operator will always be evaluated anyway.
+  // We don't need to use lambdas if the mutations are semantics preserving
+  // because the unary operator will always be evaluated anyway.
   if (!semantics_preserving_mutation && ast_context.getLangOpts().CPlusPlus &&
       unary_operator_->HasSideEffects(ast_context)) {
     prefix.append(

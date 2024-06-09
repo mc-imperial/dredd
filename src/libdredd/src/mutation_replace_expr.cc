@@ -549,7 +549,9 @@ std::string MutationReplaceExpr::GenerateMutatorFunction(
   if (!only_track_mutant_coverage) {
     // If the expression has side-effects, store the result of evaluating it so
     // we don't evaluate it multiple times.
-    if (expr_->HasSideEffects(ast_context)) {
+    if (ast_context.getLangOpts().CPlusPlus &&
+        expr_->HasSideEffects(ast_context) &&
+        expr_->HasSideEffects(ast_context)) {
       new_function << "  " << input_type << " arg_evaluated = " << arg_evaluated
                    << ";\n";
       arg_evaluated = "arg_evaluated";

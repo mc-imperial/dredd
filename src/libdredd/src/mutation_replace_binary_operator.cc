@@ -339,9 +339,14 @@ MutationReplaceBinaryOperator::GenerateBinaryOperatorReplacementMacro(
     case clang::BO_MulAssign:
     case clang::BO_Mul:
       if (lhs_type->isUnsignedInteger() && rhs_type->isUnsignedInteger()) {
-        // TODO(JLJ): Check if using this big of an unsigned type is okay instead of unsigned int.
-        // It should be because we only need to check if it's equal to actual_result.
-        return result + "(" + ConvertToSemanticsPreservingBinaryExpression("(unsigned long long)arg1", operator_kind, "(unsigned long long)arg2") + ") != actual_result) no_op++\n";
+        // TODO(JLJ): Check if using this big of an unsigned type is okay
+        // instead of unsigned int. It should be because we only need to check
+        // if it's equal to actual_result.
+        return result + "(" +
+               ConvertToSemanticsPreservingBinaryExpression(
+                   "(unsigned long long)arg1", operator_kind,
+                   "(unsigned long long)arg2") +
+               ") != actual_result) no_op++\n";
       } else if (lhs_type->isSignedInteger() || rhs_type->isSignedInteger()) {
         result +=
             "!((((arg1) > 0) && ((arg2) > 0) && ((arg1) > (" +
@@ -381,8 +386,8 @@ MutationReplaceBinaryOperator::GenerateBinaryOperatorReplacementMacro(
       // int:
       if (lhs_type->isSignedInteger() && rhs_type->isSignedInteger()) {
         result += "!(((arg2) == 0) || (((arg1) == " +
-                           TypeToLowerLimit(type, ast_context) +
-                           ") && ((arg2) == (-1))))";
+                  TypeToLowerLimit(type, ast_context) +
+                  ") && ((arg2) == (-1))))";
         result += " && ";
       } else if (lhs_type->getKind() == clang::BuiltinType::LongDouble &&
                  rhs_type->getKind() == clang::BuiltinType::LongDouble) {
@@ -416,8 +421,8 @@ MutationReplaceBinaryOperator::GenerateBinaryOperatorReplacementMacro(
       // int:
       if (lhs_type->isSignedInteger() && rhs_type->isSignedInteger()) {
         result += "!(((arg2) == 0) || (((arg1) == " +
-                           TypeToLowerLimit(type, ast_context) +
-                           ") && ((arg2) == (-1))))";
+                  TypeToLowerLimit(type, ast_context) +
+                  ") && ((arg2) == (-1))))";
         result += " && ";
       } else if (lhs_type->isUnsignedInteger() &&
                  rhs_type->isUnsignedInteger()) {
@@ -431,27 +436,24 @@ MutationReplaceBinaryOperator::GenerateBinaryOperatorReplacementMacro(
     case clang::BO_Add:
       // int:
       if (lhs_type->isSignedInteger() && rhs_type->isSignedInteger()) {
-        result +=
-            "!((((arg1)>0) && ((arg2)>0) && ((arg1) > (" +
-            TypeToUpperLimit(type, ast_context) +
-            "-(arg2)))) || (((arg1)<0) && ((arg2)<0) && ((arg1) < (" +
-            TypeToLowerLimit(type, ast_context) + "-(arg2)))))";
+        result += "!((((arg1)>0) && ((arg2)>0) && ((arg1) > (" +
+                  TypeToUpperLimit(type, ast_context) +
+                  "-(arg2)))) || (((arg1)<0) && ((arg2)<0) && ((arg1) < (" +
+                  TypeToLowerLimit(type, ast_context) + "-(arg2)))))";
         result += " && ";
       } else if (lhs_type->getKind() == clang::BuiltinType::LongDouble &&
                  rhs_type->getKind() == clang::BuiltinType::LongDouble) {
-        result +=
-            "!(fabsl((0.5 * (arg1)) + (0.5 * (arg2))) > (0.5 * " +
-            TypeToUpperLimit(type, ast_context) + "))";
+        result += "!(fabsl((0.5 * (arg1)) + (0.5 * (arg2))) > (0.5 * " +
+                  TypeToUpperLimit(type, ast_context) + "))";
         result += " && ";
       } else if (lhs_type->getKind() == clang::BuiltinType::Double &&
                  rhs_type->getKind() == clang::BuiltinType::Double) {
         result += "!(fabs((0.5 * (arg1)) + (0.5 * (arg2))) > (0.5 * " +
-                           TypeToUpperLimit(type, ast_context) + "))";
+                  TypeToUpperLimit(type, ast_context) + "))";
         result += " && ";
       } else if (lhs_type->isFloatingPoint() && rhs_type->isFloatingPoint()) {
-        result +=
-            "!(fabsf((0.5f * (arg1)) + (0.5f * (arg2))) > (0.5f * " +
-            TypeToUpperLimit(type, ast_context) + "))";
+        result += "!(fabsf((0.5f * (arg1)) + (0.5f * (arg2))) > (0.5f * " +
+                  TypeToUpperLimit(type, ast_context) + "))";
         result += " && ";
       }
       break;
@@ -459,25 +461,23 @@ MutationReplaceBinaryOperator::GenerateBinaryOperatorReplacementMacro(
     case clang::BO_Sub:
       // int:
       if (lhs_type->isSignedInteger() && rhs_type->isSignedInteger()) {
-        result +=
-            "!((((arg1)^(arg2)) & ((((arg1) ^ (((arg1)^(arg2)) & (~" +
-            TypeToUpperLimit(type, ast_context) + ")))-(arg2))^(arg2))) < 0)";
+        result += "!((((arg1)^(arg2)) & ((((arg1) ^ (((arg1)^(arg2)) & (~" +
+                  TypeToUpperLimit(type, ast_context) +
+                  ")))-(arg2))^(arg2))) < 0)";
         result += " && ";
       } else if (lhs_type->getKind() == clang::BuiltinType::LongDouble &&
                  rhs_type->getKind() == clang::BuiltinType::LongDouble) {
-        result +=
-            "!(fabsl((0.5 * (arg1)) - (0.5 * (arg2))) > (0.5 * " +
-            TypeToUpperLimit(type, ast_context) + "))";
+        result += "!(fabsl((0.5 * (arg1)) - (0.5 * (arg2))) > (0.5 * " +
+                  TypeToUpperLimit(type, ast_context) + "))";
         result += " && ";
       } else if (lhs_type->getKind() == clang::BuiltinType::Double &&
                  rhs_type->getKind() == clang::BuiltinType::Double) {
         result += "!(fabs((0.5 * (arg1)) - (0.5 * (arg2))) > (0.5 * " +
-                           TypeToUpperLimit(type, ast_context) + "))";
+                  TypeToUpperLimit(type, ast_context) + "))";
         result += " && ";
       } else if (lhs_type->isFloatingPoint() && rhs_type->isFloatingPoint()) {
-        result +=
-            "!(fabsf((0.5f * (arg1)) - (0.5f * (arg2))) > (0.5f * " +
-            TypeToUpperLimit(type, ast_context) + "))";
+        result += "!(fabsf((0.5f * (arg1)) - (0.5f * (arg2))) > (0.5f * " +
+                  TypeToUpperLimit(type, ast_context) + "))";
         result += " && ";
       }
       break;
@@ -498,14 +498,12 @@ MutationReplaceBinaryOperator::GenerateBinaryOperatorReplacementMacro(
         result += " && ";
       } else if (lhs_type->isUnsignedInteger() && rhs_type->isSignedInteger()) {
         result += "!(((arg2) < 0) || ((arg2) >= 32) || ((arg1) > (" +
-                           TypeToUpperLimit(type, ast_context) +
-                           " >> (arg2))))";
+                  TypeToUpperLimit(type, ast_context) + " >> (arg2))))";
         result += " && ";
       } else if (lhs_type->isUnsignedInteger() &&
                  rhs_type->isUnsignedInteger()) {
         result += "!(((arg2) >= 32) || ((arg1) > (" +
-                           TypeToUpperLimit(type, ast_context) +
-                           " >> (arg2))))";
+                  TypeToUpperLimit(type, ast_context) + " >> (arg2))))";
         result += " && ";
       }
       break;
@@ -544,7 +542,10 @@ MutationReplaceBinaryOperator::GenerateBinaryOperatorReplacementMacro(
     result += "!(arg1) && ";
   }
 
-  result += "(" + ConvertToSemanticsPreservingBinaryExpression("arg1", operator_kind, "arg2") + ") != actual_result) no_op++\n";
+  result += "(" +
+            ConvertToSemanticsPreservingBinaryExpression("arg1", operator_kind,
+                                                         "arg2") +
+            ") != actual_result) no_op++\n";
 
   return result;
 }
@@ -840,7 +841,8 @@ std::string MutationReplaceBinaryOperator::GenerateMutatorFunction(
       // TODO(JLJ): For now we will not store the result of evaluating the right
       // argument to avoid evaluating it multiple time but check if this is
       // actually necessary (probably not).
-      if (binary_operator_->isAssignmentOp()) {
+      if (ast_context.getLangOpts().CPlusPlus &&
+          binary_operator_->isAssignmentOp()) {
         // We need to assign to a non reference type to avoid the copy getting
         // updated.
         // TODO(JLJ): The knowledge that the last char of the type of an
@@ -853,7 +855,8 @@ std::string MutationReplaceBinaryOperator::GenerateMutatorFunction(
 
       // If the first operand to a logical operator is side-effecting, store the
       // result to avoid having to evaluate it multiple times.
-      if (binary_operator_->getLHS()->HasSideEffects(ast_context)) {
+      if (ast_context.getLangOpts().CPlusPlus &&
+          binary_operator_->getLHS()->HasSideEffects(ast_context)) {
         new_function << "  " << lhs_type
                      << " arg1_evaluated = " << arg1_evaluated << ";\n";
         arg1_evaluated = "arg1_evaluated";
@@ -862,7 +865,8 @@ std::string MutationReplaceBinaryOperator::GenerateMutatorFunction(
       // If the second operand to a logical operator is side-effecting, store
       // the result only if the second operand would normally be evaluated to
       // avoid having to evaluate it multiple times.
-      if (binary_operator_->getRHS()->HasSideEffects(ast_context)) {
+      if (ast_context.getLangOpts().CPlusPlus &&
+          binary_operator_->getRHS()->HasSideEffects(ast_context)) {
         new_function << "  " << rhs_type << " arg2_evaluated";
 
         // For logical operators, we can't guarantee the second operand will be
@@ -894,7 +898,7 @@ std::string MutationReplaceBinaryOperator::GenerateMutatorFunction(
                  << " " << arg2_evaluated;
     if (semantics_preserving_mutation) {
       new_function << "," << result_type;
-      if (binary_operator_->isAssignmentOp()) {
+      if (ast_context.getLangOpts().CPlusPlus && binary_operator_->isAssignmentOp()) {
         // After doing the original mutation with MUTATION_PRELUDE, use
         // arg1_original so the mutants are checked against the value of arg1
         // before being assigned to.
