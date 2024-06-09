@@ -31,7 +31,9 @@ case "$(uname)" in
   sudo rm -f /swapfile
   sudo apt clean
   # shellcheck disable=SC2046
-  docker rmi $(docker image ls -aq)
+  if [ -n "$(docker image ls -aq)" ]; then
+    docker rmi $(docker image ls -aq)
+  fi
   df -h
   ;;
 

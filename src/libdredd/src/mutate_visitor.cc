@@ -35,6 +35,7 @@
 #include "clang/AST/TypeLoc.h"
 #include "clang/Basic/LangOptions.h"
 #include "clang/Basic/SourceLocation.h"
+#include "clang/Basic/SourceManager.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "libdredd/mutation.h"
 #include "libdredd/mutation_remove_stmt.h"
@@ -61,6 +62,25 @@ bool MutateVisitor::IsTypeSupported(const clang::QualType qual_type) {
   const auto* builtin_type = qual_type->getAs<clang::BuiltinType>();
   return builtin_type != nullptr &&
          (builtin_type->isInteger() || builtin_type->isFloatingPoint());
+}
+
+void MutateVisitor::UpdateStartLocationOfFirstFunctionInSourceFile() {
+  for (int index = static_cast<int>(enclosing_decls_.size()) - 1; index >= 0;
+       index--) {
+    const auto* decl = enclosing_decls_[static_cast<size_t>(index)];
+    if (llvm::dyn_cast<clang::FunctionDecl>(decl) != nullptr) {
+      const clang::BeforeThanCompare<clang::SourceLocation> comparator(
+          compiler_instance_->getSourceManager());
+      auto source_range_in_main_file = GetSourceRangeInMainFile(
+          compiler_instance_->getPreprocessor(), *enclosing_decls_[0]);
+      if (start_location_of_first_function_in_source_file_.isInvalid() ||
+          comparator(source_range_in_main_file.getBegin(),
+                     start_location_of_first_function_in_source_file_)) {
+        start_location_of_first_function_in_source_file_ =
+            source_range_in_main_file.getBegin();
+      }
+    }
+  }
 }
 
 bool MutateVisitor::IsInFunction() {
@@ -125,7 +145,7 @@ bool MutateVisitor::TraverseDecl(clang::Decl* decl) {
     }
   }
   if (const auto* var_decl = llvm::dyn_cast<clang::VarDecl>(decl)) {
-    if (var_decl->isConstexpr()) {
+    if (var_decl->isConstexpr() || var_decl->hasConstantInitialization()) {
       // Because Dredd's mutations occur dynamically, they cannot be applied to
       // C++ constexprs, which require compile-time evaluation.
       return true;
@@ -490,6 +510,7 @@ bool MutateVisitor::VisitExpr(clang::Expr* expr) {
     return true;
   }
 
+  UpdateStartLocationOfFirstFunctionInSourceFile();
   if (auto* unary_operator = llvm::dyn_cast<clang::UnaryOperator>(expr)) {
     HandleUnaryOperator(unary_operator);
   }
@@ -539,6 +560,7 @@ bool MutateVisitor::TraverseCompoundStmt(clang::CompoundStmt* compound_stmt) {
     assert(!enclosing_decls_.empty() &&
            "Statements can only be removed if they are nested in some "
            "declaration.");
+    UpdateStartLocationOfFirstFunctionInSourceFile();
     mutation_tree_path_.back()->AddMutation(
         std::make_unique<MutationRemoveStmt>(
             *stmt, compiler_instance_->getPreprocessor(),
