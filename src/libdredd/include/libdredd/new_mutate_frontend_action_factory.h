@@ -28,6 +28,6 @@ NewMutateFrontendActionFactory(bool optimise_mutations, bool dump_asts,
                                int& mutation_id,
                                protobufs::MutationInfo& mutation_info);
 
-}
+}  // namespace dredd
 
 #endif  // LIBDREDD_NEW_MUTATE_FRONTEND_ACTION_FACTORY_H
