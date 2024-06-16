@@ -61,10 +61,17 @@ static llvm::cl::opt<bool> dump_asts(
     llvm::cl::desc("Dump each AST that is processed; useful for debugging"),
     llvm::cl::cat(mutate_category));
 // NOLINTNEXTLINE
-static llvm::cl::opt<std::string> mutation_info_file(
-    "mutation-info-file",
+static llvm::cl::opt<std::string> mutation_info_json(
+    "mutation-info-json",
     llvm::cl::desc(
         ".json file into which mutation information should be written"),
+    llvm::cl::cat(mutate_category));
+static llvm::cl::opt<std::string> mutation_info_file(
+    "mutation-info-file",
+    llvm::cl::desc("File into which mutation information should be written as "
+                   "a protobufs binary. This should be preferred over "
+                   "--mutation-info-json as building the json for complicated "
+                   "mutation trees can reach the protobuf recursion limit."),
     llvm::cl::cat(mutate_category));
 
 #if defined(__clang__)
@@ -97,7 +104,7 @@ int main(int argc, const char** argv) {
   // including their hierarchical structure.
   std::optional<dredd::protobufs::MutationInfo> mutation_info;
 
-  if (mutation_info_file.empty()) {
+  if (mutation_info_file.empty() && mutation_info_json.empty()) {
     mutation_info = std::nullopt;
   } else {
     mutation_info = dredd::protobufs::MutationInfo();
@@ -111,21 +118,33 @@ int main(int argc, const char** argv) {
   const int return_code = Tool.run(factory.get());
 
   if (mutation_info.has_value() && return_code == 0) {
-    // Application of mutations was successful, so write out the mutation info
-    // in JSON format.
-    std::string json_string;
-    auto json_options = google::protobuf::util::JsonOptions();
-    json_options.add_whitespace = true;
-    json_options.always_print_primitive_fields = true;
-    auto json_generation_status = google::protobuf::util::MessageToJsonString(
-        mutation_info.value(), &json_string, json_options);
-    if (json_generation_status.ok()) {
-      std::ofstream transformations_json_file(mutation_info_file);
-      transformations_json_file << json_string;
-    } else {
-      llvm::errs() << "Error writing JSON data to " << mutation_info_file
-                   << "\n";
-      return 1;
+    // Application of mutations was successful, so write out the mutation info.
+    if (!mutation_info_file.empty()) {
+      std::ofstream transformations_file(mutation_info_file);
+      if (!mutation_info->SerializeToOstream(&transformations_file)) {
+        llvm::errs() << "Error writing protobuf data to " << mutation_info_file
+                     << "\n";
+        return 1;
+      }
+    }
+
+    if (!mutation_info_json.empty()) {
+      std::string json_string;
+      auto json_options = google::protobuf::util::JsonOptions();
+      json_options.add_whitespace = true;
+      json_options.always_print_primitive_fields = true;
+      auto json_generation_status = google::protobuf::util::MessageToJsonString(
+          mutation_info.value(), &json_string, json_options);
+      if (json_generation_status.ok()) {
+        std::ofstream transformations_json_file(mutation_info_json);
+        transformations_json_file << json_string;
+      } else {
+        llvm::errs() << "Error writing JSON data to " << mutation_info_json
+                     << "\n";
+        llvm::errs() << json_generation_status.message().ToString() << "\n";
+        // TODO(JLJ): Add suggestion to use protobufs.
+        return 1;
+      }
     }
   }
   return return_code;

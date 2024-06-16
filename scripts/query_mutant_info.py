@@ -19,6 +19,10 @@ import json
 import os
 import re
 import sys
+from google.protobuf.json_format import Parse
+
+sys.path.insert(0, f'{os.environ["DREDD_CHECKOUT"]}/build/src/libdredd/protobufs/')
+import dredd_pb2
 
 from dataclasses import dataclass
 from pathlib import Path
@@ -28,29 +32,28 @@ from typing import Dict, Optional
 @dataclass
 class MutantInfo:
     kind: str
-    file_info: Dict
-    mutation_group: Dict
-    instance: Optional[Dict]
+    file_info: dredd_pb2.MutationInfoForFile
+    mutation_group: dredd_pb2.MutationGroup
+    instance: Optional[dredd_pb2.MutationReplaceExprInstance | dredd_pb2.MutationReplaceUnaryOperatorInstance | dredd_pb2.MutationReplaceBinaryOperatorInstance]
 
 
-def build_mapping_for_node(mutation_tree_node: Dict, file_info: Dict, result: Dict[int, MutantInfo]) -> None:
-    for mutation_group in mutation_tree_node["mutationGroups"]:
-        assert len(mutation_group) == 1
-        key: str = next(iter(mutation_group))
-        if key in ["replaceExpr", "replaceUnaryOperator", "replaceBinaryOperator"]:
-            for instance in mutation_group[key]["instances"]:
-                result[instance["mutationId"]] = MutantInfo(key, file_info, mutation_group, instance)
+def build_mapping_for_node(mutation_tree_node: dredd_pb2.MutationTreeNode, file_info: dredd_pb2.MutationInfoForFile, result: Dict[int, MutantInfo]) -> None:
+    for mutation_group in mutation_tree_node.mutation_groups:
+        key: str = mutation_group.WhichOneof('group')
+        if key in ["replace_expr", "replace_unary_operator", "replace_binary_operator"]:
+            for instance in getattr(mutation_group, key).instances:
+                result[instance.mutation_id] = MutantInfo(key, file_info, mutation_group, instance)
         else:
-            assert key == "removeStmt"
-            result[mutation_group[key]["mutationId"]] = MutantInfo(key, file_info, mutation_group, None)
-    for child in mutation_tree_node["children"]:
+            assert key == "remove_stmt"
+            result[getattr(mutation_group, key).mutation_id] = MutantInfo(key, file_info, mutation_group, None)
+    for child in mutation_tree_node.children:
         build_mapping_for_node(child, file_info, result)
 
 
-def build_mutant_to_node_mapping(json_info: Dict) -> Dict[int, MutantInfo]:
+def build_mutant_to_node_mapping(mutation_info: dredd_pb2.MutationInfo) -> Dict[int, MutantInfo]:
     result: Dict[int, MutantInfo] = {}
-    for file_info in json_info["infoForFiles"]:
-        build_mapping_for_node(file_info["mutationTreeRoot"], file_info, result)
+    for file_info in mutation_info.info_for_files:
+        build_mapping_for_node(file_info.mutation_tree_root, file_info, result)
     return result
 
 
@@ -64,14 +67,14 @@ def parenthesise_if_needed(expr_text: str) -> str:
 
 # Returns:
 # (range is on single line?, range description, blank prefix, text for range)
-def get_text_for_source_range(start_location: Dict[str, int],
-                              end_location: Dict[str, int],
+def get_text_for_source_range(start_location: dredd_pb2.SourceLocation,
+                              end_location: dredd_pb2.SourceLocation,
                               original_source_code_filename: str,
                               filename_without_prefix: str) -> (bool, str, str, str):
-    start_line = start_location['line']
-    start_column = start_location['column']
-    end_line = end_location['line']
-    end_column = end_location['column']
+    start_line = start_location.line
+    start_column = start_location.column
+    end_line = end_location.line
+    end_column = end_location.column
     range_description = f"{filename_without_prefix}, {start_line}:{start_column}--{end_line}:{end_column}"
 
     lines = open(original_source_code_filename, 'r').readlines()
@@ -89,14 +92,14 @@ def show_info_for_replace_expr(mutant_info: MutantInfo,
                                original_source_code_filename: str,
                                filename_without_prefix: str) -> int:
     _, range_description, blank_prefix, expr_text = get_text_for_source_range(
-        start_location=mutant_info.mutation_group['replaceExpr']['start'],
-        end_location=mutant_info.mutation_group['replaceExpr']['end'],
+        start_location=mutant_info.mutation_group.replace_expr.start,
+        end_location=mutant_info.mutation_group.replace_expr.end,
         original_source_code_filename=original_source_code_filename,
         filename_without_prefix=filename_without_prefix)
     print(f"Replace expression at {range_description}\n")
     print(f"Original expression:\n")
     print(f"{blank_prefix}{expr_text}\n")
-    action = mutant_info.instance['action']
+    action = dredd_pb2.MutationReplaceExprAction.Name(mutant_info.instance.action)
 
     replacements: Dict[str, str] = {
         "ReplaceWithZeroFloat": "0.0",
@@ -128,21 +131,21 @@ def show_info_for_replace_expr(mutant_info: MutantInfo,
 def show_info_for_replace_unary_operator(mutant_info: MutantInfo,
                                          original_source_code_filename: str,
                                          filename_without_prefix: str) -> int:
-    replace_unary_operator = mutant_info.mutation_group['replaceUnaryOperator']
+    replace_unary_operator = mutant_info.mutation_group.replace_unary_operator
     single_line, expr_range_description, expr_blank_prefix, expr_text = get_text_for_source_range(
-        start_location=replace_unary_operator['exprStart'],
-        end_location=replace_unary_operator['exprEnd'],
+        start_location=replace_unary_operator.expr_start,
+        end_location=replace_unary_operator.expr_end,
         original_source_code_filename=original_source_code_filename,
         filename_without_prefix=filename_without_prefix)
     _, _, operand_blank_prefix, operand_text = get_text_for_source_range(
-        start_location=replace_unary_operator['operandStart'],
-        end_location=replace_unary_operator['operandEnd'],
+        start_location=replace_unary_operator.operand_start,
+        end_location=replace_unary_operator.operand_end,
         original_source_code_filename=original_source_code_filename,
         filename_without_prefix=filename_without_prefix)
     print(f"Replace unary operator expression at {expr_range_description}\n")
     print(f"Original unary operator expression:\n")
     print(f"{expr_blank_prefix}{expr_text}\n")
-    action = mutant_info.instance['action']
+    action = dredd_pb2.MutationReplaceUnaryOperatorAction.Name(mutant_info.instance.action)
     pre_replacements: Dict[str, str] = {
         "ReplaceWithMinus": "-",
         "ReplaceWithNot": "~",
@@ -171,26 +174,26 @@ def show_info_for_replace_unary_operator(mutant_info: MutantInfo,
 def show_info_for_replace_binary_operator(mutant_info: MutantInfo,
                                           original_source_code_filename: str,
                                           filename_without_prefix: str):
-    replace_binary_operator = mutant_info.mutation_group['replaceBinaryOperator']
+    replace_binary_operator = mutant_info.mutation_group.replace_binary_operator
     single_line, expr_range_description, expr_blank_prefix, expr_text = get_text_for_source_range(
-        start_location=replace_binary_operator['exprStart'],
-        end_location=replace_binary_operator['exprEnd'],
+        start_location=replace_binary_operator.expr_start,
+        end_location=replace_binary_operator.expr_end,
         original_source_code_filename=original_source_code_filename,
         filename_without_prefix=filename_without_prefix)
     _, _, lhs_blank_prefix, lhs_text = get_text_for_source_range(
-        start_location=replace_binary_operator['lhsStart'],
-        end_location=replace_binary_operator['lhsEnd'],
+        start_location=replace_binary_operator.lhs_start,
+        end_location=replace_binary_operator.lhs_end,
         original_source_code_filename=original_source_code_filename,
         filename_without_prefix=filename_without_prefix)
     _, _, rhs_blank_prefix, rhs_text = get_text_for_source_range(
-        start_location=replace_binary_operator['rhsStart'],
-        end_location=replace_binary_operator['rhsEnd'],
+        start_location=replace_binary_operator.rhs_start,
+        end_location=replace_binary_operator.rhs_end,
         original_source_code_filename=original_source_code_filename,
         filename_without_prefix=filename_without_prefix)
     print(f"Replace binary operator expression at {expr_range_description}\n")
     print(f"Original binary operator expression:\n")
     print(f"{expr_blank_prefix}{expr_text}\n")
-    action = mutant_info.instance['action']
+    action = dredd_pb2.MutationReplaceBinaryOperatorAction.Name(mutant_info.instance.action)
     if action == 'ReplaceWithLHS':
         replacement_expr_text = lhs_blank_prefix + lhs_text
     elif action == 'ReplaceWithRHS':
@@ -246,10 +249,10 @@ def show_info_for_replace_binary_operator(mutant_info: MutantInfo,
 def show_info_for_remove_stmt(mutant_info: MutantInfo,
                               original_source_code_filename: str,
                               filename_without_prefix: str) -> int:
-    remove_stmt = mutant_info.mutation_group['removeStmt']
+    remove_stmt = mutant_info.mutation_group.remove_stmt
     _, range_description, blank_prefix, stmt_text = get_text_for_source_range(
-        start_location=remove_stmt['start'],
-        end_location=remove_stmt['end'],
+        start_location=remove_stmt.start,
+        end_location=remove_stmt.end,
         original_source_code_filename=original_source_code_filename,
         filename_without_prefix=filename_without_prefix)
     print(f"Remove statement at {range_description}\n")
@@ -269,25 +272,26 @@ def show_info_for_mutant(args, mapping: Dict[int, MutantInfo]) -> int:
         print(f"Unknown mutant id: {mutant_id}")
         return 1
     mutant_info: MutantInfo = mapping[mutant_id]
-    mutated_source_code_filename = mutant_info.file_info['filename']
+    mutated_source_code_filename = mutant_info.file_info.filename
+    print(mutated_source_code_filename)
     filename_without_prefix = mutated_source_code_filename[len(str(args.path_prefix_replacement[0])):]
     if filename_without_prefix.startswith(os.sep):
         filename_without_prefix = filename_without_prefix[1:]
     original_source_code_filename = str(args.path_prefix_replacement[1]) + os.sep + filename_without_prefix
-    if mutant_info.kind == "replaceExpr":
+    if mutant_info.kind == "replace_expr":
         return show_info_for_replace_expr(mutant_info=mutant_info,
                                           original_source_code_filename=original_source_code_filename,
                                           filename_without_prefix=filename_without_prefix)
-    elif mutant_info.kind == "replaceUnaryOperator":
+    elif mutant_info.kind == "replace_unary_operator":
         return show_info_for_replace_unary_operator(mutant_info=mutant_info,
                                                     original_source_code_filename=original_source_code_filename,
                                                     filename_without_prefix=filename_without_prefix)
-    elif mutant_info.kind == "replaceBinaryOperator":
+    elif mutant_info.kind == "replace_binary_operator":
         return show_info_for_replace_binary_operator(mutant_info=mutant_info,
                                                      original_source_code_filename=original_source_code_filename,
                                                      filename_without_prefix=filename_without_prefix)
     else:
-        assert mutant_info.kind == "removeStmt"
+        assert mutant_info.kind == "remove_stmt"
         return show_info_for_remove_stmt(mutant_info=mutant_info,
                                          original_source_code_filename=original_source_code_filename,
                                          filename_without_prefix=filename_without_prefix)
@@ -300,6 +304,10 @@ def main() -> int:
                              "the source code. The source files referred to in this file come from the version of the "
                              "code base that was mutated.",
                         type=Path)
+    parser.add_argument("--json",
+                        help="Specifies that mutation_info_file is formatted as a json instead of containing a protobuf"
+                             " message.",
+                        action='store_true')
     parser.add_argument("--path-prefix-replacement",
                         help="When displaying information about the effect of mutants, we want to refer to the non-"
                              "mutated source code. If the mutated code base is at /path/to/somewhere/mutated, and the "
@@ -318,9 +326,17 @@ def main() -> int:
                         type=int)
 
     args = parser.parse_args()
-    with open(args.mutation_info_file, 'r') as json_input:
-        json_info = json.load(json_input)
-    mapping: Dict[int, MutantInfo] = build_mutant_to_node_mapping(json_info)
+
+    mutant_info = dredd_pb2.MutationInfo()
+
+    if args.json:
+        with open(args.mutation_info_file, 'r') as json_input:
+            Parse(json_input, mutant_info, max_recursion_depth=1000)
+    else:
+        with open(args.mutation_info_file, 'rb') as input_file:
+            mutant_info.ParseFromString(input_file.read())
+
+    mapping: Dict[int, MutantInfo] = build_mutant_to_node_mapping(mutant_info)
 
     if args.largest_mutant_id:
         print(max(list(mapping)))
