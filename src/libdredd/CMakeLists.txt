@@ -26,9 +26,9 @@ set(DREDD_PROTOC_COMMAND
 By default it is the protobufs::protoc CMake target.")
 
 add_custom_command(
-  OUTPUT protobufs/dredd.pb.cc protobufs/dredd.pb.h
+  OUTPUT protobufs/dredd.pb.cc protobufs/dredd.pb.h protobufs/dredd_pb2.py
   COMMAND "${DREDD_PROTOC_COMMAND}" -I=${PROTOBUF_SOURCE_PREFIX}
-          --cpp_out=protobufs ${PROTOBUF_SOURCE}
+          --cpp_out=protobufs --python_out=protobufs ${PROTOBUF_SOURCE}
   DEPENDS ${PROTOBUF_SOURCE}
   COMMENT "Generate protobuf sources from proto definition file.")
 
