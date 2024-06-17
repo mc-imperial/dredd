@@ -14,7 +14,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import json
+import os
 import sys
 
-json.loads(open(sys.argv[1], 'r').read())
+from google.protobuf.json_format import Parse
+
+sys.path.insert(0, f'{os.environ["DREDD_REPO_ROOT"]}/build/src/libdredd/protobufs/')
+import dredd_pb2
+
+json_mutant_info = dredd_pb2.MutationInfo()
+proto_mutant_info = dredd_pb2.MutationInfo()
+
+with open(sys.argv[1], 'r') as json_input:
+    Parse(json_input.read(), json_mutant_info, max_recursion_depth=1000)
+
+with open(sys.argv[2], 'rb') as input_file:
+    proto_mutant_info.ParseFromString(input_file.read())

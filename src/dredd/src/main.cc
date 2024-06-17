@@ -20,6 +20,7 @@
 #include "clang/Tooling/CommonOptionsParser.h"
 #include "clang/Tooling/Tooling.h"
 #include "dredd/protobufs/protobuf_serialization.h"
+#include "google/protobuf/stubs/stringpiece.h"
 #include "libdredd/new_mutate_frontend_action_factory.h"
 #include "libdredd/protobufs/dredd_protobufs.h"
 #include "llvm/ADT/ArrayRef.h"
@@ -121,7 +122,7 @@ int main(int argc, const char** argv) {
     // Application of mutations was successful, so write out the mutation info.
     if (!mutation_info_file.empty()) {
       std::ofstream transformations_file(mutation_info_file);
-      if (!mutation_info->SerializeToOstream(&transformations_file)) {
+      if (!mutation_info.value().SerializeToOstream(&transformations_file)) {
         llvm::errs() << "Error writing protobuf data to " << mutation_info_file
                      << "\n";
         return 1;
@@ -142,7 +143,9 @@ int main(int argc, const char** argv) {
         llvm::errs() << "Error writing JSON data to " << mutation_info_json
                      << "\n";
         llvm::errs() << json_generation_status.message().ToString() << "\n";
-        // TODO(JLJ): Add suggestion to use protobufs.
+        llvm::errs() << "The protobuf recursion limit can be reached when "
+                        "writing a json that "
+                        "is too deep. Consider using --mutation-info-file.\n";
         return 1;
       }
     }

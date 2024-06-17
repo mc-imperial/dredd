@@ -331,7 +331,7 @@ def main() -> int:
 
     if args.json:
         with open(args.mutation_info_file, 'r') as json_input:
-            Parse(json_input, mutant_info, max_recursion_depth=1000)
+            Parse(json_input.read(), mutant_info, max_recursion_depth=1000)
     else:
         with open(args.mutation_info_file, 'rb') as input_file:
             mutant_info.ParseFromString(input_file.read())
