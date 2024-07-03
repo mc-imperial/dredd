@@ -42,13 +42,17 @@ class MutationReplaceBinaryOperator : public Mutation {
       bool optimise_mutations, bool only_track_mutant_coverage,
       int first_mutation_id_in_file, int& mutation_id,
       clang::Rewriter& rewriter,
-      std::unordered_set<std::string>& dredd_declarations) const override;
+      std::map<std::string, std::pair<std::string, int>>& dredd_declarations) const override;
 
  private:
-  std::string GenerateMutatorFunction(
+  std::string GenerateMutatorFunctionSignature(
       clang::ASTContext& ast_context, const std::string& function_name,
       const std::string& result_type, const std::string& lhs_type,
-      const std::string& rhs_type, bool optimise_mutations,
+      const std::string& rhs_type) const;
+
+  std::string GenerateMutatorFunctionImplementation(
+      clang::ASTContext& ast_context, const std::string& function_signature,
+      bool optimise_mutations,
       bool only_track_mutant_coverage, int& mutation_id,
       protobufs::MutationReplaceBinaryOperator& protobuf_message) const;
 
@@ -114,7 +118,8 @@ class MutationReplaceBinaryOperator : public Mutation {
       const std::string& lhs_type, const std::string& rhs_type,
       bool only_track_mutant_coverage, int first_mutation_id_in_file,
       int& mutation_id, clang::Rewriter& rewriter,
-      std::unordered_set<std::string>& dredd_declarations) const;
+      std::map<std::string, std::pair<std::string, int>>& dredd_declarations,
+      protobufs::MutationReplaceBinaryOperator& protobuf_message) const;
 
   static void AddMutationInstance(
       int mutation_id_base,

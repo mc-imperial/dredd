@@ -53,7 +53,7 @@ class Mutation {
       bool optimise_mutations, bool only_track_mutant_coverage,
       int first_mutation_id_in_file, int& mutation_id,
       clang::Rewriter& rewriter,
-      std::unordered_set<std::string>& dredd_declarations) const = 0;
+      std::map<std::string, std::pair<std::string, int>>& dredd_declarations) const = 0;
 };
 
 }  // namespace dredd

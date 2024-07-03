@@ -68,12 +68,17 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
   const int initial_mutation_id = *mutation_id_;
 
   // This is used to collect the various declarations that are introduced by
-  // mutations in a manner that avoids duplicates, after which they can be added
-  // to the start of the source file. As lots of duplicates are expected, an
-  // unordered set is used to facilitate efficient lookup. Later, this is
-  // converted to an ordered set so that declarations can be added to the source
-  // file in a deterministic order.
-  std::unordered_set<std::string> dredd_declarations;
+  // mutations. The name of each declaration is mapped to the code that should
+  // be added for the declaration, as well as the number of mutations that the
+  // declaration introduces.
+  //
+  // The first time a particular kind of mutation function is needed, the
+  // function body gets computed and in the process the number of mutants that
+  // this function introduces is calculated. The function body and this number
+  // are recorded so that if the same function is needed again, its body does
+  // not need to be computed, and the number of mutants that it introduces is
+  // also available.
+  std::map<std::string, std::pair<std::string, int>> dredd_declarations;
 
   protobufs::MutationInfoForFile mutation_info_for_file;
   mutation_info_for_file.set_filename(
@@ -99,11 +104,13 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
          "There is at least one mutation, therefore the file must have some "
          "content.");
 
-  // Convert the unordered set Dredd declarations into an ordered set and add
-  // them to the source file before the first declaration.
+  // Add the Dredd declarations sorted according to the string representation of
+  // their function bodies. This is to keep compatibility with how Dredd worked
+  // when declarations were handled differently, and should be rectified.
   std::set<std::string> sorted_dredd_declarations;
-  sorted_dredd_declarations.insert(dredd_declarations.begin(),
-                                   dredd_declarations.end());
+  for (auto& decl : dredd_declarations) {
+    sorted_dredd_declarations.insert(decl.second.first);
+  }
   for (const auto& decl : sorted_dredd_declarations) {
     const bool rewriter_result =
         rewriter_.InsertTextBefore(start_of_source_file, decl);
@@ -361,7 +368,7 @@ std::string MutateAstConsumer::GetDreddPreludeC(int initial_mutation_id) const {
 protobufs::MutationTreeNode MutateAstConsumer::ApplyMutations(
     const MutationTreeNode& mutation_tree_node, int initial_mutation_id,
     clang::ASTContext& context,
-    std::unordered_set<std::string>& dredd_declarations) {
+    std::map<std::string, std::pair<std::string, int>>& dredd_declarations) {
   assert(!(mutation_tree_node.IsEmpty() &&
            mutation_tree_node.GetChildren().size() == 1) &&
          "The mutation tree should already be compressed.");

@@ -431,21 +431,28 @@ void MutationReplaceExpr::GenerateBooleanConstantReplacement(
   }
 }
 
-std::string MutationReplaceExpr::GenerateMutatorFunction(
+std::string MutationReplaceExpr::GenerateMutatorFunctionSignature(
     clang::ASTContext& ast_context, const std::string& function_name,
-    const std::string& result_type, const std::string& input_type,
-    bool optimise_mutations, bool only_track_mutant_coverage, int& mutation_id,
-    protobufs::MutationReplaceExpr& protobuf_message) const {
-  std::stringstream new_function;
-  new_function << "static " << result_type << " " << function_name << "(";
+    const std::string& result_type, const std::string& input_type
+    ) const {
+  std::stringstream result;
+  result << "static " << result_type << " " << function_name << "(";
   if (ast_context.getLangOpts().CPlusPlus &&
       expr_->HasSideEffects(ast_context)) {
-    new_function << "std::function<" << input_type << "()>";
+    result << "std::function<" << input_type << "()>";
   } else {
-    new_function << input_type;
+    result << input_type;
   }
-  new_function << " arg, int local_mutation_id) {\n";
+  result << " arg, int local_mutation_id)";
+  return result.str();
+}
 
+std::string MutationReplaceExpr::GenerateMutatorFunctionImplementation(
+    clang::ASTContext& ast_context, const std::string& function_signature,
+    bool optimise_mutations, bool only_track_mutant_coverage, int& mutation_id,
+    protobufs::MutationReplaceExpr& protobuf_message) const {
+  std::stringstream result;
+  result << function_signature << " {\n";
   std::string arg_evaluated = "arg";
   if (ast_context.getLangOpts().CPlusPlus &&
       expr_->HasSideEffects(ast_context)) {
@@ -459,7 +466,7 @@ std::string MutationReplaceExpr::GenerateMutatorFunction(
   if (!only_track_mutant_coverage) {
     // Quickly apply the original operator if no mutant is enabled (which will
     // be the common case).
-    new_function << "  if (!__dredd_some_mutation_enabled) return "
+    result << "  if (!__dredd_some_mutation_enabled) return "
                  << arg_evaluated << ";\n";
   }
 
@@ -467,23 +474,22 @@ std::string MutationReplaceExpr::GenerateMutatorFunction(
 
   GenerateUnaryOperatorInsertion(arg_evaluated, ast_context, optimise_mutations,
                                  only_track_mutant_coverage, mutation_id,
-                                 new_function, mutation_id_offset,
+                                 result, mutation_id_offset,
                                  protobuf_message);
   GenerateConstantReplacement(
-      ast_context, optimise_mutations, only_track_mutant_coverage, mutation_id,
-      new_function, mutation_id_offset, protobuf_message);
+      ast_context, optimise_mutations, only_track_mutant_coverage, mutation_id, result, mutation_id_offset, protobuf_message);
 
   if (only_track_mutant_coverage) {
-    new_function << "  __dredd_record_covered_mutants(local_mutation_id, " +
+    result << "  __dredd_record_covered_mutants(local_mutation_id, " +
                         std::to_string(mutation_id_offset) + ");\n";
   }
 
-  new_function << "  return " << arg_evaluated << ";\n";
-  new_function << "}\n\n";
+  result << "  return " << arg_evaluated << ";\n";
+  result << "}\n\n";
 
   mutation_id += mutation_id_offset;
 
-  return new_function.str();
+  return result.str();
 }
 
 void MutationReplaceExpr::ApplyCppTypeModifiers(const clang::Expr& expr,
@@ -596,7 +602,7 @@ protobufs::MutationGroup MutationReplaceExpr::Apply(
     clang::ASTContext& ast_context, const clang::Preprocessor& preprocessor,
     bool optimise_mutations, bool only_track_mutant_coverage,
     int first_mutation_id_in_file, int& mutation_id, clang::Rewriter& rewriter,
-    std::unordered_set<std::string>& dredd_declarations) const {
+    std::map<std::string, std::pair<std::string, int>>& dredd_declarations) const {
   // The protobuf object for the mutation, which will be wrapped in a
   // MutationGroup.
   protobufs::MutationReplaceExpr inner_result;
@@ -633,13 +639,19 @@ protobufs::MutationGroup MutationReplaceExpr::Apply(
                               mutation_id - first_mutation_id_in_file,
                               ast_context, preprocessor, rewriter);
 
-  const std::string new_function = GenerateMutatorFunction(
-      ast_context, new_function_name, result_type, input_type,
-      optimise_mutations, only_track_mutant_coverage, mutation_id,
-      inner_result);
-  assert(!new_function.empty() && "Unsupported expression.");
-
-  dredd_declarations.insert(new_function);
+  const std::string new_function_signature = GenerateMutatorFunctionSignature(ast_context, new_function_name, result_type, input_type);
+  if (!dredd_declarations.contains(new_function_signature)) {
+    const int old_mutation_id = mutation_id;
+    const std::string new_function_implementation = GenerateMutatorFunctionImplementation(
+        ast_context, new_function_signature,
+        optimise_mutations, only_track_mutant_coverage, mutation_id,
+        inner_result);
+    assert(!new_function_implementation.empty() && "Unsupported expression.");
+    dredd_declarations[new_function_signature] = {
+        new_function_implementation, mutation_id - old_mutation_id};
+  } else {
+    mutation_id += dredd_declarations.at(new_function_signature).second;
+  }
 
   protobufs::MutationGroup result;
   *result.mutable_replace_expr() = inner_result;

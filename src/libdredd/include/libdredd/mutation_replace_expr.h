@@ -41,7 +41,7 @@ class MutationReplaceExpr : public Mutation {
       bool optimise_mutations, bool only_track_mutant_coverage,
       int first_mutation_id_in_file, int& mutation_id,
       clang::Rewriter& rewriter,
-      std::unordered_set<std::string>& dredd_declarations) const override;
+      std::map<std::string, std::pair<std::string, int>>& dredd_declarations) const override;
 
   static void ApplyCppTypeModifiers(const clang::Expr& expr, std::string& type);
 
@@ -138,9 +138,12 @@ class MutationReplaceExpr : public Mutation {
       std::stringstream& new_function, int& mutation_id_offset,
       protobufs::MutationReplaceExpr& protobuf_message) const;
 
-  std::string GenerateMutatorFunction(
-      clang::ASTContext& ast_context, const std::string& function_name,
-      const std::string& result_type, const std::string& input_type,
+  std::string GenerateMutatorFunctionSignature(
+    clang::ASTContext& ast_context, const std::string& function_name,
+    const std::string& result_type, const std::string& input_type) const;
+
+  std::string GenerateMutatorFunctionImplementation(
+      clang::ASTContext& ast_context, const std::string& function_signature,
       bool optimise_mutations, bool only_track_mutant_coverage,
       int& mutation_id, protobufs::MutationReplaceExpr& protobuf_message) const;
 

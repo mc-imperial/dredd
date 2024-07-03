@@ -66,7 +66,7 @@ class MutateAstConsumer : public clang::ASTConsumer {
   protobufs::MutationTreeNode ApplyMutations(
       const MutationTreeNode& mutation_tree_node, int initial_mutation_id,
       clang::ASTContext& context,
-      std::unordered_set<std::string>& dredd_declarations);
+      std::map<std::string, std::pair<std::string, int>>& dredd_declarations);
 
   const clang::CompilerInstance* compiler_instance_;
 

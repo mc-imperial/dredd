@@ -15,9 +15,9 @@
 #include "libdredd/mutation_replace_expr.h"
 
 #include <cstdint>
+#include <map>
 #include <memory>
 #include <string>
-#include <unordered_set>
 
 #include "clang/AST/Expr.h"
 #include "clang/ASTMatchers/ASTMatchFinder.h"
@@ -59,12 +59,12 @@ void TestReplacement(const std::string& original, const std::string& expected,
   clang::Rewriter rewriter(ast_unit->getSourceManager(),
                            ast_unit->getLangOpts());
   int mutation_id = 0;
-  std::unordered_set<std::string> dredd_declarations;
+  std::map<std::string, std::pair<std::string, int>> dredd_declarations;
   mutation.Apply(ast_unit->getASTContext(), ast_unit->getPreprocessor(), true,
                  false, 0, mutation_id, rewriter, dredd_declarations);
   ASSERT_EQ(num_replacements, mutation_id);
   ASSERT_EQ(1, dredd_declarations.size());
-  ASSERT_EQ(expected_dredd_declaration, *dredd_declarations.begin());
+  ASSERT_EQ(expected_dredd_declaration, dredd_declarations.begin()->second.first);
 
   const clang::RewriteBuffer* rewrite_buffer = rewriter.getRewriteBufferFor(
       ast_unit->getSourceManager().getMainFileID());
