@@ -19,7 +19,6 @@
 #include <memory>
 
 #include "clang/AST/ASTContext.h"
-#include "clang/AST/ASTTypeTraits.h"
 #include "clang/AST/Decl.h"
 #include "clang/AST/DeclBase.h"
 #include "clang/AST/DeclCXX.h"
@@ -35,6 +34,7 @@
 #include "clang/AST/TypeLoc.h"
 #include "clang/Basic/LangOptions.h"
 #include "clang/Basic/SourceLocation.h"
+#include "clang/Basic/TypeTraits.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "libdredd/mutation.h"
 #include "libdredd/mutation_remove_stmt.h"
