@@ -46,6 +46,19 @@
 
 namespace dredd {
 
+template <typename RequiredParentT>
+const RequiredParentT* MutateVisitor::GetFirstParentOfType(
+    const clang::Stmt& stmt) const {
+  for (const auto& parent :
+       compiler_instance_->getASTContext().getParents(stmt)) {
+    const auto* candidate_result = parent.template get<RequiredParentT>();
+    if (candidate_result != nullptr) {
+      return candidate_result;
+    }
+  }
+  return nullptr;
+}
+
 MutateVisitor::MutateVisitor(const clang::CompilerInstance& compiler_instance,
                              bool optimise_mutations)
     : compiler_instance_(&compiler_instance),
@@ -137,7 +150,6 @@ bool MutateVisitor::TraverseDecl(clang::Decl* decl) {
       return true;
     }
   }
-
   enclosing_decls_.push_back(decl);
   // Consider the declaration for mutation.
   RecursiveASTVisitor::TraverseDecl(decl);
@@ -168,6 +180,18 @@ bool MutateVisitor::TraverseStmt(clang::Stmt* stmt) {
   // and mutation logic is inherently non-constant.
   if (llvm::dyn_cast<clang::CXXNoexceptExpr>(stmt) != nullptr) {
     return true;
+  }
+
+  // Do not mutate under 'sizeof' or 'alignof', as this is guaranteed to yield
+  // equivalent mutants. Note that we *do* want to mutate above these
+  // expressions, hence we ignore children of such expressions, rather than
+  // ignoring the expressions themselves.
+  if (const auto* unary_expr_or_type_trait_parent =
+          GetFirstParentOfType<clang::UnaryExprOrTypeTraitExpr>(*stmt)) {
+    const auto kind = unary_expr_or_type_trait_parent->getKind();
+    if (kind == clang::UETT_SizeOf || kind == clang::UETT_AlignOf) {
+      return true;
+    }
   }
 
   // Add a node to the mutation tree to capture any mutations beneath this
@@ -398,11 +422,9 @@ void MutateVisitor::HandleExpr(clang::Expr* expr) {
           compiler_instance_->getASTContext(),
           clang::Expr::NullPointerConstantValueDependence()) !=
       clang::Expr::NPCK_NotNull) {
-    for (const auto& parent :
-         compiler_instance_->getASTContext().getParents<clang::Expr>(*expr)) {
-      const auto* cast_parent = parent.get<clang::CastExpr>();
-      if (cast_parent != nullptr &&
-          cast_parent->getType()->isAnyPointerType()) {
+    if (const auto* cast_parent =
+            GetFirstParentOfType<clang::CastExpr>(*expr)) {
+      if (cast_parent->getType()->isAnyPointerType()) {
         return;
       }
     }
@@ -418,11 +440,9 @@ void MutateVisitor::HandleExpr(clang::Expr* expr) {
     // arising due to a change of type are unlikely to be all that interesting,
     // and r-value to r-value implicit casts are very common, e.g. occurring
     // whenever a signed literal, such as `1`, is used in an unsigned context.
-    for (const auto& parent :
-         compiler_instance_->getASTContext().getParents<clang::Expr>(*expr)) {
-      const auto* cast_parent = parent.get<clang::CastExpr>();
-      if (cast_parent != nullptr &&
-          cast_parent->isLValue() == expr->isLValue()) {
+    if (const auto* cast_parent =
+            GetFirstParentOfType<clang::CastExpr>(*expr)) {
+      if (cast_parent->isLValue() == expr->isLValue()) {
         return;
       }
     }
@@ -435,11 +455,8 @@ void MutateVisitor::HandleExpr(clang::Expr* expr) {
     // captured by inserting an increment before a future use of the l-value (it
     // is not exactly the same, because the future use could be dynamically
     // reached in different manners compared with this statement).
-    for (const auto& parent :
-         compiler_instance_->getASTContext().getParents<clang::Stmt>(*expr)) {
-      if (parent.get<clang::CompoundStmt>() != nullptr) {
-        return;
-      }
+    if (GetFirstParentOfType<clang::CompoundStmt>(*expr) != nullptr) {
+      return;
     }
   }
 
