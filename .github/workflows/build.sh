@@ -65,6 +65,8 @@ case "$(uname)" in
   NINJA_OS="win"
   CMAKE_OPTIONS+=("-DCMAKE_C_COMPILER=cl.exe" "-DCMAKE_CXX_COMPILER=cl.exe")
   choco install zip
+  # The following is a workaround suggested in https://github.com/actions/runner-images/issues/8125#issuecomment-1709402910
+  choco upgrade llvm
 
   # Install clang.
   pushd ./third_party/clang+llvm
