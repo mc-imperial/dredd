@@ -44,7 +44,7 @@ cd temp/
 
 # Get cppcheck.
 
-CPPCHECK_VERSION="2.12.1"
+CPPCHECK_VERSION="2.14.2"
 CPPCHECK_OUT="cppcheck-${CPPCHECK_VERSION}"
 
 if test ! -f "${CPPCHECK_OUT}.touch"; then
@@ -83,7 +83,7 @@ export CPPLINT_PY
 
 # Get include what you use.
 
-IWYU_VERSION="0.20"
+IWYU_VERSION="0.21"
 IWYU_OUT="iwyu-${IWYU_VERSION}"
 
 if test ! -f "${IWYU_OUT}.touch"; then
