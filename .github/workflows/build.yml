@@ -77,6 +77,8 @@ jobs:
           !startsWith(matrix.os, 'windows')
       - name: build_step_windows
         run: |
+	  # The following line is a workaround suggested in https://github.com/actions/runner-images/issues/8125#issuecomment-1709402910
+          choco upgrade llvm
           call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" x64
           "C:\Program Files\Git\bin\bash.EXE" --noprofile --norc -e -o pipefail .github/workflows/build.sh
         shell: cmd
