@@ -18,6 +18,7 @@ Checks: >
   -readability-simplify-boolean-expr,
   -readability-use-anyofallof,
   -misc-no-recursion,
+  -misc-include-cleaner,
 
   # It is quite common to implement a method as a series of checks
   # with returns, with a final return true at the end.  This check
