@@ -188,8 +188,8 @@ case "$(uname)" in
 
 "MINGW"*|"MSYS_NT"*)
   # On Windows, run the single-file tests
-  export CC=cl.exe
-  export CXX=cl.exe
+  export CC=clang
+  export CXX=clang++
 
   # The following single-file tests give different expected results on Windows
   # due to differences in how certain builtin types, such as size_t and
