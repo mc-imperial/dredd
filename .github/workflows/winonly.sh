@@ -23,5 +23,5 @@ help | head
 uname
 
 cl.exe /std:c++20 tests/single_file/printing.cc
-cp tests/single_file/printing.cc.expected temp.cc
+cp test/single_file/printing.cc.expected temp.cc
 cl.exe /std:c++20 temp.cc
