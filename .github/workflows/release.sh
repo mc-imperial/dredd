@@ -19,7 +19,7 @@ set -e
 set -u
 
 # Old bash versions can't expand empty arrays, so we always include at least this option.
-CMAKE_OPTIONS=("-DCMAKE_OSX_ARCHITECTURES=x86_64")
+CMAKE_OPTIONS=("-DCMAKE_OSX_ARCHITECTURES=arm64")
 
 help | head
 

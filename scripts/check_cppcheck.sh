@@ -26,6 +26,7 @@ cd "${DREDD_REPO_ROOT}"
 cppcheck \
   --project="${COMPILE_COMMANDS}" \
   --file-filter="$(pwd)/src/"'*' \
+  --check-level=exhaustive \
   --error-exitcode=2 \
   --enable=all \
   --inline-suppr \
