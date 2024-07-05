@@ -583,6 +583,30 @@ void MutationReplaceExpr::ReplaceExprWithFunctionCall(
       GetSourceRangeInMainFile(preprocessor, *expr_);
   assert(expr_source_range_in_main_file.isValid() && "Invalid source range.");
 
+  {
+    // Insert a space before the function call if the preceding character could
+    // belong to an identifier. This is to guard against the case where the
+    // expression being mutated comes right after a macro. If this happens, then
+    // unless a space is added, the function name gets conjoined onto the macro
+    // name, leading to invalid code.
+    bool is_invalid = false;
+    const char* pointer_to_character_before_location =
+        ast_context.getSourceManager().getCharacterData(
+            expr_source_range_in_main_file.getBegin().getLocWithOffset(-1),
+            &is_invalid);
+    if (!is_invalid) {
+      // There is a previous character. Check whether it is alphanumeric, or an
+      // underscore.
+      const char character_before_location =
+          pointer_to_character_before_location[0];
+      if (character_before_location == '_' ||
+          static_cast<bool>(std::isalnum(character_before_location))) {
+        // A space is needed.
+        prefix = " " + prefix;
+      }
+    }
+  }
+
   bool rewriter_result = rewriter.InsertTextBefore(
       expr_source_range_in_main_file.getBegin(), prefix);
   assert(!rewriter_result && "Rewrite failed.\n");
