@@ -162,8 +162,9 @@ if(DREDD_WARNING_SUPPRESSIONS)
       -Wno-unknown-pragmas -Wno-unknown-warning-option -Wno-c++98-compat
       -Wno-c++98-compat-pedantic -Wno-padded -Wno-switch-enum)
     if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-      # Needed due to what looks like a gcc-12 bug: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=105329
-      # This should be removed if that bug is fixed in a future GCC version.
+      # Needed due to what looks like a gcc-12 bug:
+      # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=105329 This should be
+      # removed if that bug is fixed in a future GCC version.
       add_compile_options(-Wno-restrict)
     endif()
   endif()
