@@ -25,7 +25,7 @@ static bool __dredd_enabled_mutation(int local_mutation_id) {
         if (!token.empty()) {
           int value = std::stoi(token);
           int local_value = value - 0;
-          if (local_value >= 0 && local_value < 23) {
+          if (local_value >= 0 && local_value < 8) {
             enabled_bitset[local_value / 64] |= (static_cast<uint64_t>(1) << (local_value % 64));
             some_mutation_enabled = true;
           }
@@ -42,42 +42,10 @@ static bool __dredd_enabled_mutation(int local_mutation_id) {
   return (enabled_bitset[local_mutation_id / 64] & (static_cast<uint64_t>(1) << (local_mutation_id % 64))) != 0;
 }
 
-static int __dredd_replace_expr_int_zero(int arg, int local_mutation_id) {
-  if (!__dredd_some_mutation_enabled) return arg;
-  if (__dredd_enabled_mutation(local_mutation_id + 0)) return 1;
-  if (__dredd_enabled_mutation(local_mutation_id + 1)) return -1;
-  return arg;
-}
-
-static int __dredd_replace_expr_int_one(int arg, int local_mutation_id) {
-  if (!__dredd_some_mutation_enabled) return arg;
-  if (__dredd_enabled_mutation(local_mutation_id + 0)) return ~(arg);
-  if (__dredd_enabled_mutation(local_mutation_id + 1)) return 0;
-  if (__dredd_enabled_mutation(local_mutation_id + 2)) return -1;
-  return arg;
-}
-
-static int __dredd_replace_expr_int_minus_one(int arg, int local_mutation_id) {
-  if (!__dredd_some_mutation_enabled) return arg;
-  if (__dredd_enabled_mutation(local_mutation_id + 0)) return 0;
-  if (__dredd_enabled_mutation(local_mutation_id + 1)) return 1;
-  return arg;
-}
-
 static int __dredd_replace_expr_int_lvalue(int& arg, int local_mutation_id) {
   if (!__dredd_some_mutation_enabled) return arg;
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return ++(arg);
   if (__dredd_enabled_mutation(local_mutation_id + 1)) return --(arg);
-  return arg;
-}
-
-static int __dredd_replace_expr_int_constant(int arg, int local_mutation_id) {
-  if (!__dredd_some_mutation_enabled) return arg;
-  if (__dredd_enabled_mutation(local_mutation_id + 0)) return ~(arg);
-  if (__dredd_enabled_mutation(local_mutation_id + 1)) return -(arg);
-  if (__dredd_enabled_mutation(local_mutation_id + 2)) return 0;
-  if (__dredd_enabled_mutation(local_mutation_id + 3)) return 1;
-  if (__dredd_enabled_mutation(local_mutation_id + 4)) return -1;
   return arg;
 }
 
@@ -93,9 +61,9 @@ static int __dredd_replace_expr_int(int arg, int local_mutation_id) {
 }
 
 void foo(int a) {
-  const int x = __dredd_replace_expr_int_zero(0, 0);
-  const int y = __dredd_replace_expr_int_one(1, 2);
-  const int z = __dredd_replace_expr_int_minus_one(-__dredd_replace_expr_int_one(1, 5), 8);
-  const int w = __dredd_replace_expr_int_constant(2, 10);
-  const int v = __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(a, 15), 17);
+  const int x = 0;
+  const int y = 1;
+  const int z = -1;
+  const int w = 2;
+  const int v = __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(a, 0), 2);
 }
