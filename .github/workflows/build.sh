@@ -198,9 +198,9 @@ case "$(uname)" in
   rm test/single_file/do_not_mutate_under_alignof.cc
   rm test/single_file/do_not_mutate_under_alignof.cc.expected
   rm test/single_file/do_not_mutate_under_alignof.cc.noopt.expected
-  rm test/single_file/do_not_mutate_under_sizeof.cc
-  rm test/single_file/do_not_mutate_under_sizeof.cc.expected
-  rm test/single_file/do_not_mutate_under_sizeof.cc.noopt.expected
+  rm test/single_file/do_not_mutate_under_sizeof.c
+  rm test/single_file/do_not_mutate_under_sizeof.c.expected
+  rm test/single_file/do_not_mutate_under_sizeof.c.noopt.expected
   rm test/single_file/initializer_list.cc
   rm test/single_file/initializer_list.cc.expected
   rm test/single_file/initializer_list.cc.noopt.expected
