@@ -30,24 +30,24 @@ jobs:
           - Release
         # Manually list various Linux configurations.
         include:
-          # gcc-11
+          # gcc-12
           - os: ubuntu-22.04
             config: Debug
-            linux_cc: gcc-11
-            linux_cxx: g++-11
+            linux_cc: gcc-12
+            linux_cxx: g++-12
           - os: ubuntu-22.04
             config: Release
-            linux_cc: gcc-11
-            linux_cxx: g++-11
-          # clang-15
+            linux_cc: gcc-12
+            linux_cxx: g++-12
+          # clang-16
           - os: ubuntu-22.04
             config: Debug
-            linux_cc: clang-15
-            linux_cxx: clang++-15
+            linux_cc: clang-16
+            linux_cxx: clang++-16
           - os: ubuntu-22.04
             config: Release
-            linux_cc: clang-15
-            linux_cxx: clang++-15
+            linux_cc: clang-16
+            linux_cxx: clang++-16
           # Note: A more recent Clang is tested via the dev_build workflow.
 
     runs-on: ${{ matrix.os }}
