@@ -15,6 +15,7 @@
 #include "libdredd/mutation_replace_expr.h"
 
 #include <cassert>
+#include <cctype>
 #include <sstream>
 
 #include "clang/AST/APValue.h"
@@ -26,6 +27,7 @@
 #include "clang/AST/Type.h"
 #include "clang/Basic/LangOptions.h"
 #include "clang/Basic/SourceLocation.h"
+#include "clang/Basic/SourceManager.h"
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Rewrite/Core/Rewriter.h"
 #include "libdredd/util.h"
