@@ -18,4 +18,4 @@ set -e
 set -u
 set -x
 
-echo "16.0.4"
+echo "17.0.6"

@@ -56,7 +56,7 @@ class MutationReplaceBinaryOperator : public Mutation {
                        const std::string& new_function_name,
                        clang::ASTContext& ast_context,
                        const clang::Preprocessor& preprocessor,
-                       int first_mutation_id_in_file, int& mutation_id,
+                       int first_mutation_id_in_file, int mutation_id,
                        clang::Rewriter& rewriter) const;
 
   std::string GetFunctionName(bool optimise_mutations,
