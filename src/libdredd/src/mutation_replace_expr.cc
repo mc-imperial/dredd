@@ -15,6 +15,7 @@
 #include "libdredd/mutation_replace_expr.h"
 
 #include <cassert>
+#include <cctype>
 #include <sstream>
 
 #include "clang/AST/APValue.h"
@@ -26,6 +27,7 @@
 #include "clang/AST/Type.h"
 #include "clang/Basic/LangOptions.h"
 #include "clang/Basic/SourceLocation.h"
+#include "clang/Basic/SourceManager.h"
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Rewrite/Core/Rewriter.h"
 #include "libdredd/util.h"
@@ -33,6 +35,26 @@
 #include "llvm/ADT/APSInt.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/Support/Casting.h"
+
+namespace {
+bool PrecedingCharacterIsIdentifierCharacter(
+    const clang::ASTContext& ast_context,
+    const clang::SourceRange& source_range) {
+  bool is_invalid = false;
+  const char* pointer_to_character_before_location =
+      ast_context.getSourceManager().getCharacterData(
+          source_range.getBegin().getLocWithOffset(-1), &is_invalid);
+  if (is_invalid) {
+    return false;
+  }
+  // There is a previous character. Check whether it is alphanumeric, or an
+  // underscore.
+  const char character_before_location =
+      pointer_to_character_before_location[0];
+  return character_before_location == '_' ||
+         static_cast<bool>(std::isalnum(character_before_location));
+}
+}  // namespace
 
 namespace dredd {
 dredd::MutationReplaceExpr::MutationReplaceExpr(
@@ -582,6 +604,16 @@ void MutationReplaceExpr::ReplaceExprWithFunctionCall(
   const clang::SourceRange expr_source_range_in_main_file =
       GetSourceRangeInMainFile(preprocessor, *expr_);
   assert(expr_source_range_in_main_file.isValid() && "Invalid source range.");
+
+  // Insert a space before the function call if the preceding character could
+  // belong to an identifier. This is to guard against the case where the
+  // expression being mutated comes right after a macro. If this happens, then
+  // unless a space is added, the function name gets conjoined onto the macro
+  // name, leading to invalid code.
+  if (PrecedingCharacterIsIdentifierCharacter(ast_context,
+                                              expr_source_range_in_main_file)) {
+    prefix = " " + prefix;
+  }
 
   bool rewriter_result = rewriter.InsertTextBefore(
       expr_source_range_in_main_file.getBegin(), prefix);
