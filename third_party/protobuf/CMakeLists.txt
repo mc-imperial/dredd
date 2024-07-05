@@ -34,13 +34,5 @@ if(NOT TARGET protobuf)
       OFF
       CACHE BOOL "Do not build protobuf static runtime")
 
-  if(MSVC)
-
-  else()
-    # Ignore a warning issued by gcc-12. It may be possible to remove this if
-    # Dredd moves to a newer version of protobuf.
-    add_compile_options(-Wno-restrict)
-  endif()
-
   add_subdirectory(${DREDD_PROTOBUF_REPO_DIR} EXCLUDE_FROM_ALL)
 endif()
