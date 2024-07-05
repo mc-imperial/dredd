@@ -41,6 +41,6 @@ if(NOT TARGET protobuf)
     # this if Dredd moves to a newer version of protobuf.
     add_compile_options(-Wno-restrict)
   endif()
-    
+
   add_subdirectory(${DREDD_PROTOBUF_REPO_DIR} EXCLUDE_FROM_ALL)
 endif()
