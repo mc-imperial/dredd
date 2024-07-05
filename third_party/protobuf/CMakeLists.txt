@@ -37,8 +37,8 @@ if(NOT TARGET protobuf)
   if(MSVC)
 
   else()
-    # Ignore a warning issued by gcc-12. It may be possible to remove
-    # this if Dredd moves to a newer version of protobuf.
+    # Ignore a warning issued by gcc-12. It may be possible to remove this if
+    # Dredd moves to a newer version of protobuf.
     add_compile_options(-Wno-restrict)
   endif()
 
