@@ -140,7 +140,7 @@ std::string GenerateMutationPrelude(bool semantics_preserving_mutation) {
            "return arg\n";
   }
 
-  return result + ",type) type actual_result = (arg);\n";
+  return result + ",type) type actual_result = (arg)\n";
 }
 
 std::string GenerateUnaryMacroCall(const std::string& macro_name,

@@ -33,7 +33,7 @@ fi
 
 f="${DREDD_REPO_ROOT}/${1}"
 
-for opt in "opt" "noopt"
+for opt in "semantics_preserving" "opt" "noopt"
 do
   # Determine whether optimisations should be disabled or not, and whether the
   # name of the expectation file should reflect this.
@@ -43,8 +43,14 @@ do
   then
     DREDD_EXTRA_ARGS="--no-mutation-opts"
     DREDD_EXPECTED_FILE="$f.noopt.expected"
-  else
+  elif [ ${opt} == "opt" ]
+  then
     DREDD_EXPECTED_FILE="$f.expected"
+  else
+    DREDD_EXTRA_ARGS="--semantics-preserving-coverage-instrumentation"
+    DREDD_EXPECTED_FILE="$f.semantics_preserving.expected"
+    DREDD_EXTRA_C_ARGS="-fsanitize=undefined"
+    DREDD_EXTRA_CXX_ARGS=$DREDD_EXTRA_C_ARGS
   fi
 
   # Copy the single-file test case to the temporary directory so
@@ -71,7 +77,7 @@ do
     # this is needed on OSX to set an appropriate C++ standard.
     if [ -z "${DREDD_EXTRA_CXX_ARGS+x}" ]
     then
-      ${CXX} -c "${copy_of_f}"
+      ${CXX} "${copy_of_f}" -c
     else
       ${CXX} "${DREDD_EXTRA_CXX_ARGS}" -c "${copy_of_f}"
     fi
@@ -80,7 +86,7 @@ do
     # this is needed on Windows to set an appropriate C standard.
     if [ -z "${DREDD_EXTRA_C_ARGS+x}" ]
     then
-      ${CC} -c "${copy_of_f}"
+      ${CC} "${copy_of_f}" -c
     else
       ${CC} "${DREDD_EXTRA_C_ARGS}" -c "${copy_of_f}"
     fi

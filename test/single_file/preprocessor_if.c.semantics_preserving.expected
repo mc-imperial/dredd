@@ -1,0 +1,84 @@
+static unsigned long long int no_op = 0;
+
+#include <inttypes.h>
+#include <stdbool.h>
+#include <stdlib.h>
+#include <string.h>
+
+#ifdef _MSC_VER
+#define thread_local __declspec(thread)
+#elif __APPLE__
+#define thread_local __thread
+#else
+#include <threads.h>
+#endif
+
+#include <limits.h>
+#include <float.h>
+#include <math.h>
+#define MUTATION_RETURN(arg) actual_result
+#define REPLACE_EXPR_NOT(args) if ((args) != actual_result) no_op++
+#define REPLACE_EXPR_MINUS(args) if ((args) != actual_result) no_op++
+#define REPLACE_EXPR_INT_ZERO(args) if ((args) != actual_result) no_op++
+#define REPLACE_EXPR_INT_ONE(args) if ((args) != actual_result) no_op++
+#define REPLACE_EXPR_INT_MINUS_ONE(args) if ((args) != actual_result) no_op++
+#define REPLACE_BINARY_Xor_arg1_int_arg2_int(arg1, arg2) if ((arg1 ^ arg2) != actual_result) no_op++
+#define REPLACE_BINARY_XorAssign_arg1_int_arg2_int(arg1, arg2) if ((arg1 ^ arg2) != actual_result) no_op++
+#define REPLACE_BINARY_SubAssign_arg1_int_arg2_int(arg1, arg2) if (!((((arg1)^(arg2)) & ((((arg1) ^ (((arg1)^(arg2)) & (~INT_MAX)))-(arg2))^(arg2))) < 0) && (arg1 - arg2) != actual_result) no_op++
+#define REPLACE_BINARY_ShrAssign_arg1_int_arg2_int(arg1, arg2) if (!(((arg1) < 0) || ((arg2) < 0) || ((arg2) >= 32)) && (arg1 >> arg2) != actual_result) no_op++
+#define REPLACE_BINARY_ShlAssign_arg1_int_arg2_int(arg1, arg2) if (!(((arg1) < 0) || ((arg2) < 0) || ((arg2) >= 32) || ((arg1) > (INT_MAX >> (arg2)))) && (arg1 << arg2) != actual_result) no_op++
+#define REPLACE_BINARY_RemAssign_arg1_int_arg2_int(arg1, arg2) if (!(((arg2) == 0) || (((arg1) == INT_MIN) && ((arg2) == (-1)))) && (arg1 % arg2) != actual_result) no_op++
+#define REPLACE_BINARY_OrAssign_arg1_int_arg2_int(arg1, arg2) if ((arg1 | arg2) != actual_result) no_op++
+#define REPLACE_BINARY_MulAssign_arg1_int_arg2_int(arg1, arg2) if (!((((arg1) > 0) && ((arg2) > 0) && ((arg1) > (INT_MAX / (arg2)))) || (((arg1) > 0) && ((arg2) <= 0) && ((arg2) < (INT_MIN / (arg1)))) || (((arg1) <= 0) && ((arg2) > 0) && ((arg1) < (INT_MIN / (arg2)))) || (((arg1) <= 0) && ((arg2) <= 0) && ((arg1) != 0) && ((arg2) < (INT_MAX / (arg1))))) && (arg1 * arg2) != actual_result) no_op++
+#define REPLACE_BINARY_DivAssign_arg1_int_arg2_int(arg1, arg2) if (!(((arg2) == 0) || (((arg1) == INT_MIN) && ((arg2) == (-1)))) && (arg1 / arg2) != actual_result) no_op++
+#define REPLACE_BINARY_And_arg1_int_arg2_int(arg1, arg2) if ((arg1 & arg2) != actual_result) no_op++
+#define REPLACE_BINARY_AndAssign_arg1_int_arg2_int(arg1, arg2) if ((arg1 & arg2) != actual_result) no_op++
+#define REPLACE_BINARY_AddAssign_arg1_int_arg2_int(arg1, arg2) if (!((((arg1)>0) && ((arg2)>0) && ((arg1) > (INT_MAX-(arg2)))) || (((arg1)<0) && ((arg2)<0) && ((arg1) < (INT_MIN-(arg2))))) && (arg1 + arg2) != actual_result) no_op++
+#define REPLACE_BINARY_ARG2(arg2) if ((arg2) != actual_result) no_op++
+#define REPLACE_BINARY_ARG1(args) if ((args) != actual_result) no_op++
+#define MUTATION_PRELUDE(arg,type) type actual_result = (arg)
+static int __dredd_replace_expr_int_constant(int arg, int local_mutation_id) {
+  MUTATION_PRELUDE(arg,int);
+  REPLACE_EXPR_NOT(arg);
+  REPLACE_EXPR_MINUS(arg);
+  REPLACE_EXPR_INT_ZERO(0);
+  REPLACE_EXPR_INT_ONE(1);
+  REPLACE_EXPR_INT_MINUS_ONE(-1);
+  return MUTATION_RETURN(arg);
+}
+
+__attribute__((always_inline)) static int __dredd_replace_binary_operator_Or_arg1_int_arg2_int(int arg1, int arg2, int local_mutation_id) {
+  MUTATION_PRELUDE(arg1 | arg2,int);
+  REPLACE_BINARY_And_arg1_int_arg2_int(arg1, arg2);
+  REPLACE_BINARY_Xor_arg1_int_arg2_int(arg1, arg2);
+  REPLACE_BINARY_ARG1(arg1);
+  REPLACE_BINARY_ARG2(arg2);
+  return MUTATION_RETURN(arg1 | arg2);
+}
+
+__attribute__((always_inline)) static int __dredd_replace_binary_operator_Assign_arg1_int_arg2_int(int* arg1, int arg2, int local_mutation_id) {
+  MUTATION_PRELUDE((*arg1) = arg2,int);
+  REPLACE_BINARY_AddAssign_arg1_int_arg2_int((*arg1), arg2);
+  REPLACE_BINARY_AndAssign_arg1_int_arg2_int((*arg1), arg2);
+  REPLACE_BINARY_DivAssign_arg1_int_arg2_int((*arg1), arg2);
+  REPLACE_BINARY_MulAssign_arg1_int_arg2_int((*arg1), arg2);
+  REPLACE_BINARY_OrAssign_arg1_int_arg2_int((*arg1), arg2);
+  REPLACE_BINARY_RemAssign_arg1_int_arg2_int((*arg1), arg2);
+  REPLACE_BINARY_ShlAssign_arg1_int_arg2_int((*arg1), arg2);
+  REPLACE_BINARY_ShrAssign_arg1_int_arg2_int((*arg1), arg2);
+  REPLACE_BINARY_SubAssign_arg1_int_arg2_int((*arg1), arg2);
+  REPLACE_BINARY_XorAssign_arg1_int_arg2_int((*arg1), arg2);
+  return MUTATION_RETURN((*arg1) = arg2);
+}
+
+int main() {
+
+    int ABC;
+    
+    __dredd_replace_binary_operator_Assign_arg1_int_arg2_int(&(ABC) , __dredd_replace_expr_int_constant(__dredd_replace_binary_operator_Or_arg1_int_arg2_int(__dredd_replace_expr_int_constant(2, 0)
+    #if 1
+        , __dredd_replace_expr_int_constant(5, 5), 10), 14), 19)
+    #endif
+        ;
+
+}

@@ -1,0 +1,64 @@
+static unsigned long long int no_op = 0;
+
+#include <cinttypes>
+#include <cstddef>
+#include <functional>
+#include <string>
+
+
+#ifdef _MSC_VER
+#define thread_local __declspec(thread)
+#elif __APPLE__
+#define thread_local __thread
+#endif
+
+#include <limits>
+#include <cmath>
+#define MUTATION_RETURN(arg) actual_result
+#define REPLACE_UNARY_Not_bool(arg) if ((arg) != actual_result) no_op++
+#define REPLACE_UNARY_Minus_bool(arg) if ((arg) != std::numeric_limits<bool>::lowest() && (arg) != actual_result) no_op++
+#define REPLACE_EXPR_TRUE(args) if ((args) != actual_result) no_op++
+#define REPLACE_EXPR_NOT(args) if ((args) != actual_result) no_op++
+#define REPLACE_EXPR_MINUS(args) if ((args) != actual_result) no_op++
+#define REPLACE_EXPR_LNOT(args) if ((args) != actual_result) no_op++
+#define REPLACE_EXPR_INT_ZERO(args) if ((args) != actual_result) no_op++
+#define REPLACE_EXPR_INT_ONE(args) if ((args) != actual_result) no_op++
+#define REPLACE_EXPR_INT_MINUS_ONE(args) if ((args) != actual_result) no_op++
+#define REPLACE_EXPR_FALSE(args) if ((args) != actual_result) no_op++
+#define MUTATION_PRELUDE(arg,type) type actual_result = (arg)
+static int __dredd_replace_expr_int(int arg, int local_mutation_id) {
+  MUTATION_PRELUDE(arg,int);
+  REPLACE_EXPR_LNOT(arg);
+  REPLACE_EXPR_NOT(arg);
+  REPLACE_EXPR_MINUS(arg);
+  REPLACE_EXPR_INT_ZERO(0);
+  REPLACE_EXPR_INT_ONE(1);
+  REPLACE_EXPR_INT_MINUS_ONE(-1);
+  return MUTATION_RETURN(arg);
+}
+
+static bool __dredd_replace_expr_bool_true(bool arg, int local_mutation_id) {
+  MUTATION_PRELUDE(arg,bool);
+  REPLACE_EXPR_FALSE(false);
+  return MUTATION_RETURN(arg);
+}
+
+static bool __dredd_replace_expr_bool(bool arg, int local_mutation_id) {
+  MUTATION_PRELUDE(arg,bool);
+  REPLACE_EXPR_LNOT(arg);
+  REPLACE_EXPR_TRUE(true);
+  REPLACE_EXPR_FALSE(false);
+  return MUTATION_RETURN(arg);
+}
+
+__attribute__((always_inline)) static bool __dredd_replace_unary_operator_LNot_bool(bool arg, int local_mutation_id) {
+  MUTATION_PRELUDE(!arg,bool);
+  REPLACE_UNARY_Not_bool(arg);
+  REPLACE_UNARY_Minus_bool(arg);
+  return MUTATION_RETURN(!arg);
+}
+
+int main() {
+  bool y = __dredd_replace_expr_bool_true(true, 0);
+  return __dredd_replace_expr_int(__dredd_replace_unary_operator_LNot_bool(__dredd_replace_expr_bool(y, 1), 4), 6);
+}

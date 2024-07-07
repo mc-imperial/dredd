@@ -1,0 +1,105 @@
+static unsigned long long int no_op = 0;
+
+#include <cinttypes>
+#include <cstddef>
+#include <functional>
+#include <string>
+
+
+#ifdef _MSC_VER
+#define thread_local __declspec(thread)
+#elif __APPLE__
+#define thread_local __thread
+#endif
+
+#include <limits>
+#include <cmath>
+#define MUTATION_RETURN(arg) actual_result
+#define REPLACE_EXPR_TRUE(args) if ((args) != actual_result) no_op++
+#define REPLACE_EXPR_NOT(args) if ((args) != actual_result) no_op++
+#define REPLACE_EXPR_MINUS(args) if ((args) != actual_result) no_op++
+#define REPLACE_EXPR_LNOT(args) if ((args) != actual_result) no_op++
+#define REPLACE_EXPR_INT_ZERO(args) if ((args) != actual_result) no_op++
+#define REPLACE_EXPR_INT_ONE(args) if ((args) != actual_result) no_op++
+#define REPLACE_EXPR_INT_MINUS_ONE(args) if ((args) != actual_result) no_op++
+#define REPLACE_EXPR_INC(args) if ((args) != actual_result) no_op++
+#define REPLACE_EXPR_FALSE(args) if ((args) != actual_result) no_op++
+#define REPLACE_EXPR_DEC(args) if ((args) != actual_result) no_op++
+#define REPLACE_BINARY_Sub_arg1_int_arg2_int(arg1, arg2) if (!((((arg1)^(arg2)) & ((((arg1) ^ (((arg1)^(arg2)) & (~std::numeric_limits<int>::max())))-(arg2))^(arg2))) < 0) && (arg1 - arg2) != actual_result) no_op++
+#define REPLACE_BINARY_Rem_arg1_int_arg2_int(arg1, arg2) if (!(((arg2) == 0) || (((arg1) == std::numeric_limits<int>::lowest()) && ((arg2) == (-1)))) && (arg1 % arg2) != actual_result) no_op++
+#define REPLACE_BINARY_Mul_arg1_int_arg2_int(arg1, arg2) if (!((((arg1) > 0) && ((arg2) > 0) && ((arg1) > (std::numeric_limits<int>::max() / (arg2)))) || (((arg1) > 0) && ((arg2) <= 0) && ((arg2) < (std::numeric_limits<int>::lowest() / (arg1)))) || (((arg1) <= 0) && ((arg2) > 0) && ((arg1) < (std::numeric_limits<int>::lowest() / (arg2)))) || (((arg1) <= 0) && ((arg2) <= 0) && ((arg1) != 0) && ((arg2) < (std::numeric_limits<int>::max() / (arg1))))) && (arg1 * arg2) != actual_result) no_op++
+#define REPLACE_BINARY_LT_arg1_int_arg2_int(arg1, arg2) if ((arg1 < arg2) != actual_result) no_op++
+#define REPLACE_BINARY_GT_arg1_int_arg2_int(arg1, arg2) if ((arg1 > arg2) != actual_result) no_op++
+#define REPLACE_BINARY_EQ_arg1_bool_arg2_bool_LAnd(arg1, arg2) if ((arg1) && (arg1 == arg2) != actual_result) no_op++
+#define REPLACE_BINARY_Add_arg1_int_arg2_int(arg1, arg2) if (!((((arg1)>0) && ((arg2)>0) && ((arg1) > (std::numeric_limits<int>::max()-(arg2)))) || (((arg1)<0) && ((arg2)<0) && ((arg1) < (std::numeric_limits<int>::lowest()-(arg2))))) && (arg1 + arg2) != actual_result) no_op++
+#define REPLACE_BINARY_ARG2_LAnd(arg1, arg2) if ((arg1) && (arg2) != actual_result) no_op++
+#define REPLACE_BINARY_ARG2(arg2) if ((arg2) != actual_result) no_op++
+#define REPLACE_BINARY_ARG1(args) if ((args) != actual_result) no_op++
+#define MUTATION_PRELUDE(arg,type) type actual_result = (arg)
+static int __dredd_replace_expr_int_zero(int arg, int local_mutation_id) {
+  MUTATION_PRELUDE(arg,int);
+  REPLACE_EXPR_INT_ONE(1);
+  REPLACE_EXPR_INT_MINUS_ONE(-1);
+  return MUTATION_RETURN(arg);
+}
+
+static int __dredd_replace_expr_int_lvalue(int& arg, int local_mutation_id) {
+  MUTATION_PRELUDE(arg,int);
+  REPLACE_EXPR_INC(arg);
+  REPLACE_EXPR_DEC(arg);
+  return MUTATION_RETURN(arg);
+}
+
+static int __dredd_replace_expr_int(int arg, int local_mutation_id) {
+  MUTATION_PRELUDE(arg,int);
+  REPLACE_EXPR_LNOT(arg);
+  REPLACE_EXPR_NOT(arg);
+  REPLACE_EXPR_MINUS(arg);
+  REPLACE_EXPR_INT_ZERO(0);
+  REPLACE_EXPR_INT_ONE(1);
+  REPLACE_EXPR_INT_MINUS_ONE(-1);
+  return MUTATION_RETURN(arg);
+}
+
+static bool __dredd_replace_expr_bool_omit_false(bool arg, int local_mutation_id) {
+  MUTATION_PRELUDE(arg,bool);
+  REPLACE_EXPR_TRUE(true);
+  return MUTATION_RETURN(arg);
+}
+
+static bool __dredd_replace_expr_bool_before_logical_operator_argument(bool arg, int local_mutation_id) {
+  MUTATION_PRELUDE(arg,bool);
+  REPLACE_EXPR_TRUE(true);
+  REPLACE_EXPR_FALSE(false);
+  return MUTATION_RETURN(arg);
+}
+
+__attribute__((always_inline)) static int __dredd_replace_binary_operator_Div_arg1_int_arg2_int(int arg1, int arg2, int local_mutation_id) {
+  MUTATION_PRELUDE(arg1 / arg2,int);
+  REPLACE_BINARY_Add_arg1_int_arg2_int(arg1, arg2);
+  REPLACE_BINARY_Mul_arg1_int_arg2_int(arg1, arg2);
+  REPLACE_BINARY_Rem_arg1_int_arg2_int(arg1, arg2);
+  REPLACE_BINARY_Sub_arg1_int_arg2_int(arg1, arg2);
+  REPLACE_BINARY_ARG1(arg1);
+  REPLACE_BINARY_ARG2(arg2);
+  return MUTATION_RETURN(arg1 / arg2);
+}
+
+__attribute__((always_inline)) static bool __dredd_replace_binary_operator_NE_arg1_int_arg2_int_rhs_zero(int arg1, int arg2, int local_mutation_id) {
+  MUTATION_PRELUDE(arg1 != arg2,bool);
+  REPLACE_BINARY_GT_arg1_int_arg2_int(arg1, arg2);
+  REPLACE_BINARY_LT_arg1_int_arg2_int(arg1, arg2);
+  return MUTATION_RETURN(arg1 != arg2);
+}
+
+__attribute__((always_inline)) static bool __dredd_replace_binary_operator_LAnd_arg1_bool_arg2_bool(bool arg1, std::function<bool()> arg2, int local_mutation_id) {
+  MUTATION_PRELUDE(arg1 && arg2(),bool);
+  REPLACE_BINARY_EQ_arg1_bool_arg2_bool_LAnd(arg1, arg2());
+  REPLACE_BINARY_ARG1(arg1);
+  REPLACE_BINARY_ARG2_LAnd(arg1, arg2());
+  return MUTATION_RETURN(arg1 && arg2());
+}
+
+int foo(int a, int b) {
+  return __dredd_replace_expr_int(__dredd_replace_binary_operator_LAnd_arg1_bool_arg2_bool((__dredd_replace_expr_bool_omit_false(__dredd_replace_binary_operator_NE_arg1_int_arg2_int_rhs_zero(__dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(b, 0), 2) , __dredd_replace_expr_int_zero(0, 8), 10), 12)) , [&]() -> bool { return static_cast<bool>(__dredd_replace_expr_bool_before_logical_operator_argument((__dredd_replace_expr_int(__dredd_replace_binary_operator_Div_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(a, 13), 15) , __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(b, 21), 23), 29), 35)), 41)); }, 43), 46);
+}

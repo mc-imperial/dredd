@@ -25,8 +25,8 @@ static bool __dredd_enabled_mutation(int local_mutation_id) {
         if (!token.empty()) {
           int value = std::stoi(token);
           int local_value = value - 0;
-          if (local_value >= 0 && local_value < 41) {
-            enabled_bitset[local_value / 64] |= (1 << (local_value % 64));
+          if (local_value >= 0 && local_value < 8) {
+            enabled_bitset[local_value / 64] |= ((uint64_t) 1 << (local_value % 64));
             some_mutation_enabled = true;
           }
         }
@@ -39,52 +39,41 @@ static bool __dredd_enabled_mutation(int local_mutation_id) {
     initialized = true;
     __dredd_some_mutation_enabled = some_mutation_enabled;
   }
-  return (enabled_bitset[local_mutation_id / 64] & (1 << (local_mutation_id % 64))) != 0;
+  return (enabled_bitset[local_mutation_id / 64] & ((uint64_t) 1 << (local_mutation_id % 64))) != 0;
 }
 
 #define MUTATION_RETURN(arg) arg
-#define REPLACE_UNARY_Not(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return arg
-#define REPLACE_UNARY_LNot(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return arg
-#define REPLACE_UNARY_ARG(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return arg
-#define REPLACE_EXPR_NOT(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return ~(arg)
-#define REPLACE_EXPR_MINUS(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return -(arg)
-#define REPLACE_EXPR_LNOT(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return !(arg)
-#define REPLACE_EXPR_INT_ZERO(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return 0
-#define REPLACE_EXPR_INT_ONE(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return 1
-#define REPLACE_EXPR_INT_MINUS_ONE(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return -1
-#define REPLACE_EXPR_INC(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return ++(arg)
-#define REPLACE_EXPR_DEC(mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return --(arg)
+#define REPLACE_EXPR_NOT(args, mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return args
+#define REPLACE_EXPR_MINUS(args, mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return args
+#define REPLACE_EXPR_LNOT(args, mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return args
+#define REPLACE_EXPR_INT_ZERO(args, mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return args
+#define REPLACE_EXPR_INT_ONE(args, mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return args
+#define REPLACE_EXPR_INT_MINUS_ONE(args, mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return args
+#define REPLACE_EXPR_INC(args, mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return args
+#define REPLACE_EXPR_DEC(args, mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return args
 #define MUTATION_PRELUDE(arg) if (!__dredd_some_mutation_enabled) return arg
-static int __dredd_replace_unary_operator_Minus_int(int arg, int local_mutation_id) {
-  MUTATION_PRELUDE(-arg);
-  REPLACE_UNARY_Not(0);
-  REPLACE_UNARY_LNot(1);
-  REPLACE_UNARY_ARG(2);
-  return MUTATION_RETURN(-arg);
-}
-
 static int __dredd_replace_expr_int_lvalue(int& arg, int local_mutation_id) {
   MUTATION_PRELUDE(arg);
-  REPLACE_EXPR_INC(0);
-  REPLACE_EXPR_DEC(1);
+  REPLACE_EXPR_INC(arg, 0);
+  REPLACE_EXPR_DEC(arg, 1);
   return MUTATION_RETURN(arg);
 }
 
 static int __dredd_replace_expr_int(int arg, int local_mutation_id) {
   MUTATION_PRELUDE(arg);
-  REPLACE_EXPR_LNOT(0);
-  REPLACE_EXPR_NOT(1);
-  REPLACE_EXPR_MINUS(2);
-  REPLACE_EXPR_INT_ZERO(3);
-  REPLACE_EXPR_INT_ONE(4);
-  REPLACE_EXPR_INT_MINUS_ONE(5);
+  REPLACE_EXPR_LNOT(arg, 0);
+  REPLACE_EXPR_NOT(arg, 1);
+  REPLACE_EXPR_MINUS(arg, 2);
+  REPLACE_EXPR_INT_ZERO(0, 3);
+  REPLACE_EXPR_INT_ONE(1, 4);
+  REPLACE_EXPR_INT_MINUS_ONE(-1, 5);
   return MUTATION_RETURN(arg);
 }
 
 void foo(int a) {
-  const int x = __dredd_replace_expr_int(0, 0);
-  const int y = __dredd_replace_expr_int(1, 6);
-  const int z = __dredd_replace_expr_int(__dredd_replace_unary_operator_Minus_int(__dredd_replace_expr_int(1, 12), 18), 21);
-  const int w = __dredd_replace_expr_int(2, 27);
-  const int v = __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(a, 33), 35);
+  const int x = 0;
+  const int y = 1;
+  const int z = -1;
+  const int w = 2;
+  const int v = __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(a, 0), 2);
 }

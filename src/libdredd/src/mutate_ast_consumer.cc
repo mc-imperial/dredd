@@ -237,7 +237,7 @@ std::string MutateAstConsumer::GetRegularDreddPreludeCpp(
     // this mutant. Then `local_value % 64` determines which bit of that element
     // needs to be set in order to enable the mutant, and a bitwise operation is
     // used to set the correct bit.
-    result << "            enabled_bitset[local_value / 64] |= (1 << "
+    result << "            enabled_bitset[local_value / 64] |= ((uint64_t) 1 << "
               "(local_value % 64));\n";
     // Note that at least one enabled mutation has been encountered.
     result << "            some_mutation_enabled = true;\n";
@@ -259,7 +259,7 @@ std::string MutateAstConsumer::GetRegularDreddPreludeCpp(
     result << "  }\n";
     // Similar to the above, a combination of division, modulo and bit-shifting
     // is used to look up whether this mutant is enabled in the bitset.
-    result << "  return (enabled_bitset[local_mutation_id / 64] & (1 << "
+    result << "  return (enabled_bitset[local_mutation_id / 64] & ((uint64_t) 1 << "
               "(local_mutation_id % 64))) != 0;\n";
     result << "}\n\n";
   }

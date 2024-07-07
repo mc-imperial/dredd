@@ -1,0 +1,40 @@
+static unsigned long long int no_op = 0;
+
+#include <inttypes.h>
+#include <stdbool.h>
+#include <stdlib.h>
+#include <string.h>
+
+#ifdef _MSC_VER
+#define thread_local __declspec(thread)
+#elif __APPLE__
+#define thread_local __thread
+#else
+#include <threads.h>
+#endif
+
+#include <limits.h>
+#include <float.h>
+#include <math.h>
+#define MUTATION_RETURN(arg) actual_result
+#define REPLACE_EXPR_FLOAT_ZERO(args) if ((args) != actual_result) no_op++
+#define REPLACE_EXPR_FLOAT_ONE(args) if ((args) != actual_result) no_op++
+#define REPLACE_EXPR_FLOAT_MINUS_ONE(args) if ((args) != actual_result) no_op++
+#define MUTATION_PRELUDE(arg,type) type actual_result = (arg)
+static double __dredd_replace_expr_double_one(double arg, int local_mutation_id) {
+  MUTATION_PRELUDE(arg,double);
+  REPLACE_EXPR_FLOAT_ZERO(0.0);
+  REPLACE_EXPR_FLOAT_MINUS_ONE(-1.0);
+  return MUTATION_RETURN(arg);
+}
+
+static double __dredd_replace_expr_double_minus_one(double arg, int local_mutation_id) {
+  MUTATION_PRELUDE(arg,double);
+  REPLACE_EXPR_FLOAT_ZERO(0.0);
+  REPLACE_EXPR_FLOAT_ONE(1.0);
+  return MUTATION_RETURN(arg);
+}
+
+int main() {
+  double x = __dredd_replace_expr_double_minus_one(-__dredd_replace_expr_double_one(1.0, 0), 2);
+}
