@@ -133,7 +133,7 @@ std::string GenerateMutationPrelude(bool semantics_preserving_mutation);
 
 std::string GenerateUnaryMacroCall(const std::string& macro_name,
                                    const std::string& arg_evaluated,
-                                   int& mutation_id_offset,
+                                   const int& mutation_id_offset,
                                    const bool semantics_preserving_mutation);
 
 std::string GenerateMutationMacro(const std::string& name,

@@ -195,6 +195,12 @@ case "$(uname)" in
   # due to differences in how certain builtin types, such as size_t and
   # uint64_t, expand. For simplicity, remove them before running single-file
   # tests.
+  rm test/single_file/do_not_mutate_under_alignof.cc
+  rm test/single_file/do_not_mutate_under_alignof.cc.expected
+  rm test/single_file/do_not_mutate_under_alignof.cc.noopt.expected
+  rm test/single_file/do_not_mutate_under_sizeof.c
+  rm test/single_file/do_not_mutate_under_sizeof.c.expected
+  rm test/single_file/do_not_mutate_under_sizeof.c.noopt.expected
   rm test/single_file/initializer_list.cc
   rm test/single_file/initializer_list.cc.expected
   rm test/single_file/initializer_list.cc.noopt.expected

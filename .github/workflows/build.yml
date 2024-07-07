@@ -30,15 +30,15 @@ jobs:
           - Release
         # Manually list various Linux configurations.
         include:
-          # gcc-11
+          # gcc-12
           - os: ubuntu-22.04
             config: Debug
-            linux_cc: gcc-11
-            linux_cxx: g++-11
+            linux_cc: gcc-12
+            linux_cxx: g++-12
           - os: ubuntu-22.04
             config: Release
-            linux_cc: gcc-11
-            linux_cxx: g++-11
+            linux_cc: gcc-12
+            linux_cxx: g++-12
           # clang-15
           - os: ubuntu-22.04
             config: Debug

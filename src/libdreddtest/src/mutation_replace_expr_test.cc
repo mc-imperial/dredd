@@ -82,11 +82,11 @@ TEST(MutationReplaceExprTest, MutateSignedConstants) {
   const std::string expected_dredd_declaration =
       R"(static int __dredd_replace_expr_int_constant(int arg, int local_mutation_id) {
   MUTATION_PRELUDE(arg);
-  REPLACE_EXPR_NOT(0);
-  REPLACE_EXPR_MINUS(1);
-  REPLACE_EXPR_INT_ZERO(2);
-  REPLACE_EXPR_INT_ONE(3);
-  REPLACE_EXPR_INT_MINUS_ONE(4);
+  REPLACE_EXPR_NOT(arg, 0);
+  REPLACE_EXPR_MINUS(arg, 1);
+  REPLACE_EXPR_INT_ZERO(0, 2);
+  REPLACE_EXPR_INT_ONE(1, 3);
+  REPLACE_EXPR_INT_MINUS_ONE(-1, 4);
   return MUTATION_RETURN(arg);
 }
 
@@ -104,9 +104,9 @@ TEST(MutationReplaceExprTest, MutateUnsignedConstants) {
   const std::string expected_dredd_declaration =
       R"(static unsigned int __dredd_replace_expr_unsigned_int_constant(unsigned int arg, int local_mutation_id) {
   MUTATION_PRELUDE(arg);
-  REPLACE_EXPR_NOT(0);
-  REPLACE_EXPR_INT_ZERO(1);
-  REPLACE_EXPR_INT_ONE(2);
+  REPLACE_EXPR_NOT(arg, 0);
+  REPLACE_EXPR_INT_ZERO(0, 1);
+  REPLACE_EXPR_INT_ONE(1, 2);
   return MUTATION_RETURN(arg);
 }
 
@@ -123,10 +123,10 @@ TEST(MutationReplaceExprTest, MutateFloatConstants) {
   const std::string expected_dredd_declaration =
       R"(static double __dredd_replace_expr_double(double arg, int local_mutation_id) {
   MUTATION_PRELUDE(arg);
-  REPLACE_EXPR_MINUS(0);
-  REPLACE_EXPR_FLOAT_ZERO(1);
-  REPLACE_EXPR_FLOAT_ONE(2);
-  REPLACE_EXPR_FLOAT_MINUS_ONE(3);
+  REPLACE_EXPR_MINUS(arg, 0);
+  REPLACE_EXPR_FLOAT_ZERO(0.0, 1);
+  REPLACE_EXPR_FLOAT_ONE(1.0, 2);
+  REPLACE_EXPR_FLOAT_MINUS_ONE(-1.0, 3);
   return MUTATION_RETURN(arg);
 }
 
@@ -152,8 +152,8 @@ TEST(MutationReplaceExprTest, MutateLValues) {
   const std::string expected_dredd_declaration =
       R"(static int __dredd_replace_expr_int_lvalue(int& arg, int local_mutation_id) {
   MUTATION_PRELUDE(arg);
-  REPLACE_EXPR_INC(0);
-  REPLACE_EXPR_DEC(1);
+  REPLACE_EXPR_INC(arg, 0);
+  REPLACE_EXPR_DEC(arg, 1);
   return MUTATION_RETURN(arg);
 }
 
@@ -193,12 +193,12 @@ int neg(int x) {
   const std::string expected_dredd_declaration =
       R"(static int __dredd_replace_expr_int(int arg, int local_mutation_id) {
   MUTATION_PRELUDE(arg);
-  REPLACE_EXPR_LNOT(0);
-  REPLACE_EXPR_NOT(1);
-  REPLACE_EXPR_MINUS(2);
-  REPLACE_EXPR_INT_ZERO(3);
-  REPLACE_EXPR_INT_ONE(4);
-  REPLACE_EXPR_INT_MINUS_ONE(5);
+  REPLACE_EXPR_LNOT(arg, 0);
+  REPLACE_EXPR_NOT(arg, 1);
+  REPLACE_EXPR_MINUS(arg, 2);
+  REPLACE_EXPR_INT_ZERO(0, 3);
+  REPLACE_EXPR_INT_ONE(1, 4);
+  REPLACE_EXPR_INT_MINUS_ONE(-1, 5);
   return MUTATION_RETURN(arg);
 }
 
@@ -224,7 +224,7 @@ bool foo(bool a, bool b) {
   const std::string expected_dredd_declaration =
       R"(static bool __dredd_replace_expr_bool_omit_true(bool arg, int local_mutation_id) {
   MUTATION_PRELUDE(arg);
-  REPLACE_EXPR_FALSE(0);
+  REPLACE_EXPR_FALSE(false, 0);
   return MUTATION_RETURN(arg);
 }
 
@@ -250,7 +250,7 @@ bool foo(bool a, bool b) {
   const std::string expected_dredd_declaration =
       R"(static bool __dredd_replace_expr_bool_omit_false(bool arg, int local_mutation_id) {
   MUTATION_PRELUDE(arg);
-  REPLACE_EXPR_TRUE(0);
+  REPLACE_EXPR_TRUE(true, 0);
   return MUTATION_RETURN(arg);
 }
 

@@ -334,7 +334,6 @@ MutationReplaceBinaryOperator::GenerateBinaryOperatorReplacementMacro(
       binary_operator_->getRHS()->getType()->getAs<clang::BuiltinType>();
 
   std::string result = "#define " + name + "(arg1, arg2) if (";
-  std::string safe_math_check;
   switch (operator_kind) {
     case clang::BO_MulAssign:
     case clang::BO_Mul:
@@ -1027,7 +1026,7 @@ void MutationReplaceBinaryOperator::ReplaceOperator(
     const std::string& lhs_type, const std::string& rhs_type,
     const std::string& new_function_name, clang::ASTContext& ast_context,
     const clang::Preprocessor& preprocessor, int first_mutation_id_in_file,
-    int& mutation_id, clang::Rewriter& rewriter) const {
+    int mutation_id, clang::Rewriter& rewriter) const {
   const clang::SourceRange lhs_source_range_in_main_file =
       GetSourceRangeInMainFile(preprocessor, *binary_operator_->getLHS());
   assert(lhs_source_range_in_main_file.isValid() && "Invalid source range.");
