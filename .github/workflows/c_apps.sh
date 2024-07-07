@@ -81,6 +81,12 @@ popd
 # Check that dredd works on some projects
 DREDD_EXECUTABLE="${DREDD_ROOT}/third_party/clang+llvm/bin/dredd"
 cp "${DREDD_ROOT}/build/src/dredd/dredd" "${DREDD_EXECUTABLE}"
+if [ "$SEMANTICS_PRESERVING" == "true" ]; then
+  DREDD_SEMANTICS_PRESERVING="--semantics-preserving-coverage-instrumentation"
+else
+  DREDD_SEMANTICS_PRESERVING=""
+fi
+
 
 echo "Curl"
 date
@@ -98,7 +104,7 @@ pushd curl
       FILES+=("${f}")
   done
 
-  "${DREDD_EXECUTABLE}" --mutation-info-file temp.json -p "build/compile_commands.json" "${FILES[@]}"
+  "${DREDD_EXECUTABLE}" $DREDD_SEMANTICS_PRESERVING --mutation-info-file temp.json -p "build/compile_commands.json" "${FILES[@]}"
   pushd build
     ninja
     # TODO: run some tests
@@ -127,7 +133,7 @@ pushd zstd
   do
     FILES+=("${f}")
   done
-  "${DREDD_EXECUTABLE}" --mutation-info-file temp.json -p "temp/compile_commands.json" "${FILES[@]}"
+  "${DREDD_EXECUTABLE}" $DREDD_SEMANTICS_PRESERVING --mutation-info-file temp.json -p "temp/compile_commands.json" "${FILES[@]}"
   # Build mutated zstd
   make clean
   CFLAGS=-O0 make zstd-release
