@@ -123,7 +123,7 @@ bool MutateVisitor::TraverseDecl(clang::Decl* decl) {
     }
   }
   if (const auto* var_decl = llvm::dyn_cast<clang::VarDecl>(decl)) {
-    if (var_decl->isConstexpr() || var_decl->hasConstantInitialization()) {
+    if (var_decl->isConstexpr() || var_decl->hasAttr<clang::ConstInitAttr>()) {
       // Because Dredd's mutations occur dynamically, they cannot be applied to
       // C++ constexprs or variables that require constant initialization as
       // these both require compile-time evaluation.
