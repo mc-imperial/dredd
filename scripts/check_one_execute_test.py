@@ -116,6 +116,9 @@ print("Success!")
 # Clean up and change back to current directory
 os.remove(f'harness.{extension}')
 os.remove(f'tomutate.{extension}')
-os.remove('test_executable')
 os.remove('temp.json')
+if os.name == 'nt':
+    os.remove('test_executable.exe')
+else:
+    os.remove('test_executable')
 os.chdir(original_dir)
