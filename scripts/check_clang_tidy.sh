@@ -23,4 +23,5 @@ shift
 
 cd "${DREDD_REPO_ROOT}"
 
-dredd_cc_files.sh | xargs -t clang-tidy -p="${COMPILE_COMMANDS}"
+clang-tidy --dump-config
+dredd_cc_files.sh | xargs -t clang-tidy -p="${COMPILE_COMMANDS}" -config="{Checks: '*', CheckOptions: [{key: readability-function-cognitive-complexity.Threshold, value: 100}]}"

@@ -599,7 +599,7 @@ void MutationReplaceBinaryOperator::GenerateArgumentReplacement(
         MutationReplaceExpr::ExprIsEquivalentToFloat(
             *binary_operator_->getLHS(), -1.0, ast_context))) {
     if (!only_track_mutant_coverage) {
-      std::string macro_name = "REPLACE_BINARY_ARG1";
+      const std::string macro_name = "REPLACE_BINARY_ARG1";
 
       new_function << "  "
                    << GenerateUnaryMacroCall(macro_name, arg1_evaluated,
@@ -632,7 +632,7 @@ void MutationReplaceBinaryOperator::GenerateArgumentReplacement(
         MutationReplaceExpr::ExprIsEquivalentToFloat(
             *binary_operator_->getRHS(), -1.0, ast_context))) {
     if (!only_track_mutant_coverage) {
-      std::string macro_name = "REPLACE_BINARY_ARG2";
+      const std::string macro_name = "REPLACE_BINARY_ARG2";
       new_function << "  " << macro_name;
 
       std::string macro;

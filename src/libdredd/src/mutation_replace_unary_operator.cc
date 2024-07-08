@@ -225,7 +225,7 @@ std::string MutationReplaceUnaryOperator::GenerateMutatorFunction(
       // updated.
       // TODO(JLJ): The knowledge that the last char of the type of an
       // assignment will always be & or * is duplicated.
-      std::string non_reference_type =
+      const std::string non_reference_type =
           input_type.substr(0, input_type.size() - 1);
       new_function << "  " << non_reference_type
                    << " arg_original = " << arg_evaluated << ";\n";
