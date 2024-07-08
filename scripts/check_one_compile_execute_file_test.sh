@@ -79,6 +79,7 @@ do
     # Compare actual output with expected output
     diff ${expected_output} ${copy_of_f}.actual
 
+    # Clean up for next iteration
     rm ${copy_of_f}.actual
 done
 
