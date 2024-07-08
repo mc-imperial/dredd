@@ -74,9 +74,9 @@ cmd = [os.getcwd() + os.sep + 'test_executable']
 original_result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 if original_result.returncode != 0:
     print("Error running non-mutated executable")
-    print(original_result.stderr.decode('utf-8').strip())
+    print(original_result.stderr.decode('utf-8'))
     sys.exit(3)
-actual_original_output = original_result.stdout.decode('utf-8')
+actual_original_output = original_result.stdout.decode('utf-8').strip()
 if expected_original_output != actual_original_output:
     print("Unexpected output from non-mutated execution.")
     print("Expected: " + expected_original_output)
