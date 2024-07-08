@@ -84,7 +84,7 @@ if expected_original_output != actual_original_output:
     sys.exit(4)
 
 # Get the number of mutants that are available.
-cmd = ['query_mutant_info.py', '--largest-mutant-id', 'temp.json']
+cmd = ['python3', Path(DREDD_REPO_ROOT, 'scripts', 'query_mutant_info.py'), '--largest-mutant-id', 'temp.json']
 largest_mutant_id_result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 if largest_mutant_id_result.returncode != 0:
     print("Error finding largest mutant id.")
