@@ -248,3 +248,5 @@ case "$(uname)" in
   exit 1
   ;;
 esac
+
+DREDD_SKIP_COPY_EXECUTABLE=1 ./scripts/check_single_file_tests.py
