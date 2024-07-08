@@ -17,7 +17,6 @@
 #include <functional>
 #include <memory>
 #include <string>
-#include <vector>
 
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/Expr.h"
