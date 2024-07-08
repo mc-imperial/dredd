@@ -44,7 +44,7 @@ shutil.copy(src=test_directory / f'tomutate.{extension}',
             dst=f'tomutate.{extension}')
 
 # Get the expected output from the original test, and the set of expected mutant outputs.
-expected_original_output = open(test_directory / 'original.txt', 'r').read()
+expected_original_output = open(test_directory / 'original.txt', 'r').read().strip()
 expected_mutant_outputs = set()
 for line in open(test_directory / 'mutants.txt', 'r').readlines():
     component = line.split(';')[0].strip()
@@ -74,7 +74,7 @@ cmd = [os.getcwd() + os.sep + 'test_executable']
 original_result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 if original_result.returncode != 0:
     print("Error running non-mutated executable")
-    print(original_result.stderr.decode('utf-8'))
+    print(original_result.stderr.decode('utf-8').strip())
     sys.exit(3)
 actual_original_output = original_result.stdout.decode('utf-8')
 if expected_original_output != actual_original_output:
