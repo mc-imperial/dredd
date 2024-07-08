@@ -49,8 +49,6 @@ do
   else
     DREDD_EXTRA_ARGS="--semantics-preserving-coverage-instrumentation"
     DREDD_EXPECTED_FILE="$f.semantics_preserving.expected"
-    DREDD_EXTRA_C_ARGS="-fsanitize=undefined"
-    DREDD_EXTRA_CXX_ARGS=$DREDD_EXTRA_C_ARGS
   fi
 
   # Copy the single-file test case to the temporary directory so

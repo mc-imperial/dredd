@@ -1,0 +1,80 @@
+#include <cstdint>
+
+// Number wraps integer, enforcing explicit casting
+static unsigned long long int no_op = 0;
+
+#include <cinttypes>
+#include <cstddef>
+#include <functional>
+#include <string>
+
+
+#ifdef _MSC_VER
+#define thread_local __declspec(thread)
+#elif __APPLE__
+#define thread_local __thread
+#endif
+
+#include <limits>
+#include <cmath>
+#define MUTATION_RETURN(arg) actual_result
+#define REPLACE_EXPR_NOT(args) if ((args) != actual_result) no_op++
+#define REPLACE_EXPR_LNOT(args) if ((args) != actual_result) no_op++
+#define REPLACE_EXPR_INT_ZERO(args) if ((args) != actual_result) no_op++
+#define REPLACE_EXPR_INT_ONE(args) if ((args) != actual_result) no_op++
+#define REPLACE_EXPR_INT_MINUS_ONE(args) if ((args) != actual_result) no_op++
+#define REPLACE_EXPR_INC(args) if ((args) != actual_result) no_op++
+#define REPLACE_EXPR_DEC(args) if ((args) != actual_result) no_op++
+#define MUTATION_PRELUDE(arg,type) type actual_result = (arg)
+static unsigned long long __dredd_replace_expr_unsigned_long_long_lvalue(unsigned long long& arg, int local_mutation_id) {
+  MUTATION_PRELUDE(arg,unsigned long long);
+  REPLACE_EXPR_INC(arg);
+  REPLACE_EXPR_DEC(arg);
+  return MUTATION_RETURN(arg);
+}
+
+static unsigned long long __dredd_replace_expr_unsigned_long_long(unsigned long long arg, int local_mutation_id) {
+  MUTATION_PRELUDE(arg,unsigned long long);
+  REPLACE_EXPR_LNOT(arg);
+  REPLACE_EXPR_NOT(arg);
+  REPLACE_EXPR_INT_ZERO(0);
+  REPLACE_EXPR_INT_ONE(1);
+  return MUTATION_RETURN(arg);
+}
+
+static unsigned int __dredd_replace_expr_unsigned_int(unsigned int arg, int local_mutation_id) {
+  MUTATION_PRELUDE(arg,unsigned int);
+  REPLACE_EXPR_LNOT(arg);
+  REPLACE_EXPR_NOT(arg);
+  REPLACE_EXPR_INT_ZERO(0);
+  REPLACE_EXPR_INT_ONE(1);
+  return MUTATION_RETURN(arg);
+}
+
+static int __dredd_replace_expr_int_zero(int arg, int local_mutation_id) {
+  MUTATION_PRELUDE(arg,int);
+  REPLACE_EXPR_INT_ONE(1);
+  REPLACE_EXPR_INT_MINUS_ONE(-1);
+  return MUTATION_RETURN(arg);
+}
+
+struct Number {
+    
+    uint32_t value = {};
+    
+    explicit Number(unsigned long long int v) : value(__dredd_replace_expr_unsigned_int(static_cast<uint32_t>(__dredd_replace_expr_unsigned_long_long_lvalue(v, 0)), 2)) {}
+
+};
+
+using u32 = Number;
+
+inline u32 operator""_u(unsigned long long int value) {
+    return u32(__dredd_replace_expr_unsigned_long_long(static_cast<uint32_t>(__dredd_replace_expr_unsigned_long_long_lvalue(value, 6)), 8));
+}
+
+int main() {
+    
+    u32 foo = 1_u;
+
+    return __dredd_replace_expr_int_zero(0, 13);
+}
