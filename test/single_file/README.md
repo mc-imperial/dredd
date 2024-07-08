@@ -6,7 +6,7 @@ when using Dredd, a test case should be added to this test set in
 response. The test case should ensure that Dredd produces the expected
 output on a given input program.
 
-A test case consists of a `.cc` file and a corresponding `.expected`
+A test case consists of a `.c` or `.cc` file and a corresponding `.expected`
 file.
 
 The `check_single_file_tests.sh` script can be used to run Dredd on
