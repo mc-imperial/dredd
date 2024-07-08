@@ -61,9 +61,11 @@ const RequiredParentT* MutateVisitor::GetFirstParentOfType(
 }
 
 MutateVisitor::MutateVisitor(const clang::CompilerInstance& compiler_instance,
-                             bool optimise_mutations)
+                             bool optimise_mutations,
+                             bool semantics_preserving_mutation)
     : compiler_instance_(&compiler_instance),
       optimise_mutations_(optimise_mutations),
+      semantics_preserving_mutation_(semantics_preserving_mutation),
       mutation_tree_root_() {
   mutation_tree_path_.push_back(&mutation_tree_root_);
 }
@@ -388,6 +390,15 @@ void MutateVisitor::HandleBinaryOperator(
   if (binary_operator->isCommaOp()) {
     // The comma operator is so versatile that it does not make a great deal of
     // sense to try to rewrite it.
+    return;
+  }
+
+  if (semantics_preserving_mutation_ &&
+      binary_operator->getOpcode() == clang::BinaryOperatorKind::BO_Assign) {
+    // In order for it to be safe to replace assignment with another form of
+    // assignment, we need to know that the left hand side of the binary
+    // operator is defined. Since we cannot guarantee this, avoid mutating
+    // assignment in semantics_preserving mode.
     return;
   }
 

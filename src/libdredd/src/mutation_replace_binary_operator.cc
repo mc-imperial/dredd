@@ -835,6 +835,20 @@ std::string MutationReplaceBinaryOperator::GenerateMutatorFunction(
 
   if (!only_track_mutant_coverage) {
     if (semantics_preserving_mutation) {
+      // For assignment operators, we must store the value of arg1 before
+      // assigning to it so that the mutant killing checks are correct.
+      if (ast_context.getLangOpts().CPlusPlus &&
+          binary_operator_->isAssignmentOp()) {
+        // We need to assign to a non reference type to avoid the copy getting
+        // updated.
+        // TODO(JLJ): The knowledge that the last char of the type of an
+        // assignment will always be & or * is duplicated.
+        std::string non_reference_type =
+            lhs_type.substr(0, lhs_type.size() - 1);
+        new_function << "  " << non_reference_type
+                     << " arg1_original = " << arg1_evaluated << ";\n";
+      }
+
       // If the first operand to a logical operator is side-effecting, store the
       // result to avoid having to evaluate it multiple times.
       if (ast_context.getLangOpts().CPlusPlus &&
@@ -880,6 +894,13 @@ std::string MutationReplaceBinaryOperator::GenerateMutatorFunction(
                  << " " << arg2_evaluated;
     if (semantics_preserving_mutation) {
       new_function << "," << result_type;
+      if (ast_context.getLangOpts().CPlusPlus &&
+          binary_operator_->isAssignmentOp()) {
+        // After doing the original mutation with MUTATION_PRELUDE, use
+        // arg1_original so the mutants are checked against the value of arg1
+        // before being assigned to.
+        arg1_evaluated = "arg1_original";
+      }
     }
 
     new_function << ");\n";
