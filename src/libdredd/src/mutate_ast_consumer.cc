@@ -144,19 +144,19 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
           ? GetDreddPreludeCpp(initial_mutation_id)
           : GetDreddPreludeC(initial_mutation_id);
 
+  if (semantics_preserving_mutation_) {
+    // TODO(JLJ): This should probably be moved to the prelude function.
+    bool rewriter_result = rewriter_.InsertTextBefore(
+        start_location_of_first_function_in_source_file,
+        "static thread_local unsigned long long int no_op = 0;\n\n");
+    (void)rewriter_result;  // Keep release-mode compilers happy.
+    assert(!rewriter_result && "Rewrite failed.\n");
+  }
+
   bool rewriter_result = rewriter_.InsertTextBefore(
       start_location_of_first_function_in_source_file, dredd_prelude);
   (void)rewriter_result;  // Keep release-mode compilers happy.
   assert(!rewriter_result && "Rewrite failed.\n");
-
-  if (semantics_preserving_mutation_) {
-    // TODO(JLJ): This should probably be moved to the prelude function.
-    rewriter_result = rewriter_.InsertTextBefore(
-        start_location_of_first_function_in_source_file,
-        "static unsigned long long int no_op = 0;\n\n");
-    (void)rewriter_result;  // Keep release-mode compilers happy.
-    assert(!rewriter_result && "Rewrite failed.\n");
-  }
 
   rewriter_result = rewriter_.overwriteChangedFiles();
   (void)rewriter_result;  // Keep release mode compilers happy

@@ -7,8 +7,6 @@ struct A {
 
 void foo(A arg);
 
-static unsigned long long int no_op = 0;
-
 #include <cinttypes>
 #include <cstddef>
 #include <functional>
@@ -23,6 +21,8 @@ static unsigned long long int no_op = 0;
 
 #include <limits>
 #include <cmath>
+static thread_local unsigned long long int no_op = 0;
+
 #define MUTATION_RETURN(arg) actual_result
 #define MUTATION_PRELUDE(arg,type) type actual_result = (arg)
 void bar() {

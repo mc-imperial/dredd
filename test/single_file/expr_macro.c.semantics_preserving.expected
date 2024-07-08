@@ -2,8 +2,6 @@
 
 void foo(int, int, int);
 
-static unsigned long long int no_op = 0;
-
 #include <inttypes.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -20,6 +18,8 @@ static unsigned long long int no_op = 0;
 #include <limits.h>
 #include <float.h>
 #include <math.h>
+static thread_local unsigned long long int no_op = 0;
+
 #define MUTATION_RETURN(arg) actual_result
 #define MUTATION_PRELUDE(arg,type) type actual_result = (arg)
 int main() {
