@@ -249,4 +249,4 @@ case "$(uname)" in
   ;;
 esac
 
-DREDD_SKIP_COPY_EXECUTABLE=1 ./scripts/check_single_file_tests.py
+DREDD_SKIP_COPY_EXECUTABLE=1 ./scripts/check_execute_tests.py
