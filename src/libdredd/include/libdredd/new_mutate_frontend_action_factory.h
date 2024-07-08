@@ -29,6 +29,6 @@ NewMutateFrontendActionFactory(
     bool only_track_mutant_coverage, int& mutation_id,
     std::optional<protobufs::MutationInfo>& mutation_info);
 
-}
+}  // namespace dredd
 
 #endif  // LIBDREDD_NEW_MUTATE_FRONTEND_ACTION_FACTORY_H

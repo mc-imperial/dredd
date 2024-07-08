@@ -35,7 +35,8 @@ def exclude_dirname(f: str):
             "__pycache__",
             ".pytest_cache",
             ".venv",
-            "single_file"
+            "single_file",
+            "execute",
         ]
     )
 
@@ -95,7 +96,7 @@ def exclude_filename(f: str):
 
 def go():
     fail = False
-    copyright_pattern = re.compile(r"Copyright 202[23] The Dredd Project Authors")
+    copyright_pattern = re.compile(r"Copyright 202[234] The Dredd Project Authors")
     generated_pattern = re.compile(r"[gG]enerated")
 
     for (dirpath, dirnames, filenames) in os.walk(os.curdir):

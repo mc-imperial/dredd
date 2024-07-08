@@ -21,8 +21,7 @@ set -x
 DREDD_INSTALLED_EXECUTABLE="${DREDD_REPO_ROOT}/third_party/clang+llvm/bin/dredd"
 
 # Move to the temporary directory
-cd "${DREDD_REPO_ROOT}"
-cd temp/
+pushd "${DREDD_REPO_ROOT}/temp"
 
 if [ -z "${DREDD_SKIP_COPY_EXECUTABLE+x}" ]
 then
@@ -75,7 +74,7 @@ do
     # this is needed on OSX to set an appropriate C++ standard.
     if [ -z "${DREDD_EXTRA_CXX_ARGS+x}" ]
     then
-      ${CXX} "${copy_of_f}" -c
+      ${CXX} -c "${copy_of_f}"
     else
       ${CXX} "${DREDD_EXTRA_CXX_ARGS}" -c "${copy_of_f}"
     fi
@@ -84,7 +83,7 @@ do
     # this is needed on Windows to set an appropriate C standard.
     if [ -z "${DREDD_EXTRA_C_ARGS+x}" ]
     then
-      ${CC} "${copy_of_f}" -c
+      ${CC} -c "${copy_of_f}"
     else
       ${CC} "${DREDD_EXTRA_C_ARGS}" -c "${copy_of_f}"
     fi
@@ -103,3 +102,5 @@ do
   rm -f "${copy_of_f%.*}".obj
 
 done
+
+popd
