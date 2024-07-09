@@ -447,15 +447,16 @@ void MutateVisitor::HandleExpr(clang::Expr* expr) {
       }
     }
 
-    // If an expression is the direct child of a compound statement then don't
-    // mutate it, because:
+    // If an expression is the direct child of a compound statement or switch
+    // case then don't mutate it, because:
     // - replacing it with a constant has the same effect as deleting it;
     // - if it is an r-value, inserting a unary operator has no effect;
     // - if it is an l-value, inserting an increment operator is fairly well
     // captured by inserting an increment before a future use of the l-value (it
     // is not exactly the same, because the future use could be dynamically
     // reached in different manners compared with this statement).
-    if (GetFirstParentOfType<clang::CompoundStmt>(*expr) != nullptr) {
+    if (GetFirstParentOfType<clang::CompoundStmt>(*expr) != nullptr ||
+        GetFirstParentOfType<clang::SwitchCase>(*expr) != nullptr) {
       return;
     }
   }
@@ -522,8 +523,22 @@ bool MutateVisitor::VisitExpr(clang::Expr* expr) {
 
 bool MutateVisitor::TraverseCompoundStmt(clang::CompoundStmt* compound_stmt) {
   for (auto* stmt : compound_stmt->body()) {
+    // A switch case (a 'case' or 'default') appears as a component of a
+    // compound statement, but it is the statement *after* the 'case' or
+    // 'default' label that should be considered for removal. This is because
+    // the 'if' check for statement removal must occur after the label, not
+    // before it, otherwise a branch to the label would branch straight into the
+    // body of the 'if' statement that simulates statement removal. Furthermore,
+    // if there are many 'case' or 'default' labels in a row, they are
+    // arranged hierarchically in the AST. We therefore traverse any such
+    // hierarchy until we reach a statement that is not a switch case, and it
+    // is this statement that is considered for removal.
+    clang::Stmt* target_stmt = stmt;
+    while (auto* switch_case = llvm::dyn_cast<clang::SwitchCase>(target_stmt)) {
+      target_stmt = switch_case->getSubStmt();
+    }
     if (optimise_mutations_) {
-      if (auto* expr = llvm::dyn_cast<clang::Expr>(stmt)) {
+      if (const auto* expr = llvm::dyn_cast<clang::Expr>(target_stmt)) {
         if (!expr->HasSideEffects(compiler_instance_->getASTContext())) {
           // There is no point mutating a side-effect free expression statement.
           continue;
@@ -535,20 +550,20 @@ bool MutateVisitor::TraverseCompoundStmt(clang::CompoundStmt* compound_stmt) {
     // mutations recorded in sibling subtrees of the mutation tree, a mutation
     // tree node is pushed per sub-statement.
     const PushMutationTreeRAII push_mutation_tree(*this);
-    TraverseStmt(stmt);
-    if (GetSourceRangeInMainFile(compiler_instance_->getPreprocessor(), *stmt)
+    TraverseStmt(target_stmt);
+    if (GetSourceRangeInMainFile(compiler_instance_->getPreprocessor(),
+                                 *target_stmt)
             .isInvalid() ||
-        llvm::dyn_cast<clang::NullStmt>(stmt) != nullptr ||
-        llvm::dyn_cast<clang::DeclStmt>(stmt) != nullptr ||
-        llvm::dyn_cast<clang::SwitchCase>(stmt) != nullptr ||
-        llvm::dyn_cast<clang::LabelStmt>(stmt) != nullptr) {
+        llvm::dyn_cast<clang::NullStmt>(target_stmt) != nullptr ||
+        llvm::dyn_cast<clang::DeclStmt>(target_stmt) != nullptr ||
+        llvm::dyn_cast<clang::LabelStmt>(target_stmt) != nullptr) {
       // Wrapping switch cases, labels and null statements in conditional code
       // has no effect. Declarations cannot be wrapped in conditional code
       // without risking breaking compilation.
       continue;
     }
     if (optimise_mutations_ &&
-        llvm::dyn_cast<clang::CompoundStmt>(stmt) != nullptr) {
+        llvm::dyn_cast<clang::CompoundStmt>(target_stmt) != nullptr) {
       // It is likely redundant to remove a compound statement since each of its
       // sub-statements will be considered for removal anyway.
       continue;
@@ -558,7 +573,7 @@ bool MutateVisitor::TraverseCompoundStmt(clang::CompoundStmt* compound_stmt) {
            "declaration.");
     mutation_tree_path_.back()->AddMutation(
         std::make_unique<MutationRemoveStmt>(
-            *stmt, compiler_instance_->getPreprocessor(),
+            *target_stmt, compiler_instance_->getPreprocessor(),
             compiler_instance_->getASTContext()));
   }
   return true;
