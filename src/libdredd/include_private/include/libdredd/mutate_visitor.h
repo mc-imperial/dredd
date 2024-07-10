@@ -170,6 +170,11 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
   template <typename RequiredParentT>
   const RequiredParentT* GetFirstParentOfType(const clang::Stmt& stmt) const;
 
+  // Mutating an enum constant can be problematic when the enum constant is used
+  // to implicitly construct a C++ object. This helper method allows detecting
+  // this special case, so that it can be ignored.
+  bool IsConversionOfEnumToConstructor(const clang::Expr& expr) const;
+
   const clang::CompilerInstance* compiler_instance_;
   bool optimise_mutations_;
 

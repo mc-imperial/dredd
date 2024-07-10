@@ -430,6 +430,10 @@ void MutateVisitor::HandleExpr(clang::Expr* expr) {
     }
   }
 
+  if (IsConversionOfEnumToConstructor(*expr)) {
+    return;
+  }
+
   if (optimise_mutations_) {
     // If an expression is the direct child of a cast expression, do not mutate
     // it unless the cast is an l-value to r-value cast. In an l-value to
@@ -582,6 +586,41 @@ bool MutateVisitor::TraverseCompoundStmt(clang::CompoundStmt* compound_stmt) {
 bool MutateVisitor::VisitVarDecl(clang::VarDecl* var_decl) {
   var_decl_source_locations_.insert(var_decl->getLocation());
   return true;
+}
+
+bool MutateVisitor::IsConversionOfEnumToConstructor(
+    const clang::Expr& expr) const {
+  // This avoids a special case identified by
+  // https://github.com/mc-imperial/dredd/issues/264. The issue arises when a
+  // ternary expression has the form "c ? Foo(...) : enum_constant", where Foo
+  // is a class/struct that can be implicitly constructed from an int, and that
+  // also has the int operator overloaded.
+  // In this case, the enum_constant is implicitly cast to an integer, which
+  // then implicitly constructs a Foo instance. If the implicit cast is mutated,
+  // the mutated code will lead to the conditional operator's third argument
+  // having type int. It is then ambiguous whether the second argument,
+  // Foo(...), should have type Foo, or type int, because Foo has the int
+  // operator overloaded.
+
+  // Check whether this expression is an implicit cast.
+  const auto* implicit_cast_expr =
+      llvm::dyn_cast<clang::ImplicitCastExpr>(&expr);
+  if (implicit_cast_expr == nullptr) {
+    return false;
+  }
+  // Check whether the parent expression is a C++ constructor.
+  if (GetFirstParentOfType<clang::CXXConstructExpr>(
+          expr, compiler_instance_->getASTContext()) == nullptr) {
+    return false;
+  }
+  // Check whether there is an enum constant under the implicit cast.
+  const auto* decl_ref_expr =
+      llvm::dyn_cast<clang::DeclRefExpr>(implicit_cast_expr->getSubExpr());
+  if (decl_ref_expr == nullptr) {
+    return false;
+  }
+  return llvm::dyn_cast<clang::EnumConstantDecl>(decl_ref_expr->getDecl()) !=
+         nullptr;
 }
 
 }  // namespace dredd
