@@ -685,17 +685,17 @@ bool MutationReplaceExpr::CanMutateLValue(clang::ASTContext& ast_context,
   if (expr.getType().isConstQualified() || expr.getType()->isBooleanType()) {
     return false;
   }
-  // The following checks that `expr` is the child of an ImplicitCastExpr that
-  // yields an r-value.
-  const auto* implicit_cast =
-      GetFirstParentOfType<clang::ImplicitCastExpr>(expr, ast_context);
-  if (implicit_cast == nullptr || implicit_cast->isLValue()) {
-    return false;
-  }
   // Bit-fields cannot be passed by reference, and mutator functions for
   // l-values must be passed by reference, hence bit-fields are not supported
   // in this context.
   if (expr.refersToBitField()) {
+    return false;
+  }
+  // The following checks that `expr` is the child of an ImplicitCastExpr that
+  // yields an r-value.
+  const auto* implicit_cast_expr =
+      GetFirstParentOfType<clang::ImplicitCastExpr>(expr, ast_context);
+  if (implicit_cast_expr == nullptr || implicit_cast_expr->isLValue()) {
     return false;
   }
   return true;
