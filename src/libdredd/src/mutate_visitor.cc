@@ -194,6 +194,13 @@ bool MutateVisitor::TraverseStmt(clang::Stmt* stmt) {
     }
   }
 
+  // Do not mutate the condition of a constexpr if statement.
+  if (const auto* if_stmt = GetFirstParentOfType<clang::IfStmt>(*stmt)) {
+    if (if_stmt->isConstexpr() && if_stmt->getCond() == stmt) {
+      return true;
+    }
+  }
+
   // Add a node to the mutation tree to capture any mutations beneath this
   // statement.
   const PushMutationTreeRAII push_mutation_tree(*this);
