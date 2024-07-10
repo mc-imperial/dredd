@@ -609,8 +609,7 @@ bool MutateVisitor::IsConversionOfEnumToConstructor(
     return false;
   }
   // Check whether the parent expression is a C++ constructor.
-  if (GetFirstParentOfType<clang::CXXConstructExpr>(
-          expr, compiler_instance_->getASTContext()) == nullptr) {
+  if (GetFirstParentOfType<clang::CXXConstructExpr>(expr) == nullptr) {
     return false;
   }
   // Check whether there is an enum constant under the implicit cast.
