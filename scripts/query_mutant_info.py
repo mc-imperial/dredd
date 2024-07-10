@@ -323,7 +323,8 @@ def main() -> int:
     mapping: Dict[int, MutantInfo] = build_mutant_to_node_mapping(json_info)
 
     if args.largest_mutant_id:
-        print(max(list(mapping)))
+        mutant_ids: List[int] = list(mapping.keys())
+        print(0 if not mutant_ids else max(mutant_ids))
         return 0
 
     if args.show_info_for_mutant is not None:
