@@ -26,7 +26,7 @@ static bool __dredd_enabled_mutation(int local_mutation_id) {
       while(token) {
         int value = atoi(token);
         int local_value = value - 0;
-        if (local_value >= 0 && local_value < 9) {
+        if (local_value >= 0 && local_value < 24) {
           enabled_bitset[local_value / 64] |= ((uint64_t) 1 << (local_value % 64));
           some_mutation_enabled = 1;
         }
@@ -38,6 +38,13 @@ static bool __dredd_enabled_mutation(int local_mutation_id) {
     __dredd_some_mutation_enabled = some_mutation_enabled;
   }
   return enabled_bitset[local_mutation_id / 64] & ((uint64_t) 1 << (local_mutation_id % 64));
+}
+
+static int __dredd_replace_unary_operator_Minus_int(int arg, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return -arg;
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return ~arg;
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return !arg;
+  return -arg;
 }
 
 static int __dredd_replace_expr_int(int arg, int local_mutation_id) {
@@ -59,6 +66,7 @@ struct S {
 void foo() {
   struct S myS;
   if (!__dredd_enabled_mutation(6)) { myS.a = __dredd_replace_expr_int(myS.b, 0); }
-  if (!__dredd_enabled_mutation(7)) { myS.a++; }
-  if (!__dredd_enabled_mutation(8)) { --myS.b; }
+  if (!__dredd_enabled_mutation(21)) { myS.a = __dredd_replace_expr_int(__dredd_replace_unary_operator_Minus_int(__dredd_replace_expr_int(myS.b, 7), 13), 15); }
+  if (!__dredd_enabled_mutation(22)) { myS.a++; }
+  if (!__dredd_enabled_mutation(23)) { --myS.b; }
 }

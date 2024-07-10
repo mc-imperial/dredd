@@ -6,6 +6,7 @@ struct S {
 void foo() {
   struct S myS;
   myS.a = myS.b;
+  myS.a = -myS.b;
   myS.a++;
   --myS.b;
 }

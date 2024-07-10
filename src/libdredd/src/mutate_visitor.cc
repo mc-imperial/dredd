@@ -302,9 +302,11 @@ void MutateVisitor::HandleUnaryOperator(clang::UnaryOperator* unary_operator) {
     return;
   }
 
-  // As it is not possible to pass bit-fields by reference, mutation of
-  // bit-fields is not supported.
-  if (unary_operator->getSubExpr()->refersToBitField()) {
+  // Mutation functions for ++ and -- operators require their argument to be
+  // passed by reference. It is not possible to pass bit-fields by reference,
+  // this mutation of these operators when applied to bit-fields is not
+  // supported.
+  if (unary_operator->isIncrementDecrementOp() && unary_operator->getSubExpr()->refersToBitField()) {
     return;
   }
 
