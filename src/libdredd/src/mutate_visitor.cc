@@ -368,9 +368,11 @@ void MutateVisitor::HandleBinaryOperator(
     return;
   }
 
-  // As it is not possible to pass bit-fields by reference, mutation of
-  // bit-fields is not supported.
-  if (binary_operator->getLHS()->refersToBitField()) {
+  // Mutation functions for assignment operators (for example +=) require their
+  // first argument to be passed by reference. It is not possible to pass
+  // bit-fields by reference, this mutation of these operators when applied to a
+  // bit-field first argument is not supported.
+  if (binary_operator->isAssignmentOp() && binary_operator->getLHS()->refersToBitField()) {
     return;
   }
 
