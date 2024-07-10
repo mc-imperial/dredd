@@ -26,7 +26,7 @@ static bool __dredd_enabled_mutation(int local_mutation_id) {
       while(token) {
         int value = atoi(token);
         int local_value = value - 0;
-        if (local_value >= 0 && local_value < 9) {
+        if (local_value >= 0 && local_value < 36) {
           enabled_bitset[local_value / 64] |= ((uint64_t) 1 << (local_value % 64));
           some_mutation_enabled = 1;
         }
@@ -40,6 +40,13 @@ static bool __dredd_enabled_mutation(int local_mutation_id) {
   return enabled_bitset[local_mutation_id / 64] & ((uint64_t) 1 << (local_mutation_id % 64));
 }
 
+static int __dredd_replace_expr_int_lvalue(int* arg, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return (*arg);
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return ++((*arg));
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return --((*arg));
+  return (*arg);
+}
+
 static int __dredd_replace_expr_int(int arg, int local_mutation_id) {
   if (!__dredd_some_mutation_enabled) return arg;
   if (__dredd_enabled_mutation(local_mutation_id + 0)) return !(arg);
@@ -51,11 +58,18 @@ static int __dredd_replace_expr_int(int arg, int local_mutation_id) {
   return arg;
 }
 
+#include <stdio.h>
+
 int main() {
-  if (!__dredd_enabled_mutation(8)) { switch(__dredd_replace_expr_int(0, 0)) {
-  case -1:
-    if (!__dredd_enabled_mutation(6)) { break; }
+  int x = __dredd_replace_expr_int(10, 0);
+  if (!__dredd_enabled_mutation(35)) { switch (__dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(&(x), 6), 8)) {
+  case 2:
+  case 3:
+  case 4:
+    if (!__dredd_enabled_mutation(20)) { __dredd_replace_expr_int(printf("bar\n"), 14); }
+    if (!__dredd_enabled_mutation(27)) { __dredd_replace_expr_int(printf("buz\n"), 21); }
+  case 5:
   default:
-    if (!__dredd_enabled_mutation(7)) { break; }
+    if (!__dredd_enabled_mutation(34)) { __dredd_replace_expr_int(printf("baz\n"), 28); }
   } }
 }

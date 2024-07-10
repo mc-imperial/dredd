@@ -1,0 +1,7 @@
+d_e_b_c_e_b_c_e_b_c_e_d_e_                 ; remove printf("a_")
+a_e_a_e_a_e_a_e_a_e_                       ; remove entire switch
+a_d_e_a_c_e_a_c_e_a_c_e_a_d_e_             ; remove printf("b_")
+a_d_e_a_b_e_a_b_e_a_b_e_a_d_e_             ; remove printf("c_")
+a_d_e_a_b_c_d_e_a_b_c_d_e_a_b_c_d_e_a_d_e_ ; remove break
+a_e_a_b_c_e_a_b_c_e_a_b_c_e_a_e_           ; remove printf("d_")
+a_d_a_b_c_a_b_c_a_b_c_a_d_                 ; remove printf("e_")
