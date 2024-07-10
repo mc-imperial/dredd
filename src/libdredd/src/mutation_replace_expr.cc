@@ -687,11 +687,8 @@ bool MutationReplaceExpr::CanMutateLValue(clang::ASTContext& ast_context,
   }
   // The following checks that `expr` is the child of an ImplicitCastExpr that
   // yields an r-value.
-  auto parents = ast_context.getParents<clang::Expr>(expr);
-  if (parents.size() != 1) {
-    return false;
-  }
-  const auto* implicit_cast = parents[0].get<clang::ImplicitCastExpr>();
+  const auto* implicit_cast =
+      GetFirstParentOfType<clang::ImplicitCastExpr>(expr, ast_context);
   if (implicit_cast == nullptr || implicit_cast->isLValue()) {
     return false;
   }
