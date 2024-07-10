@@ -695,6 +695,12 @@ bool MutationReplaceExpr::CanMutateLValue(clang::ASTContext& ast_context,
   if (implicit_cast == nullptr || implicit_cast->isLValue()) {
     return false;
   }
+  // Bit-fields cannot be passed by reference, and mutator functions for
+  // l-values must be passed by reference, hence bit-fields are not supported
+  // in this context.
+  if (expr.refersToBitField()) {
+    return false;
+  }
   return true;
 }
 
@@ -858,14 +864,12 @@ bool MutationReplaceExpr::
     return false;
   }
 
-  auto parents = ast_context.getParents<clang::Expr>(*expr_);
-  for (const auto& parent : parents) {
-    if (const auto* binary_operator = parent.get<clang::BinaryOperator>()) {
-      if (binary_operator->isLogicalOp() &&
-          (binary_operator->getLHS() == expr_ ||
-           binary_operator->getRHS() == expr_)) {
-        return true;
-      }
+  if (const auto* binary_operator =
+          GetFirstParentOfType<clang::BinaryOperator>(*expr_, ast_context)) {
+    if (binary_operator->isLogicalOp() &&
+        (binary_operator->getLHS() == expr_ ||
+         binary_operator->getRHS() == expr_)) {
+      return true;
     }
   }
   return false;

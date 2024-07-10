@@ -26,7 +26,6 @@
 #include "clang/AST/ExprCXX.h"
 #include "clang/AST/LambdaCapture.h"
 #include "clang/AST/OperationKinds.h"
-#include "clang/AST/ParentMapContext.h"
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/AST/Stmt.h"
 #include "clang/AST/TemplateBase.h"
@@ -45,19 +44,6 @@
 #include "llvm/Support/Casting.h"
 
 namespace dredd {
-
-template <typename RequiredParentT>
-const RequiredParentT* MutateVisitor::GetFirstParentOfType(
-    const clang::Stmt& stmt) const {
-  for (const auto& parent :
-       compiler_instance_->getASTContext().getParents(stmt)) {
-    const auto* candidate_result = parent.template get<RequiredParentT>();
-    if (candidate_result != nullptr) {
-      return candidate_result;
-    }
-  }
-  return nullptr;
-}
 
 MutateVisitor::MutateVisitor(const clang::CompilerInstance& compiler_instance,
                              bool optimise_mutations)
@@ -187,7 +173,8 @@ bool MutateVisitor::TraverseStmt(clang::Stmt* stmt) {
   // expressions, hence we ignore children of such expressions, rather than
   // ignoring the expressions themselves.
   if (const auto* unary_expr_or_type_trait_parent =
-          GetFirstParentOfType<clang::UnaryExprOrTypeTraitExpr>(*stmt)) {
+          GetFirstParentOfType<clang::UnaryExprOrTypeTraitExpr>(
+              *stmt, compiler_instance_->getASTContext())) {
     const auto kind = unary_expr_or_type_trait_parent->getKind();
     if (kind == clang::UETT_SizeOf || kind == clang::UETT_AlignOf) {
       return true;
@@ -195,7 +182,8 @@ bool MutateVisitor::TraverseStmt(clang::Stmt* stmt) {
   }
 
   // Do not mutate the condition of a constexpr if statement.
-  if (const auto* if_stmt = GetFirstParentOfType<clang::IfStmt>(*stmt)) {
+  if (const auto* if_stmt = GetFirstParentOfType<clang::IfStmt>(
+          *stmt, compiler_instance_->getASTContext())) {
     if (if_stmt->isConstexpr() && if_stmt->getCond() == stmt) {
       return true;
     }
@@ -306,7 +294,8 @@ void MutateVisitor::HandleUnaryOperator(clang::UnaryOperator* unary_operator) {
   // passed by reference. It is not possible to pass bit-fields by reference,
   // this mutation of these operators when applied to bit-fields is not
   // supported.
-  if (unary_operator->isIncrementDecrementOp() && unary_operator->getSubExpr()->refersToBitField()) {
+  if (unary_operator->isIncrementDecrementOp() &&
+      unary_operator->getSubExpr()->refersToBitField()) {
     return;
   }
 
@@ -372,7 +361,8 @@ void MutateVisitor::HandleBinaryOperator(
   // first argument to be passed by reference. It is not possible to pass
   // bit-fields by reference, this mutation of these operators when applied to a
   // bit-field first argument is not supported.
-  if (binary_operator->isAssignmentOp() && binary_operator->getLHS()->refersToBitField()) {
+  if (binary_operator->isAssignmentOp() &&
+      binary_operator->getLHS()->refersToBitField()) {
     return;
   }
 
@@ -415,12 +405,6 @@ void MutateVisitor::HandleExpr(clang::Expr* expr) {
     return;
   }
 
-  // As it is not possible to pass bit-fields by reference, mutation of
-  // bit-field l-values is not supported.
-  if (expr->refersToBitField()) {
-    return;
-  }
-
   // It is incorrect to attempt to mutate braced initializer lists.
   if (llvm::dyn_cast<clang::InitListExpr>(expr) != nullptr) {
     return;
@@ -433,8 +417,8 @@ void MutateVisitor::HandleExpr(clang::Expr* expr) {
           compiler_instance_->getASTContext(),
           clang::Expr::NullPointerConstantValueDependence()) !=
       clang::Expr::NPCK_NotNull) {
-    if (const auto* cast_parent =
-            GetFirstParentOfType<clang::CastExpr>(*expr)) {
+    if (const auto* cast_parent = GetFirstParentOfType<clang::CastExpr>(
+            *expr, compiler_instance_->getASTContext())) {
       if (cast_parent->getType()->isAnyPointerType()) {
         return;
       }
@@ -455,8 +439,8 @@ void MutateVisitor::HandleExpr(clang::Expr* expr) {
     // arising due to a change of type are unlikely to be all that interesting,
     // and r-value to r-value implicit casts are very common, e.g. occurring
     // whenever a signed literal, such as `1`, is used in an unsigned context.
-    if (const auto* cast_parent =
-            GetFirstParentOfType<clang::CastExpr>(*expr)) {
+    if (const auto* cast_parent = GetFirstParentOfType<clang::CastExpr>(
+            *expr, compiler_instance_->getASTContext())) {
       if (cast_parent->isLValue() == expr->isLValue()) {
         return;
       }
@@ -470,8 +454,10 @@ void MutateVisitor::HandleExpr(clang::Expr* expr) {
     // captured by inserting an increment before a future use of the l-value (it
     // is not exactly the same, because the future use could be dynamically
     // reached in different manners compared with this statement).
-    if (GetFirstParentOfType<clang::CompoundStmt>(*expr) != nullptr ||
-        GetFirstParentOfType<clang::SwitchCase>(*expr) != nullptr) {
+    if (GetFirstParentOfType<clang::CompoundStmt>(
+            *expr, compiler_instance_->getASTContext()) != nullptr ||
+        GetFirstParentOfType<clang::SwitchCase>(
+            *expr, compiler_instance_->getASTContext()) != nullptr) {
       return;
     }
   }
@@ -620,7 +606,8 @@ bool MutateVisitor::IsConversionOfEnumToConstructor(
     return false;
   }
   // Check whether the parent expression is a C++ constructor.
-  if (GetFirstParentOfType<clang::CXXConstructExpr>(expr) == nullptr) {
+  if (GetFirstParentOfType<clang::CXXConstructExpr>(
+          expr, compiler_instance_->getASTContext()) == nullptr) {
     return false;
   }
   // Check whether there is an enum constant under the implicit cast.

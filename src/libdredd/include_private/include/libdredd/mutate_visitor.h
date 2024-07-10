@@ -162,14 +162,6 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
   // }
   bool IsInFunction();
 
-  // It is often necessary to ask whether a given statement (which includes
-  // expressions) has a parent of a given type. This helper returns nullptr if
-  // the given statement has no parent of the template parameter type, and
-  // otherwise returns the first parent that does have the template parameter
-  // type.
-  template <typename RequiredParentT>
-  const RequiredParentT* GetFirstParentOfType(const clang::Stmt& stmt) const;
-
   // Mutating an enum constant can be problematic when the enum constant is used
   // to implicitly construct a C++ object. This helper method allows detecting
   // this special case, so that it can be ignored.
