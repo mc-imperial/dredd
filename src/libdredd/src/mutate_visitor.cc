@@ -18,7 +18,6 @@
 #include <cstddef>
 #include <memory>
 
-#include "clang/AST/ASTContext.h"
 #include "clang/AST/Attrs.inc"
 #include "clang/AST/Decl.h"
 #include "clang/AST/DeclBase.h"
