@@ -17,6 +17,7 @@
 #include <cassert>
 #include <cstddef>
 #include <memory>
+#include <optional>
 
 #include "clang/AST/Attrs.inc"
 #include "clang/AST/Decl.h"
