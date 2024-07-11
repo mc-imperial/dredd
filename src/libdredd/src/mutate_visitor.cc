@@ -190,10 +190,11 @@ bool MutateVisitor::TraverseStmt(clang::Stmt* stmt) {
     }
   }
 
-  // Do not mutate the array size expression of C++'s NewExpr. 
-  // For instance, we do not want to mutate `2` in new `a[2]{3, 4}`, 
+  // Do not mutate the array size expression of C++'s NewExpr.
+  // For instance, we do not want to mutate `2` in new `a[2]{3, 4}`,
   // as doing so requires type `a` to have zero-argument constructor.
-  if (const auto* cxx_new_expr = GetFirstParentOfType<clang::CXXNewExpr>(*stmt, compiler_instance_->getASTContext())) {
+  if (const auto* cxx_new_expr = GetFirstParentOfType<clang::CXXNewExpr>(
+          *stmt, compiler_instance_->getASTContext())) {
     if (cxx_new_expr->getArraySize() == stmt) {
       return true;
     }
