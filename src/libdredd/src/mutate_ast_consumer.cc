@@ -100,16 +100,16 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
   for (const auto& constant_sized_array_decl :
        visitor_->GetConstantSizedArraysToRewrite()) {
     assert(compiler_instance_->getLangOpts().CPlusPlus &&
-           constant_sized_array_decl->hasInit() &&
            constant_sized_array_decl->getType()->isConstantArrayType());
-    assert(llvm::dyn_cast<clang::DecompositionDecl>(
-               constant_sized_array_decl) == nullptr);
-    const auto* size_expr = constant_sized_array_decl->getTypeSourceInfo()
-                                ->getTypeLoc()
-                                .getAs<clang::ConstantArrayTypeLoc>()
-                                .getSizeExpr();
-    auto source_range_in_main_file = GetSourceRangeInMainFile(
-        compiler_instance_->getPreprocessor(), *size_expr);
+    auto constant_array_typeloc = constant_sized_array_decl->getTypeSourceInfo()
+                                      ->getTypeLoc()
+                                      .getAs<clang::ConstantArrayTypeLoc>();
+    if (constant_array_typeloc.isNull()) {
+      continue;
+    }
+    auto source_range_in_main_file =
+        GetSourceRangeInMainFile(compiler_instance_->getPreprocessor(),
+                                 *constant_array_typeloc.getSizeExpr());
     // We only consider the rewriting if the source range for the size
     // expression is in the main source file.
     if (source_range_in_main_file.isValid()) {

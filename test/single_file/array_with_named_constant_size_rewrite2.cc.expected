@@ -54,6 +54,6 @@ static int __dredd_replace_expr_int_constant(int arg, int local_mutation_id) {
 
 int a() {
   const int b = __dredd_replace_expr_int_constant(2, 0);
-  int c[b + b];
+  int c[4];
   if (!__dredd_enabled_mutation(10)) { return __dredd_replace_expr_int_constant(b, 5); }
 }
