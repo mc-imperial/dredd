@@ -34,8 +34,8 @@
 #include "clang/AST/TypeLoc.h"
 #include "clang/Basic/LangOptions.h"
 #include "clang/Basic/SourceLocation.h"
-#include "clang/Basic/TypeTraits.h"
 #include "clang/Basic/SourceManager.h"
+#include "clang/Basic/TypeTraits.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "libdredd/mutation.h"
 #include "libdredd/mutation_remove_stmt.h"
@@ -65,20 +65,16 @@ bool MutateVisitor::IsTypeSupported(const clang::QualType qual_type) {
 }
 
 void MutateVisitor::UpdateStartLocationOfFirstFunctionInSourceFile() {
-  for (int index = static_cast<int>(enclosing_decls_.size()) - 1; index >= 0;
-       index--) {
-    const auto* decl = enclosing_decls_[static_cast<size_t>(index)];
-    if (llvm::dyn_cast<clang::FunctionDecl>(decl) != nullptr) {
-      const clang::BeforeThanCompare<clang::SourceLocation> comparator(
-          compiler_instance_->getSourceManager());
-      auto source_range_in_main_file = GetSourceRangeInMainFile(
-          compiler_instance_->getPreprocessor(), *enclosing_decls_[0]);
-      if (start_location_of_first_function_in_source_file_.isInvalid() ||
-          comparator(source_range_in_main_file.getBegin(),
-                     start_location_of_first_function_in_source_file_)) {
-        start_location_of_first_function_in_source_file_ =
-            source_range_in_main_file.getBegin();
-      }
+  if (IsInFunction()) {
+    const clang::BeforeThanCompare<clang::SourceLocation> comparator(
+        compiler_instance_->getSourceManager());
+    auto source_range_in_main_file = GetSourceRangeInMainFile(
+        compiler_instance_->getPreprocessor(), *enclosing_decls_[0]);
+    if (start_location_of_first_function_in_source_file_.isInvalid() ||
+        comparator(source_range_in_main_file.getBegin(),
+                   start_location_of_first_function_in_source_file_)) {
+      start_location_of_first_function_in_source_file_ =
+          source_range_in_main_file.getBegin();
     }
   }
 }

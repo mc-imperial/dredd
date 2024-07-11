@@ -179,6 +179,8 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
   // this special case, so that it can be ignored.
   bool IsConversionOfEnumToConstructor(const clang::Expr& expr) const;
 
+  // It is safe to Dredd's prelude before the first function we encounter in a
+  // file as Dredd only makes source code modifications inside functions.
   void UpdateStartLocationOfFirstFunctionInSourceFile();
 
   const clang::CompilerInstance* compiler_instance_;
