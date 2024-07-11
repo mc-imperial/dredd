@@ -146,7 +146,7 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
 
   if (semantics_preserving_mutation_) {
     // TODO(JLJ): This should probably be moved to the prelude function.
-    bool rewriter_result = rewriter_.InsertTextBefore(
+    const bool rewriter_result = rewriter_.InsertTextBefore(
         start_location_of_first_function_in_source_file,
         "static thread_local unsigned long long int no_op = 0;\n\n");
     (void)rewriter_result;  // Keep release-mode compilers happy.

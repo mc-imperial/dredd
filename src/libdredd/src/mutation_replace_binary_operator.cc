@@ -843,7 +843,7 @@ std::string MutationReplaceBinaryOperator::GenerateMutatorFunction(
         // updated.
         // TODO(JLJ): The knowledge that the last char of the type of an
         // assignment will always be & or * is duplicated.
-        std::string non_reference_type =
+        const std::string non_reference_type =
             lhs_type.substr(0, lhs_type.size() - 1);
         new_function << "  " << non_reference_type
                      << " arg1_original = " << arg1_evaluated << ";\n";
