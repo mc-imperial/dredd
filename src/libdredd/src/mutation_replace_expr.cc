@@ -685,14 +685,17 @@ bool MutationReplaceExpr::CanMutateLValue(clang::ASTContext& ast_context,
   if (expr.getType().isConstQualified() || expr.getType()->isBooleanType()) {
     return false;
   }
-  // The following checks that `expr` is the child of an ImplicitCastExpr that
-  // yields an r-value.
-  auto parents = ast_context.getParents<clang::Expr>(expr);
-  if (parents.size() != 1) {
+  // Bit-fields cannot be passed by reference, and mutator functions for
+  // l-values must be passed by reference, hence bit-fields are not supported
+  // in this context.
+  if (expr.refersToBitField()) {
     return false;
   }
-  const auto* implicit_cast = parents[0].get<clang::ImplicitCastExpr>();
-  if (implicit_cast == nullptr || implicit_cast->isLValue()) {
+  // The following checks that `expr` is the child of an ImplicitCastExpr that
+  // yields an r-value.
+  const auto* implicit_cast_expr =
+      GetFirstParentOfType<clang::ImplicitCastExpr>(expr, ast_context);
+  if (implicit_cast_expr == nullptr || implicit_cast_expr->isLValue()) {
     return false;
   }
   return true;
@@ -858,14 +861,12 @@ bool MutationReplaceExpr::
     return false;
   }
 
-  auto parents = ast_context.getParents<clang::Expr>(*expr_);
-  for (const auto& parent : parents) {
-    if (const auto* binary_operator = parent.get<clang::BinaryOperator>()) {
-      if (binary_operator->isLogicalOp() &&
-          (binary_operator->getLHS() == expr_ ||
-           binary_operator->getRHS() == expr_)) {
-        return true;
-      }
+  if (const auto* binary_operator =
+          GetFirstParentOfType<clang::BinaryOperator>(*expr_, ast_context)) {
+    if (binary_operator->isLogicalOp() &&
+        (binary_operator->getLHS() == expr_ ||
+         binary_operator->getRHS() == expr_)) {
+      return true;
     }
   }
   return false;

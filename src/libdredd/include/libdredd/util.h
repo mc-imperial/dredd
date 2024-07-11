@@ -19,6 +19,8 @@
 
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/Expr.h"
+#include "clang/AST/ParentMapContext.h"
+#include "clang/AST/Stmt.h"
 #include "clang/Basic/SourceLocation.h"
 #include "clang/Basic/SourceManager.h"
 #include "clang/Lex/Preprocessor.h"
@@ -127,6 +129,23 @@ bool EvaluateAsFloat(const clang::Expr& expr,
 // expression is value-dependent).
 bool IsCxx11ConstantExpr(const clang::Expr& expr,
                          const clang::ASTContext& ast_context);
+
+// It is often necessary to ask whether a given statement (which includes
+// expressions) has a parent of a given type. This helper returns nullptr if
+// the given statement has no parent of the template parameter type, and
+// otherwise returns the first parent that does have the template parameter
+// type.
+template <typename RequiredParentT>
+const RequiredParentT* GetFirstParentOfType(const clang::Stmt& stmt,
+                                            clang::ASTContext& ast_context) {
+  for (const auto& parent : ast_context.getParents(stmt)) {
+    const auto* candidate_result = parent.template get<RequiredParentT>();
+    if (candidate_result != nullptr) {
+      return candidate_result;
+    }
+  }
+  return nullptr;
+}
 
 }  // namespace dredd
 
