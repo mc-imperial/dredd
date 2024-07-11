@@ -18,6 +18,7 @@
 #include <cstddef>
 #include <memory>
 
+#include "clang/AST/Attrs.inc"
 #include "clang/AST/Decl.h"
 #include "clang/AST/DeclBase.h"
 #include "clang/AST/DeclCXX.h"
@@ -123,9 +124,10 @@ bool MutateVisitor::TraverseDecl(clang::Decl* decl) {
     }
   }
   if (const auto* var_decl = llvm::dyn_cast<clang::VarDecl>(decl)) {
-    if (var_decl->isConstexpr()) {
+    if (var_decl->isConstexpr() || var_decl->hasAttr<clang::ConstInitAttr>()) {
       // Because Dredd's mutations occur dynamically, they cannot be applied to
-      // C++ constexprs, which require compile-time evaluation.
+      // C++ constexprs or variables that require constant initialization as
+      // these both require compile-time evaluation.
       return true;
     }
     if (!compiler_instance_->getLangOpts().CPlusPlus &&
