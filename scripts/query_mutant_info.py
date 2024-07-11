@@ -311,7 +311,8 @@ def main() -> int:
                         type=Path)
     parser.add_argument("--largest-mutant-id",
                         help="Show the largest id among all mutants that are present. Mutants are normally numbered "
-                             "contiguously starting from 0, so this is related to the total number of mutants.",
+                             "contiguously starting from 0, so this is related to the total number of mutants. "
+                             "Prints -1 if there are no mutants. ",
                         action='store_true')
     parser.add_argument("--show-info-for-mutant",
                         help="Show information about a given mutant",
@@ -324,7 +325,7 @@ def main() -> int:
 
     if args.largest_mutant_id:
         mutant_ids: List[int] = list(mapping.keys())
-        print(0 if not mutant_ids else max(mutant_ids))
+        print(-1 if not mutant_ids else max(mutant_ids))
         return 0
 
     if args.show_info_for_mutant is not None:
