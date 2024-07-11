@@ -594,6 +594,19 @@ bool MutateVisitor::TraverseCompoundStmt(clang::CompoundStmt* compound_stmt) {
 
 bool MutateVisitor::VisitVarDecl(clang::VarDecl* var_decl) {
   var_decl_source_locations_.insert(var_decl->getLocation());
+
+  if (compiler_instance_->getLangOpts().CPlusPlus && var_decl->hasInit() &&
+      var_decl->getType()->isConstantArrayType() &&
+      llvm::dyn_cast<clang::DecompositionDecl>(var_decl) == nullptr) {
+    // We have a constant-sized C++ that is initialized. It is problematic if
+    // components of the initialization expression get mutated, so that the
+    // expression no longer evaluates to a constant value. However, we do not
+    // want to prohibit mutating such components, as they might be used
+    // elsewhere in the code. Instead, we record the size expression, as well as
+    // the value to which this size evaluates. Then, later, we rewrite the text
+    // of the expression to replace it with the value.
+    constant_sized_arrays_to_rewrite_.push_back(var_decl);
+  }
   return true;
 }
 
