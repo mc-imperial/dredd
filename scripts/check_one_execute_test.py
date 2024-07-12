@@ -68,7 +68,7 @@ cmd = [COMPILER] + EXTRA_COMPILER_ARGS + [f'harness.{extension}', f'tomutate.{ex
 compile_result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 if compile_result.returncode != 0:
     print("Error compiling mutated file.")
-    print(compile_result.stout.decode('utf-8'))
+    print(compile_result.stdout.decode('utf-8'))
     print(compile_result.stderr.decode('utf-8'))
     print("Content of mutated file:")
     print(open(f'tomutate.{extension}', 'r').read())
