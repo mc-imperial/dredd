@@ -17,6 +17,7 @@
 #include <cassert>
 #include <cstddef>
 #include <memory>
+#include <optional>
 
 #include "clang/AST/Attrs.inc"
 #include "clang/AST/Decl.h"
@@ -186,6 +187,16 @@ bool MutateVisitor::TraverseStmt(clang::Stmt* stmt) {
   if (const auto* if_stmt = GetFirstParentOfType<clang::IfStmt>(
           *stmt, compiler_instance_->getASTContext())) {
     if (if_stmt->isConstexpr() && if_stmt->getCond() == stmt) {
+      return true;
+    }
+  }
+
+  // Do not mutate the array size expression of C++'s NewExpr.
+  // For instance, we do not want to mutate `2` in new `a[2]{3, 4}`,
+  // as doing so requires type `a` to have zero-argument constructor.
+  if (const auto* cxx_new_expr = GetFirstParentOfType<clang::CXXNewExpr>(
+          *stmt, compiler_instance_->getASTContext())) {
+    if (cxx_new_expr->getArraySize() == stmt) {
       return true;
     }
   }
