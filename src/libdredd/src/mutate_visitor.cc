@@ -422,8 +422,6 @@ void MutateVisitor::HandleBinaryOperator(
 }
 
 void MutateVisitor::HandleExpr(clang::Expr* expr) {
-  
-
   // L-values are only mutated by inserting the prefix operators ++ and --, and
   // only under specific circumstances as documented by
   // MutationReplaceExpr::CanMutateLValue.
@@ -482,12 +480,16 @@ void MutateVisitor::HandleExpr(clang::Expr* expr) {
     if (const auto* cast_parent = GetFirstParentOfType<clang::CastExpr>(
             *expr, compiler_instance_->getASTContext())) {
       if (cast_parent->isLValue() == expr->isLValue()) {
-          if (GetFirstParentOfType<clang::InitListExpr>(*expr, compiler_instance_->getASTContext()) == nullptr) {
-          // However, this optimization shouldn't be performed on expressions under Initializer List. This is because:
-          // (1) Dredd won't act on the outer implicit cast under Initializer List.
-          // (2)  Bypassing this would skip dredd-introduced static_cast, causing issues when the expression is implicitly cast into a narrower type and passed into a C++ std::initializer_list.
+        if (GetFirstParentOfType<clang::InitListExpr>(
+                *expr, compiler_instance_->getASTContext()) == nullptr) {
+          // However, this optimization shouldn't be performed on expressions
+          // under Initializer List. This is because: (1) Dredd won't act on the
+          // outer implicit cast under Initializer List. (2)  Bypassing this
+          // would skip dredd-introduced static_cast, causing issues when the
+          // expression is implicitly cast into a narrower type and passed into
+          // a C++ std::initializer_list.
           return;
-          }
+        }
       }
     }
 
