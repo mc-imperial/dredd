@@ -101,8 +101,8 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
     return mutation_tree_root_;
   }
 
-  // Yields the initialized C++ constant-sized arrays, whose size expressions
-  // need to be rewritten.
+  // Yields the C++ constant-sized arrays, whose size expressions need to be
+  // rewritten.
   [[nodiscard]] const std::vector<clang::VarDecl*>&
   GetConstantSizedArraysToRewrite() const {
     return constant_sized_arrays_to_rewrite_;
@@ -215,9 +215,8 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
   // location is one of these locations.
   std::set<clang::SourceLocation> var_decl_source_locations_;
 
-  // This records initialized C++ constant-sized array declarations, so that
-  // their size expressions can be rewritten with the integers to which they
-  // evaluate.
+  // This records C++ constant-sized array declarations, so that size
+  // expressions can be rewritten with the integers to which they evaluate.
   std::vector<clang::VarDecl*> constant_sized_arrays_to_rewrite_;
 };
 

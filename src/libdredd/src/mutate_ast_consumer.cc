@@ -105,6 +105,10 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
                                       ->getTypeLoc()
                                       .getAs<clang::ConstantArrayTypeLoc>();
     if (constant_array_typeloc.isNull()) {
+      // In some cases a declaration with constant array type does not have
+      // an associated ConstantArrayTypeLoc object. This happens, for example,
+      // when destructuring operations are used - they yield results with
+      // implicit constant array type. In such cases, no action is required.
       continue;
     }
     auto source_range_in_main_file =
