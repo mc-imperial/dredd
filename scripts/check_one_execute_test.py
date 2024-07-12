@@ -70,6 +70,8 @@ if compile_result.returncode != 0:
     print("Error compiling mutated file.")
     print(compile_result.stout.decode('utf-8'))
     print(compile_result.stderr.decode('utf-8'))
+    print("Content of mutated file:")
+    print(open(f'tomutate.{extension}', 'r').read())
     sys.exit(2)
 
 # Run the compiled mutated program with no mutants enabled, and check the result is as expected.
