@@ -1,3 +1,3 @@
-0
-1
--1
+0  ; replace b with 0
+1  ; replace b with 1
+-1 ; replace b with -1

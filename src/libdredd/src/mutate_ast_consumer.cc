@@ -107,8 +107,12 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
     if (constant_array_typeloc.isNull()) {
       // In some cases a declaration with constant array type does not have
       // an associated ConstantArrayTypeLoc object. This happens, for example,
-      // when destructuring operations are used - they yield results with
-      // implicit constant array type. In such cases, no action is required.
+      // when structured bindings are used. For example, consider:
+      //
+      //     auto [x, y] = a;
+      //
+      // This yields a constant-sized array, but there is no explicit array type
+      // declaration. In such cases, no action is required.
       continue;
     }
     auto source_range_in_main_file =

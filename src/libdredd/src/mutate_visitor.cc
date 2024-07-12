@@ -602,8 +602,8 @@ bool MutateVisitor::VisitVarDecl(clang::VarDecl* var_decl) {
     // compilers are OK with this unless the array is also initialized. To allow
     // the constant declarations that occur in a size expression to have their
     // initial values mutated (because they may be used elsewhere), but to avoid
-    // compilation errors, we record the arrays in question to that later their
-    // size expresisons can be replaced with the value to which the size
+    // compilation errors, we record the arrays in question so that later their
+    // size expressions can be replaced with the value to which the size
     // expression would normally evaluate.
     constant_sized_arrays_to_rewrite_.push_back(var_decl);
   }
