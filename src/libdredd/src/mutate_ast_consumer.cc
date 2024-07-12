@@ -23,6 +23,9 @@
 
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/Decl.h"
+#include "clang/AST/Expr.h"
+#include "clang/AST/Type.h"
+#include "clang/AST/TypeLoc.h"
 #include "clang/Basic/Diagnostic.h"
 #include "clang/Basic/FileEntry.h"
 #include "clang/Basic/LangOptions.h"
@@ -31,7 +34,10 @@
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Rewrite/Core/Rewriter.h"
 #include "libdredd/mutation.h"
+#include "libdredd/util.h"
+#include "llvm/ADT/APInt.h"
 #include "llvm/ADT/StringRef.h"
+#include "llvm/Support/Casting.h"
 #include "llvm/Support/raw_ostream.h"
 
 namespace dredd {
@@ -88,6 +94,41 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
   if (initial_mutation_id == *mutation_id_) {
     // No possibilities for mutation were found; nothing else to do.
     return;
+  }
+
+  // Rewrite the size expressions of constant-sized arrays as needed.
+  for (const auto& constant_sized_array_decl :
+       visitor_->GetConstantSizedArraysToRewrite()) {
+    assert(compiler_instance_->getLangOpts().CPlusPlus &&
+           constant_sized_array_decl->getType()->isConstantArrayType());
+    auto constant_array_typeloc = constant_sized_array_decl->getTypeSourceInfo()
+                                      ->getTypeLoc()
+                                      .getAs<clang::ConstantArrayTypeLoc>();
+    if (constant_array_typeloc.isNull()) {
+      // In some cases a declaration with constant array type does not have
+      // an associated ConstantArrayTypeLoc object. This happens, for example,
+      // when structured bindings are used. For example, consider:
+      //
+      //     auto [x, y] = a;
+      //
+      // This yields a constant-sized array, but there is no explicit array type
+      // declaration. In such cases, no action is required.
+      continue;
+    }
+    auto source_range_in_main_file =
+        GetSourceRangeInMainFile(compiler_instance_->getPreprocessor(),
+                                 *constant_array_typeloc.getSizeExpr());
+    // We only consider the rewriting if the source range for the size
+    // expression is in the main source file.
+    if (source_range_in_main_file.isValid()) {
+      std::stringstream stringstream;
+      stringstream
+          << llvm::dyn_cast<clang::ConstantArrayType>(
+                 constant_sized_array_decl->getType()->getAsArrayTypeUnsafe())
+                 ->getSize()
+                 .getLimitedValue();
+      rewriter_.ReplaceText(source_range_in_main_file, stringstream.str());
+    }
   }
 
   *mutation_info_->add_info_for_files() = mutation_info_for_file;

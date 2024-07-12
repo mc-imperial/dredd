@@ -57,6 +57,7 @@ cmd = [DREDD_INSTALLED_EXECUTABLE, '--mutation-info-file', 'temp.json', f'tomuta
 dredd_result = subprocess.run(cmd)
 if dredd_result.returncode != 0:
     print("Dredd failed.")
+    print(dredd_result.stdout.decode('utf-8'))
     print(dredd_result.stderr.decode('utf-8'))
     sys.exit(1)
 
@@ -67,7 +68,10 @@ cmd = [COMPILER] + EXTRA_COMPILER_ARGS + [f'harness.{extension}', f'tomutate.{ex
 compile_result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 if compile_result.returncode != 0:
     print("Error compiling mutated file.")
+    print(compile_result.stdout.decode('utf-8'))
     print(compile_result.stderr.decode('utf-8'))
+    print("Content of mutated file:")
+    print(open(f'tomutate.{extension}', 'r').read())
     sys.exit(2)
 
 # Run the compiled mutated program with no mutants enabled, and check the result is as expected.
@@ -75,6 +79,7 @@ cmd = [os.getcwd() + os.sep + 'test_executable']
 original_result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 if original_result.returncode != 0:
     print("Error running non-mutated executable")
+    print(original_result.stdout.decode('utf-8'))
     print(original_result.stderr.decode('utf-8'))
     sys.exit(3)
 actual_original_output = original_result.stdout.decode('utf-8').strip()
@@ -89,6 +94,7 @@ cmd = ['python3', Path(DREDD_REPO_ROOT, 'scripts', 'query_mutant_info.py'), '--l
 largest_mutant_id_result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 if largest_mutant_id_result.returncode != 0:
     print("Error finding largest mutant id.")
+    print(largest_mutant_id_result.stdout.decode('utf-8'))
     print(largest_mutant_id_result.stderr.decode('utf-8'))
     sys.exit(5)
 largest_mutant_id = int(largest_mutant_id_result.stdout.decode('utf-8'))
