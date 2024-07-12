@@ -470,11 +470,6 @@ void MutateVisitor::HandleExpr(clang::Expr* expr) {
   }
 
   if (optimise_mutations_) {
-    if (GetFirstAncestorOfType<clang::CXXStdInitializerListExpr>(*expr, compiler_instance_->getASTContext()) != nullptr) {
-          // However, this optimisation shouldn't be perform on C++'s Initializer List expression as it bypass applying static_cast on
-          std::cout << "dvfwe" << std::endl;
-    }
-    
     // If an expression is the direct child of a cast expression, do not mutate
     // it unless the cast is an l-value to r-value cast. In an l-value to
     // r-value cast it is worth mutating the expression before and after casting
@@ -518,13 +513,6 @@ void MutateVisitor::HandleExpr(clang::Expr* expr) {
 }
 
 bool MutateVisitor::VisitExpr(clang::Expr* expr) {
-  if (!IsTypeSupported(expr->getType())) {
-    std::cout << "NNexpr" << std::endl;
-  } else {
-    std::cout << "expr" << std::endl;
-  }
-
-
   if (optimise_mutations_ &&
       llvm::dyn_cast<clang::ParenExpr>(expr) != nullptr) {
     // There is no value in mutating a parentheses expression.
@@ -561,21 +549,9 @@ bool MutateVisitor::VisitExpr(clang::Expr* expr) {
     return true;
   }
 
-  if (GetFirstParentOfType<clang::CXXStdInitializerListExpr>(*expr, compiler_instance_->getASTContext()) != nullptr) {
-      std::cout << "erty" << std::endl;
-  } else {
-    std::cout << "ffff" << std::endl;
-  }
-
   // Check that the result type is supported
   if (!IsTypeSupported(expr->getType())) {
     return true;
-  }
-
-  if (GetFirstParentOfType<clang::CXXStdInitializerListExpr>(*expr, compiler_instance_->getASTContext()) != nullptr) {
-      std::cout << "dwdd" << std::endl;
-    }else {
-    std::cout << "rrrr" << std::endl;
   }
 
   if (auto* unary_operator = llvm::dyn_cast<clang::UnaryOperator>(expr)) {
