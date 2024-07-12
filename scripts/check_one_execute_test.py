@@ -62,7 +62,8 @@ if dredd_result.returncode != 0:
 
 # Compile the mutated program.
 COMPILER = os.environ['CXX'] if test_is_cxx else os.environ['CC']
-cmd = [COMPILER, f'harness.{extension}', f'tomutate.{extension}', '-o', 'test_executable']
+EXTRA_COMPILER_ARGS = (os.environ.get('DREDD_EXTRA_CXX_ARGS', '') if test_is_cxx else os.environ.get('DREDD_EXTRA_C_ARGS', '')).split()
+cmd = [COMPILER] + EXTRA_COMPILER_ARGS + [f'harness.{extension}', f'tomutate.{extension}', '-o', 'test_executable']
 compile_result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 if compile_result.returncode != 0:
     print("Error compiling mutated file.")
