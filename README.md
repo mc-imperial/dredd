@@ -1,3 +1,5 @@
+Trivial change to confirm CI is working.
+
 # Dredd
 
 Dredd is a tool that aims to enable [mutation testing and mutation
