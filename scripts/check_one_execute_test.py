@@ -115,7 +115,7 @@ while current_mutant_id <= largest_mutant_id and len(expected_mutant_outputs) > 
 # Complain if not all of the expected outputs are observed.
 if len(expected_mutant_outputs) > 0:
     print("Error: there were unmatched expected mutant outputs:")
-    print(expected_mutant_outputs)
+    print("\n\n".join(sorted(list(expected_mutant_outputs))))
     sys.exit(6)
 
 print("Success!")
