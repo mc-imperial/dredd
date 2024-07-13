@@ -564,6 +564,9 @@ bool MutateVisitor::TraverseCompoundStmt(clang::CompoundStmt* compound_stmt) {
     // tree node is pushed per sub-statement.
     const PushMutationTreeRAII push_mutation_tree(*this);
     TraverseStmt(target_stmt);
+
+    assert(llvm::dyn_cast<clang::SwitchCase>(target_stmt) == nullptr &&
+           "target_stmt isn't a SwitchCase due to previous AST traversal.");
     if (GetSourceRangeInMainFile(compiler_instance_->getPreprocessor(),
                                  *target_stmt)
             .isInvalid() ||
