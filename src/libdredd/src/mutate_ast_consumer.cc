@@ -15,6 +15,7 @@
 #include "libdredd/mutate_ast_consumer.h"
 
 #include <cassert>
+#include <cstdint>
 #include <set>
 #include <sstream>
 #include <string>
@@ -87,10 +88,10 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
           .getFileEntryForID(ast_context.getSourceManager().getMainFileID())
           ->getName()
           .str());
-  protobufs::MutationTreeNode* root_protobuf_mutation_tree_node = mutation_info_for_file.add_mutation_tree();
+  protobufs::MutationTreeNode* root_protobuf_mutation_tree_node =
+      mutation_info_for_file.add_mutation_tree();
   ApplyMutations(visitor_->GetMutations(), initial_mutation_id, ast_context,
-                 mutation_info_for_file,
-                 *root_protobuf_mutation_tree_node,
+                 mutation_info_for_file, *root_protobuf_mutation_tree_node,
                  dredd_declarations);
 
   if (initial_mutation_id == *mutation_id_) {
@@ -416,9 +417,13 @@ void MutateAstConsumer::ApplyMutations(
   for (const auto& child : dredd_mutation_tree_node.GetChildren()) {
     assert(!child->IsEmpty() &&
            "The mutation tree should not have empty subtrees.");
-    protobufs_mutation_tree_node.add_children(static_cast<uint32_t>(protobufs_mutation_info_for_file.mutation_tree_size()));
-    protobufs::MutationTreeNode* new_protobufs_mutation_tree_node = protobufs_mutation_info_for_file.add_mutation_tree();
-    ApplyMutations(*child, initial_mutation_id, context, protobufs_mutation_info_for_file, *new_protobufs_mutation_tree_node, dredd_declarations);
+    protobufs_mutation_tree_node.add_children(static_cast<uint32_t>(
+        protobufs_mutation_info_for_file.mutation_tree_size()));
+    protobufs::MutationTreeNode* new_protobufs_mutation_tree_node =
+        protobufs_mutation_info_for_file.add_mutation_tree();
+    ApplyMutations(*child, initial_mutation_id, context,
+                   protobufs_mutation_info_for_file,
+                   *new_protobufs_mutation_tree_node, dredd_declarations);
   }
   for (const auto& mutation : dredd_mutation_tree_node.GetMutations()) {
     const int mutation_id_old = *mutation_id_;
