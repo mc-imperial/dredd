@@ -564,13 +564,16 @@ bool MutateVisitor::TraverseCompoundStmt(clang::CompoundStmt* compound_stmt) {
     // tree node is pushed per sub-statement.
     const PushMutationTreeRAII push_mutation_tree(*this);
     TraverseStmt(target_stmt);
+
+    assert(llvm::dyn_cast<clang::SwitchCase>(target_stmt) == nullptr &&
+           "target_stmt isn't a SwitchCase due to previous AST traversal.");
     if (GetSourceRangeInMainFile(compiler_instance_->getPreprocessor(),
                                  *target_stmt)
             .isInvalid() ||
         llvm::dyn_cast<clang::NullStmt>(target_stmt) != nullptr ||
         llvm::dyn_cast<clang::DeclStmt>(target_stmt) != nullptr ||
         llvm::dyn_cast<clang::LabelStmt>(target_stmt) != nullptr) {
-      // Wrapping switch cases, labels and null statements in conditional code
+      // Wrapping labels and null statements in conditional code
       // has no effect. Declarations cannot be wrapped in conditional code
       // without risking breaking compilation.
       continue;
