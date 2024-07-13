@@ -570,7 +570,7 @@ bool MutateVisitor::TraverseCompoundStmt(clang::CompoundStmt* compound_stmt) {
         llvm::dyn_cast<clang::NullStmt>(target_stmt) != nullptr ||
         llvm::dyn_cast<clang::DeclStmt>(target_stmt) != nullptr ||
         llvm::dyn_cast<clang::LabelStmt>(target_stmt) != nullptr) {
-      // Wrapping switch cases, labels and null statements in conditional code
+      // Wrapping labels and null statements in conditional code
       // has no effect. Declarations cannot be wrapped in conditional code
       // without risking breaking compilation.
       continue;
