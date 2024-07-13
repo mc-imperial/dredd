@@ -441,6 +441,19 @@ void MutateVisitor::HandleExpr(clang::Expr* expr) {
     return;
   }
 
+  // Avoid mutation on cast when its underlying value is a bitfield
+  // l-value that is subsequently passed by reference. Any expression that is
+  // passed by reference is a child of MaterializeTemporaryExpr, which
+  // represents a prvalue temporary that is written into memory so that a
+  // reference can bind to it.
+  if (const auto* cast_expr = llvm::dyn_cast<clang::CastExpr>(expr)) {
+    if (cast_expr->getSubExpr()->refersToBitField() &&
+        GetFirstParentOfType<clang::MaterializeTemporaryExpr>(
+            *expr, compiler_instance_->getASTContext()) != nullptr) {
+      return;
+    }
+  }
+
   if (optimise_mutations_) {
     // If an expression is the direct child of a cast expression, do not mutate
     // it unless the cast is an l-value to r-value cast. In an l-value to
