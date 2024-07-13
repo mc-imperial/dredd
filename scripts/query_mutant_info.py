@@ -33,24 +33,19 @@ class MutantInfo:
     instance: Optional[Dict]
 
 
-def build_mapping_for_node(mutation_tree_node: Dict, file_info: Dict, result: Dict[int, MutantInfo]) -> None:
-    for mutation_group in mutation_tree_node["mutationGroups"]:
-        assert len(mutation_group) == 1
-        key: str = next(iter(mutation_group))
-        if key in ["replaceExpr", "replaceUnaryOperator", "replaceBinaryOperator"]:
-            for instance in mutation_group[key]["instances"]:
-                result[instance["mutationId"]] = MutantInfo(key, file_info, mutation_group, instance)
-        else:
-            assert key == "removeStmt"
-            result[mutation_group[key]["mutationId"]] = MutantInfo(key, file_info, mutation_group, None)
-    for child in mutation_tree_node["children"]:
-        build_mapping_for_node(child, file_info, result)
-
-
 def build_mutant_to_node_mapping(json_info: Dict) -> Dict[int, MutantInfo]:
     result: Dict[int, MutantInfo] = {}
     for file_info in json_info["infoForFiles"]:
-        build_mapping_for_node(file_info["mutationTreeRoot"], file_info, result)
+        for mutation_tree_node in file_info["mutationTree"]:
+            for mutation_group in mutation_tree_node["mutationGroups"]:
+                assert len(mutation_group) == 1
+                key: str = next(iter(mutation_group))
+                if key in ["replaceExpr", "replaceUnaryOperator", "replaceBinaryOperator"]:
+                    for instance in mutation_group[key]["instances"]:
+                        result[instance["mutationId"]] = MutantInfo(key, file_info, mutation_group, instance)
+                else:
+                    assert key == "removeStmt"
+                    result[mutation_group[key]["mutationId"]] = MutantInfo(key, file_info, mutation_group, None)
     return result
 
 
