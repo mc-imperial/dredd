@@ -140,7 +140,7 @@ bool MutateVisitor::TraverseDecl(clang::Decl* decl) {
     // compilaton errors, we record the static assertion so that later their
     // argument expression can be replaced with the value to which the argument
     // expression would notmally evaluate.
-    static_assertion_to_rewrite_.push_back(static_assert_decl);
+    static_assertions_to_rewrite_.push_back(static_assert_decl);
   }
   if (const auto* function_decl = llvm::dyn_cast<clang::FunctionDecl>(decl)) {
     if (function_decl->isConstexpr()) {
@@ -236,6 +236,14 @@ bool MutateVisitor::TraverseStmt(clang::Stmt* stmt) {
   if (const auto* cxx_new_expr = GetFirstParentOfType<clang::CXXNewExpr>(
           *stmt, compiler_instance_->getASTContext())) {
     if (cxx_new_expr->getArraySize() == stmt) {
+      return true;
+    }
+  }
+
+  if (const auto* call_expr = llvm::dyn_cast<clang::CallExpr>(stmt)) {
+    if (call_expr->getBuiltinCallee() == 455) {
+      // callee is `__builtin_frame_address()`
+      constant_arguments_to_rewrite_.push_back(call_expr->getArg(0));
       return true;
     }
   }
@@ -538,17 +546,6 @@ void MutateVisitor::HandleExpr(clang::Expr* expr) {
 }
 
 bool MutateVisitor::VisitExpr(clang::Expr* expr) {
-  clang::Expr::EvalResult unused_eval_result;
-  if (const auto* call_expr = llvm::dyn_cast<clang::CallExpr>(expr)) {
-    if (call_expr->getBuiltinCallee() == 455) {
-      std::cout << "sdgsgsv" << std::endl;
-    } else {
-      std::cout << "asdfghejs" << std::endl;
-    }
-  } else {
-    std::cout << "expr" << std::endl;
-  }
-
   if (optimise_mutations_ &&
       llvm::dyn_cast<clang::ParenExpr>(expr) != nullptr) {
     // There is no value in mutating a parentheses expression.
