@@ -177,6 +177,13 @@ bool MutateVisitor::TraverseDecl(clang::Decl* decl) {
     }
   }
 
+  if (const auto* field_decl = llvm::dyn_cast<clang::FieldDecl>(decl)) {
+    if (compiler_instance_->getLangOpts().CPlusPlus &&
+        field_decl->getType()->isConstantArrayType()) {
+      constant_sized_arrays_to_rewrite_.push_back(field_decl);
+    }
+  }
+
   enclosing_decls_.push_back(decl);
   // Consider the declaration for mutation.
   RecursiveASTVisitor::TraverseDecl(decl);

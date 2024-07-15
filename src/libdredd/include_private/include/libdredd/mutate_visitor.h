@@ -104,7 +104,7 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
 
   // Yields the C++ constant-sized arrays, whose size expressions need to be
   // rewritten.
-  [[nodiscard]] const std::vector<const clang::VarDecl*>&
+  [[nodiscard]] const std::vector<const clang::DeclaratorDecl*>&
   GetConstantSizedArraysToRewrite() const {
     return constant_sized_arrays_to_rewrite_;
   }
@@ -248,7 +248,7 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
 
   // This records C++ constant-sized array declarations, so that size
   // expressions can be rewritten with the integers to which they evaluate.
-  std::vector<const clang::VarDecl*> constant_sized_arrays_to_rewrite_;
+  std::vector<const clang::DeclaratorDecl*> constant_sized_arrays_to_rewrite_;
 
   // This records static assertion declarations, so that its argument
   // expressions can be rewritten with the integers to which they evaluate.
