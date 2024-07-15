@@ -16,6 +16,7 @@
 
 #include <cassert>
 #include <cstdint>
+#include <optional>
 #include <set>
 #include <sstream>
 #include <string>
@@ -24,6 +25,7 @@
 
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/Decl.h"
+#include "clang/AST/DeclCXX.h"
 #include "clang/AST/Expr.h"
 #include "clang/AST/Type.h"
 #include "clang/AST/TypeLoc.h"
@@ -37,6 +39,7 @@
 #include "libdredd/mutation.h"
 #include "libdredd/util.h"
 #include "llvm/ADT/APInt.h"
+#include "llvm/ADT/APSInt.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/Support/Casting.h"
 #include "llvm/Support/raw_ostream.h"
