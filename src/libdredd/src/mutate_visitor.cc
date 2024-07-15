@@ -124,14 +124,23 @@ bool MutateVisitor::TraverseDecl(clang::Decl* decl) {
     // consider it for mutation.
     return true;
   }
-  if (llvm::dyn_cast<clang::StaticAssertDecl>(decl) != nullptr) {
+  if (const auto* static_assert_decl =
+          llvm::dyn_cast<clang::StaticAssertDecl>(decl)) {
     // It does not make sense to mutate static assertions, as (a) this will
     // very likely lead to compile-time failures due to the assertion not
     // holding, (b) if compilation succeeds then the assertion is not actually
     // present at runtime so there is no notion of killing the mutant, and (c)
     // dynamic instrumentation of the mutation operator will break the rules
     // associated with static assertions anyway.
-    return true;
+
+    // However, some C++ compiler complain if the expression under static
+    // assertion is not a compile-time constants. To allow the constant
+    // declaration that occurs inside static assertion to have their initial
+    // value mutated (because they may be used elsewhere), but to avoid
+    // compilaton errors, we record the static assertion so that later their
+    // argument expression can be replaced with the value to which the argument
+    // expression would notmally evaluate.
+    static_assertion_to_rewrite_.push_back(static_assert_decl);
   }
   if (const auto* function_decl = llvm::dyn_cast<clang::FunctionDecl>(decl)) {
     if (function_decl->isConstexpr()) {
@@ -167,6 +176,7 @@ bool MutateVisitor::TraverseDecl(clang::Decl* decl) {
       return true;
     }
   }
+
   enclosing_decls_.push_back(decl);
   // Consider the declaration for mutation.
   RecursiveASTVisitor::TraverseDecl(decl);
@@ -528,6 +538,17 @@ void MutateVisitor::HandleExpr(clang::Expr* expr) {
 }
 
 bool MutateVisitor::VisitExpr(clang::Expr* expr) {
+  clang::Expr::EvalResult unused_eval_result;
+  if (const auto* call_expr = llvm::dyn_cast<clang::CallExpr>(expr)) {
+    if (call_expr->getBuiltinCallee() == 455) {
+      std::cout << "sdgsgsv" << std::endl;
+    } else {
+      std::cout << "asdfghejs" << std::endl;
+    }
+  } else {
+    std::cout << "expr" << std::endl;
+  }
+
   if (optimise_mutations_ &&
       llvm::dyn_cast<clang::ParenExpr>(expr) != nullptr) {
     // There is no value in mutating a parentheses expression.

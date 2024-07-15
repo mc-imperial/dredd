@@ -139,6 +139,22 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
             .str());
     *mutation_info_->value().add_info_for_files() = mutation_info_for_file;
   }
+  // Rewrite the argument of static assertion as needed to `1`.
+  // There's no need to evaluate the actual expression, as any value other than
+  // 1 would have caused the front-end used by Dredd to fail.
+  for (const auto& static_assert_decl :
+       visitor_->GetStaticAssertionsToRewrite()) {
+    auto asset_expr = static_assert_decl->getAssertExpr();
+    auto source_range_in_main_file = GetSourceRangeInMainFile(
+        compiler_instance_->getPreprocessor(), *asset_expr);
+    if (source_range_in_main_file.isValid()) {
+      std::stringstream stringstream;
+      stringstream << 1;
+      rewriter_.ReplaceText(source_range_in_main_file, stringstream.str());
+    }
+  }
+
+  *mutation_info_->add_info_for_files() = mutation_info_for_file;
 
   const clang::SourceLocation start_location_of_first_function_in_source_file =
       visitor_->GetStartLocationOfFirstFunctionInSourceFile();

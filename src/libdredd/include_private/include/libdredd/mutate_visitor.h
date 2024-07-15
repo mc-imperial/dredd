@@ -112,6 +112,11 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
   [[nodiscard]] clang::SourceLocation
   GetStartLocationOfFirstFunctionInSourceFile() const {
     return start_location_of_first_function_in_source_file_;
+  // Yields the static assertions, whose size expressions need to be
+  // rewritten.
+  [[nodiscard]] const std::vector<const clang::StaticAssertDecl*>&
+  GetStaticAssertionsToRewrite() const {
+    return static_assertion_to_rewrite_;
   }
 
  private:
@@ -236,6 +241,10 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
   // This records C++ constant-sized array declarations, so that size
   // expressions can be rewritten with the integers to which they evaluate.
   std::vector<const clang::VarDecl*> constant_sized_arrays_to_rewrite_;
+
+  // This records static assertion declarations, so that its argument
+  // expressions can be rewritten with the integers to which they evaluate.
+  std::vector<const clang::StaticAssertDecl*> static_assertion_to_rewrite_;
 };
 
 }  // namespace dredd
