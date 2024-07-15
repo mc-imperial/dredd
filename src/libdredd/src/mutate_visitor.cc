@@ -125,6 +125,19 @@ bool MutateVisitor::TraverseDecl(clang::Decl* decl) {
     }
   }
   if (const auto* var_decl = llvm::dyn_cast<clang::VarDecl>(decl)) {
+    if (compiler_instance_->getLangOpts().CPlusPlus &&
+        var_decl->getType()->isConstantArrayType()) {
+      // We have a constant-sized C++ array. Some C++ compilers complain if
+      // components of the size expression are not compile-time constants. Other
+      // compilers are OK with this unless the array is also initialized. To
+      // allow the constant declarations that occur in a size expression to have
+      // their initial values mutated (because they may be used elsewhere), but
+      // to avoid compilation errors, we record the arrays in question so that
+      // later their size expressions can be replaced with the value to which
+      // the size expression would normally evaluate.
+      constant_sized_arrays_to_rewrite_.push_back(var_decl);
+    }
+
     if (var_decl->isConstexpr() || var_decl->hasAttr<clang::ConstInitAttr>()) {
       // Because Dredd's mutations occur dynamically, they cannot be applied to
       // C++ constexprs or variables that require constant initialization as
@@ -610,19 +623,6 @@ bool MutateVisitor::TraverseCompoundStmt(clang::CompoundStmt* compound_stmt) {
 
 bool MutateVisitor::VisitVarDecl(clang::VarDecl* var_decl) {
   var_decl_source_locations_.insert(var_decl->getLocation());
-
-  if (compiler_instance_->getLangOpts().CPlusPlus &&
-      var_decl->getType()->isConstantArrayType()) {
-    // We have a constant-sized C++ array. Some C++ compilers complain if
-    // components of the size expression are not compile-time constants. Other
-    // compilers are OK with this unless the array is also initialized. To allow
-    // the constant declarations that occur in a size expression to have their
-    // initial values mutated (because they may be used elsewhere), but to avoid
-    // compilation errors, we record the arrays in question so that later their
-    // size expressions can be replaced with the value to which the size
-    // expression would normally evaluate.
-    constant_sized_arrays_to_rewrite_.push_back(var_decl);
-  }
   return true;
 }
 

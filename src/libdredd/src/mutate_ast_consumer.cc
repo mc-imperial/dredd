@@ -106,6 +106,7 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
            constant_sized_array_decl->getType()->isConstantArrayType());
     auto constant_array_typeloc = constant_sized_array_decl->getTypeSourceInfo()
                                       ->getTypeLoc()
+                                      .getUnqualifiedLoc()
                                       .getAs<clang::ConstantArrayTypeLoc>();
     if (constant_array_typeloc.isNull()) {
       // In some cases a declaration with constant array type does not have
