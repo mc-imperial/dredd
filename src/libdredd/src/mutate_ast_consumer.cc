@@ -154,13 +154,18 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
     }
   }
 
-  // Rewrite the constant argument of some function
-  for (const auto constant_argument_expresion : visitor_->GetConstantFunctionArgumentsToRewrite()) {
-    auto source_range_in_main_file =
-        GetSourceRangeInMainFile(compiler_instance_->getPreprocessor(), *constant_argument_expresion);
+  // Rewrite the constant integer argument of some function.
+  for (const auto constant_argument_expresion :
+       visitor_->GetConstantFunctionArgumentsToRewrite()) {
+    auto source_range_in_main_file = GetSourceRangeInMainFile(
+        compiler_instance_->getPreprocessor(), *constant_argument_expresion);
     if (source_range_in_main_file.isValid()) {
       std::stringstream stringstream;
-      stringstream << constant_argument_expresion->getIntegerConstantExpr(compiler_instance_->getASTContext()).value().getLimitedValue();
+      stringstream << constant_argument_expresion
+                          ->getIntegerConstantExpr(
+                              compiler_instance_->getASTContext())
+                          .value()
+                          .getLimitedValue();
       rewriter_.ReplaceText(source_range_in_main_file, stringstream.str());
     }
   }

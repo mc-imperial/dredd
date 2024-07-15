@@ -121,7 +121,7 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
     return static_assertions_to_rewrite_;
   }
 
-  // Yields the constant function argument which need to be rewritten. 
+  // Yields the constant function arguments which need to be rewritten.
   [[nodiscard]] const std::vector<const clang::Expr*>&
   GetConstantFunctionArgumentsToRewrite() const {
     return constant_arguments_to_rewrite_;
@@ -254,7 +254,8 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
   // expressions can be rewritten with the integers to which they evaluate.
   std::vector<const clang::StaticAssertDecl*> static_assertions_to_rewrite_;
 
-  // This records constant integer function argument, so that the expression can be rewritten with the integers to which they evaluate.
+  // This records constant integer function argument, so that the expression can
+  // be rewritten with the integers to which they evaluate.
   std::vector<const clang::Expr*> constant_arguments_to_rewrite_;
 };
 

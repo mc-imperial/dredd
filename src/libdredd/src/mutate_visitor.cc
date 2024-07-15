@@ -177,6 +177,9 @@ bool MutateVisitor::TraverseDecl(clang::Decl* decl) {
     }
   }
 
+  // Beside variable declaration, constant-sized C++ array can occurs inside a
+  // struct as a field. As in the case of variable declaration, we record the
+  // arrays in question so that later their size expressions can be rewritten.
   if (const auto* field_decl = llvm::dyn_cast<clang::FieldDecl>(decl)) {
     if (compiler_instance_->getLangOpts().CPlusPlus &&
         field_decl->getType()->isConstantArrayType()) {
@@ -247,6 +250,11 @@ bool MutateVisitor::TraverseStmt(clang::Stmt* stmt) {
     }
   }
 
+  // Some functions, e.g., __builtin_frame_address(), require their arguments to
+  // be constant integers. Attempting to apply a mutator function to such an
+  // argument would result in a compile-time error. Thus, we record these
+  // arguments' expressions so that they can be rewritten with the values to
+  // which the expressions would normally evaluate.
   if (const auto* call_expr = llvm::dyn_cast<clang::CallExpr>(stmt)) {
     if (call_expr->getBuiltinCallee() == 455) {
       // callee is `__builtin_frame_address()`
