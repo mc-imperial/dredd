@@ -368,10 +368,9 @@ void MutateVisitor::HandleUnaryOperator(clang::UnaryOperator* unary_operator) {
     }
   }
 
-  mutation_tree_path_.back()->AddMutation(
-      std::make_unique<MutationReplaceUnaryOperator>(
-          *unary_operator, compiler_instance_->getPreprocessor(),
-          compiler_instance_->getASTContext()));
+  AddMutation(std::make_unique<MutationReplaceUnaryOperator>(
+      *unary_operator, compiler_instance_->getPreprocessor(),
+      compiler_instance_->getASTContext()));
 }
 
 void MutateVisitor::HandleBinaryOperator(
@@ -431,10 +430,9 @@ void MutateVisitor::HandleBinaryOperator(
     return;
   }
 
-  mutation_tree_path_.back()->AddMutation(
-      std::make_unique<MutationReplaceBinaryOperator>(
-          *binary_operator, compiler_instance_->getPreprocessor(),
-          compiler_instance_->getASTContext()));
+  AddMutation(std::make_unique<MutationReplaceBinaryOperator>(
+      *binary_operator, compiler_instance_->getPreprocessor(),
+      compiler_instance_->getASTContext()));
 }
 
 void MutateVisitor::HandleExpr(clang::Expr* expr) {
@@ -524,7 +522,7 @@ void MutateVisitor::HandleExpr(clang::Expr* expr) {
     }
   }
 
-  mutation_tree_path_.back()->AddMutation(std::make_unique<MutationReplaceExpr>(
+  AddMutation(std::make_unique<MutationReplaceExpr>(
       *expr, compiler_instance_->getPreprocessor(),
       compiler_instance_->getASTContext()));
 }
@@ -638,13 +636,16 @@ bool MutateVisitor::TraverseCompoundStmt(clang::CompoundStmt* compound_stmt) {
     assert(!enclosing_decls_.empty() &&
            "Statements can only be removed if they are nested in some "
            "declaration.");
-    UpdateStartLocationOfFirstFunctionInSourceFile();
-    mutation_tree_path_.back()->AddMutation(
-        std::make_unique<MutationRemoveStmt>(
-            *target_stmt, compiler_instance_->getPreprocessor(),
-            compiler_instance_->getASTContext()));
+    AddMutation(std::make_unique<MutationRemoveStmt>(
+        *target_stmt, compiler_instance_->getPreprocessor(),
+        compiler_instance_->getASTContext()));
   }
   return true;
+}
+
+void MutateVisitor::AddMutation(std::unique_ptr<Mutation> mutation) {
+  UpdateStartLocationOfFirstFunctionInSourceFile();
+  mutation_tree_path_.back()->AddMutation(std::move(mutation));
 }
 
 bool MutateVisitor::VisitVarDecl(clang::VarDecl* var_decl) {
