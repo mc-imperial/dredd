@@ -144,9 +144,9 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
   // 1 would have caused the front-end used by Dredd to fail.
   for (const auto& static_assert_decl :
        visitor_->GetStaticAssertionsToRewrite()) {
-    auto asset_expr = static_assert_decl->getAssertExpr();
+    auto assert_expr = static_assert_decl->getAssertExpr();
     auto source_range_in_main_file = GetSourceRangeInMainFile(
-        compiler_instance_->getPreprocessor(), *asset_expr);
+        compiler_instance_->getPreprocessor(), *assert_expr);
     if (source_range_in_main_file.isValid()) {
       std::stringstream stringstream;
       stringstream << 1;
