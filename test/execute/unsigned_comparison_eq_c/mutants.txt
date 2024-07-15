@@ -1,0 +1,22 @@
+EQ_2_2_0_EQ_1_10_1_EQ_100_0_1_ ; replace == with !=
+EQ_2_2_1_EQ_1_10_0_EQ_100_0_1_ ; replace == with >=
+EQ_2_2_0_EQ_1_10_0_EQ_100_0_1_ ; replace == with >
+EQ_2_2_1_EQ_1_10_1_EQ_100_0_0_ ; replace == with <=
+EQ_2_2_0_EQ_1_10_1_EQ_100_0_0_ ; replace == with <
+EQ_2_2_0_EQ_1_10_0_EQ_100_0_1_ ; replace LHS with 0
+EQ_2_2_0_EQ_1_10_0_EQ_100_0_0_ ; replace LHS with 1
+EQ_2_2_0_EQ_1_10_0_EQ_100_0_1_ ; replace LHS with !LHS
+EQ_2_2_0_EQ_1_10_0_EQ_100_0_0_ ; replace LHS with ~LHS
+EQ_2_2_0_EQ_1_10_0_EQ_100_0_0_ ; replace LHS with --LHS
+EQ_2_2_0_EQ_1_10_0_EQ_100_0_0_ ; replace LHS with ++LHS
+EQ_2_2_0_EQ_1_10_0_EQ_100_0_0_ ; replace RHS with 0
+EQ_2_2_0_EQ_1_10_1_EQ_100_0_0_ ; replace RHS with 1
+EQ_2_2_0_EQ_1_10_0_EQ_100_0_0_ ; replace RHS with !RHS
+EQ_2_2_0_EQ_1_10_0_EQ_100_0_0_ ; replace RHS with ~RHS
+EQ_2_2_0_EQ_1_10_0_EQ_100_0_0_ ; replace RHS with --RHS
+EQ_2_2_0_EQ_1_10_0_EQ_100_0_0_ ; replace RHS with ++RHS
+EQ_2_2_0_EQ_1_10_0_EQ_100_0_0_ ; replace expression with 0
+EQ_2_2_1_EQ_1_10_1_EQ_100_0_1_ ; replace expression with 1
+EQ_2_2_0_EQ_1_10_1_EQ_100_0_1_ ; insert ! above expression
+EQ_2_2_4294967294_EQ_1_10_4294967295_EQ_100_0_4294967295_ ; insert ~ above expression
+EQ_2_2_3_EQ_1_10_3_EQ_100_0_3_ ; remove statement (so that default return of 3 is hit)
