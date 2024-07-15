@@ -147,7 +147,7 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
   // 1 would have caused the front-end used by Dredd to fail.
   for (const auto& static_assert_decl :
        visitor_->GetStaticAssertionsToRewrite()) {
-    auto assert_expr = static_assert_decl->getAssertExpr();
+    const auto* assert_expr = static_assert_decl->getAssertExpr();
     auto source_range_in_main_file = GetSourceRangeInMainFile(
         compiler_instance_->getPreprocessor(), *assert_expr);
     if (source_range_in_main_file.isValid()) {
@@ -158,7 +158,7 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
   }
 
   // Rewrite the constant integer argument of some function.
-  for (const auto constant_argument_expresion :
+  for (const auto *constant_argument_expresion :
        visitor_->GetConstantFunctionArgumentsToRewrite()) {
     auto source_range_in_main_file = GetSourceRangeInMainFile(
         compiler_instance_->getPreprocessor(), *constant_argument_expresion);

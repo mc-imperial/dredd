@@ -256,7 +256,8 @@ bool MutateVisitor::TraverseStmt(clang::Stmt* stmt) {
   // arguments' expressions so that they can be rewritten with the values to
   // which the expressions would normally evaluate.
   if (const auto* call_expr = llvm::dyn_cast<clang::CallExpr>(stmt)) {
-    if (call_expr->getBuiltinCallee() == 455) {
+    const unsigned int frame_address_builtin_id = 455;
+    if (call_expr->getBuiltinCallee() == frame_address_builtin_id) {
       // callee is `__builtin_frame_address()`
       constant_arguments_to_rewrite_.push_back(call_expr->getArg(0));
       return true;
