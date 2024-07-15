@@ -64,6 +64,9 @@ class MutateAstConsumer : public clang::ASTConsumer {
   [[nodiscard]] std::string GetMutantTrackingDreddPreludeC(
       int initial_mutation_id) const;
 
+  bool RewriteExpressionInMainFileToIntegral(const clang::Expr* expr,
+                                             uint64_t x);
+
   void ApplyMutations(
       const MutationTreeNode& dredd_mutation_tree_node, int initial_mutation_id,
       clang::ASTContext& context,
