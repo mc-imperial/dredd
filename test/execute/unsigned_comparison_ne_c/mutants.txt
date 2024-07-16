@@ -1,22 +1,4 @@
-NE_2_2_1_NE_1_10_0_NE_100_0_0_ ; replace != with ==
-NE_2_2_1_NE_1_10_0_NE_100_0_1_ ; replace != with >=
-NE_2_2_0_NE_1_10_0_NE_100_0_1_ ; replace != with >
-NE_2_2_1_NE_1_10_1_NE_100_0_0_ ; replace != with <=
-NE_2_2_0_NE_1_10_1_NE_100_0_0_ ; replace != with <
-NE_2_2_1_NE_1_10_1_NE_100_0_0_ ; replace LHS with 0
-NE_2_2_1_NE_1_10_1_NE_100_0_1_ ; replace LHS with 1
-NE_2_2_1_NE_1_10_1_NE_100_0_0_ ; replace LHS with !LHS
-NE_2_2_1_NE_1_10_1_NE_100_0_1_ ; replace LHS with ~LHS
-NE_2_2_1_NE_1_10_1_NE_100_0_1_ ; replace LHS with --LHS
-NE_2_2_1_NE_1_10_1_NE_100_0_1_ ; replace LHS with ++LHS
-NE_2_2_1_NE_1_10_1_NE_100_0_1_ ; replace RHS with 0
-NE_2_2_1_NE_1_10_0_NE_100_0_1_ ; replace RHS with 1
-NE_2_2_1_NE_1_10_1_NE_100_0_1_ ; replace RHS with !RHS
-NE_2_2_1_NE_1_10_1_NE_100_0_1_ ; replace RHS with ~RHS
-NE_2_2_1_NE_1_10_1_NE_100_0_1_ ; replace RHS with --RHS
-NE_2_2_1_NE_1_10_1_NE_100_0_1_ ; replace RHS with ++RHS
-NE_2_2_0_NE_1_10_0_NE_100_0_0_ ; replace expression with 0
-NE_2_2_1_NE_1_10_1_NE_100_0_1_ ; replace expression with 1
-NE_2_2_1_NE_1_10_0_NE_100_0_0_ ; insert ! above expression
-NE_2_2_4294967295_NE_1_10_4294967294_NE_100_0_4294967294_ ; insert ~ above expression
-NE_2_2_3_NE_1_10_3_NE_100_0_3_ ; remove statement (so that default return of 3 is hit)
+1_1_0_
+1_0_1_
+0_1_1_
+1_1_
