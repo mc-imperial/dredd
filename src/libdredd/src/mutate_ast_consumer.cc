@@ -189,7 +189,7 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
 }
 
 bool MutateAstConsumer::RewriteExpressionInMainFileToIntegral(
-    const clang::Expr* expr, uint64_t x) {
+    const clang::Expr* expr, uint64_t integral) {
   auto source_range_in_main_file =
       GetSourceRangeInMainFile(compiler_instance_->getPreprocessor(), *expr);
 
@@ -197,7 +197,7 @@ bool MutateAstConsumer::RewriteExpressionInMainFileToIntegral(
   // expression is in the main source file.
   if (source_range_in_main_file.isValid()) {
     std::stringstream stringstream;
-    stringstream << x;
+    stringstream << integral;
     rewriter_.ReplaceText(source_range_in_main_file, stringstream.str());
     return true;
   }
