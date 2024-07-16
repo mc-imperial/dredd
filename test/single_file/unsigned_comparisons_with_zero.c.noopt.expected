@@ -1,0 +1,198 @@
+#include <inttypes.h>
+#include <stdbool.h>
+#include <stdlib.h>
+#include <string.h>
+
+#ifdef _MSC_VER
+#define thread_local __declspec(thread)
+#elif __APPLE__
+#define thread_local __thread
+#else
+#include <threads.h>
+#endif
+
+static thread_local int __dredd_some_mutation_enabled = 1;
+static bool __dredd_enabled_mutation(int local_mutation_id) {
+  static thread_local int initialized = 0;
+  static thread_local uint64_t enabled_bitset[6];
+  if (!initialized) {
+    int some_mutation_enabled = 0;
+    const char* dredd_environment_variable = getenv("DREDD_ENABLED_MUTATION");
+    if (dredd_environment_variable) {
+      char* temp = malloc(strlen(dredd_environment_variable) + 1);
+      strcpy(temp, dredd_environment_variable);
+      char* token;
+      token = strtok(temp, ",");
+      while(token) {
+        int value = atoi(token);
+        int local_value = value - 0;
+        if (local_value >= 0 && local_value < 324) {
+          enabled_bitset[local_value / 64] |= ((uint64_t) 1 << (local_value % 64));
+          some_mutation_enabled = 1;
+        }
+        token = strtok(NULL, ",");
+      }
+      free(temp);
+    }
+    initialized = 1;
+    __dredd_some_mutation_enabled = some_mutation_enabled;
+  }
+  return enabled_bitset[local_mutation_id / 64] & ((uint64_t) 1 << (local_mutation_id % 64));
+}
+
+static unsigned int __dredd_replace_expr_unsigned_int_lvalue(unsigned int* arg, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return (*arg);
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return ++((*arg));
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return --((*arg));
+  return (*arg);
+}
+
+static unsigned int __dredd_replace_expr_unsigned_int(unsigned int arg, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return arg;
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return !(arg);
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return ~(arg);
+  if (__dredd_enabled_mutation(local_mutation_id + 2)) return 0;
+  if (__dredd_enabled_mutation(local_mutation_id + 3)) return 1;
+  return arg;
+}
+
+static int __dredd_replace_expr_int(int arg, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return arg;
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return !(arg);
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return ~(arg);
+  if (__dredd_enabled_mutation(local_mutation_id + 2)) return -(arg);
+  if (__dredd_enabled_mutation(local_mutation_id + 3)) return 0;
+  if (__dredd_enabled_mutation(local_mutation_id + 4)) return 1;
+  if (__dredd_enabled_mutation(local_mutation_id + 5)) return -1;
+  return arg;
+}
+
+static int __dredd_replace_binary_operator_NE_arg1_unsigned_int_arg2_unsigned_int(unsigned int arg1, unsigned int arg2, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return arg1 != arg2;
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return arg1 == arg2;
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg1 >= arg2;
+  if (__dredd_enabled_mutation(local_mutation_id + 2)) return arg1 > arg2;
+  if (__dredd_enabled_mutation(local_mutation_id + 3)) return arg1 <= arg2;
+  if (__dredd_enabled_mutation(local_mutation_id + 4)) return arg1 < arg2;
+  if (__dredd_enabled_mutation(local_mutation_id + 5)) return arg1;
+  if (__dredd_enabled_mutation(local_mutation_id + 6)) return arg2;
+  return arg1 != arg2;
+}
+
+static int __dredd_replace_binary_operator_LT_arg1_unsigned_int_arg2_unsigned_int(unsigned int arg1, unsigned int arg2, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return arg1 < arg2;
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return arg1 == arg2;
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg1 != arg2;
+  if (__dredd_enabled_mutation(local_mutation_id + 2)) return arg1 >= arg2;
+  if (__dredd_enabled_mutation(local_mutation_id + 3)) return arg1 > arg2;
+  if (__dredd_enabled_mutation(local_mutation_id + 4)) return arg1 <= arg2;
+  if (__dredd_enabled_mutation(local_mutation_id + 5)) return arg1;
+  if (__dredd_enabled_mutation(local_mutation_id + 6)) return arg2;
+  return arg1 < arg2;
+}
+
+static int __dredd_replace_binary_operator_LE_arg1_unsigned_int_arg2_unsigned_int(unsigned int arg1, unsigned int arg2, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return arg1 <= arg2;
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return arg1 == arg2;
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg1 != arg2;
+  if (__dredd_enabled_mutation(local_mutation_id + 2)) return arg1 >= arg2;
+  if (__dredd_enabled_mutation(local_mutation_id + 3)) return arg1 > arg2;
+  if (__dredd_enabled_mutation(local_mutation_id + 4)) return arg1 < arg2;
+  if (__dredd_enabled_mutation(local_mutation_id + 5)) return arg1;
+  if (__dredd_enabled_mutation(local_mutation_id + 6)) return arg2;
+  return arg1 <= arg2;
+}
+
+static int __dredd_replace_binary_operator_GT_arg1_unsigned_int_arg2_unsigned_int(unsigned int arg1, unsigned int arg2, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return arg1 > arg2;
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return arg1 == arg2;
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg1 != arg2;
+  if (__dredd_enabled_mutation(local_mutation_id + 2)) return arg1 >= arg2;
+  if (__dredd_enabled_mutation(local_mutation_id + 3)) return arg1 <= arg2;
+  if (__dredd_enabled_mutation(local_mutation_id + 4)) return arg1 < arg2;
+  if (__dredd_enabled_mutation(local_mutation_id + 5)) return arg1;
+  if (__dredd_enabled_mutation(local_mutation_id + 6)) return arg2;
+  return arg1 > arg2;
+}
+
+static int __dredd_replace_binary_operator_GE_arg1_unsigned_int_arg2_unsigned_int(unsigned int arg1, unsigned int arg2, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return arg1 >= arg2;
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return arg1 == arg2;
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg1 != arg2;
+  if (__dredd_enabled_mutation(local_mutation_id + 2)) return arg1 > arg2;
+  if (__dredd_enabled_mutation(local_mutation_id + 3)) return arg1 <= arg2;
+  if (__dredd_enabled_mutation(local_mutation_id + 4)) return arg1 < arg2;
+  if (__dredd_enabled_mutation(local_mutation_id + 5)) return arg1;
+  if (__dredd_enabled_mutation(local_mutation_id + 6)) return arg2;
+  return arg1 >= arg2;
+}
+
+static int __dredd_replace_binary_operator_EQ_arg1_unsigned_int_arg2_unsigned_int(unsigned int arg1, unsigned int arg2, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return arg1 == arg2;
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return arg1 != arg2;
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg1 >= arg2;
+  if (__dredd_enabled_mutation(local_mutation_id + 2)) return arg1 > arg2;
+  if (__dredd_enabled_mutation(local_mutation_id + 3)) return arg1 <= arg2;
+  if (__dredd_enabled_mutation(local_mutation_id + 4)) return arg1 < arg2;
+  if (__dredd_enabled_mutation(local_mutation_id + 5)) return arg1;
+  if (__dredd_enabled_mutation(local_mutation_id + 6)) return arg2;
+  return arg1 == arg2;
+}
+
+static bool __dredd_replace_expr_bool(bool arg, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return arg;
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return !(arg);
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return 1;
+  if (__dredd_enabled_mutation(local_mutation_id + 2)) return 0;
+  return arg;
+}
+
+#include <stdbool.h>
+
+bool x_eq_zero(unsigned x) {
+  if (!__dredd_enabled_mutation(26)) { return __dredd_replace_expr_bool(__dredd_replace_expr_int(__dredd_replace_binary_operator_EQ_arg1_unsigned_int_arg2_unsigned_int(__dredd_replace_expr_unsigned_int(__dredd_replace_expr_unsigned_int_lvalue(&(x), 0), 2) , __dredd_replace_expr_unsigned_int(0u, 6), 10), 17), 23); }
+}
+
+bool x_ne_zero(unsigned x) {
+  if (!__dredd_enabled_mutation(53)) { return __dredd_replace_expr_bool(__dredd_replace_expr_int(__dredd_replace_binary_operator_NE_arg1_unsigned_int_arg2_unsigned_int(__dredd_replace_expr_unsigned_int(__dredd_replace_expr_unsigned_int_lvalue(&(x), 27), 29) , __dredd_replace_expr_unsigned_int(0u, 33), 37), 44), 50); }
+}
+
+bool x_gt_zero(unsigned x) {
+  if (!__dredd_enabled_mutation(80)) { return __dredd_replace_expr_bool(__dredd_replace_expr_int(__dredd_replace_binary_operator_GT_arg1_unsigned_int_arg2_unsigned_int(__dredd_replace_expr_unsigned_int(__dredd_replace_expr_unsigned_int_lvalue(&(x), 54), 56) , __dredd_replace_expr_unsigned_int(0u, 60), 64), 71), 77); }
+}
+
+bool x_ge_zero(unsigned x) {
+  if (!__dredd_enabled_mutation(107)) { return __dredd_replace_expr_bool(__dredd_replace_expr_int(__dredd_replace_binary_operator_GE_arg1_unsigned_int_arg2_unsigned_int(__dredd_replace_expr_unsigned_int(__dredd_replace_expr_unsigned_int_lvalue(&(x), 81), 83) , __dredd_replace_expr_unsigned_int(0u, 87), 91), 98), 104); }
+}
+
+bool x_lt_zero(unsigned x) {
+  if (!__dredd_enabled_mutation(134)) { return __dredd_replace_expr_bool(__dredd_replace_expr_int(__dredd_replace_binary_operator_LT_arg1_unsigned_int_arg2_unsigned_int(__dredd_replace_expr_unsigned_int(__dredd_replace_expr_unsigned_int_lvalue(&(x), 108), 110) , __dredd_replace_expr_unsigned_int(0u, 114), 118), 125), 131); }
+}
+
+bool x_le_zero(unsigned x) {
+  if (!__dredd_enabled_mutation(161)) { return __dredd_replace_expr_bool(__dredd_replace_expr_int(__dredd_replace_binary_operator_LE_arg1_unsigned_int_arg2_unsigned_int(__dredd_replace_expr_unsigned_int(__dredd_replace_expr_unsigned_int_lvalue(&(x), 135), 137) , __dredd_replace_expr_unsigned_int(0u, 141), 145), 152), 158); }
+}
+
+bool zero_eq_x(unsigned x) {
+  if (!__dredd_enabled_mutation(188)) { return __dredd_replace_expr_bool(__dredd_replace_expr_int(__dredd_replace_binary_operator_EQ_arg1_unsigned_int_arg2_unsigned_int(__dredd_replace_expr_unsigned_int(0u, 162) , __dredd_replace_expr_unsigned_int(__dredd_replace_expr_unsigned_int_lvalue(&(x), 166), 168), 172), 179), 185); }
+}
+
+bool zero_ne_x(unsigned x) {
+  if (!__dredd_enabled_mutation(215)) { return __dredd_replace_expr_bool(__dredd_replace_expr_int(__dredd_replace_binary_operator_NE_arg1_unsigned_int_arg2_unsigned_int(__dredd_replace_expr_unsigned_int(0u, 189) , __dredd_replace_expr_unsigned_int(__dredd_replace_expr_unsigned_int_lvalue(&(x), 193), 195), 199), 206), 212); }
+}
+
+bool zero_gt_x(unsigned x) {
+  if (!__dredd_enabled_mutation(242)) { return __dredd_replace_expr_bool(__dredd_replace_expr_int(__dredd_replace_binary_operator_GT_arg1_unsigned_int_arg2_unsigned_int(__dredd_replace_expr_unsigned_int(0u, 216) , __dredd_replace_expr_unsigned_int(__dredd_replace_expr_unsigned_int_lvalue(&(x), 220), 222), 226), 233), 239); }
+}
+
+bool zero_ge_x(unsigned x) {
+  if (!__dredd_enabled_mutation(269)) { return __dredd_replace_expr_bool(__dredd_replace_expr_int(__dredd_replace_binary_operator_GE_arg1_unsigned_int_arg2_unsigned_int(__dredd_replace_expr_unsigned_int(0u, 243) , __dredd_replace_expr_unsigned_int(__dredd_replace_expr_unsigned_int_lvalue(&(x), 247), 249), 253), 260), 266); }
+}
+
+bool zero_lt_x(unsigned x) {
+  if (!__dredd_enabled_mutation(296)) { return __dredd_replace_expr_bool(__dredd_replace_expr_int(__dredd_replace_binary_operator_LT_arg1_unsigned_int_arg2_unsigned_int(__dredd_replace_expr_unsigned_int(0u, 270) , __dredd_replace_expr_unsigned_int(__dredd_replace_expr_unsigned_int_lvalue(&(x), 274), 276), 280), 287), 293); }
+}
+
+bool zero_le_x(unsigned x) {
+  if (!__dredd_enabled_mutation(323)) { return __dredd_replace_expr_bool(__dredd_replace_expr_int(__dredd_replace_binary_operator_LE_arg1_unsigned_int_arg2_unsigned_int(__dredd_replace_expr_unsigned_int(0u, 297) , __dredd_replace_expr_unsigned_int(__dredd_replace_expr_unsigned_int_lvalue(&(x), 301), 303), 307), 314), 320); }
+}

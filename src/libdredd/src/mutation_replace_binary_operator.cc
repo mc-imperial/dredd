@@ -53,7 +53,8 @@ MutationReplaceBinaryOperator::MutationReplaceBinaryOperator(
 bool MutationReplaceBinaryOperator::IsRedundantReplacementOperator(
     clang::BinaryOperatorKind operator_kind,
     const clang::ASTContext& ast_context) const {
-  if (IsRedundantReplacementForBooleanValuedOperator(operator_kind)) {
+  if (IsRedundantReplacementForBooleanValuedOperator(operator_kind,
+                                                     ast_context)) {
     return true;
   }
   if (IsRedundantReplacementForArithmeticOperator(operator_kind, ast_context)) {
@@ -1024,7 +1025,12 @@ MutationReplaceBinaryOperator::ClangOperatorKindToProtobufOperatorKind(
 
 bool MutationReplaceBinaryOperator::
     IsRedundantReplacementForBooleanValuedOperator(
-        clang::BinaryOperatorKind operator_kind) const {
+        clang::BinaryOperatorKind operator_kind,
+        const clang::ASTContext& ast_context) const {
+  if (IsRedundantReplacementForUnsignedComparison(operator_kind, ast_context)) {
+    return true;
+  }
+
   switch (binary_operator_->getOpcode()) {
     // From
     // https://people.cs.umass.edu/~rjust/publ/non_redundant_mutants_jstvr_2014.pdf:
@@ -1048,6 +1054,65 @@ bool MutationReplaceBinaryOperator::
     default:
       return false;
   }
+}
+
+bool MutationReplaceBinaryOperator::IsRedundantReplacementForUnsignedComparison(
+    clang::BinaryOperatorKind operator_kind,
+    const clang::ASTContext& ast_context) const {
+  if (binary_operator_->getLHS()->getType()->isUnsignedIntegerType() &&
+      binary_operator_->getRHS()->getType()->isUnsignedIntegerType()) {
+    if (MutationReplaceExpr::ExprIsEquivalentToInt(*binary_operator_->getLHS(),
+                                                   0, ast_context)) {
+      // LHS is 0
+      switch (binary_operator_->getOpcode()) {
+        case clang::BO_GT:
+        case clang::BO_LE:
+          // "0 > a" is subsumed by "false"
+          // "0 <= a" is subsumed by "true"
+          return true;
+        case clang::BO_EQ:
+          if (operator_kind == clang::BO_GE) {
+            // "0 == a" equivalent to "0 >= a"
+            return true;
+          }
+          break;
+        case clang::BO_NE:
+          if (operator_kind == clang::BO_LT) {
+            // "0 != a" equivalent to "0 < a"
+            return true;
+          }
+          break;
+        default:
+          break;
+      }
+    }
+    if (MutationReplaceExpr::ExprIsEquivalentToInt(*binary_operator_->getRHS(),
+                                                   0, ast_context)) {
+      // RHS is 0
+      switch (binary_operator_->getOpcode()) {
+        case clang::BO_LT:
+        case clang::BO_GE:
+          // "a < 0" is subsumed by "false"
+          // "a >= 0" is subsumed by "true"
+          return true;
+        case clang::BO_EQ:
+          if (operator_kind == clang::BO_LE) {
+            // "a == 0" equivalent to "a <= 0"
+            return true;
+          }
+          break;
+        case clang::BO_NE:
+          if (operator_kind == clang::BO_GT) {
+            // "a != 0" equivalent to "a > 0"
+            return true;
+          }
+          break;
+        default:
+          break;
+      }
+    }
+  }
+  return false;
 }
 
 bool MutationReplaceBinaryOperator::IsRedundantReplacementForArithmeticOperator(

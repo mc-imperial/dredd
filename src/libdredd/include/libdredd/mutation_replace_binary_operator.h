@@ -67,7 +67,12 @@ class MutationReplaceBinaryOperator : public Mutation {
       const clang::ASTContext& ast_context) const;
 
   [[nodiscard]] bool IsRedundantReplacementForBooleanValuedOperator(
-      clang::BinaryOperatorKind operator_kind) const;
+      clang::BinaryOperatorKind operator_kind,
+      const clang::ASTContext& ast_context) const;
+
+  [[nodiscard]] bool IsRedundantReplacementForUnsignedComparison(
+      clang::BinaryOperatorKind operator_kind,
+      const clang::ASTContext& ast_context) const;
 
   [[nodiscard]] bool IsRedundantReplacementForArithmeticOperator(
       clang::BinaryOperatorKind operator_kind,
