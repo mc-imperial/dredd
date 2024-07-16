@@ -38,4 +38,6 @@ WarningsAsErrors: '*'
 HeaderFilterRegex: '.*dredd.*'
 AnalyzeTemporaryDtors: false
 FormatStyle:     file
+CheckOptions:
+  readability-function-cognitive-complexity.Threshold: 70
 ...

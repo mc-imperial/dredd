@@ -21,6 +21,7 @@
 #include "clang/AST/Expr.h"
 #include "clang/AST/ParentMapContext.h"
 #include "clang/AST/Stmt.h"
+#include "clang/AST/Type.h"
 #include "clang/Basic/SourceLocation.h"
 #include "clang/Basic/SourceManager.h"
 #include "clang/Lex/Preprocessor.h"
@@ -129,6 +130,24 @@ bool EvaluateAsFloat(const clang::Expr& expr,
 // expression is value-dependent).
 bool IsCxx11ConstantExpr(const clang::Expr& expr,
                          const clang::ASTContext& ast_context);
+
+std::string GenerateMutationPrelude(bool semantics_preserving_mutation);
+
+std::string GenerateUnaryMacroCall(const std::string& macro_name,
+                                   const std::string& arg_evaluated,
+                                   const int& mutation_id_offset,
+                                   bool semantics_preserving_mutation);
+
+std::string GenerateMutationMacro(const std::string& name,
+                                  bool semantics_preserving_mutation);
+
+std::string GenerateMutationReturn(bool semantics_preserving_mutation);
+
+std::string TypeToUpperLimit(const clang::BuiltinType* type,
+                             const clang::ASTContext& ast_context);
+
+std::string TypeToLowerLimit(const clang::BuiltinType* type,
+                             const clang::ASTContext& ast_context);
 
 // It is often necessary to ask whether a given statement (which includes
 // expressions) has a parent of a given type. This helper returns nullptr if

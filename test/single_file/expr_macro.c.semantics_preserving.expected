@@ -1,0 +1,27 @@
+#define E (1, 2, 3)
+
+void foo(int, int, int);
+
+#include <inttypes.h>
+#include <stdbool.h>
+#include <stdlib.h>
+#include <string.h>
+
+#ifdef _MSC_VER
+#define thread_local __declspec(thread)
+#elif __APPLE__
+#define thread_local __thread
+#else
+#include <threads.h>
+#endif
+
+#include <limits.h>
+#include <float.h>
+#include <math.h>
+static thread_local unsigned long long int no_op = 0;
+
+#define MUTATION_RETURN(arg) actual_result
+#define MUTATION_PRELUDE(arg,type) type actual_result = (arg)
+int main() {
+  foo E;
+}

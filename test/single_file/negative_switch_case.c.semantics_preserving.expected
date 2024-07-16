@@ -1,0 +1,37 @@
+#include <inttypes.h>
+#include <stdbool.h>
+#include <stdlib.h>
+#include <string.h>
+
+#ifdef _MSC_VER
+#define thread_local __declspec(thread)
+#elif __APPLE__
+#define thread_local __thread
+#else
+#include <threads.h>
+#endif
+
+#include <limits.h>
+#include <float.h>
+#include <math.h>
+static thread_local unsigned long long int no_op = 0;
+
+#define MUTATION_RETURN(arg) actual_result
+#define REPLACE_EXPR_INT_ONE(args) if ((args) != actual_result) no_op++
+#define REPLACE_EXPR_INT_MINUS_ONE(args) if ((args) != actual_result) no_op++
+#define MUTATION_PRELUDE(arg,type) type actual_result = (arg)
+static int __dredd_replace_expr_int_zero(int arg, int local_mutation_id) {
+  MUTATION_PRELUDE(arg,int);
+  REPLACE_EXPR_INT_ONE(1);
+  REPLACE_EXPR_INT_MINUS_ONE(-1);
+  return MUTATION_RETURN(arg);
+}
+
+int main() {
+  switch(__dredd_replace_expr_int_zero(0, 0)) {
+  case -1:
+    break;
+  default:
+    break;
+  }
+}

@@ -1,3 +1,9 @@
+template<typename T> void bloop(T& x) { }
+
+struct foo {
+  int b : 2;
+};
+
 #include <cinttypes>
 #include <cstddef>
 #include <functional>
@@ -42,12 +48,8 @@ static bool __dredd_enabled_mutation(int local_mutation_id) {
   return (enabled_bitset[local_mutation_id / 64] & (static_cast<uint64_t>(1) << (local_mutation_id % 64))) != 0;
 }
 
-template<typename T> void bloop(T& x) { }
-
-struct foo {
-  int b : 2;
-};
-
+#define MUTATION_RETURN(arg) arg
+#define MUTATION_PRELUDE(arg) if (!__dredd_some_mutation_enabled) return arg
 int main() {
   const foo d = foo();
   if (!__dredd_enabled_mutation(0)) { bloop(d.b); }

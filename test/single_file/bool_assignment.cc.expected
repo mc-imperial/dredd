@@ -42,16 +42,20 @@ static bool __dredd_enabled_mutation(int local_mutation_id) {
   return (enabled_bitset[local_mutation_id / 64] & (static_cast<uint64_t>(1) << (local_mutation_id % 64))) != 0;
 }
 
+#define MUTATION_RETURN(arg) arg
+#define REPLACE_EXPR_TRUE(args, mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return args
+#define REPLACE_EXPR_FALSE(args, mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return args
+#define MUTATION_PRELUDE(arg) if (!__dredd_some_mutation_enabled) return arg
 static bool __dredd_replace_expr_bool_true(bool arg, int local_mutation_id) {
-  if (!__dredd_some_mutation_enabled) return arg;
-  if (__dredd_enabled_mutation(local_mutation_id + 0)) return false;
-  return arg;
+  MUTATION_PRELUDE(arg);
+  REPLACE_EXPR_FALSE(false, 0);
+  return MUTATION_RETURN(arg);
 }
 
 static bool __dredd_replace_expr_bool_false(bool arg, int local_mutation_id) {
-  if (!__dredd_some_mutation_enabled) return arg;
-  if (__dredd_enabled_mutation(local_mutation_id + 0)) return true;
-  return arg;
+  MUTATION_PRELUDE(arg);
+  REPLACE_EXPR_TRUE(true, 0);
+  return MUTATION_RETURN(arg);
 }
 
 int main() {

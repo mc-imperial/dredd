@@ -1,3 +1,5 @@
+constexpr int Max(int a, int b) { return a > b ? a : b; }
+
 #include <cinttypes>
 #include <cstddef>
 #include <functional>
@@ -42,27 +44,33 @@ static bool __dredd_enabled_mutation(int local_mutation_id) {
   return (enabled_bitset[local_mutation_id / 64] & (static_cast<uint64_t>(1) << (local_mutation_id % 64))) != 0;
 }
 
+#define MUTATION_RETURN(arg) arg
+#define REPLACE_EXPR_NOT(args, mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return args
+#define REPLACE_EXPR_MINUS(args, mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return args
+#define REPLACE_EXPR_INT_ZERO(args, mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return args
+#define REPLACE_EXPR_INT_ONE(args, mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return args
+#define REPLACE_EXPR_INT_MINUS_ONE(args, mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return args
+#define MUTATION_PRELUDE(arg) if (!__dredd_some_mutation_enabled) return arg
 static int __dredd_replace_expr_int_constant(std::function<int()> arg, int local_mutation_id) {
-  if (!__dredd_some_mutation_enabled) return arg();
-  if (__dredd_enabled_mutation(local_mutation_id + 0)) return ~(arg());
-  if (__dredd_enabled_mutation(local_mutation_id + 1)) return -(arg());
-  if (__dredd_enabled_mutation(local_mutation_id + 2)) return 0;
-  if (__dredd_enabled_mutation(local_mutation_id + 3)) return 1;
-  if (__dredd_enabled_mutation(local_mutation_id + 4)) return -1;
-  return arg();
+  int arg_evaluated = arg();
+  MUTATION_PRELUDE(arg_evaluated);
+  REPLACE_EXPR_NOT(arg_evaluated, 0);
+  REPLACE_EXPR_MINUS(arg_evaluated, 1);
+  REPLACE_EXPR_INT_ZERO(0, 2);
+  REPLACE_EXPR_INT_ONE(1, 3);
+  REPLACE_EXPR_INT_MINUS_ONE(-1, 4);
+  return MUTATION_RETURN(arg_evaluated);
 }
 
 static int __dredd_replace_expr_int_constant(int arg, int local_mutation_id) {
-  if (!__dredd_some_mutation_enabled) return arg;
-  if (__dredd_enabled_mutation(local_mutation_id + 0)) return ~(arg);
-  if (__dredd_enabled_mutation(local_mutation_id + 1)) return -(arg);
-  if (__dredd_enabled_mutation(local_mutation_id + 2)) return 0;
-  if (__dredd_enabled_mutation(local_mutation_id + 3)) return 1;
-  if (__dredd_enabled_mutation(local_mutation_id + 4)) return -1;
-  return arg;
+  MUTATION_PRELUDE(arg);
+  REPLACE_EXPR_NOT(arg, 0);
+  REPLACE_EXPR_MINUS(arg, 1);
+  REPLACE_EXPR_INT_ZERO(0, 2);
+  REPLACE_EXPR_INT_ONE(1, 3);
+  REPLACE_EXPR_INT_MINUS_ONE(-1, 4);
+  return MUTATION_RETURN(arg);
 }
-
-constexpr int Max(int a, int b) { return a > b ? a : b; }
 
 int foo() {
   if (!__dredd_enabled_mutation(15)) { return __dredd_replace_expr_int_constant([&]() -> int { return Max(__dredd_replace_expr_int_constant(5, 0),__dredd_replace_expr_int_constant(4, 5)); }, 10); }

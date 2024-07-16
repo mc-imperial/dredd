@@ -1,0 +1,25 @@
+#define E (1, 2, 3)
+
+void foo(int, int, int);
+
+#include <cinttypes>
+#include <cstddef>
+#include <functional>
+#include <string>
+
+
+#ifdef _MSC_VER
+#define thread_local __declspec(thread)
+#elif __APPLE__
+#define thread_local __thread
+#endif
+
+#include <limits>
+#include <cmath>
+static thread_local unsigned long long int no_op = 0;
+
+#define MUTATION_RETURN(arg) actual_result
+#define MUTATION_PRELUDE(arg,type) type actual_result = (arg)
+int main() {
+  foo E;
+}

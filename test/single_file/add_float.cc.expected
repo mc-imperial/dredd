@@ -42,46 +42,65 @@ static bool __dredd_enabled_mutation(int local_mutation_id) {
   return (enabled_bitset[local_mutation_id / 64] & (static_cast<uint64_t>(1) << (local_mutation_id % 64))) != 0;
 }
 
+#define MUTATION_RETURN(arg) arg
+#define REPLACE_EXPR_MINUS(args, mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return args
+#define REPLACE_EXPR_INT_ONE(args, mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return args
+#define REPLACE_EXPR_INT_MINUS_ONE(args, mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return args
+#define REPLACE_EXPR_INC(args, mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return args
+#define REPLACE_EXPR_FLOAT_ZERO(args, mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return args
+#define REPLACE_EXPR_FLOAT_ONE(args, mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return args
+#define REPLACE_EXPR_FLOAT_MINUS_ONE(args, mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return args
+#define REPLACE_EXPR_DEC(args, mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return args
+#define REPLACE_BINARY_Sub_arg1_float_arg2_float(arg1, arg2, mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return arg1 - arg2;
+#define REPLACE_BINARY_SubAssign_arg1_float_arg2_float(arg1, arg2, mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return arg1 -= arg2;
+#define REPLACE_BINARY_Mul_arg1_float_arg2_float(arg1, arg2, mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return arg1 * arg2;
+#define REPLACE_BINARY_MulAssign_arg1_float_arg2_float(arg1, arg2, mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return arg1 *= arg2;
+#define REPLACE_BINARY_Div_arg1_float_arg2_float(arg1, arg2, mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return arg1 / arg2;
+#define REPLACE_BINARY_DivAssign_arg1_float_arg2_float(arg1, arg2, mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return arg1 /= arg2;
+#define REPLACE_BINARY_AddAssign_arg1_float_arg2_float(arg1, arg2, mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return arg1 += arg2;
+#define REPLACE_BINARY_ARG2(args, mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return args
+#define REPLACE_BINARY_ARG1(args, mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return args
+#define MUTATION_PRELUDE(arg) if (!__dredd_some_mutation_enabled) return arg
 static int __dredd_replace_expr_int_zero(int arg, int local_mutation_id) {
-  if (!__dredd_some_mutation_enabled) return arg;
-  if (__dredd_enabled_mutation(local_mutation_id + 0)) return 1;
-  if (__dredd_enabled_mutation(local_mutation_id + 1)) return -1;
-  return arg;
+  MUTATION_PRELUDE(arg);
+  REPLACE_EXPR_INT_ONE(1, 0);
+  REPLACE_EXPR_INT_MINUS_ONE(-1, 1);
+  return MUTATION_RETURN(arg);
 }
 
 static float& __dredd_replace_binary_operator_Assign_arg1_float_arg2_float(float& arg1, float arg2, int local_mutation_id) {
-  if (!__dredd_some_mutation_enabled) return arg1 = arg2;
-  if (__dredd_enabled_mutation(local_mutation_id + 0)) return arg1 += arg2;
-  if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg1 /= arg2;
-  if (__dredd_enabled_mutation(local_mutation_id + 2)) return arg1 *= arg2;
-  if (__dredd_enabled_mutation(local_mutation_id + 3)) return arg1 -= arg2;
-  return arg1 = arg2;
+  MUTATION_PRELUDE(arg1 = arg2);
+  REPLACE_BINARY_AddAssign_arg1_float_arg2_float(arg1, arg2, 0);
+  REPLACE_BINARY_DivAssign_arg1_float_arg2_float(arg1, arg2, 1);
+  REPLACE_BINARY_MulAssign_arg1_float_arg2_float(arg1, arg2, 2);
+  REPLACE_BINARY_SubAssign_arg1_float_arg2_float(arg1, arg2, 3);
+  return MUTATION_RETURN(arg1 = arg2);
 }
 
 static float __dredd_replace_expr_float_lvalue(float& arg, int local_mutation_id) {
-  if (!__dredd_some_mutation_enabled) return arg;
-  if (__dredd_enabled_mutation(local_mutation_id + 0)) return ++(arg);
-  if (__dredd_enabled_mutation(local_mutation_id + 1)) return --(arg);
-  return arg;
+  MUTATION_PRELUDE(arg);
+  REPLACE_EXPR_INC(arg, 0);
+  REPLACE_EXPR_DEC(arg, 1);
+  return MUTATION_RETURN(arg);
 }
 
 static float __dredd_replace_expr_float(float arg, int local_mutation_id) {
-  if (!__dredd_some_mutation_enabled) return arg;
-  if (__dredd_enabled_mutation(local_mutation_id + 0)) return -(arg);
-  if (__dredd_enabled_mutation(local_mutation_id + 1)) return 0.0;
-  if (__dredd_enabled_mutation(local_mutation_id + 2)) return 1.0;
-  if (__dredd_enabled_mutation(local_mutation_id + 3)) return -1.0;
-  return arg;
+  MUTATION_PRELUDE(arg);
+  REPLACE_EXPR_MINUS(arg, 0);
+  REPLACE_EXPR_FLOAT_ZERO(0.0, 1);
+  REPLACE_EXPR_FLOAT_ONE(1.0, 2);
+  REPLACE_EXPR_FLOAT_MINUS_ONE(-1.0, 3);
+  return MUTATION_RETURN(arg);
 }
 
 static float __dredd_replace_binary_operator_Add_arg1_float_arg2_float(float arg1, float arg2, int local_mutation_id) {
-  if (!__dredd_some_mutation_enabled) return arg1 + arg2;
-  if (__dredd_enabled_mutation(local_mutation_id + 0)) return arg1 / arg2;
-  if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg1 * arg2;
-  if (__dredd_enabled_mutation(local_mutation_id + 2)) return arg1 - arg2;
-  if (__dredd_enabled_mutation(local_mutation_id + 3)) return arg1;
-  if (__dredd_enabled_mutation(local_mutation_id + 4)) return arg2;
-  return arg1 + arg2;
+  MUTATION_PRELUDE(arg1 + arg2);
+  REPLACE_BINARY_Div_arg1_float_arg2_float(arg1, arg2, 0);
+  REPLACE_BINARY_Mul_arg1_float_arg2_float(arg1, arg2, 1);
+  REPLACE_BINARY_Sub_arg1_float_arg2_float(arg1, arg2, 2);
+  REPLACE_BINARY_ARG1(arg1, 3);
+  REPLACE_BINARY_ARG2(arg2, 4);
+  return MUTATION_RETURN(arg1 + arg2);
 }
 
 int main() {

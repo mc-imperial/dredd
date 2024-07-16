@@ -39,16 +39,19 @@ class MutationReplaceBinaryOperator : public Mutation {
 
   protobufs::MutationGroup Apply(
       clang::ASTContext& ast_context, const clang::Preprocessor& preprocessor,
-      bool optimise_mutations, bool only_track_mutant_coverage,
-      int first_mutation_id_in_file, int& mutation_id,
-      clang::Rewriter& rewriter,
-      std::unordered_set<std::string>& dredd_declarations) const override;
+      bool optimise_mutations, bool semantics_preserving_mutation,
+      bool only_track_mutant_coverage, int first_mutation_id_in_file,
+      int& mutation_id, clang::Rewriter& rewriter,
+      std::unordered_set<std::string>& dredd_declarations,
+      std::unordered_set<std::string>& dredd_macros) const override;
 
  private:
   std::string GenerateMutatorFunction(
-      clang::ASTContext& ast_context, const std::string& function_name,
-      const std::string& result_type, const std::string& lhs_type,
-      const std::string& rhs_type, bool optimise_mutations,
+      clang::ASTContext& ast_context,
+      std::unordered_set<std::string>& dredd_macros,
+      const std::string& function_name, const std::string& result_type,
+      const std::string& lhs_type, const std::string& rhs_type,
+      bool optimise_mutations, bool semantics_preserving_mutation,
       bool only_track_mutant_coverage, int& mutation_id,
       protobufs::MutationReplaceBinaryOperator& protobuf_message) const;
 
@@ -59,8 +62,23 @@ class MutationReplaceBinaryOperator : public Mutation {
                        int first_mutation_id_in_file, int mutation_id,
                        clang::Rewriter& rewriter) const;
 
-  std::string GetFunctionName(bool optimise_mutations,
-                              clang::ASTContext& ast_context) const;
+  [[nodiscard]] std::string GetTypeSpecifier(
+      const clang::ASTContext& ast_context) const;
+
+  [[nodiscard]] std::string GetFunctionName(
+      bool optimise_mutations, const clang::ASTContext& ast_context) const;
+
+  static std::string OpKindToString(clang::BinaryOperatorKind kind);
+
+  static std::string ConvertToSemanticsPreservingBinaryExpression(
+      const std::string& arg1_evaluated,
+      clang::BinaryOperatorKind operator_kind,
+      const std::string& arg2_evaluated);
+
+  [[nodiscard]] std::string GetBinaryMacroName(
+      clang::BinaryOperatorKind operator_kind,
+      const clang::ASTContext& ast_context,
+      bool semantics_preserving_mutation) const;
 
   [[nodiscard]] bool IsRedundantReplacementOperator(
       clang::BinaryOperatorKind operator_kind,
@@ -79,17 +97,27 @@ class MutationReplaceBinaryOperator : public Mutation {
   // Replaces binary expressions with either the left or right operand.
   void GenerateArgumentReplacement(
       const std::string& arg1_evaluated, const std::string& arg2_evaluated,
-      const clang::ASTContext& ast_context, bool optimise_mutations,
-      bool only_track_mutant_coverage, int mutation_id_base,
-      std::stringstream& new_function, int& mutation_id_offset,
+      const clang::ASTContext& ast_context,
+      std::unordered_set<std::string>& dredd_macros, bool optimise_mutations,
+      bool semantics_preserving_mutation, bool only_track_mutant_coverage,
+      int mutation_id_base, std::stringstream& new_function,
+      int& mutation_id_offset,
       protobufs::MutationReplaceBinaryOperator& protobuf_message) const;
+
+  // Generates macro for operator replacement.
+  [[nodiscard]] std::string GenerateBinaryOperatorReplacementMacro(
+      const std::string& name, clang::BinaryOperatorKind operator_kind,
+      bool semantics_preserving_mutation,
+      const clang::ASTContext& ast_context) const;
 
   // Replaces binary operators with other valid binary operators.
   void GenerateBinaryOperatorReplacement(
       const std::string& arg1_evaluated, const std::string& arg2_evaluated,
-      const clang::ASTContext& ast_context, bool optimise_mutations,
-      bool only_track_mutant_coverage, int mutation_id_base,
-      std::stringstream& new_function, int& mutation_id_offset,
+      const clang::ASTContext& ast_context,
+      std::unordered_set<std::string>& dredd_macros, bool optimise_mutations,
+      bool semantics_preserving_mutation, bool only_track_mutant_coverage,
+      int mutation_id_base, std::stringstream& new_function,
+      int& mutation_id_offset,
       protobufs::MutationReplaceBinaryOperator& protobuf_message) const;
 
   [[nodiscard]] std::vector<clang::BinaryOperatorKind> GetReplacementOperators(
@@ -112,8 +140,9 @@ class MutationReplaceBinaryOperator : public Mutation {
       const clang::Preprocessor& preprocessor,
       const std::string& new_function_prefix, const std::string& result_type,
       const std::string& lhs_type, const std::string& rhs_type,
-      bool only_track_mutant_coverage, int first_mutation_id_in_file,
-      int& mutation_id, clang::Rewriter& rewriter,
+      bool semantics_preserving_mutation, bool only_track_mutant_coverage,
+      int first_mutation_id_in_file, int& mutation_id,
+      clang::Rewriter& rewriter,
       std::unordered_set<std::string>& dredd_declarations) const;
 
   static void AddMutationInstance(

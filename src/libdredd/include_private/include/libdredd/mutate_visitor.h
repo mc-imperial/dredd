@@ -40,7 +40,7 @@ namespace dredd {
 class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
  public:
   MutateVisitor(const clang::CompilerInstance& compiler_instance,
-                bool optimise_mutations);
+                bool optimise_mutations, bool semantics_preserving_mutation);
 
   bool TraverseDecl(clang::Decl* decl);
 
@@ -99,6 +99,11 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
   // mutations for the translation unit.
   [[nodiscard]] const MutationTreeNode& GetMutations() const {
     return mutation_tree_root_;
+  }
+
+  [[nodiscard]] clang::SourceLocation
+  GetStartLocationOfFirstFunctionInSourceFile() const {
+    return start_location_of_first_function_in_source_file_;
   }
 
   // Yields the C++ constant-sized arrays, whose size expressions need to be
@@ -169,6 +174,8 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
   // }
   bool IsInFunction();
 
+  void UpdateStartLocationOfFirstFunctionInSourceFile();
+
   // Mutating an enum constant can be problematic when the enum constant is used
   // to implicitly construct a C++ object. This helper method allows detecting
   // this special case, so that it can be ignored.
@@ -176,6 +183,11 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
 
   const clang::CompilerInstance* compiler_instance_;
   bool optimise_mutations_;
+  bool semantics_preserving_mutation_;
+
+  // Records the start location of the very first function definition in the
+  // source file, before which Dredd's prelude can be placed.
+  clang::SourceLocation start_location_of_first_function_in_source_file_;
 
   // Tracks the nest of declarations currently being traversed. Any new Dredd
   // functions will be put before the start of the current nest, which avoids

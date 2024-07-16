@@ -1,0 +1,64 @@
+#include <cinttypes>
+#include <cstddef>
+#include <functional>
+#include <string>
+
+
+#ifdef _MSC_VER
+#define thread_local __declspec(thread)
+#elif __APPLE__
+#define thread_local __thread
+#endif
+
+#include <limits>
+#include <cmath>
+static thread_local unsigned long long int no_op = 0;
+
+#define MUTATION_RETURN(arg) actual_result
+#define REPLACE_EXPR_MINUS(args) if ((args) != actual_result) no_op++
+#define REPLACE_EXPR_FLOAT_ZERO(args) if ((args) != actual_result) no_op++
+#define REPLACE_EXPR_FLOAT_ONE(args) if ((args) != actual_result) no_op++
+#define REPLACE_EXPR_FLOAT_MINUS_ONE(args) if ((args) != actual_result) no_op++
+#define REPLACE_BINARY_Sub_arg1_double_arg2_double(arg1, arg2) if (!(fabs((0.5 * (arg1)) - (0.5 * (arg2))) > (0.5 * std::numeric_limits<double>::max())) && (arg1 - arg2) != actual_result) no_op++
+#define REPLACE_BINARY_Mul_arg1_double_arg2_double(arg1, arg2) if (!(fabs((0x1.0p-100 * (arg1)) * (0x1.0p-924 * (arg2))) > (0x1.0p-100 * (0x1.0p-924 * std::numeric_limits<double>::max()))) && (arg1 * arg2) != actual_result) no_op++
+#define REPLACE_BINARY_Div_arg1_double_arg2_double(arg1, arg2) if (!((fabs((arg2)) < 1.0) && ((((arg2) == 0.0) || (fabs((0x1.0p-974 * (arg1)) / (0x1.0p100 * (arg2)))) > (0x1.0p-100 * (0x1.0p-974 * std::numeric_limits<double>::max()))))) && (arg1 / arg2) != actual_result) no_op++
+#define REPLACE_BINARY_ARG2(arg2) if ((arg2) != actual_result) no_op++
+#define REPLACE_BINARY_ARG1(args) if ((args) != actual_result) no_op++
+#define MUTATION_PRELUDE(arg,type) type actual_result = (arg)
+static double __dredd_replace_expr_double_zero(double arg, int local_mutation_id) {
+  MUTATION_PRELUDE(arg,double);
+  REPLACE_EXPR_FLOAT_ONE(1.0);
+  REPLACE_EXPR_FLOAT_MINUS_ONE(-1.0);
+  return MUTATION_RETURN(arg);
+}
+
+static double __dredd_replace_expr_double(double arg, int local_mutation_id) {
+  MUTATION_PRELUDE(arg,double);
+  REPLACE_EXPR_MINUS(arg);
+  REPLACE_EXPR_FLOAT_ZERO(0.0);
+  REPLACE_EXPR_FLOAT_ONE(1.0);
+  REPLACE_EXPR_FLOAT_MINUS_ONE(-1.0);
+  return MUTATION_RETURN(arg);
+}
+
+__attribute__((always_inline)) static double __dredd_replace_binary_operator_Add_arg1_double_arg2_double_lhs_zero(double arg1, double arg2, int local_mutation_id) {
+  MUTATION_PRELUDE(arg1 + arg2,double);
+  REPLACE_BINARY_Sub_arg1_double_arg2_double(arg1, arg2);
+  REPLACE_BINARY_ARG2(arg2);
+  return MUTATION_RETURN(arg1 + arg2);
+}
+
+__attribute__((always_inline)) static double __dredd_replace_binary_operator_Add_arg1_double_arg2_double(double arg1, double arg2, int local_mutation_id) {
+  MUTATION_PRELUDE(arg1 + arg2,double);
+  REPLACE_BINARY_Div_arg1_double_arg2_double(arg1, arg2);
+  REPLACE_BINARY_Mul_arg1_double_arg2_double(arg1, arg2);
+  REPLACE_BINARY_Sub_arg1_double_arg2_double(arg1, arg2);
+  REPLACE_BINARY_ARG1(arg1);
+  REPLACE_BINARY_ARG2(arg2);
+  return MUTATION_RETURN(arg1 + arg2);
+}
+
+int main() {
+  double x = __dredd_replace_expr_double(__dredd_replace_binary_operator_Add_arg1_double_arg2_double_lhs_zero(__dredd_replace_expr_double_zero(0.0, 0) , __dredd_replace_expr_double(5.32, 2), 6), 8);
+  double y = __dredd_replace_expr_double(__dredd_replace_binary_operator_Add_arg1_double_arg2_double(__dredd_replace_expr_double(5.234, 12) , __dredd_replace_expr_double(2.352, 16), 20), 25);
+}

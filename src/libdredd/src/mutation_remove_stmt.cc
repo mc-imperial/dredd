@@ -40,10 +40,13 @@ MutationRemoveStmt::MutationRemoveStmt(const clang::Stmt& stmt,
 
 protobufs::MutationGroup MutationRemoveStmt::Apply(
     clang::ASTContext& ast_context, const clang::Preprocessor& preprocessor,
-    bool optimise_mutations, bool only_track_mutant_coverage,
-    int first_mutation_id_in_file, int& mutation_id, clang::Rewriter& rewriter,
-    std::unordered_set<std::string>& dredd_declarations) const {
+    bool optimise_mutations, bool semantics_preserving_mutation,
+    bool only_track_mutant_coverage, int first_mutation_id_in_file,
+    int& mutation_id, clang::Rewriter& rewriter,
+    std::unordered_set<std::string>& dredd_declarations,
+    std::unordered_set<std::string>& dredd_macros) const {
   (void)dredd_declarations;  // Unused.
+  (void)dredd_macros;        // Unused.
   (void)optimise_mutations;  // Unused.
 
   // The protobuf object for the mutation, which will be wrapped in a
@@ -106,7 +109,7 @@ protobufs::MutationGroup MutationRemoveStmt::Apply(
                                      ", 1); ");
     assert(!rewriter_result && "Rewrite failed.\n");
     (void)rewriter_result;  // Keep release-mode compilers happy.
-  } else {
+  } else if (!semantics_preserving_mutation) {
     bool rewriter_result = rewriter.InsertTextBefore(
         source_range.getBegin(), "if (!__dredd_enabled_mutation(" +
                                      std::to_string(local_mutation_id) +

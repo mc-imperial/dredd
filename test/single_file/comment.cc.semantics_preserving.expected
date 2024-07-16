@@ -1,0 +1,41 @@
+void g();
+
+#include <cinttypes>
+#include <cstddef>
+#include <functional>
+#include <string>
+
+
+#ifdef _MSC_VER
+#define thread_local __declspec(thread)
+#elif __APPLE__
+#define thread_local __thread
+#endif
+
+#include <limits>
+#include <cmath>
+static thread_local unsigned long long int no_op = 0;
+
+#define MUTATION_RETURN(arg) actual_result
+#define REPLACE_EXPR_FALSE(args) if ((args) != actual_result) no_op++
+#define MUTATION_PRELUDE(arg,type) type actual_result = (arg)
+static bool __dredd_replace_expr_bool_true(bool arg, int local_mutation_id) {
+  MUTATION_PRELUDE(arg,bool);
+  REPLACE_EXPR_FALSE(false);
+  return MUTATION_RETURN(arg);
+}
+
+void f()
+{
+  g() /* something */ ;
+  g() // something
+;
+
+  if(__dredd_replace_expr_bool_true(true, 2)) {
+
+  }
+  // something
+  if(__dredd_replace_expr_bool_true(true, 4)) {
+
+  } /* something */
+}

@@ -1,0 +1,34 @@
+#include <cinttypes>
+#include <cstddef>
+#include <functional>
+#include <string>
+
+
+#ifdef _MSC_VER
+#define thread_local __declspec(thread)
+#elif __APPLE__
+#define thread_local __thread
+#endif
+
+#include <limits>
+#include <cmath>
+static thread_local unsigned long long int no_op = 0;
+
+#define MUTATION_RETURN(arg) actual_result
+#define REPLACE_EXPR_INT_ONE(args) if ((args) != actual_result) no_op++
+#define REPLACE_EXPR_INT_MINUS_ONE(args) if ((args) != actual_result) no_op++
+#define MUTATION_PRELUDE(arg,type) type actual_result = (arg)
+static int __dredd_replace_expr_int_zero(int arg, int local_mutation_id) {
+  MUTATION_PRELUDE(arg,int);
+  REPLACE_EXPR_INT_ONE(1);
+  REPLACE_EXPR_INT_MINUS_ONE(-1);
+  return MUTATION_RETURN(arg);
+}
+
+template<int N> void foo() {
+  int A[N] = {__dredd_replace_expr_int_zero(0, 0)};
+}
+
+int main() {
+  foo<1 + 2>();
+}

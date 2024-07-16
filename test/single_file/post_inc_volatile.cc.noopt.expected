@@ -42,69 +42,101 @@ static bool __dredd_enabled_mutation(int local_mutation_id) {
   return (enabled_bitset[local_mutation_id / 64] & (static_cast<uint64_t>(1) << (local_mutation_id % 64))) != 0;
 }
 
+#define MUTATION_RETURN(arg) arg
+#define REPLACE_UNARY_PostDec(arg, mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return arg;
+#define REPLACE_UNARY_Not(arg, mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return arg;
+#define REPLACE_UNARY_Minus(arg, mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return arg;
+#define REPLACE_UNARY_LNot(arg, mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return arg;
+#define REPLACE_UNARY_ARG(args, mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return args
+#define REPLACE_EXPR_NOT(args, mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return args
+#define REPLACE_EXPR_MINUS(args, mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return args
+#define REPLACE_EXPR_LNOT(args, mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return args
+#define REPLACE_EXPR_INT_ZERO(args, mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return args
+#define REPLACE_EXPR_INT_ONE(args, mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return args
+#define REPLACE_EXPR_INT_MINUS_ONE(args, mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return args
+#define REPLACE_EXPR_INC(args, mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return args
+#define REPLACE_EXPR_DEC(args, mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return args
+#define REPLACE_BINARY_XorAssign_arg1_int_arg2_int(arg1, arg2, mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return arg1 ^= arg2;
+#define REPLACE_BINARY_Sub_arg1_int_arg2_int(arg1, arg2, mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return arg1 - arg2;
+#define REPLACE_BINARY_SubAssign_arg1_int_arg2_int(arg1, arg2, mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return arg1 -= arg2;
+#define REPLACE_BINARY_ShrAssign_arg1_int_arg2_int(arg1, arg2, mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return arg1 >>= arg2;
+#define REPLACE_BINARY_ShlAssign_arg1_int_arg2_int(arg1, arg2, mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return arg1 <<= arg2;
+#define REPLACE_BINARY_Rem_arg1_int_arg2_int(arg1, arg2, mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return arg1 % arg2;
+#define REPLACE_BINARY_RemAssign_arg1_int_arg2_int(arg1, arg2, mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return arg1 %= arg2;
+#define REPLACE_BINARY_OrAssign_arg1_int_arg2_int(arg1, arg2, mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return arg1 |= arg2;
+#define REPLACE_BINARY_Mul_arg1_int_arg2_int(arg1, arg2, mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return arg1 * arg2;
+#define REPLACE_BINARY_MulAssign_arg1_int_arg2_int(arg1, arg2, mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return arg1 *= arg2;
+#define REPLACE_BINARY_Div_arg1_int_arg2_int(arg1, arg2, mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return arg1 / arg2;
+#define REPLACE_BINARY_DivAssign_arg1_int_arg2_int(arg1, arg2, mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return arg1 /= arg2;
+#define REPLACE_BINARY_AndAssign_arg1_int_arg2_int(arg1, arg2, mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return arg1 &= arg2;
+#define REPLACE_BINARY_AddAssign_arg1_int_arg2_int(arg1, arg2, mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return arg1 += arg2;
+#define REPLACE_BINARY_ARG2(args, mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return args
+#define REPLACE_BINARY_ARG1(args, mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return args
+#define MUTATION_PRELUDE(arg) if (!__dredd_some_mutation_enabled) return arg
 static int& __dredd_replace_binary_operator_Assign_arg1_int_arg2_int(int& arg1, std::function<int()> arg2, int local_mutation_id) {
-  if (!__dredd_some_mutation_enabled) return arg1 = arg2();
-  if (__dredd_enabled_mutation(local_mutation_id + 0)) return arg1 += arg2();
-  if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg1 &= arg2();
-  if (__dredd_enabled_mutation(local_mutation_id + 2)) return arg1 /= arg2();
-  if (__dredd_enabled_mutation(local_mutation_id + 3)) return arg1 *= arg2();
-  if (__dredd_enabled_mutation(local_mutation_id + 4)) return arg1 |= arg2();
-  if (__dredd_enabled_mutation(local_mutation_id + 5)) return arg1 %= arg2();
-  if (__dredd_enabled_mutation(local_mutation_id + 6)) return arg1 <<= arg2();
-  if (__dredd_enabled_mutation(local_mutation_id + 7)) return arg1 >>= arg2();
-  if (__dredd_enabled_mutation(local_mutation_id + 8)) return arg1 -= arg2();
-  if (__dredd_enabled_mutation(local_mutation_id + 9)) return arg1 ^= arg2();
-  return arg1 = arg2();
+  MUTATION_PRELUDE(arg1 = arg2());
+  REPLACE_BINARY_AddAssign_arg1_int_arg2_int(arg1, arg2(), 0);
+  REPLACE_BINARY_AndAssign_arg1_int_arg2_int(arg1, arg2(), 1);
+  REPLACE_BINARY_DivAssign_arg1_int_arg2_int(arg1, arg2(), 2);
+  REPLACE_BINARY_MulAssign_arg1_int_arg2_int(arg1, arg2(), 3);
+  REPLACE_BINARY_OrAssign_arg1_int_arg2_int(arg1, arg2(), 4);
+  REPLACE_BINARY_RemAssign_arg1_int_arg2_int(arg1, arg2(), 5);
+  REPLACE_BINARY_ShlAssign_arg1_int_arg2_int(arg1, arg2(), 6);
+  REPLACE_BINARY_ShrAssign_arg1_int_arg2_int(arg1, arg2(), 7);
+  REPLACE_BINARY_SubAssign_arg1_int_arg2_int(arg1, arg2(), 8);
+  REPLACE_BINARY_XorAssign_arg1_int_arg2_int(arg1, arg2(), 9);
+  return MUTATION_RETURN(arg1 = arg2());
 }
 
 static int __dredd_replace_unary_operator_PostInc_volatile_int(std::function<volatile int&()> arg, int local_mutation_id) {
-  if (!__dredd_some_mutation_enabled) return arg()++;
-  if (__dredd_enabled_mutation(local_mutation_id + 0)) return arg()--;
-  if (__dredd_enabled_mutation(local_mutation_id + 1)) return ~arg();
-  if (__dredd_enabled_mutation(local_mutation_id + 2)) return -arg();
-  if (__dredd_enabled_mutation(local_mutation_id + 3)) return !arg();
-  if (__dredd_enabled_mutation(local_mutation_id + 4)) return arg();
-  return arg()++;
+  MUTATION_PRELUDE(arg()++);
+  REPLACE_UNARY_PostDec(arg(), 0);
+  REPLACE_UNARY_Not(arg(), 1);
+  REPLACE_UNARY_Minus(arg(), 2);
+  REPLACE_UNARY_LNot(arg(), 3);
+  REPLACE_UNARY_ARG(arg(), 4);
+  return MUTATION_RETURN(arg()++);
 }
 
 static int __dredd_replace_expr_int_lvalue(int& arg, int local_mutation_id) {
-  if (!__dredd_some_mutation_enabled) return arg;
-  if (__dredd_enabled_mutation(local_mutation_id + 0)) return ++(arg);
-  if (__dredd_enabled_mutation(local_mutation_id + 1)) return --(arg);
-  return arg;
+  MUTATION_PRELUDE(arg);
+  REPLACE_EXPR_INC(arg, 0);
+  REPLACE_EXPR_DEC(arg, 1);
+  return MUTATION_RETURN(arg);
 }
 
 static int __dredd_replace_expr_int(std::function<int()> arg, int local_mutation_id) {
-  if (!__dredd_some_mutation_enabled) return arg();
-  if (__dredd_enabled_mutation(local_mutation_id + 0)) return !(arg());
-  if (__dredd_enabled_mutation(local_mutation_id + 1)) return ~(arg());
-  if (__dredd_enabled_mutation(local_mutation_id + 2)) return -(arg());
-  if (__dredd_enabled_mutation(local_mutation_id + 3)) return 0;
-  if (__dredd_enabled_mutation(local_mutation_id + 4)) return 1;
-  if (__dredd_enabled_mutation(local_mutation_id + 5)) return -1;
-  return arg();
+  int arg_evaluated = arg();
+  MUTATION_PRELUDE(arg_evaluated);
+  REPLACE_EXPR_LNOT(arg_evaluated, 0);
+  REPLACE_EXPR_NOT(arg_evaluated, 1);
+  REPLACE_EXPR_MINUS(arg_evaluated, 2);
+  REPLACE_EXPR_INT_ZERO(0, 3);
+  REPLACE_EXPR_INT_ONE(1, 4);
+  REPLACE_EXPR_INT_MINUS_ONE(-1, 5);
+  return MUTATION_RETURN(arg_evaluated);
 }
 
 static int __dredd_replace_expr_int(int arg, int local_mutation_id) {
-  if (!__dredd_some_mutation_enabled) return arg;
-  if (__dredd_enabled_mutation(local_mutation_id + 0)) return !(arg);
-  if (__dredd_enabled_mutation(local_mutation_id + 1)) return ~(arg);
-  if (__dredd_enabled_mutation(local_mutation_id + 2)) return -(arg);
-  if (__dredd_enabled_mutation(local_mutation_id + 3)) return 0;
-  if (__dredd_enabled_mutation(local_mutation_id + 4)) return 1;
-  if (__dredd_enabled_mutation(local_mutation_id + 5)) return -1;
-  return arg;
+  MUTATION_PRELUDE(arg);
+  REPLACE_EXPR_LNOT(arg, 0);
+  REPLACE_EXPR_NOT(arg, 1);
+  REPLACE_EXPR_MINUS(arg, 2);
+  REPLACE_EXPR_INT_ZERO(0, 3);
+  REPLACE_EXPR_INT_ONE(1, 4);
+  REPLACE_EXPR_INT_MINUS_ONE(-1, 5);
+  return MUTATION_RETURN(arg);
 }
 
 static int __dredd_replace_binary_operator_Add_arg1_int_arg2_int(std::function<int()> arg1, std::function<int()> arg2, int local_mutation_id) {
-  if (!__dredd_some_mutation_enabled) return arg1() + arg2();
-  if (__dredd_enabled_mutation(local_mutation_id + 0)) return arg1() / arg2();
-  if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg1() * arg2();
-  if (__dredd_enabled_mutation(local_mutation_id + 2)) return arg1() % arg2();
-  if (__dredd_enabled_mutation(local_mutation_id + 3)) return arg1() - arg2();
-  if (__dredd_enabled_mutation(local_mutation_id + 4)) return arg1();
-  if (__dredd_enabled_mutation(local_mutation_id + 5)) return arg2();
-  return arg1() + arg2();
+  MUTATION_PRELUDE(arg1() + arg2());
+  REPLACE_BINARY_Div_arg1_int_arg2_int(arg1(), arg2(), 0);
+  REPLACE_BINARY_Mul_arg1_int_arg2_int(arg1(), arg2(), 1);
+  REPLACE_BINARY_Rem_arg1_int_arg2_int(arg1(), arg2(), 2);
+  REPLACE_BINARY_Sub_arg1_int_arg2_int(arg1(), arg2(), 3);
+  REPLACE_BINARY_ARG1(arg1(), 4);
+  REPLACE_BINARY_ARG2(arg2(), 5);
+  return MUTATION_RETURN(arg1() + arg2());
 }
 
 int main() {

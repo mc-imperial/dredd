@@ -17,7 +17,6 @@
 #include <functional>
 #include <memory>
 #include <string>
-#include <vector>
 
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/Expr.h"
@@ -48,9 +47,11 @@ void TestRemoval(const std::string& original, const std::string& expected,
                            ast_unit->getLangOpts());
   int mutation_id = 0;
   std::unordered_set<std::string> dredd_declarations;
+  std::unordered_set<std::string> dredd_macros;
   mutation_supplier(ast_unit->getPreprocessor(), ast_unit->getASTContext())
       .Apply(ast_unit->getASTContext(), ast_unit->getPreprocessor(), true,
-             false, 0, mutation_id, rewriter, dredd_declarations);
+             false, false, 0, mutation_id, rewriter, dredd_declarations,
+             dredd_macros);
   ASSERT_EQ(1, mutation_id);
   ASSERT_EQ(0, dredd_declarations.size());
   const clang::RewriteBuffer* rewrite_buffer = rewriter.getRewriteBufferFor(

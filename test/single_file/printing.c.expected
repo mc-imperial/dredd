@@ -1,3 +1,5 @@
+#include <stdio.h>
+
 #include <inttypes.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -40,8 +42,8 @@ static bool __dredd_enabled_mutation(int local_mutation_id) {
   return enabled_bitset[local_mutation_id / 64] & ((uint64_t) 1 << (local_mutation_id % 64));
 }
 
-#include <stdio.h>
-
+#define MUTATION_RETURN(arg) arg
+#define MUTATION_PRELUDE(arg) if (!__dredd_some_mutation_enabled) return arg
 int main() {
   if (!__dredd_enabled_mutation(0)) { printf("%s\n", "A\n"); }
   if (!__dredd_enabled_mutation(1)) { printf("%s\n", "B\n"); }

@@ -1,0 +1,85 @@
+#include <cinttypes>
+#include <cstddef>
+#include <functional>
+#include <string>
+
+
+#ifdef _MSC_VER
+#define thread_local __declspec(thread)
+#elif __APPLE__
+#define thread_local __thread
+#endif
+
+#include <limits>
+#include <cmath>
+static thread_local unsigned long long int no_op = 0;
+
+#define MUTATION_RETURN(arg) actual_result
+#define REPLACE_UNARY_PostDec_int(arg) if ((arg) != std::numeric_limits<int>::lowest() && (arg - 1) != actual_result) no_op++
+#define REPLACE_UNARY_Not_int(arg) if ((arg) != actual_result) no_op++
+#define REPLACE_UNARY_Minus_int(arg) if ((arg) != std::numeric_limits<int>::lowest() && (arg) != actual_result) no_op++
+#define REPLACE_UNARY_LNot_int(arg) if ((arg) != actual_result) no_op++
+#define REPLACE_UNARY_ARG_int(args) if ((args) != actual_result) no_op++
+#define REPLACE_EXPR_NOT(args) if ((args) != actual_result) no_op++
+#define REPLACE_EXPR_MINUS(args) if ((args) != actual_result) no_op++
+#define REPLACE_EXPR_LNOT(args) if ((args) != actual_result) no_op++
+#define REPLACE_EXPR_INT_ZERO(args) if ((args) != actual_result) no_op++
+#define REPLACE_EXPR_INT_ONE(args) if ((args) != actual_result) no_op++
+#define REPLACE_EXPR_INT_MINUS_ONE(args) if ((args) != actual_result) no_op++
+#define REPLACE_EXPR_FALSE(args) if ((args) != actual_result) no_op++
+#define MUTATION_PRELUDE(arg,type) type actual_result = (arg)
+static int __dredd_replace_expr_int_one(int arg, int local_mutation_id) {
+  MUTATION_PRELUDE(arg,int);
+  REPLACE_EXPR_NOT(arg);
+  REPLACE_EXPR_INT_ZERO(0);
+  REPLACE_EXPR_INT_MINUS_ONE(-1);
+  return MUTATION_RETURN(arg);
+}
+
+static int __dredd_replace_expr_int_constant(int arg, int local_mutation_id) {
+  MUTATION_PRELUDE(arg,int);
+  REPLACE_EXPR_NOT(arg);
+  REPLACE_EXPR_MINUS(arg);
+  REPLACE_EXPR_INT_ZERO(0);
+  REPLACE_EXPR_INT_ONE(1);
+  REPLACE_EXPR_INT_MINUS_ONE(-1);
+  return MUTATION_RETURN(arg);
+}
+
+static int __dredd_replace_expr_int(std::function<int()> arg, int local_mutation_id) {
+  int arg_evaluated = arg();
+  MUTATION_PRELUDE(arg_evaluated,int);
+  REPLACE_EXPR_LNOT(arg_evaluated);
+  REPLACE_EXPR_NOT(arg_evaluated);
+  REPLACE_EXPR_MINUS(arg_evaluated);
+  REPLACE_EXPR_INT_ZERO(0);
+  REPLACE_EXPR_INT_ONE(1);
+  REPLACE_EXPR_INT_MINUS_ONE(-1);
+  return MUTATION_RETURN(arg_evaluated);
+}
+
+static bool __dredd_replace_expr_bool_true(bool arg, int local_mutation_id) {
+  MUTATION_PRELUDE(arg,bool);
+  REPLACE_EXPR_FALSE(false);
+  return MUTATION_RETURN(arg);
+}
+
+__attribute__((always_inline)) static int __dredd_replace_unary_operator_PostInc_int(int& arg, int local_mutation_id) {
+  MUTATION_PRELUDE(arg++,int);
+  REPLACE_UNARY_PostDec_int(arg);
+  REPLACE_UNARY_Not_int(arg);
+  REPLACE_UNARY_Minus_int(arg);
+  REPLACE_UNARY_LNot_int(arg);
+  REPLACE_UNARY_ARG_int(arg);
+  return MUTATION_RETURN(arg++);
+}
+
+void foo() {
+  int a[2] = {__dredd_replace_expr_int_one(1, 0), __dredd_replace_expr_int_constant(2, 3)};
+  if (__dredd_replace_expr_bool_true(true, 8)) {
+    auto [x, y] = a;
+    auto& [xr, yr] = a;
+    xr = __dredd_replace_expr_int([&]() -> int { return static_cast<int>(__dredd_replace_unary_operator_PostInc_int(y, 9)); }, 14);
+    yr = __dredd_replace_expr_int([&]() -> int { return static_cast<int>(__dredd_replace_unary_operator_PostInc_int(x, 21)); }, 26);
+  }
+}

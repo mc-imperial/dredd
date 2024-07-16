@@ -31,7 +31,9 @@ case "$(uname)" in
   sudo rm -f /swapfile
   sudo apt clean
   # shellcheck disable=SC2046
-  docker rmi $(docker image ls -aq)
+  if [ -n "$(docker image ls -aq)" ]; then
+    docker rmi $(docker image ls -aq)
+  fi
   df -h
   ;;
 
@@ -79,6 +81,12 @@ popd
 # Check that dredd works on some projects
 DREDD_EXECUTABLE="${DREDD_ROOT}/third_party/clang+llvm/bin/dredd"
 cp "${DREDD_ROOT}/build/src/dredd/dredd" "${DREDD_EXECUTABLE}"
+if [ "$SEMANTICS_PRESERVING" == "true" ]; then
+  DREDD_SEMANTICS_PRESERVING="--semantics-preserving-coverage-instrumentation"
+else
+  DREDD_SEMANTICS_PRESERVING=""
+fi
+
 
 echo "Curl"
 date
@@ -96,7 +104,7 @@ pushd curl
       FILES+=("${f}")
   done
 
-  "${DREDD_EXECUTABLE}" --mutation-info-file temp.json -p "build" "${FILES[@]}"
+  "${DREDD_EXECUTABLE}" $DREDD_SEMANTICS_PRESERVING --mutation-info-file temp.json -p "build" "${FILES[@]}"
   pushd build
     ninja
     # TODO: run some tests
@@ -125,7 +133,7 @@ pushd zstd
   do
     FILES+=("${f}")
   done
-  "${DREDD_EXECUTABLE}" --mutation-info-file temp.json -p "temp" "${FILES[@]}"
+  "${DREDD_EXECUTABLE}" $DREDD_SEMANTICS_PRESERVING --mutation-info-file temp.json -p "temp" "${FILES[@]}"
   # Build mutated zstd
   make clean
   CFLAGS=-O0 make zstd-release

@@ -27,11 +27,13 @@ jobs:
           - ubuntu-22.04
         config:
           - Release
+        semantics-preserving: [true, false]
 
     runs-on: ${{ matrix.os }}
     env:
       OS: ${{ matrix.os }}
       CONFIG: ${{ matrix.config }}
+      SEMANTICS_PRESERVING: ${{ matrix.semantics-preserving }}
     steps:
 
       - name: cancel_previous

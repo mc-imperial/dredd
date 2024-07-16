@@ -34,6 +34,7 @@
 #include "clang/AST/TypeLoc.h"
 #include "clang/Basic/LangOptions.h"
 #include "clang/Basic/SourceLocation.h"
+#include "clang/Basic/SourceManager.h"
 #include "clang/Basic/TypeTraits.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "libdredd/mutation.h"
@@ -47,9 +48,11 @@
 namespace dredd {
 
 MutateVisitor::MutateVisitor(const clang::CompilerInstance& compiler_instance,
-                             bool optimise_mutations)
+                             bool optimise_mutations,
+                             bool semantics_preserving_mutation)
     : compiler_instance_(&compiler_instance),
       optimise_mutations_(optimise_mutations),
+      semantics_preserving_mutation_(semantics_preserving_mutation),
       mutation_tree_root_() {
   mutation_tree_path_.push_back(&mutation_tree_root_);
 }
@@ -61,6 +64,25 @@ bool MutateVisitor::IsTypeSupported(const clang::QualType qual_type) {
   const auto* builtin_type = qual_type->getAs<clang::BuiltinType>();
   return builtin_type != nullptr &&
          (builtin_type->isInteger() || builtin_type->isFloatingPoint());
+}
+
+void MutateVisitor::UpdateStartLocationOfFirstFunctionInSourceFile() {
+  for (int index = static_cast<int>(enclosing_decls_.size()) - 1; index >= 0;
+       index--) {
+    const auto* decl = enclosing_decls_[static_cast<size_t>(index)];
+    if (llvm::dyn_cast<clang::FunctionDecl>(decl) != nullptr) {
+      const clang::BeforeThanCompare<clang::SourceLocation> comparator(
+          compiler_instance_->getSourceManager());
+      auto source_range_in_main_file = GetSourceRangeInMainFile(
+          compiler_instance_->getPreprocessor(), *enclosing_decls_[0]);
+      if (start_location_of_first_function_in_source_file_.isInvalid() ||
+          comparator(source_range_in_main_file.getBegin(),
+                     start_location_of_first_function_in_source_file_)) {
+        start_location_of_first_function_in_source_file_ =
+            source_range_in_main_file.getBegin();
+      }
+    }
+  }
 }
 
 bool MutateVisitor::IsInFunction() {
@@ -397,6 +419,15 @@ void MutateVisitor::HandleBinaryOperator(
     return;
   }
 
+  if (semantics_preserving_mutation_ &&
+      binary_operator->getOpcode() == clang::BinaryOperatorKind::BO_Assign) {
+    // In order for it to be safe to replace assignment with another form of
+    // assignment, we need to know that the left hand side of the binary
+    // operator is defined. Since we cannot guarantee this, avoid mutating
+    // assignment in semantics_preserving mode.
+    return;
+  }
+
   // There is no useful way to mutate this expression since it is equivalent to
   // replacement with a constant in all cases.
   if (optimise_mutations_ &&
@@ -555,6 +586,7 @@ bool MutateVisitor::VisitExpr(clang::Expr* expr) {
     return true;
   }
 
+  UpdateStartLocationOfFirstFunctionInSourceFile();
   if (auto* unary_operator = llvm::dyn_cast<clang::UnaryOperator>(expr)) {
     HandleUnaryOperator(unary_operator);
   }
@@ -621,6 +653,7 @@ bool MutateVisitor::TraverseCompoundStmt(clang::CompoundStmt* compound_stmt) {
     assert(!enclosing_decls_.empty() &&
            "Statements can only be removed if they are nested in some "
            "declaration.");
+    UpdateStartLocationOfFirstFunctionInSourceFile();
     mutation_tree_path_.back()->AddMutation(
         std::make_unique<MutationRemoveStmt>(
             *target_stmt, compiler_instance_->getPreprocessor(),

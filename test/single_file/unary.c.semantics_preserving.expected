@@ -1,0 +1,183 @@
+#include <inttypes.h>
+#include <stdbool.h>
+#include <stdlib.h>
+#include <string.h>
+
+#ifdef _MSC_VER
+#define thread_local __declspec(thread)
+#elif __APPLE__
+#define thread_local __thread
+#else
+#include <threads.h>
+#endif
+
+#include <limits.h>
+#include <float.h>
+#include <math.h>
+static thread_local unsigned long long int no_op = 0;
+
+#define MUTATION_RETURN(arg) actual_result
+#define REPLACE_UNARY_PreInc_int(arg) if ((arg) != INT_MAX && (arg + 1) != actual_result) no_op++
+#define REPLACE_UNARY_PreInc_float(arg) if ((arg) != FLT_MAX && (arg + 1) != actual_result) no_op++
+#define REPLACE_UNARY_PreDec_int(arg) if ((arg) != INT_MIN && (arg - 1) != actual_result) no_op++
+#define REPLACE_UNARY_PreDec_float(arg) if ((arg) != FLT_MIN && (arg - 1) != actual_result) no_op++
+#define REPLACE_UNARY_PostInc_int(arg) if ((arg) != INT_MAX && (arg + 1) != actual_result) no_op++
+#define REPLACE_UNARY_PostInc_float(arg) if ((arg) != FLT_MAX && (arg + 1) != actual_result) no_op++
+#define REPLACE_UNARY_PostDec_int(arg) if ((arg) != INT_MIN && (arg - 1) != actual_result) no_op++
+#define REPLACE_UNARY_PostDec_float(arg) if ((arg) != FLT_MIN && (arg - 1) != actual_result) no_op++
+#define REPLACE_UNARY_Not_int(arg) if ((arg) != actual_result) no_op++
+#define REPLACE_UNARY_Minus_int(arg) if ((arg) != INT_MIN && (arg) != actual_result) no_op++
+#define REPLACE_UNARY_Minus_float(arg) if ((arg) != FLT_MIN && (arg) != actual_result) no_op++
+#define REPLACE_UNARY_LNot_int(arg) if ((arg) != actual_result) no_op++
+#define REPLACE_UNARY_LNot_float(arg) if ((arg) != actual_result) no_op++
+#define REPLACE_UNARY_ARG_int(args) if ((args) != actual_result) no_op++
+#define REPLACE_UNARY_ARG_float(args) if ((args) != actual_result) no_op++
+#define REPLACE_EXPR_NOT(args) if ((args) != actual_result) no_op++
+#define REPLACE_EXPR_MINUS(args) if ((args) != actual_result) no_op++
+#define REPLACE_EXPR_LNOT(args) if ((args) != actual_result) no_op++
+#define REPLACE_EXPR_INT_ZERO(args) if ((args) != actual_result) no_op++
+#define REPLACE_EXPR_INT_ONE(args) if ((args) != actual_result) no_op++
+#define REPLACE_EXPR_INT_MINUS_ONE(args) if ((args) != actual_result) no_op++
+#define REPLACE_EXPR_INC(args) if ((args) != actual_result) no_op++
+#define REPLACE_EXPR_FLOAT_ZERO(args) if ((args) != actual_result) no_op++
+#define REPLACE_EXPR_FLOAT_ONE(args) if ((args) != actual_result) no_op++
+#define REPLACE_EXPR_FLOAT_MINUS_ONE(args) if ((args) != actual_result) no_op++
+#define REPLACE_EXPR_DEC(args) if ((args) != actual_result) no_op++
+#define MUTATION_PRELUDE(arg,type) type actual_result = (arg)
+static int __dredd_replace_expr_int_lvalue(int* arg, int local_mutation_id) {
+  MUTATION_PRELUDE((*arg),int);
+  REPLACE_EXPR_INC((*arg));
+  REPLACE_EXPR_DEC((*arg));
+  return MUTATION_RETURN((*arg));
+}
+
+static int __dredd_replace_expr_int_constant(int arg, int local_mutation_id) {
+  MUTATION_PRELUDE(arg,int);
+  REPLACE_EXPR_NOT(arg);
+  REPLACE_EXPR_MINUS(arg);
+  REPLACE_EXPR_INT_ZERO(0);
+  REPLACE_EXPR_INT_ONE(1);
+  REPLACE_EXPR_INT_MINUS_ONE(-1);
+  return MUTATION_RETURN(arg);
+}
+
+static int __dredd_replace_expr_int(int arg, int local_mutation_id) {
+  MUTATION_PRELUDE(arg,int);
+  REPLACE_EXPR_LNOT(arg);
+  REPLACE_EXPR_NOT(arg);
+  REPLACE_EXPR_MINUS(arg);
+  REPLACE_EXPR_INT_ZERO(0);
+  REPLACE_EXPR_INT_ONE(1);
+  REPLACE_EXPR_INT_MINUS_ONE(-1);
+  return MUTATION_RETURN(arg);
+}
+
+static float __dredd_replace_expr_float(float arg, int local_mutation_id) {
+  MUTATION_PRELUDE(arg,float);
+  REPLACE_EXPR_MINUS(arg);
+  REPLACE_EXPR_FLOAT_ZERO(0.0);
+  REPLACE_EXPR_FLOAT_ONE(1.0);
+  REPLACE_EXPR_FLOAT_MINUS_ONE(-1.0);
+  return MUTATION_RETURN(arg);
+}
+
+__attribute__((always_inline)) static int __dredd_replace_unary_operator_PreInc_int(int* arg, int local_mutation_id) {
+  int arg_original = (*arg);
+  MUTATION_PRELUDE(++(*arg),int);
+  REPLACE_UNARY_PreDec_int(arg_original);
+  REPLACE_UNARY_Not_int(arg_original);
+  REPLACE_UNARY_Minus_int(arg_original);
+  REPLACE_UNARY_LNot_int(arg_original);
+  REPLACE_UNARY_ARG_int(arg_original);
+  return MUTATION_RETURN(++arg_original);
+}
+
+__attribute__((always_inline)) static int __dredd_replace_unary_operator_PreDec_int(int* arg, int local_mutation_id) {
+  int arg_original = (*arg);
+  MUTATION_PRELUDE(--(*arg),int);
+  REPLACE_UNARY_PreInc_int(arg_original);
+  REPLACE_UNARY_Not_int(arg_original);
+  REPLACE_UNARY_Minus_int(arg_original);
+  REPLACE_UNARY_LNot_int(arg_original);
+  REPLACE_UNARY_ARG_int(arg_original);
+  return MUTATION_RETURN(--arg_original);
+}
+
+__attribute__((always_inline)) static int __dredd_replace_unary_operator_PostInc_int(int* arg, int local_mutation_id) {
+  MUTATION_PRELUDE((*arg)++,int);
+  REPLACE_UNARY_PostDec_int((*arg));
+  REPLACE_UNARY_Not_int((*arg));
+  REPLACE_UNARY_Minus_int((*arg));
+  REPLACE_UNARY_LNot_int((*arg));
+  REPLACE_UNARY_ARG_int((*arg));
+  return MUTATION_RETURN((*arg)++);
+}
+
+__attribute__((always_inline)) static int __dredd_replace_unary_operator_PostDec_int(int* arg, int local_mutation_id) {
+  MUTATION_PRELUDE((*arg)--,int);
+  REPLACE_UNARY_PostInc_int((*arg));
+  REPLACE_UNARY_Not_int((*arg));
+  REPLACE_UNARY_Minus_int((*arg));
+  REPLACE_UNARY_LNot_int((*arg));
+  REPLACE_UNARY_ARG_int((*arg));
+  return MUTATION_RETURN((*arg)--);
+}
+
+__attribute__((always_inline)) static int __dredd_replace_unary_operator_Minus_int(int arg, int local_mutation_id) {
+  MUTATION_PRELUDE(-arg,int);
+  REPLACE_UNARY_Not_int(arg);
+  REPLACE_UNARY_LNot_int(arg);
+  return MUTATION_RETURN(-arg);
+}
+
+__attribute__((always_inline)) static float __dredd_replace_unary_operator_PreInc_float(float* arg, int local_mutation_id) {
+  float arg_original = (*arg);
+  MUTATION_PRELUDE(++(*arg),float);
+  REPLACE_UNARY_PreDec_float(arg_original);
+  REPLACE_UNARY_Minus_float(arg_original);
+  REPLACE_UNARY_LNot_float(arg_original);
+  REPLACE_UNARY_ARG_float(arg_original);
+  return MUTATION_RETURN(++arg_original);
+}
+
+__attribute__((always_inline)) static float __dredd_replace_unary_operator_PreDec_float(float* arg, int local_mutation_id) {
+  float arg_original = (*arg);
+  MUTATION_PRELUDE(--(*arg),float);
+  REPLACE_UNARY_PreInc_float(arg_original);
+  REPLACE_UNARY_Minus_float(arg_original);
+  REPLACE_UNARY_LNot_float(arg_original);
+  REPLACE_UNARY_ARG_float(arg_original);
+  return MUTATION_RETURN(--arg_original);
+}
+
+__attribute__((always_inline)) static float __dredd_replace_unary_operator_PostInc_float(float* arg, int local_mutation_id) {
+  MUTATION_PRELUDE((*arg)++,float);
+  REPLACE_UNARY_PostDec_float((*arg));
+  REPLACE_UNARY_Minus_float((*arg));
+  REPLACE_UNARY_LNot_float((*arg));
+  REPLACE_UNARY_ARG_float((*arg));
+  return MUTATION_RETURN((*arg)++);
+}
+
+__attribute__((always_inline)) static float __dredd_replace_unary_operator_PostDec_float(float* arg, int local_mutation_id) {
+  MUTATION_PRELUDE((*arg)--,float);
+  REPLACE_UNARY_PostInc_float((*arg));
+  REPLACE_UNARY_Minus_float((*arg));
+  REPLACE_UNARY_LNot_float((*arg));
+  REPLACE_UNARY_ARG_float((*arg));
+  return MUTATION_RETURN((*arg)--);
+}
+
+int main() {
+  int x = __dredd_replace_expr_int_constant(3, 0);
+  float y = __dredd_replace_expr_float(3.532, 5);
+  __dredd_replace_unary_operator_PostInc_int(&(x), 9);
+  __dredd_replace_unary_operator_PostInc_float(&(y), 15);
+  __dredd_replace_unary_operator_PreInc_int(&(x), 20);
+  __dredd_replace_unary_operator_PreInc_float(&(y), 26);
+  __dredd_replace_unary_operator_PreDec_int(&(x), 31);
+  __dredd_replace_unary_operator_PreDec_float(&(y), 37);
+  __dredd_replace_unary_operator_PostDec_int(&(x), 42);
+  __dredd_replace_unary_operator_PostDec_float(&(y), 48);
+  return __dredd_replace_expr_int(__dredd_replace_unary_operator_Minus_int(__dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(&(x), 53), 55), 61), 63);
+}

@@ -20,6 +20,8 @@
 
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/Expr.h"
+#include "clang/AST/Type.h"
+#include "clang/Basic/LangOptions.h"
 #include "clang/Basic/SourceLocation.h"
 #include "clang/Basic/SourceManager.h"
 #include "clang/Lex/Lexer.h"
@@ -127,6 +129,174 @@ bool EvaluateAsFloat(const clang::Expr& expr,
 bool IsCxx11ConstantExpr(const clang::Expr& expr,
                          const clang::ASTContext& ast_context) {
   return !expr.isValueDependent() && expr.isCXX11ConstantExpr(ast_context);
+}
+
+std::string GenerateMutationPrelude(bool semantics_preserving_mutation) {
+  (void)semantics_preserving_mutation;
+  const std::string result = "#define MUTATION_PRELUDE(arg";
+  if (!semantics_preserving_mutation) {
+    return result +
+           ") if (!__dredd_some_mutation_enabled) "
+           "return arg\n";
+  }
+
+  return result + ",type) type actual_result = (arg)\n";
+}
+
+std::string GenerateUnaryMacroCall(const std::string& macro_name,
+                                   const std::string& arg_evaluated,
+                                   const int& mutation_id_offset,
+                                   const bool semantics_preserving_mutation) {
+  std::string result;
+  result = macro_name + "(" + arg_evaluated;
+  if (!semantics_preserving_mutation) {
+    result += ", " + std::to_string(mutation_id_offset);
+  }
+  result += ");\n";
+  return result;
+}
+
+std::string GenerateMutationMacro(const std::string& name,
+                                  bool semantics_preserving_mutation) {
+  std::string const result = "#define " + name + "(args";
+  if (semantics_preserving_mutation) {
+    return result + ") if ((args) != actual_result) no_op++\n";
+  }
+
+  return result + ", mutation_id_offset) " +
+         "if (__dredd_enabled_mutation(local_mutation_id "
+         "+ mutation_id_offset)) return args\n";
+}
+
+std::string GenerateMutationReturn(bool semantics_preserving_mutation) {
+  std::string result = "#define MUTATION_RETURN(arg) ";
+  if (!semantics_preserving_mutation) {
+    result += "arg\n";
+  } else {
+    result += "actual_result\n";
+  }
+
+  return result;
+}
+
+std::string TypeToUpperLimit(const clang::BuiltinType* type,
+                             const clang::ASTContext& ast_context) {
+  const std::string type_string =
+      type->getName(ast_context.getPrintingPolicy()).str();
+
+  if (ast_context.getLangOpts().CPlusPlus) {
+    return "std::numeric_limits<" + type_string + ">::max()";
+  }
+
+  std::string result;
+
+  switch (type->getKind()) {
+    case clang::BuiltinType::Bool:
+      return "1";
+    case clang::BuiltinType::Char_S:
+    case clang::BuiltinType::SChar:
+      result = "SCHAR";
+      break;
+    case clang::BuiltinType::Char_U:
+    case clang::BuiltinType::UChar:
+      result = "UCHAR";
+      break;
+    case clang::BuiltinType::UShort:
+      result = "USHRT";
+      break;
+    case clang::BuiltinType::UInt:
+      result = "UINT";
+      break;
+    case clang::BuiltinType::ULong:
+      result = "ULONG";
+      break;
+    case clang::BuiltinType::ULongLong:
+      result = "ULLONG";
+      break;
+    case clang::BuiltinType::Short:
+      result = "SHRT";
+      break;
+    case clang::BuiltinType::Int:
+      result = "INT";
+      break;
+    case clang::BuiltinType::Long:
+      result = "LONG";
+      break;
+    case clang::BuiltinType::LongLong:
+      result = "LLONG";
+      break;
+    case clang::BuiltinType::Float:
+      result = "FLT";
+      break;
+    case clang::BuiltinType::Double:
+      result = "DBL";
+      break;
+    case clang::BuiltinType::LongDouble:
+      result = "LDBL";
+      break;
+    default:
+      assert(false && "Unknown type");
+      break;
+  }
+
+  return result + "_MAX";
+}
+
+std::string TypeToLowerLimit(const clang::BuiltinType* type,
+                             const clang::ASTContext& ast_context) {
+  std::string type_string =
+      type->getName(ast_context.getPrintingPolicy()).str();
+
+  if (ast_context.getLangOpts().CPlusPlus) {
+    return "std::numeric_limits<" + type_string + ">::lowest()";
+  }
+
+  // The minimum of unsigned types is 0.
+  if (type_string[0] == 'u') {
+    return "0";
+  }
+
+  std::string result;
+
+  switch (type->getKind()) {
+    case clang::BuiltinType::Bool:
+      return "0";
+    case clang::BuiltinType::Char8:
+    case clang::BuiltinType::Char16:
+    case clang::BuiltinType::Char32:
+      result = "CHAR";
+      break;
+    case clang::BuiltinType::Char_S:
+    case clang::BuiltinType::SChar:
+      result = "SCHAR";
+      break;
+    case clang::BuiltinType::Short:
+      result = "SHRT";
+      break;
+    case clang::BuiltinType::Int:
+      result = "INT";
+      break;
+    case clang::BuiltinType::Long:
+      result = "LONG";
+      break;
+    case clang::BuiltinType::LongLong:
+      result = "LLONG";
+      break;
+    case clang::BuiltinType::Float:
+      result = "FLT";
+      break;
+    case clang::BuiltinType::Double:
+      result = "DBL";
+      break;
+    case clang::BuiltinType::LongDouble:
+      result = "LDBL";
+      break;
+    default:
+      assert(false && "Unknown type");
+      break;
+  }
+
+  return result + "_MIN";
 }
 
 }  // namespace dredd

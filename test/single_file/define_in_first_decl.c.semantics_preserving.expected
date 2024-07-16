@@ -1,0 +1,61 @@
+#define TYPE int
+
+#include <inttypes.h>
+#include <stdbool.h>
+#include <stdlib.h>
+#include <string.h>
+
+#ifdef _MSC_VER
+#define thread_local __declspec(thread)
+#elif __APPLE__
+#define thread_local __thread
+#else
+#include <threads.h>
+#endif
+
+#include <limits.h>
+#include <float.h>
+#include <math.h>
+static thread_local unsigned long long int no_op = 0;
+
+#define MUTATION_RETURN(arg) actual_result
+#define REPLACE_EXPR_NOT(args) if ((args) != actual_result) no_op++
+#define REPLACE_EXPR_MINUS(args) if ((args) != actual_result) no_op++
+#define REPLACE_EXPR_INT_ZERO(args) if ((args) != actual_result) no_op++
+#define REPLACE_EXPR_INT_ONE(args) if ((args) != actual_result) no_op++
+#define REPLACE_EXPR_INT_MINUS_ONE(args) if ((args) != actual_result) no_op++
+#define REPLACE_BINARY_Sub_arg1_int_arg2_int(arg1, arg2) if (!((((arg1)^(arg2)) & ((((arg1) ^ (((arg1)^(arg2)) & (~INT_MAX)))-(arg2))^(arg2))) < 0) && (arg1 - arg2) != actual_result) no_op++
+#define REPLACE_BINARY_Rem_arg1_int_arg2_int(arg1, arg2) if (!(((arg2) == 0) || (((arg1) == INT_MIN) && ((arg2) == (-1)))) && (arg1 % arg2) != actual_result) no_op++
+#define REPLACE_BINARY_Div_arg1_int_arg2_int(arg1, arg2) if (!(((arg2) == 0) || (((arg1) == INT_MIN) && ((arg2) == (-1)))) && (arg1 / arg2) != actual_result) no_op++
+#define REPLACE_BINARY_ARG2(arg2) if ((arg2) != actual_result) no_op++
+#define MUTATION_PRELUDE(arg,type) type actual_result = (arg)
+static int __dredd_replace_expr_int_one(int arg, int local_mutation_id) {
+  MUTATION_PRELUDE(arg,int);
+  REPLACE_EXPR_NOT(arg);
+  REPLACE_EXPR_INT_ZERO(0);
+  REPLACE_EXPR_INT_MINUS_ONE(-1);
+  return MUTATION_RETURN(arg);
+}
+
+static int __dredd_replace_expr_int_constant(int arg, int local_mutation_id) {
+  MUTATION_PRELUDE(arg,int);
+  REPLACE_EXPR_NOT(arg);
+  REPLACE_EXPR_MINUS(arg);
+  REPLACE_EXPR_INT_ZERO(0);
+  REPLACE_EXPR_INT_ONE(1);
+  REPLACE_EXPR_INT_MINUS_ONE(-1);
+  return MUTATION_RETURN(arg);
+}
+
+__attribute__((always_inline)) static int __dredd_replace_binary_operator_Add_arg1_int_arg2_int_lhs_one(int arg1, int arg2, int local_mutation_id) {
+  MUTATION_PRELUDE(arg1 + arg2,int);
+  REPLACE_BINARY_Div_arg1_int_arg2_int(arg1, arg2);
+  REPLACE_BINARY_Rem_arg1_int_arg2_int(arg1, arg2);
+  REPLACE_BINARY_Sub_arg1_int_arg2_int(arg1, arg2);
+  REPLACE_BINARY_ARG2(arg2);
+  return MUTATION_RETURN(arg1 + arg2);
+}
+
+TYPE foo() {
+  return __dredd_replace_expr_int_constant(__dredd_replace_binary_operator_Add_arg1_int_arg2_int_lhs_one(__dredd_replace_expr_int_one(1, 0) , __dredd_replace_expr_int_constant(2, 3), 8), 12);
+}
