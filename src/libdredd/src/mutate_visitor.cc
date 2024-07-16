@@ -139,6 +139,7 @@ bool MutateVisitor::TraverseDecl(clang::Decl* decl) {
     // elsewhere) and to avoid compilation errors, we record static assertions
     // so that their argument expressions can be replaced with `1`.
     static_assertions_to_rewrite_.push_back(static_assert_decl);
+    return true;
   }
   if (const auto* function_decl = llvm::dyn_cast<clang::FunctionDecl>(decl)) {
     if (function_decl->isConstexpr()) {
