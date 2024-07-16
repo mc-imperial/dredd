@@ -133,13 +133,11 @@ bool MutateVisitor::TraverseDecl(clang::Decl* decl) {
     // dynamic instrumentation of the mutation operator will break the rules
     // associated with static assertions anyway.
 
-    // However, some C++ compiler complain if the expression under static
-    // assertion is not a compile-time constants. To allow the constant
-    // declaration that occurs inside static assertion to have their initial
-    // value mutated (because they may be used elsewhere), but to avoid
-    // compilaton errors, we record the static assertion so that later their
-    // argument expression can be replaced with the value to which the argument
-    // expression would notmally evaluate.
+    // However, the expression under a static assertion must be a compile-time
+    // constant. To allow the constant declarations that occur inside a static
+    // assertion to have their initial value mutated (because they may be used
+    // elsewhere) and to avoid compilation errors, we record static assertions
+    // so that their argument expressions can be replaced with `1`.
     static_assertions_to_rewrite_.push_back(static_assert_decl);
   }
   if (const auto* function_decl = llvm::dyn_cast<clang::FunctionDecl>(decl)) {
@@ -177,8 +175,8 @@ bool MutateVisitor::TraverseDecl(clang::Decl* decl) {
     }
   }
 
-  // Beside variable declaration, constant-sized C++ array can occurs inside a
-  // struct as a field. As in the case of variable declaration, we record the
+  // Besides variable declaration, constant-sized C++ arrays can occur inside a
+  // struct as a field. As in the case of variable declarations, we record the
   // arrays in question so that later their size expressions can be rewritten.
   if (const auto* field_decl = llvm::dyn_cast<clang::FieldDecl>(decl)) {
     if (compiler_instance_->getLangOpts().CPlusPlus &&
