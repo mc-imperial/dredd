@@ -35,7 +35,7 @@ class MutateAstConsumer : public clang::ASTConsumer {
   MutateAstConsumer(const clang::CompilerInstance& compiler_instance,
                     bool optimise_mutations, bool dump_ast,
                     bool only_track_mutant_coverage, int& mutation_id,
-                    std::optional<protobufs::MutationInfo> &mutation_info)
+                    std::optional<protobufs::MutationInfo>& mutation_info)
       : compiler_instance_(&compiler_instance),
         optimise_mutations_(optimise_mutations),
         dump_ast_(dump_ast),
