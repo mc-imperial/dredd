@@ -17,8 +17,9 @@
 #include <cassert>
 #include <cstddef>
 #include <memory>
+#include <optional>
 
-#include "clang/AST/ASTContext.h"
+#include "clang/AST/Attrs.inc"
 #include "clang/AST/Decl.h"
 #include "clang/AST/DeclBase.h"
 #include "clang/AST/DeclCXX.h"
@@ -26,7 +27,6 @@
 #include "clang/AST/ExprCXX.h"
 #include "clang/AST/LambdaCapture.h"
 #include "clang/AST/OperationKinds.h"
-#include "clang/AST/ParentMapContext.h"
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/AST/Stmt.h"
 #include "clang/AST/TemplateBase.h"
@@ -46,19 +46,6 @@
 #include "llvm/Support/Casting.h"
 
 namespace dredd {
-
-template <typename RequiredParentT>
-const RequiredParentT* MutateVisitor::GetFirstParentOfType(
-    const clang::Stmt& stmt) const {
-  for (const auto& parent :
-       compiler_instance_->getASTContext().getParents(stmt)) {
-    const auto* candidate_result = parent.template get<RequiredParentT>();
-    if (candidate_result != nullptr) {
-      return candidate_result;
-    }
-  }
-  return nullptr;
-}
 
 MutateVisitor::MutateVisitor(const clang::CompilerInstance& compiler_instance,
                              bool optimise_mutations,
@@ -160,9 +147,23 @@ bool MutateVisitor::TraverseDecl(clang::Decl* decl) {
     }
   }
   if (const auto* var_decl = llvm::dyn_cast<clang::VarDecl>(decl)) {
-    if (var_decl->isConstexpr() || var_decl->hasConstantInitialization()) {
+    if (compiler_instance_->getLangOpts().CPlusPlus &&
+        var_decl->getType()->isConstantArrayType()) {
+      // We have a constant-sized C++ array. Some C++ compilers complain if
+      // components of the size expression are not compile-time constants. Other
+      // compilers are OK with this unless the array is also initialized. To
+      // allow the constant declarations that occur in a size expression to have
+      // their initial values mutated (because they may be used elsewhere), but
+      // to avoid compilation errors, we record the arrays in question so that
+      // later their size expressions can be replaced with the value to which
+      // the size expression would normally evaluate.
+      constant_sized_arrays_to_rewrite_.push_back(var_decl);
+    }
+
+    if (var_decl->isConstexpr() || var_decl->hasAttr<clang::ConstInitAttr>()) {
       // Because Dredd's mutations occur dynamically, they cannot be applied to
-      // C++ constexprs, which require compile-time evaluation.
+      // C++ constexprs or variables that require constant initialization as
+      // these both require compile-time evaluation.
       return true;
     }
     if (!compiler_instance_->getLangOpts().CPlusPlus &&
@@ -209,9 +210,28 @@ bool MutateVisitor::TraverseStmt(clang::Stmt* stmt) {
   // expressions, hence we ignore children of such expressions, rather than
   // ignoring the expressions themselves.
   if (const auto* unary_expr_or_type_trait_parent =
-          GetFirstParentOfType<clang::UnaryExprOrTypeTraitExpr>(*stmt)) {
+          GetFirstParentOfType<clang::UnaryExprOrTypeTraitExpr>(
+              *stmt, compiler_instance_->getASTContext())) {
     const auto kind = unary_expr_or_type_trait_parent->getKind();
     if (kind == clang::UETT_SizeOf || kind == clang::UETT_AlignOf) {
+      return true;
+    }
+  }
+
+  // Do not mutate the condition of a constexpr if statement.
+  if (const auto* if_stmt = GetFirstParentOfType<clang::IfStmt>(
+          *stmt, compiler_instance_->getASTContext())) {
+    if (if_stmt->isConstexpr() && if_stmt->getCond() == stmt) {
+      return true;
+    }
+  }
+
+  // Do not mutate the array size expression of C++'s NewExpr.
+  // For instance, we do not want to mutate `2` in new `a[2]{3, 4}`,
+  // as doing so requires type `a` to have zero-argument constructor.
+  if (const auto* cxx_new_expr = GetFirstParentOfType<clang::CXXNewExpr>(
+          *stmt, compiler_instance_->getASTContext())) {
+    if (cxx_new_expr->getArraySize() == stmt) {
       return true;
     }
   }
@@ -317,9 +337,12 @@ void MutateVisitor::HandleUnaryOperator(clang::UnaryOperator* unary_operator) {
     return;
   }
 
-  // As it is not possible to pass bit-fields by reference, mutation of
-  // bit-fields is not supported.
-  if (unary_operator->getSubExpr()->refersToBitField()) {
+  // Mutation functions for ++ and -- operators require their argument to be
+  // passed by reference. It is not possible to pass bit-fields by reference,
+  // this mutation of these operators when applied to bit-fields is not
+  // supported.
+  if (unary_operator->isIncrementDecrementOp() &&
+      unary_operator->getSubExpr()->refersToBitField()) {
     return;
   }
 
@@ -381,9 +404,12 @@ void MutateVisitor::HandleBinaryOperator(
     return;
   }
 
-  // As it is not possible to pass bit-fields by reference, mutation of
-  // bit-fields is not supported.
-  if (binary_operator->getLHS()->refersToBitField()) {
+  // Mutation functions for assignment operators (for example +=) require their
+  // first argument to be passed by reference. It is not possible to pass
+  // bit-fields by reference, this mutation of these operators when applied to a
+  // bit-field first argument is not supported.
+  if (binary_operator->isAssignmentOp() &&
+      binary_operator->getLHS()->refersToBitField()) {
     return;
   }
 
@@ -435,12 +461,6 @@ void MutateVisitor::HandleExpr(clang::Expr* expr) {
     return;
   }
 
-  // As it is not possible to pass bit-fields by reference, mutation of
-  // bit-field l-values is not supported.
-  if (expr->refersToBitField()) {
-    return;
-  }
-
   // It is incorrect to attempt to mutate braced initializer lists.
   if (llvm::dyn_cast<clang::InitListExpr>(expr) != nullptr) {
     return;
@@ -453,11 +473,28 @@ void MutateVisitor::HandleExpr(clang::Expr* expr) {
           compiler_instance_->getASTContext(),
           clang::Expr::NullPointerConstantValueDependence()) !=
       clang::Expr::NPCK_NotNull) {
-    if (const auto* cast_parent =
-            GetFirstParentOfType<clang::CastExpr>(*expr)) {
+    if (const auto* cast_parent = GetFirstParentOfType<clang::CastExpr>(
+            *expr, compiler_instance_->getASTContext())) {
       if (cast_parent->getType()->isAnyPointerType()) {
         return;
       }
+    }
+  }
+
+  if (IsConversionOfEnumToConstructor(*expr)) {
+    return;
+  }
+
+  // Avoid mutation on cast when its underlying value is a bitfield
+  // l-value that is subsequently passed by reference. Any expression that is
+  // passed by reference is a child of MaterializeTemporaryExpr, which
+  // represents a prvalue temporary that is written into memory so that a
+  // reference can bind to it.
+  if (const auto* cast_expr = llvm::dyn_cast<clang::CastExpr>(expr)) {
+    if (cast_expr->getSubExpr()->refersToBitField() &&
+        GetFirstParentOfType<clang::MaterializeTemporaryExpr>(
+            *expr, compiler_instance_->getASTContext()) != nullptr) {
+      return;
     }
   }
 
@@ -471,22 +508,33 @@ void MutateVisitor::HandleExpr(clang::Expr* expr) {
     // arising due to a change of type are unlikely to be all that interesting,
     // and r-value to r-value implicit casts are very common, e.g. occurring
     // whenever a signed literal, such as `1`, is used in an unsigned context.
-    if (const auto* cast_parent =
-            GetFirstParentOfType<clang::CastExpr>(*expr)) {
-      if (cast_parent->isLValue() == expr->isLValue()) {
+    if (const auto* cast_parent = GetFirstParentOfType<clang::CastExpr>(
+            *expr, compiler_instance_->getASTContext())) {
+      if (cast_parent->isLValue() == expr->isLValue() &&
+          GetFirstParentOfType<clang::InitListExpr>(
+              *expr, compiler_instance_->getASTContext()) == nullptr) {
+        // However, this optimization shouldn't be performed on expressions
+        // under Initializer List. This is because: (1) Dredd won't act on the
+        // outer implicit cast under Initializer List. (2)  Bypassing this
+        // would skip dredd-introduced static_cast, causing issues when the
+        // expression is implicitly cast into a narrower type and passed into
+        // a C++ std::initializer_list.
         return;
       }
     }
 
-    // If an expression is the direct child of a compound statement then don't
-    // mutate it, because:
+    // If an expression is the direct child of a compound statement or switch
+    // case then don't mutate it, because:
     // - replacing it with a constant has the same effect as deleting it;
     // - if it is an r-value, inserting a unary operator has no effect;
     // - if it is an l-value, inserting an increment operator is fairly well
     // captured by inserting an increment before a future use of the l-value (it
     // is not exactly the same, because the future use could be dynamically
     // reached in different manners compared with this statement).
-    if (GetFirstParentOfType<clang::CompoundStmt>(*expr) != nullptr) {
+    if (GetFirstParentOfType<clang::CompoundStmt>(
+            *expr, compiler_instance_->getASTContext()) != nullptr ||
+        GetFirstParentOfType<clang::SwitchCase>(
+            *expr, compiler_instance_->getASTContext()) != nullptr) {
       return;
     }
   }
@@ -554,8 +602,22 @@ bool MutateVisitor::VisitExpr(clang::Expr* expr) {
 
 bool MutateVisitor::TraverseCompoundStmt(clang::CompoundStmt* compound_stmt) {
   for (auto* stmt : compound_stmt->body()) {
+    // A switch case (a 'case' or 'default') appears as a component of a
+    // compound statement, but it is the statement *after* the 'case' or
+    // 'default' label that should be considered for removal. This is because
+    // the 'if' check for statement removal must occur after the label, not
+    // before it, otherwise a branch to the label would branch straight into the
+    // body of the 'if' statement that simulates statement removal. Furthermore,
+    // if there are many 'case' or 'default' labels in a row, they are
+    // arranged hierarchically in the AST. We therefore traverse any such
+    // hierarchy until we reach a statement that is not a switch case, and it
+    // is this statement that is considered for removal.
+    clang::Stmt* target_stmt = stmt;
+    while (auto* switch_case = llvm::dyn_cast<clang::SwitchCase>(target_stmt)) {
+      target_stmt = switch_case->getSubStmt();
+    }
     if (optimise_mutations_) {
-      if (auto* expr = llvm::dyn_cast<clang::Expr>(stmt)) {
+      if (const auto* expr = llvm::dyn_cast<clang::Expr>(target_stmt)) {
         if (!expr->HasSideEffects(compiler_instance_->getASTContext())) {
           // There is no point mutating a side-effect free expression statement.
           continue;
@@ -567,20 +629,23 @@ bool MutateVisitor::TraverseCompoundStmt(clang::CompoundStmt* compound_stmt) {
     // mutations recorded in sibling subtrees of the mutation tree, a mutation
     // tree node is pushed per sub-statement.
     const PushMutationTreeRAII push_mutation_tree(*this);
-    TraverseStmt(stmt);
-    if (GetSourceRangeInMainFile(compiler_instance_->getPreprocessor(), *stmt)
+    TraverseStmt(target_stmt);
+
+    assert(llvm::dyn_cast<clang::SwitchCase>(target_stmt) == nullptr &&
+           "target_stmt isn't a SwitchCase due to previous AST traversal.");
+    if (GetSourceRangeInMainFile(compiler_instance_->getPreprocessor(),
+                                 *target_stmt)
             .isInvalid() ||
-        llvm::dyn_cast<clang::NullStmt>(stmt) != nullptr ||
-        llvm::dyn_cast<clang::DeclStmt>(stmt) != nullptr ||
-        llvm::dyn_cast<clang::SwitchCase>(stmt) != nullptr ||
-        llvm::dyn_cast<clang::LabelStmt>(stmt) != nullptr) {
-      // Wrapping switch cases, labels and null statements in conditional code
+        llvm::dyn_cast<clang::NullStmt>(target_stmt) != nullptr ||
+        llvm::dyn_cast<clang::DeclStmt>(target_stmt) != nullptr ||
+        llvm::dyn_cast<clang::LabelStmt>(target_stmt) != nullptr) {
+      // Wrapping labels and null statements in conditional code
       // has no effect. Declarations cannot be wrapped in conditional code
       // without risking breaking compilation.
       continue;
     }
     if (optimise_mutations_ &&
-        llvm::dyn_cast<clang::CompoundStmt>(stmt) != nullptr) {
+        llvm::dyn_cast<clang::CompoundStmt>(target_stmt) != nullptr) {
       // It is likely redundant to remove a compound statement since each of its
       // sub-statements will be considered for removal anyway.
       continue;
@@ -591,7 +656,7 @@ bool MutateVisitor::TraverseCompoundStmt(clang::CompoundStmt* compound_stmt) {
     UpdateStartLocationOfFirstFunctionInSourceFile();
     mutation_tree_path_.back()->AddMutation(
         std::make_unique<MutationRemoveStmt>(
-            *stmt, compiler_instance_->getPreprocessor(),
+            *target_stmt, compiler_instance_->getPreprocessor(),
             compiler_instance_->getASTContext()));
   }
   return true;
@@ -600,6 +665,41 @@ bool MutateVisitor::TraverseCompoundStmt(clang::CompoundStmt* compound_stmt) {
 bool MutateVisitor::VisitVarDecl(clang::VarDecl* var_decl) {
   var_decl_source_locations_.insert(var_decl->getLocation());
   return true;
+}
+
+bool MutateVisitor::IsConversionOfEnumToConstructor(
+    const clang::Expr& expr) const {
+  // This avoids a special case identified by
+  // https://github.com/mc-imperial/dredd/issues/264. The issue arises when a
+  // ternary expression has the form "c ? Foo(...) : enum_constant", where Foo
+  // is a class/struct that can be implicitly constructed from an int, and that
+  // also has the int operator overloaded.
+  // In this case, the enum_constant is implicitly cast to an integer, which
+  // then implicitly constructs a Foo instance. If the implicit cast is mutated,
+  // the mutated code will lead to the conditional operator's third argument
+  // having type int. It is then ambiguous whether the second argument,
+  // Foo(...), should have type Foo, or type int, because Foo has the int
+  // operator overloaded.
+
+  // Check whether this expression is an implicit cast.
+  const auto* implicit_cast_expr =
+      llvm::dyn_cast<clang::ImplicitCastExpr>(&expr);
+  if (implicit_cast_expr == nullptr) {
+    return false;
+  }
+  // Check whether the parent expression is a C++ constructor.
+  if (GetFirstParentOfType<clang::CXXConstructExpr>(
+          expr, compiler_instance_->getASTContext()) == nullptr) {
+    return false;
+  }
+  // Check whether there is an enum constant under the implicit cast.
+  const auto* decl_ref_expr =
+      llvm::dyn_cast<clang::DeclRefExpr>(implicit_cast_expr->getSubExpr());
+  if (decl_ref_expr == nullptr) {
+    return false;
+  }
+  return llvm::dyn_cast<clang::EnumConstantDecl>(decl_ref_expr->getDecl()) !=
+         nullptr;
 }
 
 }  // namespace dredd

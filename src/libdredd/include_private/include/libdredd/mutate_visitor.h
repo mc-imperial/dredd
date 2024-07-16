@@ -106,6 +106,13 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
     return start_location_of_first_function_in_source_file_;
   }
 
+  // Yields the C++ constant-sized arrays, whose size expressions need to be
+  // rewritten.
+  [[nodiscard]] const std::vector<const clang::VarDecl*>&
+  GetConstantSizedArraysToRewrite() const {
+    return constant_sized_arrays_to_rewrite_;
+  }
+
  private:
   // Helper class that uses the RAII pattern to support pushing a new mutation
   // tree node on to the stack of mutation tree nodes used during visitation,
@@ -169,13 +176,10 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
 
   void UpdateStartLocationOfFirstFunctionInSourceFile();
 
-  // It is often necessary to ask whether a given statement (which includes
-  // expressions) has a parent of a given type. This helper returns nullptr if
-  // the given statement has no parent of the template parameter type, and
-  // otherwise returns the first parent that does have the template parameter
-  // type.
-  template <typename RequiredParentT>
-  const RequiredParentT* GetFirstParentOfType(const clang::Stmt& stmt) const;
+  // Mutating an enum constant can be problematic when the enum constant is used
+  // to implicitly construct a C++ object. This helper method allows detecting
+  // this special case, so that it can be ignored.
+  bool IsConversionOfEnumToConstructor(const clang::Expr& expr) const;
 
   const clang::CompilerInstance* compiler_instance_;
   bool optimise_mutations_;
@@ -222,6 +226,10 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
   // tracked, and mutations are not applied to expression nodes whose start
   // location is one of these locations.
   std::set<clang::SourceLocation> var_decl_source_locations_;
+
+  // This records C++ constant-sized array declarations, so that size
+  // expressions can be rewritten with the integers to which they evaluate.
+  std::vector<const clang::VarDecl*> constant_sized_arrays_to_rewrite_;
 };
 
 }  // namespace dredd

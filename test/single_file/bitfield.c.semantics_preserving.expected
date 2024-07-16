@@ -22,6 +22,8 @@ struct S {
 static thread_local unsigned long long int no_op = 0;
 
 #define MUTATION_RETURN(arg) actual_result
+#define REPLACE_UNARY_Not_int(arg) if ((arg) != actual_result) no_op++
+#define REPLACE_UNARY_LNot_int(arg) if ((arg) != actual_result) no_op++
 #define REPLACE_EXPR_NOT(args) if ((args) != actual_result) no_op++
 #define REPLACE_EXPR_MINUS(args) if ((args) != actual_result) no_op++
 #define REPLACE_EXPR_LNOT(args) if ((args) != actual_result) no_op++
@@ -40,9 +42,17 @@ static int __dredd_replace_expr_int(int arg, int local_mutation_id) {
   return MUTATION_RETURN(arg);
 }
 
+__attribute__((always_inline)) static int __dredd_replace_unary_operator_Minus_int(int arg, int local_mutation_id) {
+  MUTATION_PRELUDE(-arg,int);
+  REPLACE_UNARY_Not_int(arg);
+  REPLACE_UNARY_LNot_int(arg);
+  return MUTATION_RETURN(-arg);
+}
+
 void foo() {
   struct S myS;
   myS.a = __dredd_replace_expr_int(myS.b, 0);
+  myS.a = __dredd_replace_expr_int(__dredd_replace_unary_operator_Minus_int(__dredd_replace_expr_int(myS.b, 7), 13), 15);
   myS.a++;
   --myS.b;
 }

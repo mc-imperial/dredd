@@ -96,7 +96,7 @@ pushd examples/math
   cp -r math math-original
   cmake -S . -B build -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
   cmake --build build
-  ${DREDD_EXECUTABLE} $DREDD_SEMANTICS_PRESERVING -p build/compile_commands.json --mutation-info-file mutation-info.json math/src/*.cc
+  ${DREDD_EXECUTABLE} $DREDD_SEMANTICS_PRESERVING -p build --mutation-info-file mutation-info.json math/src/*.cc
   ./build/mathtest/mathtest
   NUM_MUTANTS=`python3 ${DREDD_ROOT}/scripts/query_mutant_info.py mutation-info.json --largest-mutant-id`
   EXPECTED_NUM_MUTANTS=1132
@@ -125,7 +125,7 @@ pushd examples/threaded
     [[ -e "$f" ]] || break
     FILES+=("${DREDD_ROOT}/examples/threaded/${f}")
   done
-  ${DREDD_EXECUTABLE} $DREDD_SEMANTICS_PRESERVING --mutation-info-file temp.json -p "${DREDD_ROOT}/examples/threaded/build/compile_commands.json" "${FILES[@]}"
+  ${DREDD_EXECUTABLE} $DREDD_SEMANTICS_PRESERVING --mutation-info-file temp.json -p "${DREDD_ROOT}/examples/threaded/build" "${FILES[@]}"
   cmake --build build
   # Check that the application runs correctly and that there are no data races.
   TSAN_OPTIONS=halt_on_error=1 ./build/threaded > threaded_output.txt
@@ -155,14 +155,14 @@ pushd SPIRV-Tools
     [[ -e "$f" ]] || break
     FILES+=("${DREDD_ROOT}/SPIRV-Tools/${f}")
   done
-  ${DREDD_EXECUTABLE} $DREDD_SEMANTICS_PRESERVING --mutation-info-file mutation-info.json -p "${DREDD_ROOT}/SPIRV-Tools/build/compile_commands.json" "${FILES[@]}"
+  ${DREDD_EXECUTABLE} $DREDD_SEMANTICS_PRESERVING --mutation-info-file mutation-info.json -p "${DREDD_ROOT}/SPIRV-Tools/build" "${FILES[@]}"
   cmake --build build --target test_val_abcde test_val_capability test_val_fghijklmnop test_val_limits test_val_rstuvw
   ./build/test/val/test_val_abcde
   ./build/test/val/test_val_capability
   ./build/test/val/test_val_fghijklmnop
   ./build/test/val/test_val_rstuvw
   NUM_MUTANTS=`python3 ${DREDD_ROOT}/scripts/query_mutant_info.py mutation-info.json --largest-mutant-id`
-  EXPECTED_NUM_MUTANTS=67998
+  EXPECTED_NUM_MUTANTS=68841
   if [ ${NUM_MUTANTS} -ne ${EXPECTED_NUM_MUTANTS} ]
   then
      echo "Found ${NUM_MUTANTS} mutants when mutating the SPIR-V validator source code. Expected ${EXPECTED_NUM_MUTANTS}. If Dredd changed recently, the expected value may just need to be updated, if it still looks sensible. Otherwise, there is likely a problem."
@@ -185,10 +185,10 @@ pushd llvm-project
     [[ -e "$f" ]] || break
     FILES+=("${DREDD_ROOT}/llvm-project/${f}")
   done
-  ${DREDD_EXECUTABLE} $DREDD_SEMANTICS_PRESERVING --mutation-info-file mutation-info.json -p "${DREDD_ROOT}/llvm-project/build/compile_commands.json" "${FILES[@]}"
+  ${DREDD_EXECUTABLE} $DREDD_SEMANTICS_PRESERVING --mutation-info-file mutation-info.json -p "${DREDD_ROOT}/llvm-project/build" "${FILES[@]}"
   cmake --build build --target LLVMInstCombine
   NUM_MUTANTS=`python3 ${DREDD_ROOT}/scripts/query_mutant_info.py mutation-info.json --largest-mutant-id`
-  EXPECTED_NUM_MUTANTS=97675
+  EXPECTED_NUM_MUTANTS=98042
   if [ ${NUM_MUTANTS} -ne ${EXPECTED_NUM_MUTANTS} ]
   then
      echo "Found ${NUM_MUTANTS} mutants when mutating the LLVM source code. Expected ${EXPECTED_NUM_MUTANTS}. If Dredd changed recently, the expected value may just need to be updated, if it still looks sensible. Otherwise, there is likely a problem."

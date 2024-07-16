@@ -15,6 +15,7 @@
 #include "libdredd/mutate_ast_consumer.h"
 
 #include <cassert>
+#include <cstdint>
 #include <set>
 #include <sstream>
 #include <string>
@@ -23,6 +24,9 @@
 
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/Decl.h"
+#include "clang/AST/Expr.h"
+#include "clang/AST/Type.h"
+#include "clang/AST/TypeLoc.h"
 #include "clang/Basic/Diagnostic.h"
 #include "clang/Basic/FileEntry.h"
 #include "clang/Basic/LangOptions.h"
@@ -32,7 +36,9 @@
 #include "clang/Rewrite/Core/Rewriter.h"
 #include "libdredd/mutation.h"
 #include "libdredd/util.h"
+#include "llvm/ADT/APInt.h"
 #include "llvm/ADT/StringRef.h"
+#include "llvm/Support/Casting.h"
 #include "llvm/Support/raw_ostream.h"
 
 namespace dredd {
@@ -77,30 +83,61 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
   std::unordered_set<std::string> dredd_declarations;
   std::unordered_set<std::string> dredd_macros;
 
-  std::optional<protobufs::MutationTreeNode> mutable_mutation_tree_root =
-      ApplyMutations(visitor_->GetMutations(), initial_mutation_id, ast_context,
-                     dredd_declarations, dredd_macros,
-                     mutation_info_->has_value());
-
   protobufs::MutationInfoForFile mutation_info_for_file;
-  if (mutable_mutation_tree_root.has_value()) {
-    mutation_info_for_file.set_filename(
-        ast_context.getSourceManager()
-            .getFileEntryForID(ast_context.getSourceManager().getMainFileID())
-            ->getName()
-            .str());
-    // Mutation tree root has a value if mutation_info_ has a value, so we don't
-    // need to check.
-    *mutation_info_for_file.mutable_mutation_tree_root() =
-        mutable_mutation_tree_root.value();
-  }
+
+  protobufs::MutationTreeNode* root_protobuf_mutation_tree_node =
+      mutation_info_for_file.add_mutation_tree();
+  ApplyMutations(visitor_->GetMutations(), initial_mutation_id, ast_context,
+                 mutation_info_for_file, *root_protobuf_mutation_tree_node,
+                 dredd_declarations, dredd_macros, mutation_info_->has_value());
 
   if (initial_mutation_id == *mutation_id_) {
     // No possibilities for mutation were found; nothing else to do.
     return;
   }
 
+  // Rewrite the size expressions of constant-sized arrays as needed.
+  for (const auto& constant_sized_array_decl :
+       visitor_->GetConstantSizedArraysToRewrite()) {
+    assert(compiler_instance_->getLangOpts().CPlusPlus &&
+           constant_sized_array_decl->getType()->isConstantArrayType());
+    auto constant_array_typeloc = constant_sized_array_decl->getTypeSourceInfo()
+                                      ->getTypeLoc()
+                                      .getUnqualifiedLoc()
+                                      .getAs<clang::ConstantArrayTypeLoc>();
+    if (constant_array_typeloc.isNull()) {
+      // In some cases a declaration with constant array type does not have
+      // an associated ConstantArrayTypeLoc object. This happens, for example,
+      // when structured bindings are used. For example, consider:
+      //
+      //     auto [x, y] = a;
+      //
+      // This yields a constant-sized array, but there is no explicit array type
+      // declaration. In such cases, no action is required.
+      continue;
+    }
+    auto source_range_in_main_file =
+        GetSourceRangeInMainFile(compiler_instance_->getPreprocessor(),
+                                 *constant_array_typeloc.getSizeExpr());
+    // We only consider the rewriting if the source range for the size
+    // expression is in the main source file.
+    if (source_range_in_main_file.isValid()) {
+      std::stringstream stringstream;
+      stringstream
+          << llvm::dyn_cast<clang::ConstantArrayType>(
+                 constant_sized_array_decl->getType()->getAsArrayTypeUnsafe())
+                 ->getSize()
+                 .getLimitedValue();
+      rewriter_.ReplaceText(source_range_in_main_file, stringstream.str());
+    }
+  }
+
   if (mutation_info_->has_value()) {
+    mutation_info_for_file.set_filename(
+        ast_context.getSourceManager()
+            .getFileEntryForID(ast_context.getSourceManager().getMainFileID())
+            ->getName()
+            .str());
     *mutation_info_->value().add_info_for_files() = mutation_info_for_file;
   }
 
@@ -237,9 +274,9 @@ std::string MutateAstConsumer::GetRegularDreddPreludeCpp(
     // this mutant. Then `local_value % 64` determines which bit of that element
     // needs to be set in order to enable the mutant, and a bitwise operation is
     // used to set the correct bit.
-    result
-        << "            enabled_bitset[local_value / 64] |= ((uint64_t) 1 << "
-           "(local_value % 64));\n";
+    result << "            enabled_bitset[local_value / 64] |= "
+              "(static_cast<uint64_t>(1) << "
+              "(local_value % 64));\n";
     // Note that at least one enabled mutation has been encountered.
     result << "            some_mutation_enabled = true;\n";
     result << "          }\n";
@@ -260,8 +297,8 @@ std::string MutateAstConsumer::GetRegularDreddPreludeCpp(
     result << "  }\n";
     // Similar to the above, a combination of division, modulo and bit-shifting
     // is used to look up whether this mutant is enabled in the bitset.
-    result << "  return (enabled_bitset[local_mutation_id / 64] & ((uint64_t) "
-              "1 << "
+    result << "  return (enabled_bitset[local_mutation_id / 64] & "
+              "(static_cast<uint64_t>(1) << "
               "(local_mutation_id % 64))) != 0;\n";
     result << "}\n\n";
   }
@@ -337,7 +374,7 @@ std::string MutateAstConsumer::GetRegularDreddPreludeC(
     result << "#include <math.h>\n";
   } else {
     result << "static thread_local int __dredd_some_mutation_enabled = 1;\n";
-    result << "static int __dredd_enabled_mutation(int local_mutation_id) {\n";
+    result << "static bool __dredd_enabled_mutation(int local_mutation_id) {\n";
     result << "  static thread_local int initialized = 0;\n";
     result << "  static thread_local uint64_t enabled_bitset["
            << num_64_bit_words_required << "];\n";
@@ -357,7 +394,7 @@ std::string MutateAstConsumer::GetRegularDreddPreludeC(
            << ";\n";
     result << "        if (local_value >= 0 && local_value < " << num_mutations
            << ") {\n";
-    result << "          enabled_bitset[local_value / 64] |= (1 << "
+    result << "          enabled_bitset[local_value / 64] |= ((uint64_t) 1 << "
               "(local_value % 64));\n";
     result << "          some_mutation_enabled = 1;\n";
     result << "        }\n";
@@ -368,8 +405,9 @@ std::string MutateAstConsumer::GetRegularDreddPreludeC(
     result << "    initialized = 1;\n";
     result << "    __dredd_some_mutation_enabled = some_mutation_enabled;\n";
     result << "  }\n";
-    result << "  return enabled_bitset[local_mutation_id / 64] & (1 << "
-              "(local_mutation_id % 64));\n";
+    result
+        << "  return enabled_bitset[local_mutation_id / 64] & ((uint64_t) 1 << "
+           "(local_mutation_id % 64));\n";
     result << "}\n\n";
   }
   return result.str();
@@ -412,29 +450,30 @@ std::string MutateAstConsumer::GetDreddPreludeC(int initial_mutation_id) const {
   return GetRegularDreddPreludeC(initial_mutation_id);
 }
 
-std::optional<protobufs::MutationTreeNode> MutateAstConsumer::ApplyMutations(
-    const MutationTreeNode& mutation_tree_node, int initial_mutation_id,
+void MutateAstConsumer::ApplyMutations(
+    const MutationTreeNode& dredd_mutation_tree_node, int initial_mutation_id,
     clang::ASTContext& context,
+    protobufs::MutationInfoForFile& protobufs_mutation_info_for_file,
+    protobufs::MutationTreeNode& protobufs_mutation_tree_node,
     std::unordered_set<std::string>& dredd_declarations,
     std::unordered_set<std::string>& dredd_macros, bool build_tree) {
-  assert(!(mutation_tree_node.IsEmpty() &&
-           mutation_tree_node.GetChildren().size() == 1) &&
+  assert(!(dredd_mutation_tree_node.IsEmpty() &&
+           dredd_mutation_tree_node.GetChildren().size() == 1) &&
          "The mutation tree should already be compressed.");
-  protobufs::MutationTreeNode result;
-
-  for (const auto& child : mutation_tree_node.GetChildren()) {
+  for (const auto& child : dredd_mutation_tree_node.GetChildren()) {
     assert(!child->IsEmpty() &&
            "The mutation tree should not have empty subtrees.");
-    std::optional<protobufs::MutationTreeNode> children =
-        ApplyMutations(*child, initial_mutation_id, context, dredd_declarations,
-                       dredd_macros, build_tree);
-    // children can only have a value if result has a value, so we don't need to
-    // check both.
-    if (children.has_value()) {
-      *result.add_children() = children.value();
-    }
+    protobufs_mutation_tree_node.add_children(static_cast<uint32_t>(
+        protobufs_mutation_info_for_file.mutation_tree_size()));
+    protobufs::MutationTreeNode* new_protobufs_mutation_tree_node =
+        protobufs_mutation_info_for_file.add_mutation_tree();
+    ApplyMutations(*child, initial_mutation_id, context,
+                   protobufs_mutation_info_for_file,
+                   *new_protobufs_mutation_tree_node, dredd_declarations,
+                   dredd_macros, build_tree);
   }
-  for (const auto& mutation : mutation_tree_node.GetMutations()) {
+
+  for (const auto& mutation : dredd_mutation_tree_node.GetMutations()) {
     const int mutation_id_old = *mutation_id_;
     const auto mutation_group = mutation->Apply(
         context, compiler_instance_->getPreprocessor(), optimise_mutations_,
@@ -443,10 +482,9 @@ std::optional<protobufs::MutationTreeNode> MutateAstConsumer::ApplyMutations(
         dredd_macros);
     if (build_tree && *mutation_id_ > mutation_id_old) {
       // Only add the result of applying the mutation if it had an effect.
-      *result.add_mutation_groups() = mutation_group;
+      *protobufs_mutation_tree_node.add_mutation_groups() = mutation_group;
     }
   }
-  return result;
 }
 
 }  // namespace dredd

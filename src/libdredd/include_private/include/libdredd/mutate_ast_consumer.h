@@ -67,9 +67,11 @@ class MutateAstConsumer : public clang::ASTConsumer {
   [[nodiscard]] std::string GetMutantTrackingDreddPreludeC(
       int initial_mutation_id) const;
 
-  std::optional<protobufs::MutationTreeNode> ApplyMutations(
-      const MutationTreeNode& mutation_tree_node, int initial_mutation_id,
+  void ApplyMutations(
+      const MutationTreeNode& dredd_mutation_tree_node, int initial_mutation_id,
       clang::ASTContext& context,
+      protobufs::MutationInfoForFile& protobufs_mutation_info_for_file,
+      protobufs::MutationTreeNode& protobufs_mutation_tree_node,
       std::unordered_set<std::string>& dredd_declarations,
       std::unordered_set<std::string>& dredd_macros, bool build_tree);
 

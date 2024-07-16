@@ -26,5 +26,5 @@ static int __dredd_replace_expr_int_zero(int arg, int local_mutation_id) {
 }
 
 void foo() {
-  int A[1 + 3] = {__dredd_replace_expr_int_zero(0, 0)};
+  int A[4] = {__dredd_replace_expr_int_zero(0, 0)};
 }

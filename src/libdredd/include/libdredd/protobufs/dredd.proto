@@ -19,12 +19,18 @@ message MutationInfo { repeated MutationInfoForFile info_for_files = 1; }
 
 message MutationInfoForFile {
   string filename = 1;
-  MutationTreeNode mutation_tree_root = 2;
+
+  // A mutation tree is represented in a flat manner as a list of nodes.
+  // Children of a given node are identified via indices into this list.
+  repeated MutationTreeNode mutation_tree = 2;
 }
 
 message MutationTreeNode {
   repeated MutationGroup mutation_groups = 1;
-  repeated MutationTreeNode children = 2;
+
+  // The children of a node are identified via indices into the flat list
+  // of nodes that represents the mutation tree.
+  repeated uint32 children = 2;
 }
 
 message MutationGroup {

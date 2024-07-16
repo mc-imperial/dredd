@@ -30,8 +30,8 @@ static bool __dredd_enabled_mutation(int local_mutation_id) {
         if (!token.empty()) {
           int value = std::stoi(token);
           int local_value = value - 0;
-          if (local_value >= 0 && local_value < 15) {
-            enabled_bitset[local_value / 64] |= ((uint64_t) 1 << (local_value % 64));
+          if (local_value >= 0 && local_value < 31) {
+            enabled_bitset[local_value / 64] |= (static_cast<uint64_t>(1) << (local_value % 64));
             some_mutation_enabled = true;
           }
         }
@@ -44,10 +44,13 @@ static bool __dredd_enabled_mutation(int local_mutation_id) {
     initialized = true;
     __dredd_some_mutation_enabled = some_mutation_enabled;
   }
-  return (enabled_bitset[local_mutation_id / 64] & ((uint64_t) 1 << (local_mutation_id % 64))) != 0;
+  return (enabled_bitset[local_mutation_id / 64] & (static_cast<uint64_t>(1) << (local_mutation_id % 64))) != 0;
 }
 
 #define MUTATION_RETURN(arg) arg
+#define REPLACE_UNARY_Not(arg, mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return arg;
+#define REPLACE_UNARY_LNot(arg, mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return arg;
+#define REPLACE_UNARY_ARG(args, mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return args
 #define REPLACE_EXPR_NOT(args, mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return args
 #define REPLACE_EXPR_MINUS(args, mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return args
 #define REPLACE_EXPR_LNOT(args, mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return args
@@ -55,6 +58,14 @@ static bool __dredd_enabled_mutation(int local_mutation_id) {
 #define REPLACE_EXPR_INT_ONE(args, mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return args
 #define REPLACE_EXPR_INT_MINUS_ONE(args, mutation_id_offset) if (__dredd_enabled_mutation(local_mutation_id + mutation_id_offset)) return args
 #define MUTATION_PRELUDE(arg) if (!__dredd_some_mutation_enabled) return arg
+static int __dredd_replace_unary_operator_Minus_int(int arg, int local_mutation_id) {
+  MUTATION_PRELUDE(-arg);
+  REPLACE_UNARY_Not(arg, 0);
+  REPLACE_UNARY_LNot(arg, 1);
+  REPLACE_UNARY_ARG(arg, 2);
+  return MUTATION_RETURN(-arg);
+}
+
 static int __dredd_replace_expr_int(std::function<int()> arg, int local_mutation_id) {
   int arg_evaluated = arg();
   MUTATION_PRELUDE(arg_evaluated);
@@ -81,6 +92,7 @@ static int __dredd_replace_expr_int(int arg, int local_mutation_id) {
 void foo() {
   S myS;
   if (!__dredd_enabled_mutation(6)) { myS.a = __dredd_replace_expr_int(myS.b, 0); }
-  if (!__dredd_enabled_mutation(13)) { __dredd_replace_expr_int([&]() -> int { return static_cast<int>(myS.a++); }, 7); }
-  if (!__dredd_enabled_mutation(14)) { --myS.b; }
+  if (!__dredd_enabled_mutation(22)) { myS.a = __dredd_replace_expr_int(__dredd_replace_unary_operator_Minus_int(__dredd_replace_expr_int(myS.b, 7), 13), 16); }
+  if (!__dredd_enabled_mutation(29)) { __dredd_replace_expr_int([&]() -> int { return static_cast<int>(myS.a++); }, 23); }
+  if (!__dredd_enabled_mutation(30)) { --myS.b; }
 }

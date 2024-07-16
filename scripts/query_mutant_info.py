@@ -33,24 +33,19 @@ class MutantInfo:
     instance: Optional[Dict]
 
 
-def build_mapping_for_node(mutation_tree_node: Dict, file_info: Dict, result: Dict[int, MutantInfo]) -> None:
-    for mutation_group in mutation_tree_node["mutationGroups"]:
-        assert len(mutation_group) == 1
-        key: str = next(iter(mutation_group))
-        if key in ["replaceExpr", "replaceUnaryOperator", "replaceBinaryOperator"]:
-            for instance in mutation_group[key]["instances"]:
-                result[instance["mutationId"]] = MutantInfo(key, file_info, mutation_group, instance)
-        else:
-            assert key == "removeStmt"
-            result[mutation_group[key]["mutationId"]] = MutantInfo(key, file_info, mutation_group, None)
-    for child in mutation_tree_node["children"]:
-        build_mapping_for_node(child, file_info, result)
-
-
 def build_mutant_to_node_mapping(json_info: Dict) -> Dict[int, MutantInfo]:
     result: Dict[int, MutantInfo] = {}
     for file_info in json_info["infoForFiles"]:
-        build_mapping_for_node(file_info["mutationTreeRoot"], file_info, result)
+        for mutation_tree_node in file_info["mutationTree"]:
+            for mutation_group in mutation_tree_node["mutationGroups"]:
+                assert len(mutation_group) == 1
+                key: str = next(iter(mutation_group))
+                if key in ["replaceExpr", "replaceUnaryOperator", "replaceBinaryOperator"]:
+                    for instance in mutation_group[key]["instances"]:
+                        result[instance["mutationId"]] = MutantInfo(key, file_info, mutation_group, instance)
+                else:
+                    assert key == "removeStmt"
+                    result[mutation_group[key]["mutationId"]] = MutantInfo(key, file_info, mutation_group, None)
     return result
 
 
@@ -311,7 +306,8 @@ def main() -> int:
                         type=Path)
     parser.add_argument("--largest-mutant-id",
                         help="Show the largest id among all mutants that are present. Mutants are normally numbered "
-                             "contiguously starting from 0, so this is related to the total number of mutants.",
+                             "contiguously starting from 0, so this is related to the total number of mutants. "
+                             "Prints -1 if there are no mutants. ",
                         action='store_true')
     parser.add_argument("--show-info-for-mutant",
                         help="Show information about a given mutant",
@@ -323,7 +319,8 @@ def main() -> int:
     mapping: Dict[int, MutantInfo] = build_mutant_to_node_mapping(json_info)
 
     if args.largest_mutant_id:
-        print(max(list(mapping)))
+        mutant_ids: List[int] = list(mapping.keys())
+        print(-1 if not mutant_ids else max(mutant_ids))
         return 0
 
     if args.show_info_for_mutant is not None:

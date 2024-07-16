@@ -1,0 +1,263 @@
+#include <cinttypes>
+#include <cstddef>
+#include <functional>
+#include <string>
+
+
+#ifdef _MSC_VER
+#define thread_local __declspec(thread)
+#elif __APPLE__
+#define thread_local __thread
+#endif
+
+#include <limits>
+#include <cmath>
+static thread_local unsigned long long int no_op = 0;
+
+#define MUTATION_RETURN(arg) actual_result
+#define REPLACE_EXPR_NOT(args) if ((args) != actual_result) no_op++
+#define REPLACE_EXPR_MINUS(args) if ((args) != actual_result) no_op++
+#define REPLACE_EXPR_LNOT(args) if ((args) != actual_result) no_op++
+#define REPLACE_EXPR_INT_ZERO(args) if ((args) != actual_result) no_op++
+#define REPLACE_EXPR_INT_ONE(args) if ((args) != actual_result) no_op++
+#define REPLACE_EXPR_INT_MINUS_ONE(args) if ((args) != actual_result) no_op++
+#define REPLACE_EXPR_INC(args) if ((args) != actual_result) no_op++
+#define REPLACE_EXPR_DEC(args) if ((args) != actual_result) no_op++
+#define REPLACE_BINARY_Sub_arg1_int_arg2_int(arg1, arg2) if (!((((arg1)^(arg2)) & ((((arg1) ^ (((arg1)^(arg2)) & (~std::numeric_limits<int>::max())))-(arg2))^(arg2))) < 0) && (arg1 - arg2) != actual_result) no_op++
+#define REPLACE_BINARY_Rem_arg1_int_arg2_int(arg1, arg2) if (!(((arg2) == 0) || (((arg1) == std::numeric_limits<int>::lowest()) && ((arg2) == (-1)))) && (arg1 % arg2) != actual_result) no_op++
+#define REPLACE_BINARY_Mul_arg1_int_arg2_int(arg1, arg2) if (!((((arg1) > 0) && ((arg2) > 0) && ((arg1) > (std::numeric_limits<int>::max() / (arg2)))) || (((arg1) > 0) && ((arg2) <= 0) && ((arg2) < (std::numeric_limits<int>::lowest() / (arg1)))) || (((arg1) <= 0) && ((arg2) > 0) && ((arg1) < (std::numeric_limits<int>::lowest() / (arg2)))) || (((arg1) <= 0) && ((arg2) <= 0) && ((arg1) != 0) && ((arg2) < (std::numeric_limits<int>::max() / (arg1))))) && (arg1 * arg2) != actual_result) no_op++
+#define REPLACE_BINARY_Div_arg1_int_arg2_int(arg1, arg2) if (!(((arg2) == 0) || (((arg1) == std::numeric_limits<int>::lowest()) && ((arg2) == (-1)))) && (arg1 / arg2) != actual_result) no_op++
+#define REPLACE_BINARY_ARG2(arg2) if ((arg2) != actual_result) no_op++
+#define REPLACE_BINARY_ARG1(args) if ((args) != actual_result) no_op++
+#define MUTATION_PRELUDE(arg,type) type actual_result = (arg)
+static int __dredd_replace_expr_int_lvalue(int& arg, int local_mutation_id) {
+  MUTATION_PRELUDE(arg,int);
+  REPLACE_EXPR_INC(arg);
+  REPLACE_EXPR_DEC(arg);
+  return MUTATION_RETURN(arg);
+}
+
+static int __dredd_replace_expr_int(int arg, int local_mutation_id) {
+  MUTATION_PRELUDE(arg,int);
+  REPLACE_EXPR_LNOT(arg);
+  REPLACE_EXPR_NOT(arg);
+  REPLACE_EXPR_MINUS(arg);
+  REPLACE_EXPR_INT_ZERO(0);
+  REPLACE_EXPR_INT_ONE(1);
+  REPLACE_EXPR_INT_MINUS_ONE(-1);
+  return MUTATION_RETURN(arg);
+}
+
+__attribute__((always_inline)) static int __dredd_replace_binary_operator_Add_arg1_int_arg2_int(int arg1, int arg2, int local_mutation_id) {
+  MUTATION_PRELUDE(arg1 + arg2,int);
+  REPLACE_BINARY_Div_arg1_int_arg2_int(arg1, arg2);
+  REPLACE_BINARY_Mul_arg1_int_arg2_int(arg1, arg2);
+  REPLACE_BINARY_Rem_arg1_int_arg2_int(arg1, arg2);
+  REPLACE_BINARY_Sub_arg1_int_arg2_int(arg1, arg2);
+  REPLACE_BINARY_ARG1(arg1);
+  REPLACE_BINARY_ARG2(arg2);
+  return MUTATION_RETURN(arg1 + arg2);
+}
+
+int foo(
+  int x1,
+  int x2,
+  int x3,
+  int x4,
+  int x5,
+  int x6,
+  int x7,
+  int x8,
+  int x9,
+  int x10,
+  int x11,
+  int x12,
+  int x13,
+  int x14,
+  int x15,
+  int x16,
+  int x17,
+  int x18,
+  int x19,
+  int x20,
+  int x21,
+  int x22,
+  int x23,
+  int x24,
+  int x25,
+  int x26,
+  int x27,
+  int x28,
+  int x29,
+  int x30,
+  int x31,
+  int x32,
+  int x33,
+  int x34,
+  int x35,
+  int x36,
+  int x37,
+  int x38,
+  int x39,
+  int x40,
+  int x41,
+  int x42,
+  int x43,
+  int x44,
+  int x45,
+  int x46,
+  int x47,
+  int x48,
+  int x49,
+  int x50,
+  int x51,
+  int x52,
+  int x53,
+  int x54,
+  int x55,
+  int x56,
+  int x57,
+  int x58,
+  int x59,
+  int x60,
+  int x61,
+  int x62,
+  int x63,
+  int x64,
+  int x65,
+  int x66,
+  int x67,
+  int x68,
+  int x69,
+  int x70,
+  int x71,
+  int x72,
+  int x73,
+  int x74,
+  int x75,
+  int x76,
+  int x77,
+  int x78,
+  int x79,
+  int x80,
+  int x81,
+  int x82,
+  int x83,
+  int x84,
+  int x85,
+  int x86,
+  int x87,
+  int x88,
+  int x89,
+  int x90,
+  int x91,
+  int x92,
+  int x93,
+  int x94,
+  int x95,
+  int x96,
+  int x97,
+  int x98,
+  int x99) {
+  return
+    __dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x1, 0), 2) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x2, 8), 10), 16), 22) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x3, 28), 30), 36), 42) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x4, 48), 50), 56), 62) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x5, 68), 70), 76), 82) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x6, 88), 90), 96), 102) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x7, 108), 110), 116), 122) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x8, 128), 130), 136), 142) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x9, 148), 150), 156), 162) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x10, 168), 170), 176), 182) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x11, 188), 190), 196), 202) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x12, 208), 210), 216), 222) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x13, 228), 230), 236), 242) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x14, 248), 250), 256), 262) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x15, 268), 270), 276), 282) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x16, 288), 290), 296), 302) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x17, 308), 310), 316), 322) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x18, 328), 330), 336), 342) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x19, 348), 350), 356), 362) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x20, 368), 370), 376), 382) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x21, 388), 390), 396), 402) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x22, 408), 410), 416), 422) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x23, 428), 430), 436), 442) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x24, 448), 450), 456), 462) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x25, 468), 470), 476), 482) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x26, 488), 490), 496), 502) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x27, 508), 510), 516), 522) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x28, 528), 530), 536), 542) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x29, 548), 550), 556), 562) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x30, 568), 570), 576), 582) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x31, 588), 590), 596), 602) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x32, 608), 610), 616), 622) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x33, 628), 630), 636), 642) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x34, 648), 650), 656), 662) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x35, 668), 670), 676), 682) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x36, 688), 690), 696), 702) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x37, 708), 710), 716), 722) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x38, 728), 730), 736), 742) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x39, 748), 750), 756), 762) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x40, 768), 770), 776), 782) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x41, 788), 790), 796), 802) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x42, 808), 810), 816), 822) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x43, 828), 830), 836), 842) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x44, 848), 850), 856), 862) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x45, 868), 870), 876), 882) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x46, 888), 890), 896), 902) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x47, 908), 910), 916), 922) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x48, 928), 930), 936), 942) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x49, 948), 950), 956), 962) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x50, 968), 970), 976), 982) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x51, 988), 990), 996), 1002) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x52, 1008), 1010), 1016), 1022) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x53, 1028), 1030), 1036), 1042) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x54, 1048), 1050), 1056), 1062) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x55, 1068), 1070), 1076), 1082) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x56, 1088), 1090), 1096), 1102) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x57, 1108), 1110), 1116), 1122) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x58, 1128), 1130), 1136), 1142) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x59, 1148), 1150), 1156), 1162) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x60, 1168), 1170), 1176), 1182) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x61, 1188), 1190), 1196), 1202) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x62, 1208), 1210), 1216), 1222) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x63, 1228), 1230), 1236), 1242) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x64, 1248), 1250), 1256), 1262) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x65, 1268), 1270), 1276), 1282) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x66, 1288), 1290), 1296), 1302) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x67, 1308), 1310), 1316), 1322) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x68, 1328), 1330), 1336), 1342) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x69, 1348), 1350), 1356), 1362) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x70, 1368), 1370), 1376), 1382) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x71, 1388), 1390), 1396), 1402) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x72, 1408), 1410), 1416), 1422) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x73, 1428), 1430), 1436), 1442) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x74, 1448), 1450), 1456), 1462) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x75, 1468), 1470), 1476), 1482) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x76, 1488), 1490), 1496), 1502) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x77, 1508), 1510), 1516), 1522) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x78, 1528), 1530), 1536), 1542) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x79, 1548), 1550), 1556), 1562) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x80, 1568), 1570), 1576), 1582) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x81, 1588), 1590), 1596), 1602) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x82, 1608), 1610), 1616), 1622) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x83, 1628), 1630), 1636), 1642) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x84, 1648), 1650), 1656), 1662) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x85, 1668), 1670), 1676), 1682) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x86, 1688), 1690), 1696), 1702) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x87, 1708), 1710), 1716), 1722) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x88, 1728), 1730), 1736), 1742) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x89, 1748), 1750), 1756), 1762) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x90, 1768), 1770), 1776), 1782) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x91, 1788), 1790), 1796), 1802) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x92, 1808), 1810), 1816), 1822) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x93, 1828), 1830), 1836), 1842) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x94, 1848), 1850), 1856), 1862) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x95, 1868), 1870), 1876), 1882) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x96, 1888), 1890), 1896), 1902) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x97, 1908), 1910), 1916), 1922) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x98, 1928), 1930), 1936), 1942) ,
+    __dredd_replace_expr_int(__dredd_replace_expr_int_lvalue(x99, 1948), 1950), 1956), 1962);
+}
+
