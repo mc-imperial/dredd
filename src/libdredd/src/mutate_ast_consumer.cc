@@ -84,14 +84,6 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
 
   protobufs::MutationInfoForFile mutation_info_for_file;
 
-  if (mutation_info_->has_value()) {
-    mutation_info_for_file.set_filename(
-        ast_context.getSourceManager()
-            .getFileEntryForID(ast_context.getSourceManager().getMainFileID())
-            ->getName()
-            .str());
-  }
-
   protobufs::MutationTreeNode* root_protobuf_mutation_tree_node =
       mutation_info_for_file.add_mutation_tree();
   ApplyMutations(visitor_->GetMutations(), initial_mutation_id, ast_context,
@@ -140,6 +132,11 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
   }
 
   if (mutation_info_->has_value()) {
+    mutation_info_for_file.set_filename(
+        ast_context.getSourceManager()
+            .getFileEntryForID(ast_context.getSourceManager().getMainFileID())
+            ->getName()
+            .str());
     *mutation_info_->value().add_info_for_files() = mutation_info_for_file;
   }
 
