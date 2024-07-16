@@ -33,6 +33,7 @@
 #include "clang/AST/TypeLoc.h"
 #include "clang/Basic/SourceLocation.h"
 #include "clang/Frontend/CompilerInstance.h"
+#include "libdredd/mutation.h"
 #include "libdredd/mutation_tree_node.h"
 
 namespace dredd {
