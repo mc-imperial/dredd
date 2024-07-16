@@ -584,10 +584,10 @@ void MutationReplaceExpr::ReplaceExprWithFunctionCall(
   // cast.
   auto parents = ast_context.getParents<clang::Expr>(*expr_);
   // This the expression occurs in an initializer list and is subject to an
-  // explicit cast then it will have two parents -- the initializer list, and
-  // the implicit cast. (This is probably due to implicit casts being treated
-  // as invisible nodes in the AST.)
-  if (ast_context.getLangOpts().CPlusPlus && parents.size() == 2 &&
+  // explicit cast then it will have at least two parents -- the initializer
+  // list, and the implicit cast. (This is probably due to implicit casts being
+  // treated as invisible nodes in the AST.)
+  if (ast_context.getLangOpts().CPlusPlus && parents.size() >= 2 &&
       parents[0].get<clang::InitListExpr>() != nullptr &&
       parents[1].get<clang::ImplicitCastExpr>() != nullptr) {
     // Add an explicit cast to the result type of the explicit cast.
