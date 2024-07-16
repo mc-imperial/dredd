@@ -15,7 +15,6 @@
 #include "libdredd/mutate_ast_consumer.h"
 
 #include <cassert>
-#include <cstdint>
 #include <optional>
 #include <set>
 #include <sstream>
