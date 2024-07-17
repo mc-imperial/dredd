@@ -1,45 +1,49 @@
-#define TYPE int
+#if defined(__GLIBC__) && !defined(__FreeBSD_kernel__) &&  defined(__CONFIG_H__)
+#  error test.h must be #included before system headers
+#endif
 
-#include <inttypes.h>
-#include <stdbool.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cinttypes>
+#include <cstddef>
+#include <functional>
+#include <string>
+
 
 #ifdef _MSC_VER
 #define thread_local __declspec(thread)
 #elif __APPLE__
 #define thread_local __thread
-#else
-#include <threads.h>
 #endif
 
-static thread_local int __dredd_some_mutation_enabled = 1;
+static thread_local bool __dredd_some_mutation_enabled = true;
 static bool __dredd_enabled_mutation(int local_mutation_id) {
-  static thread_local int initialized = 0;
+  static thread_local bool initialized = false;
   static thread_local uint64_t enabled_bitset[1];
   if (!initialized) {
-    int some_mutation_enabled = 0;
-    const char* dredd_environment_variable = getenv("DREDD_ENABLED_MUTATION");
-    if (dredd_environment_variable) {
-      char* temp = malloc(strlen(dredd_environment_variable) + 1);
-      strcpy(temp, dredd_environment_variable);
-      char* token;
-      token = strtok(temp, ",");
-      while(token) {
-        int value = atoi(token);
-        int local_value = value - 0;
-        if (local_value >= 0 && local_value < 25) {
-          enabled_bitset[local_value / 64] |= ((uint64_t) 1 << (local_value % 64));
-          some_mutation_enabled = 1;
+    bool some_mutation_enabled = false;
+    const char* dredd_environment_variable = std::getenv("DREDD_ENABLED_MUTATION");
+    if (dredd_environment_variable != nullptr) {
+      std::string contents(dredd_environment_variable);
+      while (true) {
+        size_t pos = contents.find(",");
+        std::string token = (pos == std::string::npos ? contents : contents.substr(0, pos));
+        if (!token.empty()) {
+          int value = std::stoi(token);
+          int local_value = value - 0;
+          if (local_value >= 0 && local_value < 24) {
+            enabled_bitset[local_value / 64] |= (static_cast<uint64_t>(1) << (local_value % 64));
+            some_mutation_enabled = true;
+          }
         }
-        token = strtok(NULL, ",");
+        if (pos == std::string::npos) {
+          break;
+        }
+        contents.erase(0, pos + 1);
       }
-      free(temp);
     }
-    initialized = 1;
+    initialized = true;
     __dredd_some_mutation_enabled = some_mutation_enabled;
   }
-  return enabled_bitset[local_mutation_id / 64] & ((uint64_t) 1 << (local_mutation_id % 64));
+  return (enabled_bitset[local_mutation_id / 64] & (static_cast<uint64_t>(1) << (local_mutation_id % 64))) != 0;
 }
 
 static int __dredd_replace_expr_int(int arg, int local_mutation_id) {
@@ -64,6 +68,6 @@ static int __dredd_replace_binary_operator_Add_arg1_int_arg2_int(int arg1, int a
   return arg1 + arg2;
 }
 
-TYPE foo() {
-  if (!__dredd_enabled_mutation(24)) { return __dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(1, 0) , __dredd_replace_expr_int(2, 6), 12), 18); }
+int main() {
+    int x = __dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(1, 0) , __dredd_replace_expr_int(2, 6), 12), 18);
 }

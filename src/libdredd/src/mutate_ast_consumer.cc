@@ -140,12 +140,11 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
     *mutation_info_->value().add_info_for_files() = mutation_info_for_file;
   }
 
-  auto& source_manager = ast_context.getSourceManager();
-  const clang::SourceLocation start_of_source_file =
-      source_manager.translateLineCol(source_manager.getMainFileID(), 1, 1);
-  assert(start_of_source_file.isValid() &&
-         "There is at least one mutation, therefore the file must have some "
-         "content.");
+  const clang::SourceLocation start_location_of_first_function_in_source_file =
+      visitor_->GetStartLocationOfFirstFunctionInSourceFile();
+  assert(start_location_of_first_function_in_source_file.isValid() &&
+         "There is at least one mutation, therefore there must be at least one "
+         "function.");
 
   // Convert the unordered set Dredd declarations into an ordered set and add
   // them to the source file before the first declaration.
@@ -153,8 +152,8 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
   sorted_dredd_declarations.insert(dredd_declarations.begin(),
                                    dredd_declarations.end());
   for (const auto& decl : sorted_dredd_declarations) {
-    const bool rewriter_result =
-        rewriter_.InsertTextBefore(start_of_source_file, decl);
+    const bool rewriter_result = rewriter_.InsertTextBefore(
+        start_location_of_first_function_in_source_file, decl);
     (void)rewriter_result;  // Keep release-mode compilers happy.
     assert(!rewriter_result && "Rewrite failed.\n");
   }
@@ -164,8 +163,8 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
           ? GetDreddPreludeCpp(initial_mutation_id)
           : GetDreddPreludeC(initial_mutation_id);
 
-  bool rewriter_result =
-      rewriter_.InsertTextBefore(start_of_source_file, dredd_prelude);
+  bool rewriter_result = rewriter_.InsertTextBefore(
+      start_location_of_first_function_in_source_file, dredd_prelude);
   (void)rewriter_result;  // Keep release-mode compilers happy.
   assert(!rewriter_result && "Rewrite failed.\n");
 

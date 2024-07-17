@@ -34,6 +34,7 @@
 #include "clang/AST/TypeLoc.h"
 #include "clang/Basic/LangOptions.h"
 #include "clang/Basic/SourceLocation.h"
+#include "clang/Basic/SourceManager.h"
 #include "clang/Basic/TypeTraits.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "libdredd/mutation.h"
@@ -61,6 +62,21 @@ bool MutateVisitor::IsTypeSupported(const clang::QualType qual_type) {
   const auto* builtin_type = qual_type->getAs<clang::BuiltinType>();
   return builtin_type != nullptr &&
          (builtin_type->isInteger() || builtin_type->isFloatingPoint());
+}
+
+void MutateVisitor::UpdateStartLocationOfFirstFunctionInSourceFile() {
+  if (IsInFunction()) {
+    const clang::BeforeThanCompare<clang::SourceLocation> comparator(
+        compiler_instance_->getSourceManager());
+    auto source_range_in_main_file = GetSourceRangeInMainFile(
+        compiler_instance_->getPreprocessor(), *enclosing_decls_[0]);
+    if (start_location_of_first_function_in_source_file_.isInvalid() ||
+        comparator(source_range_in_main_file.getBegin(),
+                   start_location_of_first_function_in_source_file_)) {
+      start_location_of_first_function_in_source_file_ =
+          source_range_in_main_file.getBegin();
+    }
+  }
 }
 
 bool MutateVisitor::IsInFunction() {
@@ -352,10 +368,9 @@ void MutateVisitor::HandleUnaryOperator(clang::UnaryOperator* unary_operator) {
     }
   }
 
-  mutation_tree_path_.back()->AddMutation(
-      std::make_unique<MutationReplaceUnaryOperator>(
-          *unary_operator, compiler_instance_->getPreprocessor(),
-          compiler_instance_->getASTContext()));
+  AddMutation(std::make_unique<MutationReplaceUnaryOperator>(
+      *unary_operator, compiler_instance_->getPreprocessor(),
+      compiler_instance_->getASTContext()));
 }
 
 void MutateVisitor::HandleBinaryOperator(
@@ -415,10 +430,9 @@ void MutateVisitor::HandleBinaryOperator(
     return;
   }
 
-  mutation_tree_path_.back()->AddMutation(
-      std::make_unique<MutationReplaceBinaryOperator>(
-          *binary_operator, compiler_instance_->getPreprocessor(),
-          compiler_instance_->getASTContext()));
+  AddMutation(std::make_unique<MutationReplaceBinaryOperator>(
+      *binary_operator, compiler_instance_->getPreprocessor(),
+      compiler_instance_->getASTContext()));
 }
 
 void MutateVisitor::HandleExpr(clang::Expr* expr) {
@@ -508,7 +522,7 @@ void MutateVisitor::HandleExpr(clang::Expr* expr) {
     }
   }
 
-  mutation_tree_path_.back()->AddMutation(std::make_unique<MutationReplaceExpr>(
+  AddMutation(std::make_unique<MutationReplaceExpr>(
       *expr, compiler_instance_->getPreprocessor(),
       compiler_instance_->getASTContext()));
 }
@@ -555,6 +569,7 @@ bool MutateVisitor::VisitExpr(clang::Expr* expr) {
     return true;
   }
 
+  UpdateStartLocationOfFirstFunctionInSourceFile();
   if (auto* unary_operator = llvm::dyn_cast<clang::UnaryOperator>(expr)) {
     HandleUnaryOperator(unary_operator);
   }
@@ -621,12 +636,16 @@ bool MutateVisitor::TraverseCompoundStmt(clang::CompoundStmt* compound_stmt) {
     assert(!enclosing_decls_.empty() &&
            "Statements can only be removed if they are nested in some "
            "declaration.");
-    mutation_tree_path_.back()->AddMutation(
-        std::make_unique<MutationRemoveStmt>(
-            *target_stmt, compiler_instance_->getPreprocessor(),
-            compiler_instance_->getASTContext()));
+    AddMutation(std::make_unique<MutationRemoveStmt>(
+        *target_stmt, compiler_instance_->getPreprocessor(),
+        compiler_instance_->getASTContext()));
   }
   return true;
+}
+
+void MutateVisitor::AddMutation(std::unique_ptr<Mutation> mutation) {
+  UpdateStartLocationOfFirstFunctionInSourceFile();
+  mutation_tree_path_.back()->AddMutation(std::move(mutation));
 }
 
 bool MutateVisitor::VisitVarDecl(clang::VarDecl* var_decl) {

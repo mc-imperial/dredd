@@ -1,3 +1,6 @@
+#define API
+API int func1();
+
 #include <inttypes.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -50,8 +53,5 @@ static int __dredd_replace_expr_int(int arg, int local_mutation_id) {
   if (__dredd_enabled_mutation(local_mutation_id + 5)) return -1;
   return arg;
 }
-
-#define API
-API int func1();
 
 int main() { int a = __dredd_replace_expr_int(1, 0); }
