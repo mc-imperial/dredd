@@ -114,7 +114,7 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
   GetStartLocationOfFirstFunctionInSourceFile() const {
     return start_location_of_first_function_in_source_file_;
   }
-  
+
   // Yields the static assertions, whose expression need to be
   // rewritten.
   [[nodiscard]] const std::vector<const clang::StaticAssertDecl*>&
