@@ -23,6 +23,7 @@
 
 #include "clang/AST/Decl.h"
 #include "clang/AST/DeclBase.h"
+#include "clang/AST/DeclCXX.h"
 #include "clang/AST/Expr.h"
 #include "clang/AST/ExprCXX.h"
 #include "clang/AST/LambdaCapture.h"
@@ -104,7 +105,7 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
 
   // Yields the C++ constant-sized arrays, whose size expressions need to be
   // rewritten.
-  [[nodiscard]] const std::vector<const clang::VarDecl*>&
+  [[nodiscard]] const std::vector<const clang::DeclaratorDecl*>&
   GetConstantSizedArraysToRewrite() const {
     return constant_sized_arrays_to_rewrite_;
   }
@@ -112,6 +113,19 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
   [[nodiscard]] clang::SourceLocation
   GetStartLocationOfFirstFunctionInSourceFile() const {
     return start_location_of_first_function_in_source_file_;
+  }
+
+  // Yields the static assertions, whose expression need to be
+  // rewritten.
+  [[nodiscard]] const std::vector<const clang::StaticAssertDecl*>&
+  GetStaticAssertionsToRewrite() const {
+    return static_assertions_to_rewrite_;
+  }
+
+  // Yields the constant function arguments which need to be rewritten.
+  [[nodiscard]] const std::vector<const clang::Expr*>&
+  GetConstantBuiltinFunctionArgumentsToRewrite() const {
+    return constant_builtin_function_arguments_to_rewrite_;
   }
 
  private:
@@ -235,7 +249,16 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
 
   // This records C++ constant-sized array declarations, so that size
   // expressions can be rewritten with the integers to which they evaluate.
-  std::vector<const clang::VarDecl*> constant_sized_arrays_to_rewrite_;
+  std::vector<const clang::DeclaratorDecl*> constant_sized_arrays_to_rewrite_;
+
+  // This records static assertion declarations, so that their argument
+  // expressions can be rewritten with the integers to which they evaluate.
+  std::vector<const clang::StaticAssertDecl*> static_assertions_to_rewrite_;
+
+  // This records constant integer function arguments, so that their expressions
+  // can be rewritten with the integers to which they evaluate.
+  std::vector<const clang::Expr*>
+      constant_builtin_function_arguments_to_rewrite_;
 };
 
 }  // namespace dredd

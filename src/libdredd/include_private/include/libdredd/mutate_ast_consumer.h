@@ -15,6 +15,7 @@
 #ifndef LIBDREDD_MUTATE_AST_CONSUMER_H
 #define LIBDREDD_MUTATE_AST_CONSUMER_H
 
+#include <cstdint>
 #include <memory>
 #include <optional>
 #include <string>
@@ -22,6 +23,7 @@
 
 #include "clang/AST/ASTConsumer.h"
 #include "clang/AST/ASTContext.h"
+#include "clang/AST/Expr.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Rewrite/Core/Rewriter.h"
 #include "libdredd/mutate_visitor.h"
@@ -63,6 +65,9 @@ class MutateAstConsumer : public clang::ASTConsumer {
 
   [[nodiscard]] std::string GetMutantTrackingDreddPreludeC(
       int initial_mutation_id) const;
+
+  bool RewriteExpressionInMainFileToIntegerConstant(const clang::Expr* expr,
+                                                    uint64_t integer_constant);
 
   void ApplyMutations(
       const MutationTreeNode& dredd_mutation_tree_node, int initial_mutation_id,

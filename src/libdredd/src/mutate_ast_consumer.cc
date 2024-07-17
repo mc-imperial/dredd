@@ -15,7 +15,7 @@
 #include "libdredd/mutate_ast_consumer.h"
 
 #include <cassert>
-#include <cstdint>
+#include <optional>
 #include <set>
 #include <sstream>
 #include <string>
@@ -24,6 +24,7 @@
 
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/Decl.h"
+#include "clang/AST/DeclCXX.h"
 #include "clang/AST/Expr.h"
 #include "clang/AST/Type.h"
 #include "clang/AST/TypeLoc.h"
@@ -37,6 +38,7 @@
 #include "libdredd/mutation.h"
 #include "libdredd/util.h"
 #include "llvm/ADT/APInt.h"
+#include "llvm/ADT/APSInt.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/Support/Casting.h"
 #include "llvm/Support/raw_ostream.h"
@@ -115,20 +117,12 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
       // declaration. In such cases, no action is required.
       continue;
     }
-    auto source_range_in_main_file =
-        GetSourceRangeInMainFile(compiler_instance_->getPreprocessor(),
-                                 *constant_array_typeloc.getSizeExpr());
-    // We only consider the rewriting if the source range for the size
-    // expression is in the main source file.
-    if (source_range_in_main_file.isValid()) {
-      std::stringstream stringstream;
-      stringstream
-          << llvm::dyn_cast<clang::ConstantArrayType>(
-                 constant_sized_array_decl->getType()->getAsArrayTypeUnsafe())
-                 ->getSize()
-                 .getLimitedValue();
-      rewriter_.ReplaceText(source_range_in_main_file, stringstream.str());
-    }
+    RewriteExpressionInMainFileToIntegerConstant(
+        constant_array_typeloc.getSizeExpr(),
+        llvm::dyn_cast<clang::ConstantArrayType>(
+            constant_sized_array_decl->getType()->getAsArrayTypeUnsafe())
+            ->getSize()
+            .getLimitedValue());
   }
 
   if (mutation_info_->has_value()) {
@@ -138,6 +132,25 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
             ->getName()
             .str());
     *mutation_info_->value().add_info_for_files() = mutation_info_for_file;
+  }
+  // Rewrite the argument of static assertion as needed to `1`.
+  // There's no need to evaluate the actual expression, as any value other than
+  // 1 would have caused the front-end used by Dredd to fail.
+  for (const auto& static_assert_decl :
+       visitor_->GetStaticAssertionsToRewrite()) {
+    RewriteExpressionInMainFileToIntegerConstant(
+        static_assert_decl->getAssertExpr(), 1);
+  }
+
+  // Rewrite the constant integer arguments of some builtin functions.
+  for (const auto* constant_argument_expresion :
+       visitor_->GetConstantBuiltinFunctionArgumentsToRewrite()) {
+    RewriteExpressionInMainFileToIntegerConstant(
+        constant_argument_expresion,
+        constant_argument_expresion
+            ->getIntegerConstantExpr(compiler_instance_->getASTContext())
+            .value()
+            .getLimitedValue());
   }
 
   const clang::SourceLocation start_location_of_first_function_in_source_file =
@@ -171,6 +184,22 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
   rewriter_result = rewriter_.overwriteChangedFiles();
   (void)rewriter_result;  // Keep release mode compilers happy
   assert(!rewriter_result && "Something went wrong emitting rewritten files.");
+}
+
+bool MutateAstConsumer::RewriteExpressionInMainFileToIntegerConstant(
+    const clang::Expr* expr, uint64_t integer_constant) {
+  auto source_range_in_main_file =
+      GetSourceRangeInMainFile(compiler_instance_->getPreprocessor(), *expr);
+
+  // We only consider the rewriting if the source range for the size
+  // expression is in the main source file.
+  if (source_range_in_main_file.isValid()) {
+    std::stringstream stringstream;
+    stringstream << integer_constant;
+    rewriter_.ReplaceText(source_range_in_main_file, stringstream.str());
+    return true;
+  }
+  return false;
 }
 
 std::string MutateAstConsumer::GetRegularDreddPreludeCpp(

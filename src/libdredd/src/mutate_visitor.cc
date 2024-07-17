@@ -32,6 +32,7 @@
 #include "clang/AST/TemplateBase.h"
 #include "clang/AST/Type.h"
 #include "clang/AST/TypeLoc.h"
+#include "clang/Basic/Builtins.h"
 #include "clang/Basic/LangOptions.h"
 #include "clang/Basic/SourceLocation.h"
 #include "clang/Basic/SourceManager.h"
@@ -124,13 +125,21 @@ bool MutateVisitor::TraverseDecl(clang::Decl* decl) {
     // consider it for mutation.
     return true;
   }
-  if (llvm::dyn_cast<clang::StaticAssertDecl>(decl) != nullptr) {
+  if (const auto* static_assert_decl =
+          llvm::dyn_cast<clang::StaticAssertDecl>(decl)) {
     // It does not make sense to mutate static assertions, as (a) this will
     // very likely lead to compile-time failures due to the assertion not
     // holding, (b) if compilation succeeds then the assertion is not actually
     // present at runtime so there is no notion of killing the mutant, and (c)
     // dynamic instrumentation of the mutation operator will break the rules
     // associated with static assertions anyway.
+
+    // However, the expression under a static assertion must be a compile-time
+    // constant. To allow the constant declarations that occur inside a static
+    // assertion to have their initial value mutated (because they may be used
+    // elsewhere) and to avoid compilation errors, we record static assertions
+    // so that their argument expressions can be replaced with `1`.
+    static_assertions_to_rewrite_.push_back(static_assert_decl);
     return true;
   }
   if (const auto* function_decl = llvm::dyn_cast<clang::FunctionDecl>(decl)) {
@@ -167,6 +176,17 @@ bool MutateVisitor::TraverseDecl(clang::Decl* decl) {
       return true;
     }
   }
+
+  // Besides variable declaration, constant-sized C++ arrays can occur inside a
+  // struct as a field. As in the case of variable declarations, we record the
+  // arrays in question so that later their size expressions can be rewritten.
+  if (const auto* field_decl = llvm::dyn_cast<clang::FieldDecl>(decl)) {
+    if (compiler_instance_->getLangOpts().CPlusPlus &&
+        field_decl->getType()->isConstantArrayType()) {
+      constant_sized_arrays_to_rewrite_.push_back(field_decl);
+    }
+  }
+
   enclosing_decls_.push_back(decl);
   // Consider the declaration for mutation.
   RecursiveASTVisitor::TraverseDecl(decl);
@@ -226,6 +246,21 @@ bool MutateVisitor::TraverseStmt(clang::Stmt* stmt) {
   if (const auto* cxx_new_expr = GetFirstParentOfType<clang::CXXNewExpr>(
           *stmt, compiler_instance_->getASTContext())) {
     if (cxx_new_expr->getArraySize() == stmt) {
+      return true;
+    }
+  }
+
+  // Some functions, e.g., __builtin_frame_address(), require their arguments to
+  // be constant integers. Attempting to apply a mutator function to such an
+  // argument would result in a compile-time error. Thus, we record these
+  // arguments' expressions so that they can be rewritten with the values to
+  // which the expressions would normally evaluate.
+  if (const auto* call_expr = llvm::dyn_cast<clang::CallExpr>(stmt)) {
+    if (call_expr->getBuiltinCallee() ==
+        clang::Builtin::BI__builtin_frame_address) {
+      // callee is `__builtin_frame_address()`
+      constant_builtin_function_arguments_to_rewrite_.push_back(
+          call_expr->getArg(0));
       return true;
     }
   }
