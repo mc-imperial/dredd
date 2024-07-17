@@ -124,8 +124,8 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
 
   // Yields the constant function arguments which need to be rewritten.
   [[nodiscard]] const std::vector<const clang::Expr*>&
-  GetConstantFunctionArgumentsToRewrite() const {
-    return constant_arguments_to_rewrite_;
+  GetConstantBuiltinFunctionArgumentsToRewrite() const {
+    return constant_builtin_function_arguments_to_rewrite_;
   }
 
  private:
@@ -251,13 +251,14 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
   // expressions can be rewritten with the integers to which they evaluate.
   std::vector<const clang::DeclaratorDecl*> constant_sized_arrays_to_rewrite_;
 
-  // This records static assertion declarations, so that its argument
+  // This records static assertion declarations, so that their argument
   // expressions can be rewritten with the integers to which they evaluate.
   std::vector<const clang::StaticAssertDecl*> static_assertions_to_rewrite_;
 
-  // This records constant integer function argument, so that the expression can
-  // be rewritten with the integers to which they evaluate.
-  std::vector<const clang::Expr*> constant_arguments_to_rewrite_;
+  // This records constant integer function arguments, so that their expressions
+  // can be rewritten with the integers to which they evaluate.
+  std::vector<const clang::Expr*>
+      constant_builtin_function_arguments_to_rewrite_;
 };
 
 }  // namespace dredd

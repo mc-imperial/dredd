@@ -117,7 +117,7 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
       // declaration. In such cases, no action is required.
       continue;
     }
-    RewriteExpressionInMainFileToIntegral(
+    RewriteExpressionInMainFileToIntegerConstant(
         constant_array_typeloc.getSizeExpr(),
         llvm::dyn_cast<clang::ConstantArrayType>(
             constant_sized_array_decl->getType()->getAsArrayTypeUnsafe())
@@ -138,14 +138,14 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
   // 1 would have caused the front-end used by Dredd to fail.
   for (const auto& static_assert_decl :
        visitor_->GetStaticAssertionsToRewrite()) {
-    RewriteExpressionInMainFileToIntegral(static_assert_decl->getAssertExpr(),
-                                          1);
+    RewriteExpressionInMainFileToIntegerConstant(
+        static_assert_decl->getAssertExpr(), 1);
   }
 
-  // Rewrite the constant integer argument of some function.
+  // Rewrite the constant integer arguments of some builtin functions.
   for (const auto* constant_argument_expresion :
-       visitor_->GetConstantFunctionArgumentsToRewrite()) {
-    RewriteExpressionInMainFileToIntegral(
+       visitor_->GetConstantBuiltinFunctionArgumentsToRewrite()) {
+    RewriteExpressionInMainFileToIntegerConstant(
         constant_argument_expresion,
         constant_argument_expresion
             ->getIntegerConstantExpr(compiler_instance_->getASTContext())
@@ -188,7 +188,7 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
   assert(!rewriter_result && "Something went wrong emitting rewritten files.");
 }
 
-bool MutateAstConsumer::RewriteExpressionInMainFileToIntegral(
+bool MutateAstConsumer::RewriteExpressionInMainFileToIntegerConstant(
     const clang::Expr* expr, uint64_t integral) {
   auto source_range_in_main_file =
       GetSourceRangeInMainFile(compiler_instance_->getPreprocessor(), *expr);

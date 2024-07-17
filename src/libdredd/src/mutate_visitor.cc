@@ -35,6 +35,7 @@
 #include "clang/Basic/LangOptions.h"
 #include "clang/Basic/SourceLocation.h"
 #include "clang/Basic/SourceManager.h"
+#include "clang/Basic/TargetBuiltins.h"
 #include "clang/Basic/TypeTraits.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "libdredd/mutation.h"
@@ -255,10 +256,11 @@ bool MutateVisitor::TraverseStmt(clang::Stmt* stmt) {
   // arguments' expressions so that they can be rewritten with the values to
   // which the expressions would normally evaluate.
   if (const auto* call_expr = llvm::dyn_cast<clang::CallExpr>(stmt)) {
-    const unsigned int frame_address_builtin_id = 455;
-    if (call_expr->getBuiltinCallee() == frame_address_builtin_id) {
+    if (call_expr->getBuiltinCallee() ==
+        clang::Builtin::BI__builtin_frame_address) {
       // callee is `__builtin_frame_address()`
-      constant_arguments_to_rewrite_.push_back(call_expr->getArg(0));
+      constant_builtin_function_arguments_to_rewrite_.push_back(
+          call_expr->getArg(0));
       return true;
     }
   }
