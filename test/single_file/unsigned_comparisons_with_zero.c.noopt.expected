@@ -1,3 +1,7 @@
+#include <stdbool.h>
+
+// Check that optimisations are applied when an unsigned zero literal is used.
+
 #include <inttypes.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -146,10 +150,6 @@ static bool __dredd_replace_expr_bool(bool arg, int local_mutation_id) {
   if (__dredd_enabled_mutation(local_mutation_id + 2)) return 0;
   return arg;
 }
-
-#include <stdbool.h>
-
-// Check that optimisations are applied when an unsigned zero literal is used.
 
 bool x_eq_zero(unsigned x) {
   if (!__dredd_enabled_mutation(26)) { return __dredd_replace_expr_bool(__dredd_replace_expr_int(__dredd_replace_binary_operator_EQ_arg1_unsigned_int_arg2_unsigned_int(__dredd_replace_expr_unsigned_int(__dredd_replace_expr_unsigned_int_lvalue(&(x), 0), 2) , __dredd_replace_expr_unsigned_int(0u, 6), 10), 17), 23); }
