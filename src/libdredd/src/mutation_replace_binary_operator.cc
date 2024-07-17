@@ -19,6 +19,7 @@
 #include <initializer_list>
 #include <sstream>
 #include <string>
+#include <set>
 #include <unordered_set>
 #include <vector>
 
@@ -1087,13 +1088,13 @@ bool MutationReplaceBinaryOperator::IsRedundantReplacementForUnsignedComparison(
       // and "true", respectively.
       return true;
     }
-    if (binary_operator_->getOpcode() == clang::BO_EQ &&
-        replacement_operator == clang::BO_GE) {
+    if (std::set({binary_operator_->getOpcode(), replacement_operator}) ==
+        std::set<clang::BinaryOperatorKind>({clang::BO_EQ, clang::BO_GE})) {
       // "0 == a" is equivalent to "0 >= a"
       return true;
     }
-    if (binary_operator_->getOpcode() == clang::BO_NE &&
-        replacement_operator == clang::BO_LT) {
+    if (std::set({binary_operator_->getOpcode(), replacement_operator}) ==
+        std::set<clang::BinaryOperatorKind>({clang::BO_NE, clang::BO_LT})) {
       // "0 != a" equivalent to "0 < a"
       return true;
     }

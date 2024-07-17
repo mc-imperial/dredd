@@ -26,7 +26,7 @@ static bool __dredd_enabled_mutation(int local_mutation_id) {
       while(token) {
         int value = atoi(token);
         int local_value = value - 0;
-        if (local_value >= 0 && local_value < 312) {
+        if (local_value >= 0 && local_value < 308) {
           enabled_bitset[local_value / 64] |= ((uint64_t) 1 << (local_value % 64));
           some_mutation_enabled = 1;
         }
@@ -82,7 +82,6 @@ static int __dredd_replace_binary_operator_LT_arg1_unsigned_int_arg2_unsigned_in
 
 static int __dredd_replace_binary_operator_LT_arg1_unsigned_int_arg2_unsigned_int_lhs_zero(unsigned int arg1, unsigned int arg2, int local_mutation_id) {
   if (!__dredd_some_mutation_enabled) return arg1 < arg2;
-  if (__dredd_enabled_mutation(local_mutation_id + 0)) return arg1 != arg2;
   return arg1 < arg2;
 }
 
@@ -121,7 +120,6 @@ static int __dredd_replace_binary_operator_GE_arg1_unsigned_int_arg2_unsigned_in
 
 static int __dredd_replace_binary_operator_GE_arg1_unsigned_int_arg2_unsigned_int_lhs_zero(unsigned int arg1, unsigned int arg2, int local_mutation_id) {
   if (!__dredd_some_mutation_enabled) return arg1 >= arg2;
-  if (__dredd_enabled_mutation(local_mutation_id + 0)) return arg1 == arg2;
   return arg1 >= arg2;
 }
 
@@ -184,63 +182,63 @@ bool zero_gt_x(unsigned x) {
 }
 
 bool zero_ge_x(unsigned x) {
-  if (!__dredd_enabled_mutation(128)) { return __dredd_replace_expr_bool(__dredd_replace_binary_operator_GE_arg1_unsigned_int_arg2_unsigned_int_lhs_zero(__dredd_replace_expr_unsigned_int_zero(0u, 116) , __dredd_replace_expr_unsigned_int(__dredd_replace_expr_unsigned_int_lvalue(&(x), 118), 120), 124), 125); }
+  if (!__dredd_enabled_mutation(127)) { return __dredd_replace_expr_bool(__dredd_replace_binary_operator_GE_arg1_unsigned_int_arg2_unsigned_int_lhs_zero(__dredd_replace_expr_unsigned_int_zero(0u, 116) , __dredd_replace_expr_unsigned_int(__dredd_replace_expr_unsigned_int_lvalue(&(x), 118), 120), 124), 124); }
 }
 
 bool zero_lt_x(unsigned x) {
-  if (!__dredd_enabled_mutation(141)) { return __dredd_replace_expr_bool(__dredd_replace_binary_operator_LT_arg1_unsigned_int_arg2_unsigned_int_lhs_zero(__dredd_replace_expr_unsigned_int_zero(0u, 129) , __dredd_replace_expr_unsigned_int(__dredd_replace_expr_unsigned_int_lvalue(&(x), 131), 133), 137), 138); }
+  if (!__dredd_enabled_mutation(139)) { return __dredd_replace_expr_bool(__dredd_replace_binary_operator_LT_arg1_unsigned_int_arg2_unsigned_int_lhs_zero(__dredd_replace_expr_unsigned_int_zero(0u, 128) , __dredd_replace_expr_unsigned_int(__dredd_replace_expr_unsigned_int_lvalue(&(x), 130), 132), 136), 136); }
 }
 
 bool zero_le_x(unsigned x) {
-  if (!__dredd_enabled_mutation(155)) { return __dredd_replace_expr_bool(__dredd_replace_binary_operator_LE_arg1_unsigned_int_arg2_unsigned_int_lhs_zero(__dredd_replace_expr_unsigned_int_zero(0u, 142) , __dredd_replace_expr_unsigned_int(__dredd_replace_expr_unsigned_int_lvalue(&(x), 144), 146), 150), 152); }
+  if (!__dredd_enabled_mutation(153)) { return __dredd_replace_expr_bool(__dredd_replace_binary_operator_LE_arg1_unsigned_int_arg2_unsigned_int_lhs_zero(__dredd_replace_expr_unsigned_int_zero(0u, 140) , __dredd_replace_expr_unsigned_int(__dredd_replace_expr_unsigned_int_lvalue(&(x), 142), 144), 148), 150); }
 }
 
 // Check that optimisations are applied when a signed zero literal is used.
 
 bool x_eq_signed_zero(unsigned x) {
-  if (!__dredd_enabled_mutation(167)) { return __dredd_replace_expr_bool(__dredd_replace_binary_operator_EQ_arg1_unsigned_int_arg2_unsigned_int_rhs_zero(__dredd_replace_expr_unsigned_int(__dredd_replace_expr_unsigned_int_lvalue(&(x), 156), 158) , __dredd_replace_expr_unsigned_int_zero(0, 162), 164), 164); }
+  if (!__dredd_enabled_mutation(165)) { return __dredd_replace_expr_bool(__dredd_replace_binary_operator_EQ_arg1_unsigned_int_arg2_unsigned_int_rhs_zero(__dredd_replace_expr_unsigned_int(__dredd_replace_expr_unsigned_int_lvalue(&(x), 154), 156) , __dredd_replace_expr_unsigned_int_zero(0, 160), 162), 162); }
 }
 
 bool x_ne_signed_zero(unsigned x) {
-  if (!__dredd_enabled_mutation(179)) { return __dredd_replace_expr_bool(__dredd_replace_binary_operator_NE_arg1_unsigned_int_arg2_unsigned_int_rhs_zero(__dredd_replace_expr_unsigned_int(__dredd_replace_expr_unsigned_int_lvalue(&(x), 168), 170) , __dredd_replace_expr_unsigned_int_zero(0, 174), 176), 176); }
+  if (!__dredd_enabled_mutation(177)) { return __dredd_replace_expr_bool(__dredd_replace_binary_operator_NE_arg1_unsigned_int_arg2_unsigned_int_rhs_zero(__dredd_replace_expr_unsigned_int(__dredd_replace_expr_unsigned_int_lvalue(&(x), 166), 168) , __dredd_replace_expr_unsigned_int_zero(0, 172), 174), 174); }
 }
 
 bool x_gt_signed_zero(unsigned x) {
-  if (!__dredd_enabled_mutation(192)) { return __dredd_replace_expr_bool(__dredd_replace_binary_operator_GT_arg1_unsigned_int_arg2_unsigned_int_rhs_zero(__dredd_replace_expr_unsigned_int(__dredd_replace_expr_unsigned_int_lvalue(&(x), 180), 182) , __dredd_replace_expr_unsigned_int_zero(0, 186), 188), 189); }
+  if (!__dredd_enabled_mutation(190)) { return __dredd_replace_expr_bool(__dredd_replace_binary_operator_GT_arg1_unsigned_int_arg2_unsigned_int_rhs_zero(__dredd_replace_expr_unsigned_int(__dredd_replace_expr_unsigned_int_lvalue(&(x), 178), 180) , __dredd_replace_expr_unsigned_int_zero(0, 184), 186), 187); }
 }
 
 bool x_ge_signed_zero(unsigned x) {
-  if (!__dredd_enabled_mutation(206)) { return __dredd_replace_expr_bool(__dredd_replace_binary_operator_GE_arg1_unsigned_int_arg2_unsigned_int_rhs_zero(__dredd_replace_expr_unsigned_int(__dredd_replace_expr_unsigned_int_lvalue(&(x), 193), 195) , __dredd_replace_expr_unsigned_int_zero(0, 199), 201), 203); }
+  if (!__dredd_enabled_mutation(204)) { return __dredd_replace_expr_bool(__dredd_replace_binary_operator_GE_arg1_unsigned_int_arg2_unsigned_int_rhs_zero(__dredd_replace_expr_unsigned_int(__dredd_replace_expr_unsigned_int_lvalue(&(x), 191), 193) , __dredd_replace_expr_unsigned_int_zero(0, 197), 199), 201); }
 }
 
 bool x_lt_signed_zero(unsigned x) {
-  if (!__dredd_enabled_mutation(220)) { return __dredd_replace_expr_bool(__dredd_replace_binary_operator_LT_arg1_unsigned_int_arg2_unsigned_int_rhs_zero(__dredd_replace_expr_unsigned_int(__dredd_replace_expr_unsigned_int_lvalue(&(x), 207), 209) , __dredd_replace_expr_unsigned_int_zero(0, 213), 215), 217); }
+  if (!__dredd_enabled_mutation(218)) { return __dredd_replace_expr_bool(__dredd_replace_binary_operator_LT_arg1_unsigned_int_arg2_unsigned_int_rhs_zero(__dredd_replace_expr_unsigned_int(__dredd_replace_expr_unsigned_int_lvalue(&(x), 205), 207) , __dredd_replace_expr_unsigned_int_zero(0, 211), 213), 215); }
 }
 
 bool x_le_signed_zero(unsigned x) {
-  if (!__dredd_enabled_mutation(233)) { return __dredd_replace_expr_bool(__dredd_replace_binary_operator_LE_arg1_unsigned_int_arg2_unsigned_int_rhs_zero(__dredd_replace_expr_unsigned_int(__dredd_replace_expr_unsigned_int_lvalue(&(x), 221), 223) , __dredd_replace_expr_unsigned_int_zero(0, 227), 229), 230); }
+  if (!__dredd_enabled_mutation(231)) { return __dredd_replace_expr_bool(__dredd_replace_binary_operator_LE_arg1_unsigned_int_arg2_unsigned_int_rhs_zero(__dredd_replace_expr_unsigned_int(__dredd_replace_expr_unsigned_int_lvalue(&(x), 219), 221) , __dredd_replace_expr_unsigned_int_zero(0, 225), 227), 228); }
 }
 
 bool signed_zero_eq_x(unsigned x) {
-  if (!__dredd_enabled_mutation(245)) { return __dredd_replace_expr_bool(__dredd_replace_binary_operator_EQ_arg1_unsigned_int_arg2_unsigned_int_lhs_zero(__dredd_replace_expr_unsigned_int_zero(0, 234) , __dredd_replace_expr_unsigned_int(__dredd_replace_expr_unsigned_int_lvalue(&(x), 236), 238), 242), 242); }
+  if (!__dredd_enabled_mutation(243)) { return __dredd_replace_expr_bool(__dredd_replace_binary_operator_EQ_arg1_unsigned_int_arg2_unsigned_int_lhs_zero(__dredd_replace_expr_unsigned_int_zero(0, 232) , __dredd_replace_expr_unsigned_int(__dredd_replace_expr_unsigned_int_lvalue(&(x), 234), 236), 240), 240); }
 }
 
 bool signed_zero_ne_x(unsigned x) {
-  if (!__dredd_enabled_mutation(257)) { return __dredd_replace_expr_bool(__dredd_replace_binary_operator_NE_arg1_unsigned_int_arg2_unsigned_int_lhs_zero(__dredd_replace_expr_unsigned_int_zero(0, 246) , __dredd_replace_expr_unsigned_int(__dredd_replace_expr_unsigned_int_lvalue(&(x), 248), 250), 254), 254); }
+  if (!__dredd_enabled_mutation(255)) { return __dredd_replace_expr_bool(__dredd_replace_binary_operator_NE_arg1_unsigned_int_arg2_unsigned_int_lhs_zero(__dredd_replace_expr_unsigned_int_zero(0, 244) , __dredd_replace_expr_unsigned_int(__dredd_replace_expr_unsigned_int_lvalue(&(x), 246), 248), 252), 252); }
 }
 
 bool signed_zero_gt_x(unsigned x) {
-  if (!__dredd_enabled_mutation(271)) { return __dredd_replace_expr_bool(__dredd_replace_binary_operator_GT_arg1_unsigned_int_arg2_unsigned_int_lhs_zero(__dredd_replace_expr_unsigned_int_zero(0, 258) , __dredd_replace_expr_unsigned_int(__dredd_replace_expr_unsigned_int_lvalue(&(x), 260), 262), 266), 268); }
+  if (!__dredd_enabled_mutation(269)) { return __dredd_replace_expr_bool(__dredd_replace_binary_operator_GT_arg1_unsigned_int_arg2_unsigned_int_lhs_zero(__dredd_replace_expr_unsigned_int_zero(0, 256) , __dredd_replace_expr_unsigned_int(__dredd_replace_expr_unsigned_int_lvalue(&(x), 258), 260), 264), 266); }
 }
 
 bool signed_zero_ge_x(unsigned x) {
-  if (!__dredd_enabled_mutation(284)) { return __dredd_replace_expr_bool(__dredd_replace_binary_operator_GE_arg1_unsigned_int_arg2_unsigned_int_lhs_zero(__dredd_replace_expr_unsigned_int_zero(0, 272) , __dredd_replace_expr_unsigned_int(__dredd_replace_expr_unsigned_int_lvalue(&(x), 274), 276), 280), 281); }
+  if (!__dredd_enabled_mutation(281)) { return __dredd_replace_expr_bool(__dredd_replace_binary_operator_GE_arg1_unsigned_int_arg2_unsigned_int_lhs_zero(__dredd_replace_expr_unsigned_int_zero(0, 270) , __dredd_replace_expr_unsigned_int(__dredd_replace_expr_unsigned_int_lvalue(&(x), 272), 274), 278), 278); }
 }
 
 bool signed_zero_lt_x(unsigned x) {
-  if (!__dredd_enabled_mutation(297)) { return __dredd_replace_expr_bool(__dredd_replace_binary_operator_LT_arg1_unsigned_int_arg2_unsigned_int_lhs_zero(__dredd_replace_expr_unsigned_int_zero(0, 285) , __dredd_replace_expr_unsigned_int(__dredd_replace_expr_unsigned_int_lvalue(&(x), 287), 289), 293), 294); }
+  if (!__dredd_enabled_mutation(293)) { return __dredd_replace_expr_bool(__dredd_replace_binary_operator_LT_arg1_unsigned_int_arg2_unsigned_int_lhs_zero(__dredd_replace_expr_unsigned_int_zero(0, 282) , __dredd_replace_expr_unsigned_int(__dredd_replace_expr_unsigned_int_lvalue(&(x), 284), 286), 290), 290); }
 }
 
 bool signed_zero_le_x(unsigned x) {
-  if (!__dredd_enabled_mutation(311)) { return __dredd_replace_expr_bool(__dredd_replace_binary_operator_LE_arg1_unsigned_int_arg2_unsigned_int_lhs_zero(__dredd_replace_expr_unsigned_int_zero(0, 298) , __dredd_replace_expr_unsigned_int(__dredd_replace_expr_unsigned_int_lvalue(&(x), 300), 302), 306), 308); }
+  if (!__dredd_enabled_mutation(307)) { return __dredd_replace_expr_bool(__dredd_replace_binary_operator_LE_arg1_unsigned_int_arg2_unsigned_int_lhs_zero(__dredd_replace_expr_unsigned_int_zero(0, 294) , __dredd_replace_expr_unsigned_int(__dredd_replace_expr_unsigned_int_lvalue(&(x), 296), 298), 302), 304); }
 }
