@@ -153,8 +153,6 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
             .getLimitedValue());
   }
 
-  *mutation_info_->add_info_for_files() = mutation_info_for_file;
-
   const clang::SourceLocation start_location_of_first_function_in_source_file =
       visitor_->GetStartLocationOfFirstFunctionInSourceFile();
   assert(start_location_of_first_function_in_source_file.isValid() &&
