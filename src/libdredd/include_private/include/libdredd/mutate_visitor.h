@@ -184,7 +184,7 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
   // a file as Dredd only makes source code modifications inside functions.
   void UpdateStartLocationOfFirstFunctionInSourceFile();
 
-  // TODO(JLJ): Add comment
+  // Adds details of a mutation that can be applied, and performs associated bookkeeping.
   void AddMutation(std::unique_ptr<Mutation> mutation);
 
   const clang::CompilerInstance* compiler_instance_;
