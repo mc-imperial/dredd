@@ -1,5 +1,3 @@
-long bar() {}
-
 #include <cinttypes>
 #include <cstddef>
 #include <functional>
@@ -27,7 +25,7 @@ static bool __dredd_enabled_mutation(int local_mutation_id) {
         if (!token.empty()) {
           int value = std::stoi(token);
           int local_value = value - 0;
-          if (local_value >= 0 && local_value < 4) {
+          if (local_value >= 0 && local_value < 17) {
             enabled_bitset[local_value / 64] |= (static_cast<uint64_t>(1) << (local_value % 64));
             some_mutation_enabled = true;
           }
@@ -53,6 +51,32 @@ static unsigned int __dredd_replace_expr_unsigned_int(unsigned int arg, int loca
   return arg;
 }
 
+static long long __dredd_replace_expr_long_long(long long arg, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return arg;
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return !(arg);
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return ~(arg);
+  if (__dredd_enabled_mutation(local_mutation_id + 2)) return -(arg);
+  if (__dredd_enabled_mutation(local_mutation_id + 3)) return 0;
+  if (__dredd_enabled_mutation(local_mutation_id + 4)) return 1;
+  if (__dredd_enabled_mutation(local_mutation_id + 5)) return -1;
+  return arg;
+}
+
+static long __dredd_replace_expr_long(long arg, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return arg;
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return !(arg);
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return ~(arg);
+  if (__dredd_enabled_mutation(local_mutation_id + 2)) return -(arg);
+  if (__dredd_enabled_mutation(local_mutation_id + 3)) return 0;
+  if (__dredd_enabled_mutation(local_mutation_id + 4)) return 1;
+  if (__dredd_enabled_mutation(local_mutation_id + 5)) return -1;
+  return arg;
+}
+
+long bar() {
+  if (!__dredd_enabled_mutation(12)) { return __dredd_replace_expr_long(__dredd_replace_expr_long_long(1LL, 0), 6); }
+}
+
 void foo() {
-  unsigned x = __dredd_replace_expr_unsigned_int((decltype(bar())) 'a', 0);
+  unsigned x = __dredd_replace_expr_unsigned_int((decltype(bar())) 'a', 13);
 }
