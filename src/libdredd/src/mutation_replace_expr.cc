@@ -582,7 +582,14 @@ void MutationReplaceExpr::ReplaceExprWithFunctionCall(
   // cast. There are cases where such implicit casts are allowed for constants
   // but not for non-constants. This is catered for by inserting an explicit
   // cast.
-  auto parents = ast_context.getParents<clang::Expr>(*expr_);
+  // For the following check to work, we need to move up any enclsoing
+  // parenthesis expressions.
+  auto* deparenthesis_expr = expr_;
+  while (const auto* paren_expr = GetFirstParentOfType<clang::ParenExpr>(
+             *deparenthesis_expr, ast_context)) {
+    deparenthesis_expr = paren_expr;
+  }
+  auto parents = ast_context.getParents<clang::Expr>(*deparenthesis_expr);
   // The expression that occurs in an initializer list and is then subject to an
   // explicit cast will have at least two parents: the initializer list and the
   // implicit cast. (This is probably due to implicit casts being treated as
