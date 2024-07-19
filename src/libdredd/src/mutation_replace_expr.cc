@@ -584,7 +584,7 @@ void MutationReplaceExpr::ReplaceExprWithFunctionCall(
   // cast.
   // For the following check to work, we need to move up any enclosing
   // parentheses.
-  auto* deparenthesis_expr = expr_;
+  const auto* deparenthesis_expr = expr_;
   while (const auto* paren_expr = GetFirstParentOfType<clang::ParenExpr>(
              *deparenthesis_expr, ast_context)) {
     deparenthesis_expr = paren_expr;
