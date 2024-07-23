@@ -265,6 +265,14 @@ bool MutateVisitor::TraverseStmt(clang::Stmt* stmt) {
     }
   }
 
+  // Do not mutate expression under `decltype`, as Dredd doesn't change the type
+  // of underlying expression.
+  if (const auto* cast_expr = llvm::dyn_cast<clang::CastExpr>(stmt)) {
+    if (cast_expr->getType()->getAs<clang::DecltypeType>() != nullptr) {
+      return true;
+    }
+  }
+
   // Add a node to the mutation tree to capture any mutations beneath this
   // statement.
   const PushMutationTreeRAII push_mutation_tree(*this);
