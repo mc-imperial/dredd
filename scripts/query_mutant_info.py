@@ -74,7 +74,7 @@ def get_text_for_source_range(start_location: Dict[str, int],
         return True, range_description, "", lines[start_line - 1][start_column - 1:end_column - 1]
     blank_prefix: str = " " * (start_column - 1)
     source_range_text: str = lines[start_line - 1][start_column - 1:]
-    for i in range(start_line + 1, end_line - 1):
+    for i in range(start_line, end_line - 1):
         source_range_text += lines[i]
     source_range_text += lines[end_line - 1][0:end_column - 1]
     return False, range_description, blank_prefix, source_range_text
