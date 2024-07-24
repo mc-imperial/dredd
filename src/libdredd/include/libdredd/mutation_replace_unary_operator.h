@@ -54,10 +54,10 @@ class MutationReplaceUnaryOperator : public Mutation {
   [[nodiscard]] static bool IsPrefix(clang::UnaryOperatorKind operator_kind);
 
   [[nodiscard]] bool IsValidReplacementOperator(
-      clang::UnaryOperatorKind operator_kind) const;
+      clang::UnaryOperatorKind replacement_operator) const;
 
   [[nodiscard]] bool IsRedundantReplacementOperator(
-      clang::UnaryOperatorKind operator_kind,
+      clang::UnaryOperatorKind replacement_operator,
       const clang::ASTContext& ast_context) const;
 
   [[nodiscard]] bool IsOperatorSelfInverse() const;

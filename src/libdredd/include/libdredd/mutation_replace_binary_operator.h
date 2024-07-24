@@ -63,18 +63,23 @@ class MutationReplaceBinaryOperator : public Mutation {
                               clang::ASTContext& ast_context) const;
 
   [[nodiscard]] bool IsRedundantReplacementOperator(
-      clang::BinaryOperatorKind operator_kind,
+      clang::BinaryOperatorKind replacement_operator,
       const clang::ASTContext& ast_context) const;
 
   [[nodiscard]] bool IsRedundantReplacementForBooleanValuedOperator(
-      clang::BinaryOperatorKind operator_kind) const;
+      clang::BinaryOperatorKind replacement_operator,
+      const clang::ASTContext& ast_context) const;
+
+  [[nodiscard]] bool IsRedundantReplacementForUnsignedComparison(
+      clang::BinaryOperatorKind replacement_operator,
+      const clang::ASTContext& ast_context) const;
 
   [[nodiscard]] bool IsRedundantReplacementForArithmeticOperator(
-      clang::BinaryOperatorKind operator_kind,
+      clang::BinaryOperatorKind replacement_operator,
       const clang::ASTContext& ast_context) const;
 
   [[nodiscard]] bool IsValidReplacementOperator(
-      clang::BinaryOperatorKind operator_kind) const;
+      clang::BinaryOperatorKind replacement_operator) const;
 
   // Replaces binary expressions with either the left or right operand.
   void GenerateArgumentReplacement(
