@@ -1069,8 +1069,8 @@ bool MutationReplaceBinaryOperator::
 bool MutationReplaceBinaryOperator::IsRedundantReplacementForUnsignedComparison(
     clang::BinaryOperatorKind replacement_operator,
     const clang::ASTContext& ast_context) const {
-  bool valid_replacement = replacement_operator == clang::BO_NE ||
-                           replacement_operator == clang::BO_EQ;
+  const bool valid_replacement = replacement_operator == clang::BO_NE ||
+                                 replacement_operator == clang::BO_EQ;
 
   switch (binary_operator_->getOpcode()) {
     // Logical operator have the same redundant rule as described in
