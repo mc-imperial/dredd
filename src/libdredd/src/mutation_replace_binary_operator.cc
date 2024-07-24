@@ -1031,9 +1031,10 @@ bool MutationReplaceBinaryOperator::
     IsRedundantReplacementForBooleanValuedOperator(
         clang::BinaryOperatorKind replacement_operator,
         const clang::ASTContext& ast_context) const {
-  if (IsRedundantReplacementForUnsignedComparison(replacement_operator,
-                                                  ast_context)) {
-    return true;
+  if (binary_operator_->getLHS()->getType()->isUnsignedIntegerType() &&
+      binary_operator_->getRHS()->getType()->isUnsignedIntegerType()) {
+    return IsRedundantReplacementForUnsignedComparison(replacement_operator,
+                                                       ast_context);
   }
 
   switch (binary_operator_->getOpcode()) {
@@ -1070,28 +1071,35 @@ bool MutationReplaceBinaryOperator::
 bool MutationReplaceBinaryOperator::IsRedundantReplacementForUnsignedComparison(
     clang::BinaryOperatorKind replacement_operator,
     const clang::ASTContext& ast_context) const {
-  if (!binary_operator_->getLHS()->getType()->isUnsignedIntegerType() ||
-      !binary_operator_->getRHS()->getType()->isUnsignedIntegerType()) {
-    return false;
+  bool valid_replacement = replacement_operator == clang::BO_NE ||
+                           replacement_operator == clang::BO_EQ;
+
+  switch (binary_operator_->getOpcode()) {
+    // Logical operator have the same redundant rule as described in
+    // https://people.cs.umass.edu/~rjust/publ/non_redundant_mutants_jstvr_2014.pdf
+    case clang::BO_LAnd:
+      return replacement_operator != clang::BO_EQ;
+    case clang::BO_LOr:
+      return replacement_operator != clang::BO_NE;
+    case clang::BO_GT:
+    case clang::BO_LE:
+      // Non-redundant when LHS is 0 and replacement operator is NE or EQ.
+      return !(MutationReplaceExpr::ExprIsEquivalentToInt(
+                   *binary_operator_->getLHS(), 0, ast_context) &&
+               valid_replacement);
+    case clang::BO_LT:
+    case clang::BO_GE:
+      // Non-redundant when RHS is 0 and replacement operator is NE or EQ.
+      return !(MutationReplaceExpr::ExprIsEquivalentToInt(
+                   *binary_operator_->getRHS(), 0, ast_context) &&
+               valid_replacement);
+    case clang::BO_EQ:
+    case clang::BO_NE:
+      // Always redundant, as minimal dstance mutations are `false` and `true`.
+      return true;
+    default:
+      return false;
   }
-  if (MutationReplaceExpr::ExprIsEquivalentToInt(*binary_operator_->getLHS(), 0,
-                                                 ast_context)) {
-    // LHS is 0
-    if (binary_operator_->getOpcode() == clang::BO_GT || binary_operator_->getOpcode() == clang::BO_LE) {
-      return replacement_operator != clang::BO_NE && replacement_operator != clang::BO_EQ;
-    }
-    return true;
-    
-  }
-  if (MutationReplaceExpr::ExprIsEquivalentToInt(*binary_operator_->getRHS(), 0,
-                                                 ast_context)) {
-    // RHS is 0
-    if (binary_operator_->getOpcode() == clang::BO_LT || binary_operator_->getOpcode() == clang::BO_GE) {
-      return replacement_operator != clang::BO_NE && replacement_operator != clang::BO_EQ;
-    }
-    return true;
-  }
-  return false;
 }
 
 bool MutationReplaceBinaryOperator::IsRedundantReplacementForArithmeticOperator(
