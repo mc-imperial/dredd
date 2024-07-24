@@ -1077,54 +1077,19 @@ bool MutationReplaceBinaryOperator::IsRedundantReplacementForUnsignedComparison(
   if (MutationReplaceExpr::ExprIsEquivalentToInt(*binary_operator_->getLHS(), 0,
                                                  ast_context)) {
     // LHS is 0
-    if (replacement_operator == clang::BO_GT ||
-        replacement_operator == clang::BO_LE) {
-      // We are considering mutating an expression of the form "0 op a" to
-      // one of:
-      //
-      // - "0 > a"
-      // - "0 <= a"
-      //
-      // These are subsumed by replacing the overall expression with "false"
-      // and "true", respectively.
-      return true;
+    if (binary_operator_->getOpcode() == clang::BO_GT || binary_operator_->getOpcode() == clang::BO_LE) {
+      return replacement_operator != clang::BO_NE && replacement_operator != clang::BO_EQ;
     }
-    if (std::set({binary_operator_->getOpcode(), replacement_operator}) ==
-        std::set<clang::BinaryOperatorKind>({clang::BO_EQ, clang::BO_GE})) {
-      // "0 == a" is equivalent to "0 >= a"
-      return true;
-    }
-    if (std::set({binary_operator_->getOpcode(), replacement_operator}) ==
-        std::set<clang::BinaryOperatorKind>({clang::BO_NE, clang::BO_LT})) {
-      // "0 != a" equivalent to "0 < a"
-      return true;
-    }
+    return true;
+    
   }
   if (MutationReplaceExpr::ExprIsEquivalentToInt(*binary_operator_->getRHS(), 0,
                                                  ast_context)) {
     // RHS is 0
-    if (replacement_operator == clang::BO_LT ||
-        replacement_operator == clang::BO_GE) {
-      // We are considering mutating an expression of the form "a op 0" to
-      // one of:
-      //
-      // - "a < 0"
-      // - "a >= 0"
-      //
-      // These are subsumed by replacing the overall expression with "false"
-      // and "true", respectively.
-      return true;
+    if (binary_operator_->getOpcode() == clang::BO_LT || binary_operator_->getOpcode() == clang::BO_GE) {
+      return replacement_operator != clang::BO_NE && replacement_operator != clang::BO_EQ;
     }
-    if (binary_operator_->getOpcode() == clang::BO_EQ &&
-        replacement_operator == clang::BO_LE) {
-      // "a == 0" is equivalent to "a <= 0"
-      return true;
-    }
-    if (binary_operator_->getOpcode() == clang::BO_NE &&
-        replacement_operator == clang::BO_GT) {
-      // "a != 0" equivalent to "a > 0"
-      return true;
-    }
+    return true;
   }
   return false;
 }
