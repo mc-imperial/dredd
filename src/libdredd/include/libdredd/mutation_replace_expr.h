@@ -44,8 +44,9 @@ class MutationReplaceExpr : public Mutation {
       std::unordered_set<std::string>& dredd_declarations,
       std::unordered_set<std::string>& dredd_macros) const override;
 
-  [[nodiscard]] static std::string GetExprMacroName(
-      const std::string& operator_name);
+  [[nodiscard]] std::string GetExprMacroName(
+      const std::string& operator_name, const clang::ASTContext& ast_context,
+      const bool semantics_preserving_mutation) const;
 
   static void ApplyCppTypeModifiers(const clang::Expr& expr, std::string& type);
 
@@ -128,6 +129,11 @@ class MutationReplaceExpr : public Mutation {
       int mutation_id_base, std::stringstream& new_function,
       int& mutation_id_offset,
       protobufs::MutationReplaceExpr& protobuf_message) const;
+
+  [[nodiscard]] std::string GenerateUnaryOperatorInsertionMacro(const std::string &name,
+                                                  clang::UnaryOperatorKind operator_kind,
+                                                  bool semantics_preserving_mutation,
+                                                  const clang::ASTContext &ast_context) const;
 
   // Insert valid unary operators such as !, ~, ++ and --.
   void GenerateUnaryOperatorInsertion(

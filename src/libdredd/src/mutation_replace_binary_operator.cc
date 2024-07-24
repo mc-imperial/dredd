@@ -348,7 +348,7 @@ MutationReplaceBinaryOperator::GenerateBinaryOperatorReplacementMacro(
                ") != actual_result) no_op++\n";
       } else if (lhs_type->isSignedInteger() || rhs_type->isSignedInteger()) {
         result +=
-            "!((((arg1) > 0) && ((arg2) > 0) && ((arg1) > (" +
+            "((((arg1) > 0) && ((arg2) > 0) && ((arg1) > (" +
             TypeToUpperLimit(type, ast_context) +
             " / (arg2)))) || (((arg1) > 0) && ((arg2) <= 0) && ((arg2) < (" +
             TypeToLowerLimit(type, ast_context) +
@@ -357,127 +357,123 @@ MutationReplaceBinaryOperator::GenerateBinaryOperatorReplacementMacro(
             " / (arg2)))) || (((arg1) <= 0) && ((arg2) <= 0) && ((arg1) != 0) "
             "&& ((arg2) < (" +
             TypeToUpperLimit(type, ast_context) + " / (arg1)))))";
-        result += " && ";
+        result += " || ";
       } else if (lhs_type->getKind() == clang::BuiltinType::LongDouble &&
                  rhs_type->getKind() == clang::BuiltinType::LongDouble) {
         result +=
-            "!(fabsl((0x1.0p-100 * (arg1)) * (0x1.0p-924 * (arg2))) > "
+            "(fabsl((0x1.0p-100 * (arg1)) * (0x1.0p-924 * (arg2))) > "
             "(0x1.0p-100 * (0x1.0p-924 * " +
             TypeToUpperLimit(type, ast_context) + ")))";
-        result += " && ";
+        result += " || ";
       } else if (lhs_type->getKind() == clang::BuiltinType::Double &&
                  rhs_type->getKind() == clang::BuiltinType::Double) {
         result +=
-            "!(fabs((0x1.0p-100 * (arg1)) * (0x1.0p-924 * (arg2))) > "
+            "(fabs((0x1.0p-100 * (arg1)) * (0x1.0p-924 * (arg2))) > "
             "(0x1.0p-100 * (0x1.0p-924 * " +
             TypeToUpperLimit(type, ast_context) + ")))";
-        result += " && ";
+        result += " || ";
       } else if (lhs_type->isFloatingPoint() && rhs_type->isFloatingPoint()) {
         result +=
-            "!(fabsf((0x1.0p-100f * (arg1)) * (0x1.0p-28f * (arg2))) > "
+            "(fabsf((0x1.0p-100f * (arg1)) * (0x1.0p-28f * (arg2))) > "
             "(0x1.0p-100f * (0x1.0p-28f * " +
             TypeToUpperLimit(type, ast_context) + ")))";
-        result += " && ";
+        result += " || ";
       }
       break;
     case clang::BO_DivAssign:
     case clang::BO_Div:
       // int:
       if (lhs_type->isSignedInteger() && rhs_type->isSignedInteger()) {
-        result += "!(((arg2) == 0) || (((arg1) == " +
+        result += "(((arg2) == 0) || (((arg1) == " +
                   TypeToLowerLimit(type, ast_context) +
                   ") && ((arg2) == (-1))))";
-        result += " && ";
+        result += " || ";
       } else if (lhs_type->getKind() == clang::BuiltinType::LongDouble &&
                  rhs_type->getKind() == clang::BuiltinType::LongDouble) {
         result +=
-            "!((fabsl((arg2)) < 1.0) && ((((arg2) == 0.0) || "
+            "((fabsl((arg2)) < 1.0) && ((((arg2) == 0.0) || "
             "(fabsl((0x1.0p-974 * (arg1)) / (0x1.0p100 * (arg2)))) > "
             "(0x1.0p-100 * (0x1.0p-974 * " +
             TypeToUpperLimit(type, ast_context) + ")))))";
-        result += " && ";
+        result += " || ";
       } else if (lhs_type->getKind() == clang::BuiltinType::Double &&
                  rhs_type->getKind() == clang::BuiltinType::Double) {
         result +=
-            "!((fabs((arg2)) < 1.0) && ((((arg2) == 0.0) || (fabs((0x1.0p-974 "
+            "((fabs((arg2)) < 1.0) && ((((arg2) == 0.0) || (fabs((0x1.0p-974 "
             "* (arg1)) / (0x1.0p100 * (arg2)))) > (0x1.0p-100 * (0x1.0p-974 "
             "* " +
             TypeToUpperLimit(type, ast_context) + ")))))";
-        result += " && ";
+        result += " || ";
       } else if (lhs_type->isFloatingPoint() && rhs_type->isFloatingPoint()) {
         result +=
-            "!((fabsf((arg2)) < 1.0f) && ((((arg2) == 0.0f) || "
+            "((fabsf((arg2)) < 1.0f) && ((((arg2) == 0.0f) || "
             "(fabsf((0x1.0p-49f * (arg1)) / (0x1.0p100f * (arg2)))) > "
             "(0x1.0p-100f * (0x1.0p-49f * " +
             TypeToUpperLimit(type, ast_context) + ")))))";
-        result += " && ";
+        result += " || ";
       } else {
-        result += "(arg2 != 0) &&";
+        result += "(arg2 == 0) ||";
       }
       break;
     case clang::BO_RemAssign:
     case clang::BO_Rem:
       // int:
       if (lhs_type->isSignedInteger() && rhs_type->isSignedInteger()) {
-        result += "!(((arg2) == 0) || (((arg1) == " +
+        result += "(((arg2) == 0) || (((arg1) == " +
                   TypeToLowerLimit(type, ast_context) +
                   ") && ((arg2) == (-1))))";
-        result += " && ";
-      } else if (lhs_type->isUnsignedInteger() &&
-                 rhs_type->isUnsignedInteger()) {
-        result += "(arg2) != 0";
-        result += " && ";
+        result += " || ";
       } else {
-        result += "(arg2 != 0) &&";
+        result += "(arg2 == 0) || ";
       }
       break;
     case clang::BO_AddAssign:
     case clang::BO_Add:
       // int:
       if (lhs_type->isSignedInteger() && rhs_type->isSignedInteger()) {
-        result += "!((((arg1)>0) && ((arg2)>0) && ((arg1) > (" +
+        result += "((((arg1)>0) && ((arg2)>0) && ((arg1) > (" +
                   TypeToUpperLimit(type, ast_context) +
                   "-(arg2)))) || (((arg1)<0) && ((arg2)<0) && ((arg1) < (" +
                   TypeToLowerLimit(type, ast_context) + "-(arg2)))))";
-        result += " && ";
+        result += " || ";
       } else if (lhs_type->getKind() == clang::BuiltinType::LongDouble &&
                  rhs_type->getKind() == clang::BuiltinType::LongDouble) {
-        result += "!(fabsl((0.5 * (arg1)) + (0.5 * (arg2))) > (0.5 * " +
+        result += "(fabsl((0.5 * (arg1)) + (0.5 * (arg2))) > (0.5 * " +
                   TypeToUpperLimit(type, ast_context) + "))";
-        result += " && ";
+        result += " || ";
       } else if (lhs_type->getKind() == clang::BuiltinType::Double &&
                  rhs_type->getKind() == clang::BuiltinType::Double) {
-        result += "!(fabs((0.5 * (arg1)) + (0.5 * (arg2))) > (0.5 * " +
+        result += "(fabs((0.5 * (arg1)) + (0.5 * (arg2))) > (0.5 * " +
                   TypeToUpperLimit(type, ast_context) + "))";
-        result += " && ";
+        result += " || ";
       } else if (lhs_type->isFloatingPoint() && rhs_type->isFloatingPoint()) {
-        result += "!(fabsf((0.5f * (arg1)) + (0.5f * (arg2))) > (0.5f * " +
+        result += "(fabsf((0.5f * (arg1)) + (0.5f * (arg2))) > (0.5f * " +
                   TypeToUpperLimit(type, ast_context) + "))";
-        result += " && ";
+        result += " || ";
       }
       break;
     case clang::BO_SubAssign:
     case clang::BO_Sub:
       // int:
       if (lhs_type->isSignedInteger() && rhs_type->isSignedInteger()) {
-        result += "!((((arg1)^(arg2)) & ((((arg1) ^ (((arg1)^(arg2)) & (~" +
+        result += "((((arg1)^(arg2)) & ((((arg1) ^ (((arg1)^(arg2)) & (~" +
                   TypeToUpperLimit(type, ast_context) +
                   ")))-(arg2))^(arg2))) < 0)";
-        result += " && ";
+        result += " || ";
       } else if (lhs_type->getKind() == clang::BuiltinType::LongDouble &&
                  rhs_type->getKind() == clang::BuiltinType::LongDouble) {
-        result += "!(fabsl((0.5 * (arg1)) - (0.5 * (arg2))) > (0.5 * " +
+        result += "(fabsl((0.5 * (arg1)) - (0.5 * (arg2))) > (0.5 * " +
                   TypeToUpperLimit(type, ast_context) + "))";
-        result += " && ";
+        result += " || ";
       } else if (lhs_type->getKind() == clang::BuiltinType::Double &&
                  rhs_type->getKind() == clang::BuiltinType::Double) {
-        result += "!(fabs((0.5 * (arg1)) - (0.5 * (arg2))) > (0.5 * " +
+        result += "(fabs((0.5 * (arg1)) - (0.5 * (arg2))) > (0.5 * " +
                   TypeToUpperLimit(type, ast_context) + "))";
-        result += " && ";
+        result += " || ";
       } else if (lhs_type->isFloatingPoint() && rhs_type->isFloatingPoint()) {
-        result += "!(fabsf((0.5f * (arg1)) - (0.5f * (arg2))) > (0.5f * " +
+        result += "(fabsf((0.5f * (arg1)) - (0.5f * (arg2))) > (0.5f * " +
                   TypeToUpperLimit(type, ast_context) + "))";
-        result += " && ";
+        result += " || ";
       }
       break;
     case clang::BO_ShlAssign:
@@ -485,43 +481,43 @@ MutationReplaceBinaryOperator::GenerateBinaryOperatorReplacementMacro(
       // int:
       if (lhs_type->isSignedInteger() && rhs_type->isSignedInteger()) {
         result +=
-            "!(((arg1) < 0) || ((arg2) < 0) || ((arg2) >= 32) || ((arg1) "
+            "(((arg1) < 0) || ((arg2) < 0) || ((arg2) >= 32) || ((arg1) "
             "> (" +
             TypeToUpperLimit(type, ast_context) + " >> (arg2))))";
-        result += " && ";
+        result += " || ";
       } else if (lhs_type->isSignedInteger() && rhs_type->isUnsignedInteger()) {
         result +=
-            "!(((arg1) < 0) || ((arg2) >= 32) || ((arg1) "
+            "(((arg1) < 0) || ((arg2) >= 32) || ((arg1) "
             "> (" +
             TypeToUpperLimit(type, ast_context) + " >> (arg2))))";
-        result += " && ";
+        result += " || ";
       } else if (lhs_type->isUnsignedInteger() && rhs_type->isSignedInteger()) {
-        result += "!(((arg2) < 0) || ((arg2) >= 32) || ((arg1) > (" +
+        result += "(((arg2) < 0) || ((arg2) >= 32) || ((arg1) > (" +
                   TypeToUpperLimit(type, ast_context) + " >> (arg2))))";
-        result += " && ";
+        result += " || ";
       } else if (lhs_type->isUnsignedInteger() &&
                  rhs_type->isUnsignedInteger()) {
-        result += "!(((arg2) >= 32) || ((arg1) > (" +
+        result += "(((arg2) >= 32) || ((arg1) > (" +
                   TypeToUpperLimit(type, ast_context) + " >> (arg2))))";
-        result += " && ";
+        result += " || ";
       }
       break;
     case clang::BO_ShrAssign:
     case clang::BO_Shr:
       // int:
       if (lhs_type->isSignedInteger() && rhs_type->isSignedInteger()) {
-        result += "!(((arg1) < 0) || ((arg2) < 0) || ((arg2) >= 32))";
-        result += " && ";
+        result += "(((arg1) < 0) || ((arg2) < 0) || ((arg2) >= 32))";
+        result += " || ";
       } else if (lhs_type->isSignedInteger() && rhs_type->isUnsignedInteger()) {
-        result += "!(((arg1) < 0) || ((arg2) >= 32))";
-        result += " && ";
+        result += "(((arg1) < 0) || ((arg2) >= 32))";
+        result += " || ";
       } else if (lhs_type->isUnsignedInteger() && rhs_type->isSignedInteger()) {
-        result += "!(((arg2) < 0) || ((arg2) >= 32))";
-        result += " && ";
+        result += "(((arg2) < 0) || ((arg2) >= 32))";
+        result += " || ";
       } else if (lhs_type->isUnsignedInteger() &&
                  rhs_type->isUnsignedInteger()) {
-        result += "!((arg2) >= 32)";
-        result += " && ";
+        result += "((arg2) >= 32)";
+        result += " || ";
       }
       break;
     default:

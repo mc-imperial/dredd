@@ -218,9 +218,12 @@ std::string MutationReplaceUnaryOperator::GenerateMutatorFunction(
   if (!only_track_mutant_coverage) {
     // For pre-increment and pre-decrement ops, we need to store the value
     // before it is modified to use in the mutation killing checks.
-    if (semantics_preserving_mutation &&
+    const bool store_arg = semantics_preserving_mutation &&
         (unary_operator_->getOpcode() == clang::UnaryOperatorKind::UO_PreInc ||
-         unary_operator_->getOpcode() == clang::UnaryOperatorKind::UO_PreDec)) {
+            unary_operator_->getOpcode() == clang::UnaryOperatorKind::UO_PreDec ||
+            unary_operator_-> getOpcode() == clang::UnaryOperatorKind::UO_PostInc ||
+            unary_operator_->getOpcode() == clang::UnaryOperatorKind::UO_PostDec);
+    if (store_arg) {
       // We need to assign to a non reference type to avoid the copy getting
       // updated.
       // TODO(JLJ): The knowledge that the last char of the type of an
@@ -249,15 +252,14 @@ std::string MutationReplaceUnaryOperator::GenerateMutatorFunction(
     }
 
     new_function << ");\n";
+    // TODO(JLJ): Come up with a better way than repeating this either side of
+    // MUTATION_PRELUDE. P.S I think this pattern is repeated elsewhere.
+    if (store_arg) {
+      arg_evaluated = "arg_original";
+    }
   }
 
-  // TODO(JLJ): Come up with a better way than repeating this either side of
-  // MUTATION_PRELUDE. P.S I think this pattern is repeated elsewhere.
-  if (semantics_preserving_mutation &&
-      (unary_operator_->getOpcode() == clang::UnaryOperatorKind::UO_PreInc ||
-       unary_operator_->getOpcode() == clang::UnaryOperatorKind::UO_PreDec)) {
-    arg_evaluated = "arg_original";
-  }
+
 
   int mutation_id_offset = 0;
   GenerateUnaryOperatorReplacement(
@@ -322,14 +324,6 @@ std::string MutationReplaceUnaryOperator::GetUnaryMacroName(
     const std::string& operator_name, const clang::ASTContext& ast_context,
     const bool semantics_preserving_mutation) const {
   std::string result = "REPLACE_UNARY_" + operator_name;
-  //  if (ast_context.getLangOpts().CPlusPlus &&
-  //      unary_operator_->HasSideEffects(ast_context)) {
-  //    result += "_EVALUATED";
-  //  }
-  //  if (!ast_context.getLangOpts().CPlusPlus &&
-  //      unary_operator_->isIncrementDecrementOp()) {
-  //    result += "_POINTER";
-  //  }
   if (semantics_preserving_mutation) {
     result +=
         "_" + SpaceToUnderscore(unary_operator_->getType()
@@ -344,11 +338,16 @@ std::string MutationReplaceUnaryOperator::GenerateUnaryOperatorReplacementMacro(
     const std::string& name, clang::UnaryOperatorKind operator_kind,
     bool semantics_preserving_mutation,
     const clang::ASTContext& ast_context) const {
+  const std::string op_string =
+      clang::UnaryOperator::getOpcodeStr(operator_kind).str();
   if (!semantics_preserving_mutation) {
     return "#define " + name +
            "(arg, mutation_id_offset) if ("
            "__dredd_enabled_mutation(local_mutation_id "
-           "+ mutation_id_offset)) return arg;\n";
+           "+ mutation_id_offset)) return " +
+           (IsPrefix(operator_kind) ? op_string + "(arg)"
+                                    : "(arg)" + op_string) +
+           " arg;\n";
   }
 
   std::string result = "#define " + name + "(arg) if (";
@@ -358,26 +357,26 @@ std::string MutationReplaceUnaryOperator::GenerateUnaryOperatorReplacementMacro(
   // These are the safe math checks.
   switch (operator_kind) {
     case clang::UnaryOperatorKind::UO_Minus:
-      result += "(arg) != " + TypeToLowerLimit(type, ast_context) + " && ";
+      result += "(arg) == " + TypeToLowerLimit(type, ast_context) + " || ";
       break;
     // The following are always trivially killed.
     case clang::UO_PostInc:
-      return result + "(arg) != " + TypeToUpperLimit(type, ast_context) +
-             " && (arg + 1) != actual_result) no_op++\n";
+      return result + "(arg) == " + TypeToUpperLimit(type, ast_context) +
+             " || (arg) != actual_result) no_op++\n";
     case clang::UO_PostDec:
-      return result + "(arg) != " + TypeToLowerLimit(type, ast_context) +
-             " && (arg - 1) != actual_result) no_op++\n";
+      return result + "(arg) == " + TypeToLowerLimit(type, ast_context) +
+             " || (arg) != actual_result) no_op++\n";
     case clang::UO_PreInc:
-      return result + "(arg) != " + TypeToUpperLimit(type, ast_context) +
-             " && (arg + 1) != actual_result) no_op++\n";
+      return result + "(arg) == " + TypeToUpperLimit(type, ast_context) +
+             " || (arg + 1) != actual_result) no_op++\n";
     case clang::UO_PreDec:
-      return result + "(arg) != " + TypeToLowerLimit(type, ast_context) +
-             " && (arg - 1) != actual_result) no_op++\n";
+      return result + "(arg) == " + TypeToLowerLimit(type, ast_context) +
+             " || (arg - 1) != actual_result) no_op++\n";
     default:
       break;
   }
 
-  return result + "(arg) != actual_result) no_op++\n";
+  return result + "(" + op_string + "(arg))" + " != actual_result) no_op++\n";
 }
 
 void MutationReplaceUnaryOperator::GenerateUnaryOperatorReplacement(
