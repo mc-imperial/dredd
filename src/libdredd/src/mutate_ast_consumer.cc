@@ -148,7 +148,7 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
     // TODO(JLJ): This should probably be moved to the prelude function.
     const bool rewriter_result = rewriter_.InsertTextBefore(
         start_location_of_first_function_in_source_file,
-        "static thread_local unsigned long long int no_op = 0;\n\n");
+        "static thread_local volatile unsigned long long int no_op = 0;\n\n");
     (void)rewriter_result;  // Keep release-mode compilers happy.
     assert(!rewriter_result && "Rewrite failed.\n");
   }
