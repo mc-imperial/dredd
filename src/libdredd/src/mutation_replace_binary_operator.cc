@@ -853,6 +853,7 @@ std::string MutationReplaceBinaryOperator::GenerateMutatorFunction(
       // We only have to do this with the second operand as it has to be a
       // lambda. The first argument doesn't in semantics preserving mode.
       if (ast_context.getLangOpts().CPlusPlus &&
+          binary_operator_->isLogicalOp() &&
           binary_operator_->getRHS()->HasSideEffects(ast_context)) {
         new_function << "  " << rhs_type << " arg2_evaluated";
 
