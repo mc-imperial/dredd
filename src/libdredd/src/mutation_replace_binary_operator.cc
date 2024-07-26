@@ -793,6 +793,7 @@ std::string MutationReplaceBinaryOperator::GenerateMutatorFunction(
   new_function << "static " << result_type << " " << function_name << "(";
 
   if (ast_context.getLangOpts().CPlusPlus &&
+      !semantics_preserving_mutation &&
       binary_operator_->getLHS()->HasSideEffects(ast_context)) {
     new_function << "std::function<" << lhs_type << "()>";
   } else {
@@ -802,7 +803,7 @@ std::string MutationReplaceBinaryOperator::GenerateMutatorFunction(
 
   if (ast_context.getLangOpts().CPlusPlus &&
       (binary_operator_->isLogicalOp() ||
-       binary_operator_->getRHS()->HasSideEffects(ast_context))) {
+          (!semantics_preserving_mutation && binary_operator_->getRHS()->HasSideEffects(ast_context)))) {
     new_function << "std::function<" << rhs_type << "()>";
   } else {
     new_function << rhs_type;
@@ -814,6 +815,7 @@ std::string MutationReplaceBinaryOperator::GenerateMutatorFunction(
 
   std::string arg1_evaluated("arg1");
   if (ast_context.getLangOpts().CPlusPlus &&
+      !semantics_preserving_mutation &&
       binary_operator_->getLHS()->HasSideEffects(ast_context)) {
     arg1_evaluated += "()";
   }
@@ -825,7 +827,7 @@ std::string MutationReplaceBinaryOperator::GenerateMutatorFunction(
   std::string arg2_evaluated("arg2");
   if (ast_context.getLangOpts().CPlusPlus &&
       (binary_operator_->isLogicalOp() ||
-       binary_operator_->getRHS()->HasSideEffects(ast_context))) {
+          (!semantics_preserving_mutation && binary_operator_->getRHS()->HasSideEffects(ast_context)))) {
     arg2_evaluated += "()";
   }
 
@@ -845,18 +847,11 @@ std::string MutationReplaceBinaryOperator::GenerateMutatorFunction(
                      << " arg1_original = " << arg1_evaluated << ";\n";
       }
 
-      // If the first operand to a logical operator is side-effecting, store the
-      // result to avoid having to evaluate it multiple times.
-      if (ast_context.getLangOpts().CPlusPlus &&
-          binary_operator_->getLHS()->HasSideEffects(ast_context)) {
-        new_function << "  " << lhs_type
-                     << " arg1_evaluated = " << arg1_evaluated << ";\n";
-        arg1_evaluated = "arg1_evaluated";
-      }
-
       // If the second operand to a logical operator is side-effecting, store
       // the result only if the second operand would normally be evaluated to
       // avoid having to evaluate it multiple times.
+      // We only have to do this with the second operand as it has to be a
+      // lambda. The first argument doesn't in semantics preserving mode.
       if (ast_context.getLangOpts().CPlusPlus &&
           binary_operator_->getRHS()->HasSideEffects(ast_context)) {
         new_function << "  " << rhs_type << " arg2_evaluated";
@@ -1021,7 +1016,7 @@ protobufs::MutationGroup MutationReplaceBinaryOperator::Apply(
   }
 
   ReplaceOperator(lhs_type, rhs_type, new_function_name, ast_context,
-                  preprocessor, first_mutation_id_in_file, mutation_id,
+                  preprocessor, semantics_preserving_mutation, first_mutation_id_in_file, mutation_id,
                   rewriter);
 
   const std::string new_function = GenerateMutatorFunction(
@@ -1039,11 +1034,15 @@ protobufs::MutationGroup MutationReplaceBinaryOperator::Apply(
   return result;
 }
 
-void MutationReplaceBinaryOperator::ReplaceOperator(
-    const std::string& lhs_type, const std::string& rhs_type,
-    const std::string& new_function_name, clang::ASTContext& ast_context,
-    const clang::Preprocessor& preprocessor, int first_mutation_id_in_file,
-    int mutation_id, clang::Rewriter& rewriter) const {
+void MutationReplaceBinaryOperator::ReplaceOperator(const std::string &lhs_type,
+                                                    const std::string &rhs_type,
+                                                    const std::string &new_function_name,
+                                                    clang::ASTContext &ast_context,
+                                                    const clang::Preprocessor &preprocessor,
+                                                    bool semantics_preserving_mutation,
+                                                    int first_mutation_id_in_file,
+                                                    int mutation_id,
+                                                    clang::Rewriter &rewriter) const {
   const clang::SourceRange lhs_source_range_in_main_file =
       GetSourceRangeInMainFile(preprocessor, *binary_operator_->getLHS());
   assert(lhs_source_range_in_main_file.isValid() && "Invalid source range.");
@@ -1083,13 +1082,13 @@ void MutationReplaceBinaryOperator::ReplaceOperator(
   std::string rhs_suffix;
 
   if (ast_context.getLangOpts().CPlusPlus) {
-    if (binary_operator_->getLHS()->HasSideEffects(ast_context)) {
+    if (!semantics_preserving_mutation && binary_operator_->getLHS()->HasSideEffects(ast_context)) {
       lhs_prefix.append("[&]() -> " + lhs_type + " { return static_cast<" +
                         lhs_type + ">(");
       lhs_suffix.append("); }");
     }
     if (binary_operator_->isLogicalOp() ||
-        binary_operator_->getRHS()->HasSideEffects(ast_context)) {
+        (!semantics_preserving_mutation && binary_operator_->getRHS()->HasSideEffects(ast_context))) {
       rhs_prefix.append("[&]() -> " + rhs_type + " { return static_cast<" +
                         rhs_type + ">(");
       rhs_suffix.append("); }");
