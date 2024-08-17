@@ -612,6 +612,12 @@ bool MutateVisitor::VisitExpr(clang::Expr* expr) {
     return true;
   }
 
+  if (MutatingMayAffectArgumentDependentLookup(*expr)) {
+    // Do not mutate this expression, because doing so might change the outcome
+    // of argument-dependent lookup, which might cause compilation problems.
+    return true;
+  }
+
   if (auto* unary_operator = llvm::dyn_cast<clang::UnaryOperator>(expr)) {
     HandleUnaryOperator(unary_operator);
   }
@@ -728,6 +734,63 @@ bool MutateVisitor::IsConversionOfEnumToConstructor(
   }
   return llvm::dyn_cast<clang::EnumConstantDecl>(decl_ref_expr->getDecl()) !=
          nullptr;
+}
+bool MutateVisitor::IsArgumentToArgumentDependentLookupCall(
+    const clang::Expr& expr) const {
+  const auto* call_expr = GetFirstParentOfType<clang::CallExpr>(
+      expr, compiler_instance_->getASTContext());
+  return call_expr != nullptr && call_expr->usesADL();
+}
+
+bool MutateVisitor::MutatingMayAffectArgumentDependentLookup(
+    const clang::Expr& expr) const {
+  // We consider two scenarios where mutation should be avoided because it might
+  // spoil argument-dependent lookup.
+  //
+  // The first is where a function expects an
+  // integer argument and an integer-compatible enumeration from another
+  // namespace is supplied. Argument-dependent lookup brings said namespace into
+  // scope. Replacing the argument with a mutator function with integer return
+  // type breaks this.
+  //
+  // The second is similar, but where the integer is obtained
+  // from an overloaded operator that allows an instance of a class to be
+  // converted to a primitive value. This brings the class's namespace into
+  // scope for argument-dependent lookup, and mutation must not prohibit this.
+
+  // If an implicit cast either converts from a type that would not normally be
+  // supported, or converts from the result of a C++ member call, and if this is
+  // directly under an ADL call, then inserting a mutator function may affect
+  // the results of ADL and should be avoided.
+  if (const auto* implicit_cast =
+          llvm::dyn_cast<clang::ImplicitCastExpr>(&expr)) {
+    if (!IsTypeSupported(implicit_cast->getSubExpr()->getType()) ||
+        llvm::dyn_cast<clang::CXXMemberCallExpr>(implicit_cast->getSubExpr()) !=
+            nullptr) {
+      if (IsArgumentToArgumentDependentLookupCall(expr)) {
+        return true;
+      }
+    }
+  }
+
+  // A C++ member expression that is directly under an ADL call (possibly with
+  // an intervening implicit cast) may affect the outcome of ADL. Mutation of
+  // such an expression should therefore be avoided.
+  if (const auto* member_call_expr =
+          llvm::dyn_cast<clang::CXXMemberCallExpr>(&expr)) {
+    const clang::Expr* possible_adl_call_argument = member_call_expr;
+    if (const auto* implicit_cast =
+            GetFirstParentOfType<clang::ImplicitCastExpr>(
+                *possible_adl_call_argument,
+                compiler_instance_->getASTContext())) {
+      possible_adl_call_argument = implicit_cast;
+    }
+    if (IsArgumentToArgumentDependentLookupCall(*possible_adl_call_argument)) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 }  // namespace dredd

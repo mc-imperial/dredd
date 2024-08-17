@@ -202,6 +202,20 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
   // bookkeeping.
   void AddMutation(std::unique_ptr<Mutation> mutation);
 
+  // Determines whether the parent of the given expression is a call expression
+  // that uses argument-dependent lookup.
+  bool IsArgumentToArgumentDependentLookupCall(const clang::Expr& expr) const;
+
+  // Conservatively determines whether the given expression is an argument to
+  // a call that has been resolved using argument-dependent lookup, and in
+  // particular whether it might be the case that the expression is itself
+  // relevant to the namespaces that are added during
+  // argument-dependent lookup. Such expressions are not mutated at the top
+  // level, because the replacement mutator function will have a primitive
+  // result type, which cannot contribute to (and might therefore change the
+  // results of) argument-dependent lookup.
+  bool MutatingMayAffectArgumentDependentLookup(const clang::Expr& expr) const;
+
   const clang::CompilerInstance* compiler_instance_;
   bool optimise_mutations_;
 
