@@ -288,7 +288,7 @@ one should ensure that `check_build.sh` has been executed at least up to the poi
 
 The commands that can be run in isolation in the `scripts` directory are:
 - `check_all.sh` : This runs a combination of the commands below to ensure that Dredd is formatted and functioning as expected.
-- `check_build.sh` : This checks that dredd can be build and that the unit tests included in the `test` directory still pass
+- `check_build.sh` : This checks that Dredd can be build and that the unit tests included in the `test` directory still pass
 - `check_clang_tidy.sh` : This runs `clang-tidy` on Dredd's source files.
 - `check_clean_build.sh` : This checks that Dredd can be build from scratch by deleting any previous builds first and running
 the provided unit tests.
@@ -315,6 +315,27 @@ The auxiliary commands in the `scripts` directory are:
 ### Working on Dredd from CLion
 
 To work on Dredd from CLion, open the `CMakeLists.txt` within the root of the Dredd repository.
+
+## Troubleshooting
+
+### Exceeding maximum bracketing nesting level
+
+If the code being mutated contains very large expressions, Dredd's mutation may introduce deep nests of lambda functions.
+In extreme cases these may exceed the maximum bracket nesting level supported by a compiler.
+See (this issue)[https://github.com/mc-imperial/dredd/issues/288] for an example.
+To work around this, you may need to:
+
+- use a compiler option (such as Clang's `-fbracket-depth=N`) to increase the maximum nesting level, or
+- rewrite the code under mutation so that it uses multiple smaller expressions (by introducing temporary variables).
+
+### Mutated code leads to compiler warnings, which are treated as errors
+
+Due to the changes made by Dredd, it is likely that many warnings will be issued when mutated code is compiled.
+Such warnings are expected, because the mutants that Dredd introduces leads to code that violates many good
+programming practices.
+For example, Dredd wraps `return` statements in conditional blocks (to simulate statement deletion), which will lead to warnings that not all paths through a function return a value.
+If your project treats compiler warnings as errors then you will need to disable
+this feature in your project's build configuration.
 
 ## Planned features
 
