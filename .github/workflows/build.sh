@@ -255,4 +255,5 @@ case "$(uname)" in
 esac
 
 DREDD_SKIP_COPY_EXECUTABLE=1 ./scripts/check_single_file_tests.sh
-DREDD_SKIP_COPY_EXECUTABLE=1 ./scripts/check_execute_tests.py
+DREDD_SKIP_COPY_EXECUTABLE=1 ./scripts/check_execute_tests.sh
+DREDD_SKIP_COPY_EXECUTABLE=1 ./scripts/check_bespoke_tests.sh
