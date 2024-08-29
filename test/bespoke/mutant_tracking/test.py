@@ -8,6 +8,7 @@ from pathlib import Path
 DREDD_REPO_ROOT = os.environ['DREDD_REPO_ROOT']
 DREDD_INSTALLED_EXECUTABLE = Path(DREDD_REPO_ROOT, 'third_party', 'clang+llvm', 'bin', 'dredd')
 CLANG_INSTALLED_EXECUTABLE = Path(DREDD_REPO_ROOT, 'third_party', 'clang+llvm', 'bin', 'clang')
+COMPILED_EXECUTABLE_FILENAME = 'a.exe' if os.name == 'nt' else './a.out'
 
 
 def run_successfully(cmd):
@@ -39,12 +40,12 @@ def main():
     # When executed with no command line arguments the program should return 0.
     dredd_env = os.environ.copy()
     dredd_env['DREDD_MUTANT_TRACKING_FILE'] = "1.mutants"
-    result = subprocess.run(['./a.out'], env=dredd_env)
+    result = subprocess.run([COMPILED_EXECUTABLE_FILENAME], env=dredd_env)
     assert result.returncode == 0
 
     # When executed with 3 command line arguments the program should return 40.
     dredd_env['DREDD_MUTANT_TRACKING_FILE'] = "2.mutants"
-    result = subprocess.run(['./a.out', '1', '2', '3'], env=dredd_env)
+    result = subprocess.run([COMPILED_EXECUTABLE_FILENAME, '1', '2', '3'], env=dredd_env)
     assert result.returncode == 40
 
     # Get the largest mutant id
