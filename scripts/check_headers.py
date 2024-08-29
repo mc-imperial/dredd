@@ -37,6 +37,7 @@ def exclude_dirname(f: str):
             ".venv",
             "single_file",
             "execute",
+            "bespoke",
         ]
     )
 
