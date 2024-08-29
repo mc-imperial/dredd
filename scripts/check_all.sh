@@ -24,4 +24,5 @@ check_cmakelint.sh
 check_cpplint.sh
 check_clean_build.sh
 check_single_file_tests.sh
-check_execute_tests.py
+check_execute_tests.sh
+check_bespoke_tests.sh
