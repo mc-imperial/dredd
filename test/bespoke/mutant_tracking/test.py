@@ -7,6 +7,7 @@ from pathlib import Path
 
 DREDD_REPO_ROOT = os.environ['DREDD_REPO_ROOT']
 DREDD_INSTALLED_EXECUTABLE = Path(DREDD_REPO_ROOT, 'third_party', 'clang+llvm', 'bin', 'dredd')
+QUERY_MUTANT_INFO_SCRIPT = Path(DREDD_REPO_ROOT, 'scripts', 'query_mutant_info.py')
 CLANG_INSTALLED_EXECUTABLE = Path(DREDD_REPO_ROOT, 'third_party', 'clang+llvm', 'bin', 'clang')
 COMPILED_EXECUTABLE_FILENAME = 'a.exe' if os.name == 'nt' else './a.out'
 
@@ -28,7 +29,12 @@ def main():
 
     # Run Dredd with tracking
     shutil.copyfile(src='example.c', dst='tomutate.c')
-    run_successfully([DREDD_INSTALLED_EXECUTABLE, '--mutation-info-file', 'info-track.json', '--only-track-mutant-coverage', 'tomutate.c', '--'])
+    run_successfully([DREDD_INSTALLED_EXECUTABLE,
+                      '--mutation-info-file',
+                      'info-track.json',
+                      '--only-track-mutant-coverage',
+                      'tomutate.c',
+                      '--'])
 
     # Check that the JSON files produced with vs. without tracking are identical, because tracking should not affect the
     # JSON
@@ -49,7 +55,8 @@ def main():
     assert result.returncode == 40
 
     # Get the largest mutant id
-    largest_mutant_id = int(run_successfully(["query_mutant_info.py", "--largest-mutant-id", "info-track.json"]).stdout.decode('utf-8'))
+    largest_mutant_id = int(run_successfully(
+        ["python", QUERY_MUTANT_INFO_SCRIPT, "--largest-mutant-id", "info-track.json"]).stdout.decode('utf-8'))
 
     # Get the mutants covered by each of the two tests, and the union and differences of these.
     covered_1 = set([int(line.strip()) for line in open("1.mutants", "r").readlines()])
