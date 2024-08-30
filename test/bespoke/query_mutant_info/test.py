@@ -155,6 +155,19 @@ def main():
                               EXPECTED_MUTATION_6,
                               ]:
         if '\n'.join(expected_mutation.splitlines()) not in all_mutant_info:
+            print("=======")
+            print(expected_mutation)
+            print("=======")
+            print('\n'.join(expected_mutation.splitlines()))
+            print("=======")
+            print(all_mutant_info[0:1000])
+            print("=======")
+            print('\n'.join(all_mutant_info[0:1000].splitlines()))
+            
+            
+
+
+            
             print(f"Did not find expected mutation info:\n{expected_mutation}")
             sys.exit(1)
 
