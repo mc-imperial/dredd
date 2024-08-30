@@ -117,6 +117,8 @@ def main():
                       'math',
                       '-B',
                       'build',
+                      '-G',
+                      'Ninja',
                       '-DCMAKE_EXPORT_COMPILE_COMMANDS=ON',
                       '-DDREDD_EXAMPLES_MATH_BUILD_TESTS=OFF',
                       ])
