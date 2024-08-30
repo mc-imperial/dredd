@@ -147,6 +147,8 @@ def main():
              str(path_to_original_code),
              "mutant-info.json"]).stdout.decode('utf-8'))
 
+    all_mutant_info = '\n'.join(all_mutant_info.splitlines())
+
     for expected_mutation in [EXPECTED_MUTATION_1,
                               EXPECTED_MUTATION_2,
                               EXPECTED_MUTATION_3,
@@ -154,7 +156,7 @@ def main():
                               EXPECTED_MUTATION_5,
                               EXPECTED_MUTATION_6,
                               ]:
-        if '\n'.join(expected_mutation.splitlines()) not in all_mutant_info:
+        if expected_mutation not in all_mutant_info:
             print("=======")
             print(expected_mutation)
             print("=======")
@@ -163,14 +165,15 @@ def main():
             print(all_mutant_info[0:1000])
             print("=======")
             print('\n'.join(all_mutant_info[0:1000].splitlines()))
-            
-            
 
 
-            
+
+
+
             print(f"Did not find expected mutation info:\n{expected_mutation}")
             sys.exit(1)
 
+        sys.exit(2)
 
 if __name__ == '__main__':
     sys.exit(main())
