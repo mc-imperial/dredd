@@ -1,0 +1,65 @@
+namespace bar {
+  void foo(int x);
+
+  enum {B = 1};
+
+  struct C {
+    operator int();
+    friend void baz(int x);
+  };
+}
+
+#include <cinttypes>
+#include <cstddef>
+#include <functional>
+#include <string>
+
+
+#ifdef _MSC_VER
+#define thread_local __declspec(thread)
+#elif __APPLE__
+#define thread_local __thread
+#endif
+
+static thread_local bool __dredd_some_mutation_enabled = true;
+static bool __dredd_enabled_mutation(int local_mutation_id) {
+  static thread_local bool initialized = false;
+  static thread_local uint64_t enabled_bitset[1];
+  if (!initialized) {
+    bool some_mutation_enabled = false;
+    const char* dredd_environment_variable = std::getenv("DREDD_ENABLED_MUTATION");
+    if (dredd_environment_variable != nullptr) {
+      std::string contents(dredd_environment_variable);
+      while (true) {
+        size_t pos = contents.find(",");
+        std::string token = (pos == std::string::npos ? contents : contents.substr(0, pos));
+        if (!token.empty()) {
+          int value = std::stoi(token);
+          int local_value = value - 0;
+          if (local_value >= 0 && local_value < 6) {
+            enabled_bitset[local_value / 64] |= (static_cast<uint64_t>(1) << (local_value % 64));
+            some_mutation_enabled = true;
+          }
+        }
+        if (pos == std::string::npos) {
+          break;
+        }
+        contents.erase(0, pos + 1);
+      }
+    }
+    initialized = true;
+    __dredd_some_mutation_enabled = some_mutation_enabled;
+  }
+  return (enabled_bitset[local_mutation_id / 64] & (static_cast<uint64_t>(1) << (local_mutation_id % 64))) != 0;
+}
+
+void func() {
+  // All of these calls rely on ADL
+  if (!__dredd_enabled_mutation(0)) { foo(bar::B); }
+  if (!__dredd_enabled_mutation(1)) { foo((bar::B)); }
+  bar::C c;
+  if (!__dredd_enabled_mutation(2)) { foo(c); }
+  if (!__dredd_enabled_mutation(3)) { foo((c)); }
+  if (!__dredd_enabled_mutation(4)) { baz(c); }
+  if (!__dredd_enabled_mutation(5)) { baz((c)); }
+}
