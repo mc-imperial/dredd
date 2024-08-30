@@ -9,8 +9,7 @@ DREDD_REPO_ROOT = os.environ['DREDD_REPO_ROOT']
 DREDD_INSTALLED_EXECUTABLE = Path(DREDD_REPO_ROOT, 'third_party', 'clang+llvm', 'bin', 'dredd')
 QUERY_MUTANT_INFO_SCRIPT = Path(DREDD_REPO_ROOT, 'scripts', 'query_mutant_info.py')
 
-EXPECTED_MUTATION_1 = """
-Remove statement at math/src/exp.cc, 83:3--94:4
+EXPECTED_MUTATION_1 = """Remove statement at math/src/exp.cc, 83:3--94:4
 
 This is the removed statement:
 
@@ -28,8 +27,7 @@ This is the removed statement:
   }
 """
 
-EXPECTED_MUTATION_2 = """
-Remove statement at math/src/exp.cc, 84:5--93:6
+EXPECTED_MUTATION_2 = """Remove statement at math/src/exp.cc, 84:5--93:6
 
 This is the removed statement:
 
@@ -45,8 +43,7 @@ This is the removed statement:
     }
 """
 
-EXPECTED_MUTATION_3 = """
-Replace binary operator expression at math/src/exp.cc, 92:7--92:13
+EXPECTED_MUTATION_3 = """Replace binary operator expression at math/src/exp.cc, 92:7--92:13
 
 Original binary operator expression:
 
@@ -57,8 +54,7 @@ Replacement expression:
 z -= 2
 """
 
-EXPECTED_MUTATION_4 = """
-Replace expression at math/src/exp.cc, 92:12--92:13
+EXPECTED_MUTATION_4 = """Replace expression at math/src/exp.cc, 92:12--92:13
 
 Original expression:
 
@@ -69,8 +65,7 @@ Replacement expression:
 0.0
 """
 
-EXPECTED_MUTATION_5 = """
-Replace expression at math/src/exp.cc, 81:19--81:40
+EXPECTED_MUTATION_5 = """Replace expression at math/src/exp.cc, 81:19--81:40
 
 Original expression:
 
@@ -81,8 +76,7 @@ Replacement expression:
 - (Pow(2, -logValue) * x)
 """
 
-EXPECTED_MUTATION_6 = """
-Replace expression at math/src/exp.cc, 59:10--59:41
+EXPECTED_MUTATION_6 = """Replace expression at math/src/exp.cc, 59:10--59:41
 
 Original expression:
 
