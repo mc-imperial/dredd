@@ -162,9 +162,8 @@ def main():
             print("=======")
             print('\n'.join(expected_mutation.splitlines()))
             print("=======")
-            print(all_mutant_info[0:1000])
+            print(all_mutant_info)
             print("=======")
-            print('\n'.join(all_mutant_info[0:1000].splitlines()))
 
 
 
