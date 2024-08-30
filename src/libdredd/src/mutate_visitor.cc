@@ -761,7 +761,8 @@ bool MutateVisitor::MutatingMayAffectArgumentDependentLookup(
   // If an implicit cast either converts from a type that would not normally be
   // supported, or converts from the result of a C++ member call, and if this is
   // directly under an ADL call, then inserting a mutator function may affect
-  // the results of ADL and should be avoided.
+  // the results of ADL, and is therefore avoided. This is conservative,
+  // as this particular argument might not contribute to the result of ADL.
   if (const auto* implicit_cast =
           llvm::dyn_cast<clang::ImplicitCastExpr>(&expr)) {
     if (!IsTypeSupported(implicit_cast->getSubExpr()->getType()) ||
@@ -773,9 +774,10 @@ bool MutateVisitor::MutatingMayAffectArgumentDependentLookup(
     }
   }
 
-  // A C++ member expression that is directly under an ADL call (possibly with
-  // an intervening implicit cast) may affect the outcome of ADL. Mutation of
-  // such an expression should therefore be avoided.
+  // A C++ member call expression that is directly under an ADL call (possibly
+  // with an intervening implicit cast) may affect the outcome of ADL. Mutation
+  // of such an expression should therefore be avoided. This is conservative, as
+  // this particular argument might not contribute to the result of ADL.
   if (const auto* member_call_expr =
           llvm::dyn_cast<clang::CXXMemberCallExpr>(&expr)) {
     const clang::Expr* possible_adl_call_argument = member_call_expr;
