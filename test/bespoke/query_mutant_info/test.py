@@ -9,83 +9,79 @@ DREDD_REPO_ROOT = os.environ['DREDD_REPO_ROOT']
 DREDD_INSTALLED_EXECUTABLE = Path(DREDD_REPO_ROOT, 'third_party', 'clang+llvm', 'bin', 'dredd')
 QUERY_MUTANT_INFO_SCRIPT = Path(DREDD_REPO_ROOT, 'scripts', 'query_mutant_info.py')
 
-EXPECTED_MUTATION_1 = """Remove statement at math/src/exp.cc, 83:3--94:4
+FILENAME = f'math{os.sep}src{os.sep}exp.cc'
 
-This is the removed statement:
+EXPECTED_MUTATION_1 = f'Remove statement at {FILENAME}, 83:3--94:4\n'\
+    '\n'\
+    'This is the removed statement:\n'\
+    '\n'\
+    '  if (y != 1) {\n'\
+    '    for (int i = 0; i < 100; ++i) {\n'\
+    '      int m = 0;\n'\
+    '      while (!(2 <= z && z < 4)) {\n'\
+    '        z *= z;\n'\
+    '        ++m;\n'\
+    '      }\n'\
+    '      constant *= Pow(2, -m);\n'\
+    '      result += constant;\n'\
+    '      z /= 2;\n'\
+    '    }\n'\
+    '  }\n'
 
-  if (y != 1) {
-    for (int i = 0; i < 100; ++i) {
-      int m = 0;
-      while (!(2 <= z && z < 4)) {
-        z *= z;
-        ++m;
-      }
-      constant *= Pow(2, -m);
-      result += constant;
-      z /= 2;
-    }
-  }
-"""
+EXPECTED_MUTATION_2 = f'Remove statement at {FILENAME}, 84:5--93:6\n'\
+    '\n'\
+    'This is the removed statement:\n'\
+    '\n'\
+    '    for (int i = 0; i < 100; ++i) {\n'\
+    '      int m = 0;\n'\
+    '      while (!(2 <= z && z < 4)) {\n'\
+    '        z *= z;\n'\
+    '        ++m;\n'\
+    '      }\n'\
+    '      constant *= Pow(2, -m);\n'\
+    '      result += constant;\n'\
+    '      z /= 2;\n'\
+    '    }\n'
 
-EXPECTED_MUTATION_2 = """Remove statement at math/src/exp.cc, 84:5--93:6
+EXPECTED_MUTATION_3 = f'Replace binary operator expression at {FILENAME}, 92:7--92:13\n'\
+    '\n'\
+    'Original binary operator expression:\n'\
+    '\n'\
+    'z /= 2\n'\
+    '\n'\
+    'Replacement expression:\n'\
+    '\n'\
+    'z -= 2\n'
 
-This is the removed statement:
+EXPECTED_MUTATION_4 = f'Replace expression at {FILENAME}, 92:12--92:13\n'\
+    '\n'\
+    'Original expression:\n'\
+    '\n'\
+    '2\n'\
+    '\n'\
+    'Replacement expression:\n'\
+    '\n'\
+    '0.0\n'
 
-    for (int i = 0; i < 100; ++i) {
-      int m = 0;
-      while (!(2 <= z && z < 4)) {
-        z *= z;
-        ++m;
-      }
-      constant *= Pow(2, -m);
-      result += constant;
-      z /= 2;
-    }
-"""
+EXPECTED_MUTATION_5 = f'Replace expression at {FILENAME}, 81:19--81:40\n'\
+    '\n'\
+    'Original expression:\n'\
+    '\n'\
+    'Pow(2, -logValue) * x\n'\
+    '\n'\
+    'Replacement expression:\n'\
+    '\n'\
+    '- (Pow(2, -logValue) * x)\n'
 
-EXPECTED_MUTATION_3 = """Replace binary operator expression at math/src/exp.cc, 92:7--92:13
-
-Original binary operator expression:
-
-z /= 2
-
-Replacement expression:
-
-z -= 2
-"""
-
-EXPECTED_MUTATION_4 = """Replace expression at math/src/exp.cc, 92:12--92:13
-
-Original expression:
-
-2
-
-Replacement expression:
-
-0.0
-"""
-
-EXPECTED_MUTATION_5 = """Replace expression at math/src/exp.cc, 81:19--81:40
-
-Original expression:
-
-Pow(2, -logValue) * x
-
-Replacement expression:
-
-- (Pow(2, -logValue) * x)
-"""
-
-EXPECTED_MUTATION_6 = """Replace expression at math/src/exp.cc, 59:10--59:41
-
-Original expression:
-
-(exp < 0) ? 1 / result : result
-
-Replacement expression:
-
-1.0
-"""
+EXPECTED_MUTATION_6 = f'Replace expression at {FILENAME}, 59:10--59:41\n'\
+    '\n'\
+    'Original expression:\n'\
+    '\n'\
+    '(exp < 0) ? 1 / result : result\n'\
+    '\n'\
+    'Replacement expression:\n'\
+    '\n'\
+    '1.0\n'
 
 
 def run_successfully(cmd):
@@ -141,8 +137,6 @@ def main():
              str(path_to_original_code),
              "mutant-info.json"]).stdout.decode('utf-8'))
 
-    all_mutant_info = '\n'.join(all_mutant_info.splitlines())
-
     for expected_mutation in [EXPECTED_MUTATION_1,
                               EXPECTED_MUTATION_2,
                               EXPECTED_MUTATION_3,
@@ -151,22 +145,9 @@ def main():
                               EXPECTED_MUTATION_6,
                               ]:
         if expected_mutation not in all_mutant_info:
-            print("=======")
-            print(expected_mutation)
-            print("=======")
-            print('\n'.join(expected_mutation.splitlines()))
-            print("=======")
-            print(all_mutant_info)
-            print("=======")
-
-
-
-
-
             print(f"Did not find expected mutation info:\n{expected_mutation}")
             sys.exit(1)
 
-        sys.exit(2)
 
 if __name__ == '__main__':
     sys.exit(main())
