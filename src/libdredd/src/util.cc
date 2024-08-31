@@ -145,25 +145,28 @@ std::string GenerateMutationPrelude(bool semantics_preserving_mutation) {
 
 std::string GenerateUnaryMacroCall(const std::string& macro_name,
                                    const std::string& arg_evaluated,
-                                   const int& mutation_id_offset,
-                                   const bool semantics_preserving_mutation) {
+                                   const int& mutation_id_offset) {
   std::string result;
   result = macro_name + "(" + arg_evaluated;
-  if (!semantics_preserving_mutation) {
-    result += ", " + std::to_string(mutation_id_offset);
-  }
+  result += ", " + std::to_string(mutation_id_offset);
   result += ");\n";
   return result;
 }
 
 std::string GenerateMutationMacro(const std::string& name,
-                                  bool semantics_preserving_mutation) {
-  std::string const result = "#define " + name + "(args";
+                                  bool semantics_preserving_mutation,
+                                  bool only_track_mutant_coverage,
+                                  int mutation_id) {
+  std::string const result = "#define " + name + "(args, mutation_id_offset) ";
   if (semantics_preserving_mutation) {
-    return result + ") if ((args) != actual_result) no_op++\n";
+    return result + "if ((args) != actual_result) " +
+           (only_track_mutant_coverage ? "__dredd_record_covered_mutants(" +
+                                             std::to_string(mutation_id) + ")"
+                                       : "no_op++") +
+           "\n";
   }
 
-  return result + ", mutation_id_offset) " +
+  return result +
          "if (__dredd_enabled_mutation(local_mutation_id "
          "+ mutation_id_offset)) return args\n";
 }

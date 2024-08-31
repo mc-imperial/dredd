@@ -102,7 +102,7 @@ protobufs::MutationGroup MutationRemoveStmt::Apply(
   // |mutation_id|, into a file-local mutation id.
   const int local_mutation_id = mutation_id - first_mutation_id_in_file;
 
-  if (only_track_mutant_coverage) {
+  if (only_track_mutant_coverage && !semantics_preserving_mutation) {
     const bool rewriter_result = rewriter.InsertTextBefore(
         source_range.getBegin(), "__dredd_record_covered_mutants(" +
                                      std::to_string(local_mutation_id) +

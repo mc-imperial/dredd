@@ -315,7 +315,7 @@ MutationReplaceBinaryOperator::ConvertToSemanticsPreservingBinaryExpression(
 std::string
 MutationReplaceBinaryOperator::GenerateBinaryOperatorReplacementMacro(
     const std::string& name, clang::BinaryOperatorKind operator_kind,
-    bool semantics_preserving_mutation,
+    bool semantics_preserving_mutation, bool only_track_mutant_coverage,
     const clang::ASTContext& ast_context) const {
   if (!semantics_preserving_mutation) {
     return "#define " + name +
@@ -333,7 +333,13 @@ MutationReplaceBinaryOperator::GenerateBinaryOperatorReplacementMacro(
   const clang::BuiltinType* rhs_type =
       binary_operator_->getRHS()->getType()->getAs<clang::BuiltinType>();
 
-  std::string result = "#define " + name + "(arg1, arg2) if (";
+  std::string result =
+      "#define " + name + "(arg1, arg2, mutation_id_offset) if (";
+  std::string return_expr = only_track_mutant_coverage
+                                ? "__dredd_record_covered_mutants(local_"
+                                  "mutation_id + mutation_id_offset)"
+                                : "no_op++";
+
   switch (operator_kind) {
     case clang::BO_MulAssign:
     case clang::BO_Mul:
@@ -345,7 +351,7 @@ MutationReplaceBinaryOperator::GenerateBinaryOperatorReplacementMacro(
                ConvertToSemanticsPreservingBinaryExpression(
                    "(unsigned long long)arg1", operator_kind,
                    "(unsigned long long)arg2") +
-               ") != actual_result) no_op++\n";
+               ") != actual_result) " + return_expr + "\n";
       } else if (lhs_type->isSignedInteger() || rhs_type->isSignedInteger()) {
         result +=
             "((((arg1) > 0) && ((arg2) > 0) && ((arg1) > (" +
@@ -540,7 +546,7 @@ MutationReplaceBinaryOperator::GenerateBinaryOperatorReplacementMacro(
   result += "(" +
             ConvertToSemanticsPreservingBinaryExpression("arg1", operator_kind,
                                                          "arg2") +
-            ") != actual_result) no_op++\n";
+            ") != actual_result) " + return_expr + "\n";
 
   return result;
 }
@@ -594,16 +600,16 @@ void MutationReplaceBinaryOperator::GenerateArgumentReplacement(
                                                    -1, ast_context) ||
         MutationReplaceExpr::ExprIsEquivalentToFloat(
             *binary_operator_->getLHS(), -1.0, ast_context))) {
-    if (!only_track_mutant_coverage) {
+    if (!only_track_mutant_coverage || semantics_preserving_mutation) {
       const std::string macro_name = "REPLACE_BINARY_ARG1";
 
       new_function << "  "
                    << GenerateUnaryMacroCall(macro_name, arg1_evaluated,
-                                             mutation_id_offset,
-                                             semantics_preserving_mutation);
+                                             mutation_id_offset);
 
-      dredd_macros.insert(
-          GenerateMutationMacro(macro_name, semantics_preserving_mutation));
+      dredd_macros.insert(GenerateMutationMacro(
+          macro_name, semantics_preserving_mutation, only_track_mutant_coverage,
+          mutation_id_offset + mutation_id_base));
     }
     AddMutationInstance(
         mutation_id_base,
@@ -627,7 +633,7 @@ void MutationReplaceBinaryOperator::GenerateArgumentReplacement(
                                                    -1, ast_context) ||
         MutationReplaceExpr::ExprIsEquivalentToFloat(
             *binary_operator_->getRHS(), -1.0, ast_context))) {
-    if (!only_track_mutant_coverage) {
+    if (!only_track_mutant_coverage || semantics_preserving_mutation) {
       const std::string macro_name = "REPLACE_BINARY_ARG2";
       new_function << "  " << macro_name;
 
@@ -640,27 +646,32 @@ void MutationReplaceBinaryOperator::GenerateArgumentReplacement(
           // It is only safe to replace && with second argument if the first
           // argument is true otherwise the second argument wouldn't normally be
           // evaluated and doing so may be dangerous.
-          new_function << "_LAnd(" << arg1_evaluated << ", " << arg2_evaluated
+          new_function << "_LAnd(" << arg1_evaluated << ", " << arg2_evaluated << ", " << mutation_id_offset + mutation_id_base
                        << ")";
-          macro += "_LAnd(arg1, arg2) if ((arg1) && ";
+          macro += "_LAnd(arg1, arg2, mutation_id_offset) if ((arg1) && ";
         } else if (binary_operator_->getOpcode() ==
                    clang::BinaryOperatorKind::BO_LOr) {
           // It is only safe to replace || with second argument if the first
           // argument is false otherwise the second argument wouldn't normally
           // be evaluated and doing so may be dangerous.
-          new_function << "_LOr(" << arg1_evaluated << ", " << arg2_evaluated
+          new_function << "_LOr(" << arg1_evaluated << ", " << arg2_evaluated << ", " << mutation_id_offset + mutation_id_base
                        << ")";
-          macro += "_LOr(arg1, arg2) if (!(arg1) && ";
+          macro += "_LOr(arg1, arg2, mutation_id_offset) if (!(arg1) && ";
         } else {
-          new_function << "(" << arg2_evaluated << ")";
-          macro += "(arg2) if (";
+          new_function << "(" << arg2_evaluated << ", " << mutation_id_offset + mutation_id_base << ")";
+          macro += "(arg2, mutation_id_offset) if (";
         }
-        macro += "(arg2) != actual_result) no_op++\n";
+        macro += "(arg2) != actual_result) ";
+        macro += (only_track_mutant_coverage ? "__dredd_record_covered_mutants(local_"
+                   "mutation_id + mutation_id_offset)"
+                 : "no_op++");
+        macro += "\n";
       } else {
         new_function << "(" << arg2_evaluated << ", " << mutation_id_offset
                      << ")";
-        macro =
-            GenerateMutationMacro(macro_name, semantics_preserving_mutation);
+        macro = GenerateMutationMacro(macro_name, semantics_preserving_mutation,
+                                      only_track_mutant_coverage,
+                                      mutation_id_base + mutation_id_offset);
       }
       new_function << ";\n";
 
@@ -683,19 +694,15 @@ void MutationReplaceBinaryOperator::GenerateBinaryOperatorReplacement(
     protobufs::MutationReplaceBinaryOperator& protobuf_message) const {
   for (auto operator_kind :
        GetReplacementOperators(optimise_mutations, ast_context)) {
-    if (!only_track_mutant_coverage) {
+    if (!only_track_mutant_coverage || semantics_preserving_mutation) {
       const std::string macro_name = GetBinaryMacroName(
           operator_kind, ast_context, semantics_preserving_mutation);
       new_function << "  " << macro_name << "(" << arg1_evaluated << ", "
-                   << arg2_evaluated;
-      if (!semantics_preserving_mutation) {
-        new_function << ", " << mutation_id_offset;
-      }
-      new_function << ");\n";
+                   << arg2_evaluated << ", " << mutation_id_offset << ");\n";
 
       dredd_macros.insert(GenerateBinaryOperatorReplacementMacro(
           macro_name, operator_kind, semantics_preserving_mutation,
-          ast_context));
+          only_track_mutant_coverage, ast_context));
     }
     AddMutationInstance(mutation_id_base, OperatorKindToAction(operator_kind),
                         mutation_id_offset, protobuf_message);
@@ -792,8 +799,7 @@ std::string MutationReplaceBinaryOperator::GenerateMutatorFunction(
 
   new_function << "static " << result_type << " " << function_name << "(";
 
-  if (ast_context.getLangOpts().CPlusPlus &&
-      !semantics_preserving_mutation &&
+  if (ast_context.getLangOpts().CPlusPlus && !semantics_preserving_mutation &&
       binary_operator_->getLHS()->HasSideEffects(ast_context)) {
     new_function << "std::function<" << lhs_type << "()>";
   } else {
@@ -803,7 +809,8 @@ std::string MutationReplaceBinaryOperator::GenerateMutatorFunction(
 
   if (ast_context.getLangOpts().CPlusPlus &&
       (binary_operator_->isLogicalOp() ||
-          (!semantics_preserving_mutation && binary_operator_->getRHS()->HasSideEffects(ast_context)))) {
+       (!semantics_preserving_mutation &&
+        binary_operator_->getRHS()->HasSideEffects(ast_context)))) {
     new_function << "std::function<" << rhs_type << "()>";
   } else {
     new_function << rhs_type;
@@ -814,8 +821,7 @@ std::string MutationReplaceBinaryOperator::GenerateMutatorFunction(
   int mutation_id_offset = 0;
 
   std::string arg1_evaluated("arg1");
-  if (ast_context.getLangOpts().CPlusPlus &&
-      !semantics_preserving_mutation &&
+  if (ast_context.getLangOpts().CPlusPlus && !semantics_preserving_mutation &&
       binary_operator_->getLHS()->HasSideEffects(ast_context)) {
     arg1_evaluated += "()";
   }
@@ -827,11 +833,12 @@ std::string MutationReplaceBinaryOperator::GenerateMutatorFunction(
   std::string arg2_evaluated("arg2");
   if (ast_context.getLangOpts().CPlusPlus &&
       (binary_operator_->isLogicalOp() ||
-          (!semantics_preserving_mutation && binary_operator_->getRHS()->HasSideEffects(ast_context)))) {
+       (!semantics_preserving_mutation &&
+        binary_operator_->getRHS()->HasSideEffects(ast_context)))) {
     arg2_evaluated += "()";
   }
 
-  if (!only_track_mutant_coverage) {
+  if (!only_track_mutant_coverage || semantics_preserving_mutation) {
     if (semantics_preserving_mutation) {
       // For assignment operators, we must store the value of arg1 before
       // assigning to it so that the mutant killing checks are correct.
@@ -851,7 +858,7 @@ std::string MutationReplaceBinaryOperator::GenerateMutatorFunction(
       // the result only if the second operand would normally be evaluated to
       // avoid having to evaluate it multiple times.
       // We only have to do this with the second operand as it has to be a
-      // lambda. The first argument doesn't in semantics preserving mode.
+      // lambda. The first argument isn't in semantics preserving mode.
       if (ast_context.getLangOpts().CPlusPlus &&
           binary_operator_->isLogicalOp() &&
           binary_operator_->getRHS()->HasSideEffects(ast_context)) {
@@ -909,7 +916,7 @@ std::string MutationReplaceBinaryOperator::GenerateMutatorFunction(
       only_track_mutant_coverage, mutation_id, new_function, mutation_id_offset,
       protobuf_message);
 
-  if (only_track_mutant_coverage) {
+  if (only_track_mutant_coverage && !semantics_preserving_mutation) {
     new_function << "  __dredd_record_covered_mutants(local_mutation_id, " +
                         std::to_string(mutation_id_offset) + ");\n";
   }
@@ -1017,8 +1024,8 @@ protobufs::MutationGroup MutationReplaceBinaryOperator::Apply(
   }
 
   ReplaceOperator(lhs_type, rhs_type, new_function_name, ast_context,
-                  preprocessor, semantics_preserving_mutation, first_mutation_id_in_file, mutation_id,
-                  rewriter);
+                  preprocessor, semantics_preserving_mutation,
+                  first_mutation_id_in_file, mutation_id, rewriter);
 
   const std::string new_function = GenerateMutatorFunction(
       ast_context, dredd_macros, new_function_name, result_type, lhs_type,
@@ -1035,15 +1042,12 @@ protobufs::MutationGroup MutationReplaceBinaryOperator::Apply(
   return result;
 }
 
-void MutationReplaceBinaryOperator::ReplaceOperator(const std::string &lhs_type,
-                                                    const std::string &rhs_type,
-                                                    const std::string &new_function_name,
-                                                    clang::ASTContext &ast_context,
-                                                    const clang::Preprocessor &preprocessor,
-                                                    bool semantics_preserving_mutation,
-                                                    int first_mutation_id_in_file,
-                                                    int mutation_id,
-                                                    clang::Rewriter &rewriter) const {
+void MutationReplaceBinaryOperator::ReplaceOperator(
+    const std::string& lhs_type, const std::string& rhs_type,
+    const std::string& new_function_name, clang::ASTContext& ast_context,
+    const clang::Preprocessor& preprocessor, bool semantics_preserving_mutation,
+    int first_mutation_id_in_file, int mutation_id,
+    clang::Rewriter& rewriter) const {
   const clang::SourceRange lhs_source_range_in_main_file =
       GetSourceRangeInMainFile(preprocessor, *binary_operator_->getLHS());
   assert(lhs_source_range_in_main_file.isValid() && "Invalid source range.");
@@ -1083,13 +1087,15 @@ void MutationReplaceBinaryOperator::ReplaceOperator(const std::string &lhs_type,
   std::string rhs_suffix;
 
   if (ast_context.getLangOpts().CPlusPlus) {
-    if (!semantics_preserving_mutation && binary_operator_->getLHS()->HasSideEffects(ast_context)) {
+    if (!semantics_preserving_mutation &&
+        binary_operator_->getLHS()->HasSideEffects(ast_context)) {
       lhs_prefix.append("[&]() -> " + lhs_type + " { return static_cast<" +
                         lhs_type + ">(");
       lhs_suffix.append("); }");
     }
     if (binary_operator_->isLogicalOp() ||
-        (!semantics_preserving_mutation && binary_operator_->getRHS()->HasSideEffects(ast_context))) {
+        (!semantics_preserving_mutation &&
+         binary_operator_->getRHS()->HasSideEffects(ast_context))) {
       rhs_prefix.append("[&]() -> " + rhs_type + " { return static_cast<" +
                         rhs_type + ">(");
       rhs_suffix.append("); }");

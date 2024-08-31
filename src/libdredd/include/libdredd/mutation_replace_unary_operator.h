@@ -74,10 +74,11 @@ class MutationReplaceUnaryOperator : public Mutation {
       const std::string& operator_name, const clang::ASTContext& ast_context,
       bool semantics_preserving_mutation) const;
 
-  [[nodiscard]] std::string GenerateUnaryOperatorReplacementMacro(
-      const std::string& name, clang::UnaryOperatorKind operator_kind,
-      bool semantics_preserving_mutation,
-      const clang::ASTContext& ast_context) const;
+  [[nodiscard]] std::string GenerateUnaryOperatorReplacementMacro(const std::string &name,
+                                                                  clang::UnaryOperatorKind operator_kind,
+                                                                  bool semantics_preserving_mutation,
+                                                                  bool only_track_mutant_coverage,
+                                                                  const clang::ASTContext &ast_context) const;
 
   // Replaces unary operators with other valid unary operators.
   void GenerateUnaryOperatorReplacement(

@@ -268,6 +268,35 @@ std::string MutateAstConsumer::GetRegularDreddPreludeCpp(
   return result.str();
 }
 
+std::string MutateAstConsumer::GetWeakMutantTrackingDreddPreludeCpp(
+    int initial_mutation_id) const {
+  // The number of mutations applied to this file is known.
+  const int num_mutations = *mutation_id_ - initial_mutation_id;
+
+  std::stringstream result;
+  result << "#include <atomic>\n";
+  result << "#include <fstream>\n";
+  result << "#include <functional>\n";
+  result << "#include <sstream>\n";
+  result << "#include <limits>\n";
+  result << "#include <cmath>\n";
+  result << "\n";
+  result << "static void __dredd_record_covered_mutants(int mutation_id) {\n";
+  result << "  static std::atomic<bool> already_recorded[" << num_mutations
+         << "];\n";
+  result << "  if (already_recorded[mutation_id].exchange(true)) return;\n";
+  result << "  const char* dredd_tracking_environment_variable = "
+            "std::getenv(\"DREDD_MUTANT_TRACKING_FILE\");\n";
+  result << "  if (dredd_tracking_environment_variable == nullptr) return;\n";
+  result << "  std::ofstream output_file;\n";
+  result << "  output_file.open(dredd_tracking_environment_variable, "
+            "std::ios_base::app);\n";
+  result << "  output_file << (" << std::to_string(initial_mutation_id)
+         << " + mutation_id) << \"\\n\";\n";
+  result << "}\n\n";
+  return result.str();
+}
+
 std::string MutateAstConsumer::GetMutantTrackingDreddPreludeCpp(
     int initial_mutation_id) const {
   // The number of mutations applied to this file is known.
@@ -301,7 +330,9 @@ std::string MutateAstConsumer::GetMutantTrackingDreddPreludeCpp(
 
 std::string MutateAstConsumer::GetDreddPreludeCpp(
     int initial_mutation_id) const {
-  if (only_track_mutant_coverage_) {
+  if (only_track_mutant_coverage_ && semantics_preserving_mutation_) {
+    return GetWeakMutantTrackingDreddPreludeCpp(initial_mutation_id);
+  } else if (only_track_mutant_coverage_) {
     return GetMutantTrackingDreddPreludeCpp(initial_mutation_id);
   }
   return GetRegularDreddPreludeCpp(initial_mutation_id);

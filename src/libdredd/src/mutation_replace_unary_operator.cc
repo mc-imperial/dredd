@@ -215,14 +215,15 @@ std::string MutationReplaceUnaryOperator::GenerateMutatorFunction(
     arg_evaluated = "(*" + arg_evaluated + ")";
   }
 
-  if (!only_track_mutant_coverage) {
+  if (!only_track_mutant_coverage || semantics_preserving_mutation) {
     // For pre-increment and pre-decrement ops, we need to store the value
     // before it is modified to use in the mutation killing checks.
-    const bool store_arg = semantics_preserving_mutation &&
+    const bool store_arg =
+        semantics_preserving_mutation &&
         (unary_operator_->getOpcode() == clang::UnaryOperatorKind::UO_PreInc ||
-            unary_operator_->getOpcode() == clang::UnaryOperatorKind::UO_PreDec ||
-            unary_operator_-> getOpcode() == clang::UnaryOperatorKind::UO_PostInc ||
-            unary_operator_->getOpcode() == clang::UnaryOperatorKind::UO_PostDec);
+         unary_operator_->getOpcode() == clang::UnaryOperatorKind::UO_PreDec ||
+         unary_operator_->getOpcode() == clang::UnaryOperatorKind::UO_PostInc ||
+         unary_operator_->getOpcode() == clang::UnaryOperatorKind::UO_PostDec);
     if (store_arg) {
       // We need to assign to a non reference type to avoid the copy getting
       // updated.
@@ -259,15 +260,13 @@ std::string MutationReplaceUnaryOperator::GenerateMutatorFunction(
     }
   }
 
-
-
   int mutation_id_offset = 0;
   GenerateUnaryOperatorReplacement(
       arg_evaluated, ast_context, dredd_macros, optimise_mutations,
       semantics_preserving_mutation, only_track_mutant_coverage, mutation_id,
       new_function, mutation_id_offset, protobuf_message);
 
-  if (only_track_mutant_coverage) {
+  if (only_track_mutant_coverage && !semantics_preserving_mutation) {
     new_function << "  __dredd_record_covered_mutants(local_mutation_id, " +
                         std::to_string(mutation_id_offset) + ");\n";
   }
@@ -334,10 +333,11 @@ std::string MutationReplaceUnaryOperator::GetUnaryMacroName(
   return result;
 }
 
-std::string MutationReplaceUnaryOperator::GenerateUnaryOperatorReplacementMacro(
-    const std::string& name, clang::UnaryOperatorKind operator_kind,
-    bool semantics_preserving_mutation,
-    const clang::ASTContext& ast_context) const {
+std::string MutationReplaceUnaryOperator::GenerateUnaryOperatorReplacementMacro(const std::string &name,
+                                                                                clang::UnaryOperatorKind operator_kind,
+                                                                                bool semantics_preserving_mutation,
+                                                                                bool only_track_mutant_coverage,
+                                                                                const clang::ASTContext &ast_context) const {
   const std::string op_string =
       clang::UnaryOperator::getOpcodeStr(operator_kind).str();
   if (!semantics_preserving_mutation) {
@@ -350,7 +350,12 @@ std::string MutationReplaceUnaryOperator::GenerateUnaryOperatorReplacementMacro(
            " arg;\n";
   }
 
-  std::string result = "#define " + name + "(arg) if (";
+  std::string result = "#define " + name + "(arg, mutation_id_offset) if (";
+  std::string return_expr = only_track_mutant_coverage
+                            ? "__dredd_record_covered_mutants(local_"
+                              "mutation_id + mutation_id_offset)"
+                            : "no_op++";
+
   const clang::BuiltinType* type =
       unary_operator_->getType()->getAs<clang::BuiltinType>();
 
@@ -362,21 +367,21 @@ std::string MutationReplaceUnaryOperator::GenerateUnaryOperatorReplacementMacro(
     // The following are always trivially killed.
     case clang::UO_PostInc:
       return result + "(arg) == " + TypeToUpperLimit(type, ast_context) +
-             " || (arg) != actual_result) no_op++\n";
+             " || (arg) != actual_result) " + return_expr + "\n";
     case clang::UO_PostDec:
       return result + "(arg) == " + TypeToLowerLimit(type, ast_context) +
-             " || (arg) != actual_result) no_op++\n";
+             " || (arg) != actual_result) " + return_expr + "\n";
     case clang::UO_PreInc:
       return result + "(arg) == " + TypeToUpperLimit(type, ast_context) +
-             " || (arg + 1) != actual_result) no_op++\n";
+             " || (arg + 1) != actual_result) " + return_expr + "\n";
     case clang::UO_PreDec:
       return result + "(arg) == " + TypeToLowerLimit(type, ast_context) +
-             " || (arg - 1) != actual_result) no_op++\n";
+             " || (arg - 1) != actual_result) " + return_expr + "\n";
     default:
       break;
   }
 
-  return result + "(" + op_string + "(arg))" + " != actual_result) no_op++\n";
+  return result + "(" + op_string + "(arg))" + " != actual_result) " + return_expr + "\n";
 }
 
 void MutationReplaceUnaryOperator::GenerateUnaryOperatorReplacement(
@@ -403,16 +408,15 @@ void MutationReplaceUnaryOperator::GenerateUnaryOperatorReplacement(
       continue;
     }
 
-    if (!only_track_mutant_coverage) {
+    if (!only_track_mutant_coverage || semantics_preserving_mutation) {
       const std::string macro_name =
           GetUnaryMacroName(OpKindToString(operator_kind), ast_context,
                             semantics_preserving_mutation);
       new_function << "  "
                    << GenerateUnaryMacroCall(macro_name, arg_evaluated,
-                                             mutation_id_offset,
-                                             semantics_preserving_mutation);
+                                             mutation_id_offset);
       dredd_macros.insert(GenerateUnaryOperatorReplacementMacro(
-          macro_name, operator_kind, semantics_preserving_mutation,
+          macro_name, operator_kind, semantics_preserving_mutation, only_track_mutant_coverage,
           ast_context));
     }
     AddMutationInstance(mutation_id_base, OperatorKindToAction(operator_kind),
@@ -423,15 +427,14 @@ void MutationReplaceUnaryOperator::GenerateUnaryOperatorReplacement(
   // equivalent to inserting another occurrence of it, which will be done by
   // another mutation.
   if (!optimise_mutations || !IsOperatorSelfInverse()) {
-    if (!only_track_mutant_coverage) {
+    if (!only_track_mutant_coverage || semantics_preserving_mutation) {
       const std::string macro_name =
           GetUnaryMacroName("ARG", ast_context, semantics_preserving_mutation);
       new_function << "  "
                    << GenerateUnaryMacroCall(macro_name, arg_evaluated,
-                                             mutation_id_offset,
-                                             semantics_preserving_mutation);
-      dredd_macros.insert(
-          GenerateMutationMacro(macro_name, semantics_preserving_mutation));
+                                             mutation_id_offset);
+      dredd_macros.insert(GenerateMutationMacro(
+          macro_name, semantics_preserving_mutation, only_track_mutant_coverage, 0));
     }
     AddMutationInstance(
         mutation_id_base,

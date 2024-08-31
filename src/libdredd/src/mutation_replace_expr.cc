@@ -215,12 +215,13 @@ bool MutationReplaceExpr::IsRedundantOperatorInsertion(
 // TODO(JLJ): Remove duplication
 std::string MutationReplaceExpr::GenerateUnaryOperatorInsertionMacro(
     const std::string& name, clang::UnaryOperatorKind operator_kind,
-    bool semantics_preserving_mutation,
+    bool semantics_preserving_mutation, bool only_track_mutant_coverage,
     const clang::ASTContext& ast_context) const {
   const std::string op_string =
       clang::UnaryOperator::getOpcodeStr(operator_kind).str();
   if (!semantics_preserving_mutation) {
-    // Since we only insert prefix operators for exprs there is no need check if an operator is prefix.
+    // Since we only insert prefix operators for exprs there is no need check if
+    // an operator is prefix.
     return "#define " + name +
            "(arg, mutation_id_offset) if ("
            "__dredd_enabled_mutation(local_mutation_id "
@@ -228,7 +229,12 @@ std::string MutationReplaceExpr::GenerateUnaryOperatorInsertionMacro(
            op_string + "(arg)" + " arg;\n";
   }
 
-  std::string result = "#define " + name + "(arg) if (";
+  std::string result = "#define " + name + "(arg, mutation_id_offset) if (";
+  std::string return_expr = only_track_mutant_coverage
+                                ? "__dredd_record_covered_mutants(local_"
+                                  "mutation_id + mutation_id_offset)"
+                                : "no_op++";
+
   const clang::BuiltinType* type =
       expr_->getType()->getAs<clang::BuiltinType>();
 
@@ -240,15 +246,16 @@ std::string MutationReplaceExpr::GenerateUnaryOperatorInsertionMacro(
     // The following are always trivially killed.
     case clang::UO_PreInc:
       return result + "(arg) == " + TypeToUpperLimit(type, ast_context) +
-             " || (arg + 1) != actual_result) no_op++\n";
+             " || (arg + 1) != actual_result) " + return_expr + "\n";
     case clang::UO_PreDec:
       return result + "(arg) == " + TypeToLowerLimit(type, ast_context) +
-             " || (arg - 1) != actual_result) no_op++\n";
+             " || (arg - 1) != actual_result) " + return_expr + "\n";
     default:
       break;
   }
 
-  return result + "(" + op_string + "(arg))" + " != actual_result) no_op++\n";
+  return result + "(" + op_string + "(arg))" + " != actual_result) " +
+         return_expr + "\n";
 }
 
 void MutationReplaceExpr::GenerateUnaryOperatorInsertionBeforeLValue(
@@ -261,27 +268,29 @@ void MutationReplaceExpr::GenerateUnaryOperatorInsertionBeforeLValue(
   if (!expr_->isLValue() || !CanMutateLValue(ast_context, *expr_)) {
     return;
   }
-  if (!only_track_mutant_coverage) {
-    const std::string macro_name = GetExprMacroName("INC", ast_context, semantics_preserving_mutation);
+  if (!only_track_mutant_coverage || semantics_preserving_mutation) {
+    const std::string macro_name =
+        GetExprMacroName("INC", ast_context, semantics_preserving_mutation);
     new_function << "  "
                  << GenerateUnaryMacroCall(macro_name, arg_evaluated,
-                                           mutation_id_offset,
-                                           semantics_preserving_mutation);
-    dredd_macros.insert(
-            GenerateUnaryOperatorInsertionMacro(macro_name, clang::UO_PreInc, semantics_preserving_mutation, ast_context));
+                                           mutation_id_offset);
+    dredd_macros.insert(GenerateUnaryOperatorInsertionMacro(
+        macro_name, clang::UO_PreInc, semantics_preserving_mutation,
+        only_track_mutant_coverage, ast_context));
   }
   AddMutationInstance(mutation_id_base,
                       protobufs::MutationReplaceExprAction::InsertPreInc,
                       mutation_id_offset, protobuf_message);
 
-  if (!only_track_mutant_coverage) {
-    const std::string macro_name = GetExprMacroName("DEC", ast_context, semantics_preserving_mutation);
+  if (!only_track_mutant_coverage || semantics_preserving_mutation) {
+    const std::string macro_name =
+        GetExprMacroName("DEC", ast_context, semantics_preserving_mutation);
     new_function << "  "
                  << GenerateUnaryMacroCall(macro_name, arg_evaluated,
-                                           mutation_id_offset,
-                                           semantics_preserving_mutation);
-    dredd_macros.insert(
-        GenerateUnaryOperatorInsertionMacro(macro_name, clang::UO_PreDec, semantics_preserving_mutation, ast_context));
+                                           mutation_id_offset);
+    dredd_macros.insert(GenerateUnaryOperatorInsertionMacro(
+        macro_name, clang::UO_PreDec, semantics_preserving_mutation,
+        only_track_mutant_coverage, ast_context));
   }
   AddMutationInstance(mutation_id_base,
                       protobufs::MutationReplaceExprAction::InsertPreDec,
@@ -304,14 +313,15 @@ void MutationReplaceExpr::GenerateUnaryOperatorInsertionBeforeNonLValue(
   if (exprType.isBooleanType() || exprType.isInteger()) {
     if (!optimise_mutations ||
         !IsRedundantOperatorInsertion(ast_context, clang::UO_LNot)) {
-      if (!only_track_mutant_coverage) {
-        const std::string macro_name = GetExprMacroName("LNOT", ast_context, semantics_preserving_mutation);
+      if (!only_track_mutant_coverage || semantics_preserving_mutation) {
+        const std::string macro_name = GetExprMacroName(
+            "LNOT", ast_context, semantics_preserving_mutation);
         new_function << "  "
                      << GenerateUnaryMacroCall(macro_name, arg_evaluated,
-                                               mutation_id_offset,
-                                               semantics_preserving_mutation);
-        dredd_macros.insert(
-            GenerateUnaryOperatorInsertionMacro(macro_name, clang::UO_LNot, semantics_preserving_mutation, ast_context));
+                                               mutation_id_offset);
+        dredd_macros.insert(GenerateUnaryOperatorInsertionMacro(
+            macro_name, clang::UO_LNot, semantics_preserving_mutation,
+            only_track_mutant_coverage, ast_context));
       }
       AddMutationInstance(mutation_id_base,
                           protobufs::MutationReplaceExprAction::InsertLNot,
@@ -323,16 +333,17 @@ void MutationReplaceExpr::GenerateUnaryOperatorInsertionBeforeNonLValue(
   if (exprType.isInteger() && !exprType.isBooleanType()) {
     if (!optimise_mutations ||
         !IsRedundantOperatorInsertion(ast_context, clang::UO_Not)) {
-      if (!only_track_mutant_coverage) {
+      if (!only_track_mutant_coverage || semantics_preserving_mutation) {
         // many places, it makes updating difficult. Add function which produces
         // macro call from name.
-        const std::string macro_name = GetExprMacroName("NOT", ast_context, semantics_preserving_mutation);
+        const std::string macro_name =
+            GetExprMacroName("NOT", ast_context, semantics_preserving_mutation);
         new_function << "  "
                      << GenerateUnaryMacroCall(macro_name, arg_evaluated,
-                                               mutation_id_offset,
-                                               semantics_preserving_mutation);
-        dredd_macros.insert(
-            GenerateUnaryOperatorInsertionMacro(macro_name, clang::UO_Not, semantics_preserving_mutation, ast_context));
+                                               mutation_id_offset);
+        dredd_macros.insert(GenerateUnaryOperatorInsertionMacro(
+            macro_name, clang::UO_Not, semantics_preserving_mutation,
+            only_track_mutant_coverage, ast_context));
       }
       AddMutationInstance(mutation_id_base,
                           protobufs::MutationReplaceExprAction::InsertNot,
@@ -344,14 +355,15 @@ void MutationReplaceExpr::GenerateUnaryOperatorInsertionBeforeNonLValue(
   if (exprType.isSignedInteger() || exprType.isFloatingPoint()) {
     if (!optimise_mutations ||
         !IsRedundantOperatorInsertion(ast_context, clang::UO_Minus)) {
-      if (!only_track_mutant_coverage) {
-        const std::string macro_name = GetExprMacroName("MINUS", ast_context, semantics_preserving_mutation);
+      if (!only_track_mutant_coverage || semantics_preserving_mutation) {
+        const std::string macro_name = GetExprMacroName(
+            "MINUS", ast_context, semantics_preserving_mutation);
         new_function << "  "
                      << GenerateUnaryMacroCall(macro_name, arg_evaluated,
-                                               mutation_id_offset,
-                                               semantics_preserving_mutation);
-        dredd_macros.insert(
-            GenerateUnaryOperatorInsertionMacro(macro_name, clang::UO_Minus, semantics_preserving_mutation, ast_context));
+                                               mutation_id_offset);
+        dredd_macros.insert(GenerateUnaryOperatorInsertionMacro(
+            macro_name, clang::UO_Minus, semantics_preserving_mutation,
+            only_track_mutant_coverage, ast_context));
       }
       AddMutationInstance(mutation_id_base,
                           protobufs::MutationReplaceExprAction::InsertMinus,
@@ -417,10 +429,9 @@ void MutationReplaceExpr::GenerateFloatConstantReplacement(
         const std::string macro_name = "REPLACE_EXPR_FLOAT_ZERO";
         new_function << "  "
                      << GenerateUnaryMacroCall(macro_name, "0.0",
-                                               mutation_id_offset,
-                                               semantics_preserving_mutation);
-        dredd_macros.insert(
-            GenerateMutationMacro(macro_name, semantics_preserving_mutation));
+                                               mutation_id_offset);
+        dredd_macros.insert(GenerateMutationMacro(
+            macro_name, semantics_preserving_mutation, false, 0));
       }
       AddMutationInstance(
           mutation_id_base,
@@ -435,10 +446,9 @@ void MutationReplaceExpr::GenerateFloatConstantReplacement(
         const std::string macro_name = "REPLACE_EXPR_FLOAT_ONE";
         new_function << "  "
                      << GenerateUnaryMacroCall(macro_name, "1.0",
-                                               mutation_id_offset,
-                                               semantics_preserving_mutation);
-        dredd_macros.insert(
-            GenerateMutationMacro(macro_name, semantics_preserving_mutation));
+                                               mutation_id_offset);
+        dredd_macros.insert(GenerateMutationMacro(
+            macro_name, semantics_preserving_mutation, false, 0));
       }
       AddMutationInstance(
           mutation_id_base,
@@ -453,10 +463,9 @@ void MutationReplaceExpr::GenerateFloatConstantReplacement(
         const std::string macro_name = "REPLACE_EXPR_FLOAT_MINUS_ONE";
         new_function << "  "
                      << GenerateUnaryMacroCall(macro_name, "-1.0",
-                                               mutation_id_offset,
-                                               semantics_preserving_mutation);
-        dredd_macros.insert(
-            GenerateMutationMacro(macro_name, semantics_preserving_mutation));
+                                               mutation_id_offset);
+        dredd_macros.insert(GenerateMutationMacro(
+            macro_name, semantics_preserving_mutation, false, 0));
       }
       AddMutationInstance(
           mutation_id_base,
@@ -481,10 +490,9 @@ void MutationReplaceExpr::GenerateIntegerConstantReplacement(
         const std::string macro_name = "REPLACE_EXPR_INT_ZERO";
         new_function << "  "
                      << GenerateUnaryMacroCall(macro_name, "0",
-                                               mutation_id_offset,
-                                               semantics_preserving_mutation);
-        dredd_macros.insert(
-            GenerateMutationMacro(macro_name, semantics_preserving_mutation));
+                                               mutation_id_offset);
+        dredd_macros.insert(GenerateMutationMacro(
+            macro_name, semantics_preserving_mutation, false, 0));
       }
       AddMutationInstance(
           mutation_id_base,
@@ -498,10 +506,9 @@ void MutationReplaceExpr::GenerateIntegerConstantReplacement(
         const std::string macro_name = "REPLACE_EXPR_INT_ONE";
         new_function << "  "
                      << GenerateUnaryMacroCall(macro_name, "1",
-                                               mutation_id_offset,
-                                               semantics_preserving_mutation);
-        dredd_macros.insert(
-            GenerateMutationMacro(macro_name, semantics_preserving_mutation));
+                                               mutation_id_offset);
+        dredd_macros.insert(GenerateMutationMacro(
+            macro_name, semantics_preserving_mutation, false, 0));
       }
       AddMutationInstance(
           mutation_id_base,
@@ -518,10 +525,9 @@ void MutationReplaceExpr::GenerateIntegerConstantReplacement(
         const std::string macro_name = "REPLACE_EXPR_INT_MINUS_ONE";
         new_function << "  "
                      << GenerateUnaryMacroCall(macro_name, "-1",
-                                               mutation_id_offset,
-                                               semantics_preserving_mutation);
-        dredd_macros.insert(
-            GenerateMutationMacro(macro_name, semantics_preserving_mutation));
+                                               mutation_id_offset);
+        dredd_macros.insert(GenerateMutationMacro(
+            macro_name, semantics_preserving_mutation, false, 0));
       }
       AddMutationInstance(
           mutation_id_base,
@@ -550,9 +556,9 @@ void MutationReplaceExpr::GenerateBooleanConstantReplacement(
                      << GenerateUnaryMacroCall(
                             macro_name,
                             ast_context.getLangOpts().CPlusPlus ? "true" : "1",
-                            mutation_id_offset, semantics_preserving_mutation);
-        dredd_macros.insert(
-            GenerateMutationMacro(macro_name, semantics_preserving_mutation));
+                            mutation_id_offset);
+        dredd_macros.insert(GenerateMutationMacro(
+            macro_name, semantics_preserving_mutation, false, 0));
       }
       AddMutationInstance(mutation_id_base,
                           protobufs::MutationReplaceExprAction::ReplaceWithTrue,
@@ -569,9 +575,9 @@ void MutationReplaceExpr::GenerateBooleanConstantReplacement(
                      << GenerateUnaryMacroCall(
                             macro_name,
                             ast_context.getLangOpts().CPlusPlus ? "false" : "0",
-                            mutation_id_offset, semantics_preserving_mutation);
-        dredd_macros.insert(
-            GenerateMutationMacro(macro_name, semantics_preserving_mutation));
+                            mutation_id_offset);
+        dredd_macros.insert(GenerateMutationMacro(
+            macro_name, semantics_preserving_mutation, false, 0));
       }
       AddMutationInstance(
           mutation_id_base,
@@ -608,7 +614,7 @@ std::string MutationReplaceExpr::GenerateMutatorFunction(
     arg_evaluated = "(*" + arg_evaluated + ")";
   }
 
-  if (!only_track_mutant_coverage) {
+  if (!only_track_mutant_coverage || semantics_preserving_mutation) {
     // If the expression has side-effects, store the result of evaluating it so
     // we don't evaluate it multiple times.
     if (ast_context.getLangOpts().CPlusPlus &&
@@ -641,7 +647,7 @@ std::string MutationReplaceExpr::GenerateMutatorFunction(
       semantics_preserving_mutation, only_track_mutant_coverage, mutation_id,
       new_function, mutation_id_offset, protobuf_message);
 
-  if (only_track_mutant_coverage) {
+  if (only_track_mutant_coverage && !semantics_preserving_mutation) {
     new_function << "  __dredd_record_covered_mutants(local_mutation_id, " +
                         std::to_string(mutation_id_offset) + ");\n";
   }

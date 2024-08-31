@@ -55,15 +55,13 @@ class MutationReplaceBinaryOperator : public Mutation {
       bool only_track_mutant_coverage, int& mutation_id,
       protobufs::MutationReplaceBinaryOperator& protobuf_message) const;
 
-  void ReplaceOperator(const std::string &lhs_type,
-                       const std::string &rhs_type,
-                       const std::string &new_function_name,
-                       clang::ASTContext &ast_context,
-                       const clang::Preprocessor &preprocessor,
+  void ReplaceOperator(const std::string& lhs_type, const std::string& rhs_type,
+                       const std::string& new_function_name,
+                       clang::ASTContext& ast_context,
+                       const clang::Preprocessor& preprocessor,
                        bool semantics_preserving_mutation,
-                       int first_mutation_id_in_file,
-                       int mutation_id,
-                       clang::Rewriter &rewriter) const;
+                       int first_mutation_id_in_file, int mutation_id,
+                       clang::Rewriter& rewriter) const;
 
   [[nodiscard]] std::string GetTypeSpecifier(
       const clang::ASTContext& ast_context) const;
@@ -110,7 +108,7 @@ class MutationReplaceBinaryOperator : public Mutation {
   // Generates macro for operator replacement.
   [[nodiscard]] std::string GenerateBinaryOperatorReplacementMacro(
       const std::string& name, clang::BinaryOperatorKind operator_kind,
-      bool semantics_preserving_mutation,
+      bool semantics_preserving_mutation, bool only_track_mutant_coverage,
       const clang::ASTContext& ast_context) const;
 
   // Replaces binary operators with other valid binary operators.

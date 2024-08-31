@@ -130,10 +130,10 @@ class MutationReplaceExpr : public Mutation {
       int& mutation_id_offset,
       protobufs::MutationReplaceExpr& protobuf_message) const;
 
-  [[nodiscard]] std::string GenerateUnaryOperatorInsertionMacro(const std::string &name,
-                                                  clang::UnaryOperatorKind operator_kind,
-                                                  bool semantics_preserving_mutation,
-                                                  const clang::ASTContext &ast_context) const;
+  [[nodiscard]] std::string GenerateUnaryOperatorInsertionMacro(
+      const std::string& name, clang::UnaryOperatorKind operator_kind,
+      bool semantics_preserving_mutation, bool only_track_mutant_coverage,
+      const clang::ASTContext& ast_context) const;
 
   // Insert valid unary operators such as !, ~, ++ and --.
   void GenerateUnaryOperatorInsertion(
