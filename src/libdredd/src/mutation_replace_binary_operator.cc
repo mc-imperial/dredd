@@ -645,7 +645,7 @@ void MutationReplaceBinaryOperator::GenerateArgumentReplacement(
           // It is only safe to replace && with second argument if the first
           // argument is true otherwise the second argument wouldn't normally be
           // evaluated and doing so may be dangerous.
-          new_function << "_LAnd(" << arg1_evaluated << ", " << arg2_evaluated << ", " << mutation_id_offset + mutation_id_base
+          new_function << "_LAnd(" << arg1_evaluated << ", " << arg2_evaluated << ", mutation_id_offset "
                        << ")";
           macro += "_LAnd(arg1, arg2, mutation_id_offset) if ((arg1) && ";
         } else if (binary_operator_->getOpcode() ==
@@ -653,11 +653,11 @@ void MutationReplaceBinaryOperator::GenerateArgumentReplacement(
           // It is only safe to replace || with second argument if the first
           // argument is false otherwise the second argument wouldn't normally
           // be evaluated and doing so may be dangerous.
-          new_function << "_LOr(" << arg1_evaluated << ", " << arg2_evaluated << ", " << mutation_id_offset + mutation_id_base
+          new_function << "_LOr(" << arg1_evaluated << ", " << arg2_evaluated << ", mutation_id_offset"
                        << ")";
           macro += "_LOr(arg1, arg2, mutation_id_offset) if (!(arg1) && ";
         } else {
-          new_function << "(" << arg2_evaluated << ", " << mutation_id_offset + mutation_id_base << ")";
+          new_function << "(" << arg2_evaluated << ", mutation_id_offset" << ")";
           macro += "(arg2, mutation_id_offset) if (";
         }
         macro += "(arg2) != actual_result) ";
