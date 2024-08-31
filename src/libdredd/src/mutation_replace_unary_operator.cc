@@ -434,7 +434,7 @@ void MutationReplaceUnaryOperator::GenerateUnaryOperatorReplacement(
                    << GenerateUnaryMacroCall(macro_name, arg_evaluated,
                                              mutation_id_offset);
       dredd_macros.insert(GenerateMutationMacro(
-          macro_name, semantics_preserving_mutation, only_track_mutant_coverage, 0));
+          macro_name, semantics_preserving_mutation, only_track_mutant_coverage));
     }
     AddMutationInstance(
         mutation_id_base,

@@ -608,8 +608,7 @@ void MutationReplaceBinaryOperator::GenerateArgumentReplacement(
                                              mutation_id_offset);
 
       dredd_macros.insert(GenerateMutationMacro(
-          macro_name, semantics_preserving_mutation, only_track_mutant_coverage,
-          mutation_id_offset + mutation_id_base));
+          macro_name, semantics_preserving_mutation, only_track_mutant_coverage));
     }
     AddMutationInstance(
         mutation_id_base,
@@ -670,8 +669,7 @@ void MutationReplaceBinaryOperator::GenerateArgumentReplacement(
         new_function << "(" << arg2_evaluated << ", " << mutation_id_offset
                      << ")";
         macro = GenerateMutationMacro(macro_name, semantics_preserving_mutation,
-                                      only_track_mutant_coverage,
-                                      mutation_id_base + mutation_id_offset);
+                                      only_track_mutant_coverage);
       }
       new_function << ";\n";
 

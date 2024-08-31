@@ -431,7 +431,7 @@ void MutationReplaceExpr::GenerateFloatConstantReplacement(
                      << GenerateUnaryMacroCall(macro_name, "0.0",
                                                mutation_id_offset);
         dredd_macros.insert(GenerateMutationMacro(
-            macro_name, semantics_preserving_mutation, false, 0));
+            macro_name, semantics_preserving_mutation, false));
       }
       AddMutationInstance(
           mutation_id_base,
@@ -448,7 +448,7 @@ void MutationReplaceExpr::GenerateFloatConstantReplacement(
                      << GenerateUnaryMacroCall(macro_name, "1.0",
                                                mutation_id_offset);
         dredd_macros.insert(GenerateMutationMacro(
-            macro_name, semantics_preserving_mutation, false, 0));
+            macro_name, semantics_preserving_mutation, false));
       }
       AddMutationInstance(
           mutation_id_base,
@@ -465,7 +465,7 @@ void MutationReplaceExpr::GenerateFloatConstantReplacement(
                      << GenerateUnaryMacroCall(macro_name, "-1.0",
                                                mutation_id_offset);
         dredd_macros.insert(GenerateMutationMacro(
-            macro_name, semantics_preserving_mutation, false, 0));
+            macro_name, semantics_preserving_mutation, false));
       }
       AddMutationInstance(
           mutation_id_base,
@@ -492,7 +492,7 @@ void MutationReplaceExpr::GenerateIntegerConstantReplacement(
                      << GenerateUnaryMacroCall(macro_name, "0",
                                                mutation_id_offset);
         dredd_macros.insert(GenerateMutationMacro(
-            macro_name, semantics_preserving_mutation, false, 0));
+            macro_name, semantics_preserving_mutation, false));
       }
       AddMutationInstance(
           mutation_id_base,
@@ -508,7 +508,7 @@ void MutationReplaceExpr::GenerateIntegerConstantReplacement(
                      << GenerateUnaryMacroCall(macro_name, "1",
                                                mutation_id_offset);
         dredd_macros.insert(GenerateMutationMacro(
-            macro_name, semantics_preserving_mutation, false, 0));
+            macro_name, semantics_preserving_mutation, false));
       }
       AddMutationInstance(
           mutation_id_base,
@@ -527,7 +527,7 @@ void MutationReplaceExpr::GenerateIntegerConstantReplacement(
                      << GenerateUnaryMacroCall(macro_name, "-1",
                                                mutation_id_offset);
         dredd_macros.insert(GenerateMutationMacro(
-            macro_name, semantics_preserving_mutation, false, 0));
+            macro_name, semantics_preserving_mutation, false));
       }
       AddMutationInstance(
           mutation_id_base,
@@ -558,7 +558,7 @@ void MutationReplaceExpr::GenerateBooleanConstantReplacement(
                             ast_context.getLangOpts().CPlusPlus ? "true" : "1",
                             mutation_id_offset);
         dredd_macros.insert(GenerateMutationMacro(
-            macro_name, semantics_preserving_mutation, false, 0));
+            macro_name, semantics_preserving_mutation, false));
       }
       AddMutationInstance(mutation_id_base,
                           protobufs::MutationReplaceExprAction::ReplaceWithTrue,
@@ -577,7 +577,7 @@ void MutationReplaceExpr::GenerateBooleanConstantReplacement(
                             ast_context.getLangOpts().CPlusPlus ? "false" : "0",
                             mutation_id_offset);
         dredd_macros.insert(GenerateMutationMacro(
-            macro_name, semantics_preserving_mutation, false, 0));
+            macro_name, semantics_preserving_mutation, false));
       }
       AddMutationInstance(
           mutation_id_base,

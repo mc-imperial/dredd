@@ -135,10 +135,9 @@ std::string GenerateUnaryMacroCall(const std::string& macro_name,
                                    const std::string& arg_evaluated,
                                    const int& mutation_id_offset);
 
-std::string GenerateMutationMacro(const std::string& name,
+std::string GenerateMutationMacro(const std::string &name,
                                   bool semantics_preserving_mutation,
-                                  bool only_track_mutant_coverage,
-                                  int mutation_id);
+                                  bool only_track_mutant_coverage);
 
 std::string GenerateMutationReturn(bool semantics_preserving_mutation);
 

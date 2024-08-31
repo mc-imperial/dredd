@@ -153,15 +153,13 @@ std::string GenerateUnaryMacroCall(const std::string& macro_name,
   return result;
 }
 
-std::string GenerateMutationMacro(const std::string& name,
+std::string GenerateMutationMacro(const std::string &name,
                                   bool semantics_preserving_mutation,
-                                  bool only_track_mutant_coverage,
-                                  int mutation_id) {
+                                  bool only_track_mutant_coverage) {
   std::string const result = "#define " + name + "(args, mutation_id_offset) ";
   if (semantics_preserving_mutation) {
     return result + "if ((args) != actual_result) " +
-           (only_track_mutant_coverage ? "__dredd_record_covered_mutants(" +
-                                             std::to_string(mutation_id) + ")"
+           (only_track_mutant_coverage ? "__dredd_record_covered_mutants(local_mutation_id + mutation_id_offset)"
                                        : "no_op++") +
            "\n";
   }
