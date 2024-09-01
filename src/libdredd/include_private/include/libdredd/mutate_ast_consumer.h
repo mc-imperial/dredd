@@ -67,6 +67,9 @@ class MutateAstConsumer : public clang::ASTConsumer {
   [[nodiscard]] std::string GetRegularDreddPreludeC(
       int initial_mutation_id) const;
 
+  [[nodiscard]] std::string GetWeakMutantTrackingDreddPreludeC(
+      int initial_mutation_id) const;
+
   [[nodiscard]] std::string GetMutantTrackingDreddPreludeC(
       int initial_mutation_id) const;
 

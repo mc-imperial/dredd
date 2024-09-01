@@ -144,7 +144,7 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
           ? GetDreddPreludeCpp(initial_mutation_id)
           : GetDreddPreludeC(initial_mutation_id);
 
-  if (semantics_preserving_mutation_) {
+  if (semantics_preserving_mutation_ && !only_track_mutant_coverage_) {
     // TODO(JLJ): This should probably be moved to the prelude function.
     const bool rewriter_result = rewriter_.InsertTextBefore(
         start_location_of_first_function_in_source_file,
@@ -406,6 +406,36 @@ std::string MutateAstConsumer::GetRegularDreddPreludeC(
   return result.str();
 }
 
+std::string MutateAstConsumer::GetWeakMutantTrackingDreddPreludeC(
+    int initial_mutation_id) const {
+  // See comments in GetMutantTrackingDreddPreludeCpp; this is a straightforward
+  // port to C.
+  const int num_mutations = *mutation_id_ - initial_mutation_id;
+  std::stringstream result;
+  result << "#include <inttypes.h>\n";
+  result << "#include <stdatomic.h>\n";
+  result << "#include <stdbool.h>\n";
+  result << "#include <stdio.h>\n";
+  result << "#include <stdlib.h>\n";
+  result << "#include <limits.h>\n";
+  result << "#include <float.h>\n";
+  result << "#include <math.h>\n";
+  result << "\n";
+  result << "static void __dredd_record_covered_mutants(int mutation_id) {\n";
+  result << "  static atomic_bool already_recorded[" << num_mutations << "];\n";
+  result << "  if (atomic_exchange(&already_recorded[mutation_id], 1)) "
+            "return;\n";
+  result << "  const char* dredd_tracking_environment_variable = "
+            "getenv(\"DREDD_MUTANT_TRACKING_FILE\");\n";
+  result << "  if (!dredd_tracking_environment_variable) return;\n";
+  result << "  FILE* fp = fopen(dredd_tracking_environment_variable, \"a\");\n";
+  result << R"(  fprintf(fp, "%d\n", )" + std::to_string(initial_mutation_id)
+         << " + mutation_id);\n";
+  result << "  fclose(fp);\n";
+  result << "}\n\n";
+  return result.str();
+}
+
 std::string MutateAstConsumer::GetMutantTrackingDreddPreludeC(
     int initial_mutation_id) const {
   // See comments in GetMutantTrackingDreddPreludeCpp; this is a straightforward
@@ -437,7 +467,9 @@ std::string MutateAstConsumer::GetMutantTrackingDreddPreludeC(
 }
 
 std::string MutateAstConsumer::GetDreddPreludeC(int initial_mutation_id) const {
-  if (only_track_mutant_coverage_) {
+  if (only_track_mutant_coverage_ && semantics_preserving_mutation_) {
+    return GetWeakMutantTrackingDreddPreludeC(initial_mutation_id);
+  } else if (only_track_mutant_coverage_) {
     return GetMutantTrackingDreddPreludeC(initial_mutation_id);
   }
   return GetRegularDreddPreludeC(initial_mutation_id);

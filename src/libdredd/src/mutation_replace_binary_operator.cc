@@ -1150,7 +1150,7 @@ void MutationReplaceBinaryOperator::HandleCLogicalOperator(
   //   and "rhs" functions do nothing, and the "lhs" function return either 0 or
   //   1, depending on the operator.
 
-  if (!only_track_mutant_coverage) {
+  if (!only_track_mutant_coverage || semantics_preserving_mutation) {
     if (!semantics_preserving_mutation) {
       // Rewrite the LHS of the expression, and introduce the associated
       // function.
@@ -1241,7 +1241,8 @@ void MutationReplaceBinaryOperator::HandleCLogicalOperator(
           //            If `a` is false, the outcome is different if `b` is
           //            true. However `b` would not normally be evaluated so
           //            checking this isn't safe.
-          rhs_function << "  if (!arg) no_op++;\n";
+          rhs_function << "  if (!arg) " << (only_track_mutant_coverage ? "__dredd_record_covered_mutants(local_mutation_id + 1)"
+                                                                     : "no_op++") << ";\n";
         } else {
           // Replacing "a && b" with "a" is achieved by replacing "b" with "1".
           rhs_function
@@ -1265,7 +1266,8 @@ void MutationReplaceBinaryOperator::HandleCLogicalOperator(
           //            If `a` is true, the outcome differs if `b` is false.
           //            Checking this isn't safe because `b` would not normally
           //            be evaluated. If `a` is false, the two are equivalent.
-          rhs_function << "  if (arg) no_op++;\n";
+          rhs_function << "  if (arg) " << (only_track_mutant_coverage ? "__dredd_record_covered_mutants(local_mutation_id + 1)"
+                                                                       : "no_op++") << ";\n";
         } else {
           // Replacing "a || b" with "a" is achieved by replacing "b" with "0".
           rhs_function
@@ -1309,7 +1311,7 @@ void MutationReplaceBinaryOperator::HandleCLogicalOperator(
 
       // Case 2: replacing with RHS: no action is needed here.
     }
-    if (only_track_mutant_coverage) {
+    if (only_track_mutant_coverage && !semantics_preserving_mutation) {
       // The fact that three mutants are covered is recorded, to reflect
       // swapping the operator, replacing with LHS and replacing with RHS.
       // It does not matter in which function this is recorded, but intuitively
