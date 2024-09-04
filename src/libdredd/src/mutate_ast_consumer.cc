@@ -102,27 +102,29 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
        visitor_->GetConstantSizedArraysToRewrite()) {
     assert(compiler_instance_->getLangOpts().CPlusPlus &&
            constant_sized_array_decl->getType()->isConstantArrayType());
-    auto constant_array_typeloc = constant_sized_array_decl->getTypeSourceInfo()
-                                      ->getTypeLoc()
-                                      .getUnqualifiedLoc()
-                                      .getAs<clang::ConstantArrayTypeLoc>();
-    if (constant_array_typeloc.isNull()) {
-      // In some cases a declaration with constant array type does not have
-      // an associated ConstantArrayTypeLoc object. This happens, for example,
-      // when structured bindings are used. For example, consider:
-      //
-      //     auto [x, y] = a;
-      //
-      // This yields a constant-sized array, but there is no explicit array type
-      // declaration. In such cases, no action is required.
-      continue;
+    auto typeloc = constant_sized_array_decl->getTypeSourceInfo()->getTypeLoc();
+
+    // Note: in some cases a declaration with constant array type does not have
+    // an associated ConstantArrayTypeLoc object. This happens, for example,
+    // when structured bindings are used. For example, consider:
+    //
+    //     auto [x, y] = a;
+    //
+    // This yields a constant-sized array, but there is no explicit array type
+    // declaration. In such cases, no action is required.
+    //
+    // We use a loop to descend into nests of arrays.
+    while (
+        auto constant_array_typeloc =
+            typeloc.getUnqualifiedLoc().getAs<clang::ConstantArrayTypeLoc>()) {
+      RewriteExpressionInMainFileToIntegerConstant(
+          constant_array_typeloc.getSizeExpr(),
+          llvm::dyn_cast<clang::ConstantArrayType>(
+              constant_sized_array_decl->getType()->getAsArrayTypeUnsafe())
+              ->getSize()
+              .getLimitedValue());
+      typeloc = constant_array_typeloc.getElementLoc();
     }
-    RewriteExpressionInMainFileToIntegerConstant(
-        constant_array_typeloc.getSizeExpr(),
-        llvm::dyn_cast<clang::ConstantArrayType>(
-            constant_sized_array_decl->getType()->getAsArrayTypeUnsafe())
-            ->getSize()
-            .getLimitedValue());
   }
 
   if (mutation_info_->has_value()) {
