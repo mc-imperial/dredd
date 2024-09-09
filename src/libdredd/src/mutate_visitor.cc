@@ -18,6 +18,7 @@
 #include <cstddef>
 #include <memory>
 #include <optional>
+#include <string>
 
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/Attrs.inc"

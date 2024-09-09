@@ -15,7 +15,9 @@
 #ifndef LIBDREDD_MUTATE_VISITOR_H
 #define LIBDREDD_MUTATE_VISITOR_H
 
+#include <cassert>
 #include <memory>
+#include <optional>
 #include <set>
 #include <unordered_set>
 #include <utility>

@@ -45,6 +45,17 @@
 
 namespace dredd {
 
+namespace {
+const char* const kDreddPreludeStartComment =
+    "// DREDD PRELUDE START\n"
+    "// If this has been inserted at an inappropriate place in a source file,\n"
+    "// declare a placeholder function with the following signature to\n"
+    "// mandate where the prelude should be placed:\n"
+    "//\n"
+    "// void __dredd_prelude_start();\n"
+    "//\n";
+}  // namespace
+
 void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
   const std::string filename =
       ast_context.getSourceManager()
@@ -336,10 +347,10 @@ std::string MutateAstConsumer::GetMutantTrackingDreddPreludeCpp(
 
 std::string MutateAstConsumer::GetDreddPreludeCpp(
     int initial_mutation_id) const {
-  if (only_track_mutant_coverage_) {
-    return GetMutantTrackingDreddPreludeCpp(initial_mutation_id);
-  }
-  return GetRegularDreddPreludeCpp(initial_mutation_id);
+  return kDreddPreludeStartComment +
+         (only_track_mutant_coverage_
+              ? GetMutantTrackingDreddPreludeCpp(initial_mutation_id)
+              : GetRegularDreddPreludeCpp(initial_mutation_id));
 }
 
 std::string MutateAstConsumer::GetRegularDreddPreludeC(
@@ -435,10 +446,10 @@ std::string MutateAstConsumer::GetMutantTrackingDreddPreludeC(
 }
 
 std::string MutateAstConsumer::GetDreddPreludeC(int initial_mutation_id) const {
-  if (only_track_mutant_coverage_) {
-    return GetMutantTrackingDreddPreludeC(initial_mutation_id);
-  }
-  return GetRegularDreddPreludeC(initial_mutation_id);
+  return kDreddPreludeStartComment +
+         (only_track_mutant_coverage_
+              ? GetMutantTrackingDreddPreludeC(initial_mutation_id)
+              : GetRegularDreddPreludeC(initial_mutation_id));
 }
 
 void MutateAstConsumer::ApplyMutations(
