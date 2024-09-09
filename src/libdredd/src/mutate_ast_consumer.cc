@@ -45,6 +45,17 @@
 
 namespace dredd {
 
+namespace {
+const char* const kDreddPreludeStartComment =
+    "// DREDD PRELUDE START\n"
+    "// If this has been inserted at an inappropriate place in a source file,\n"
+    "// declare a placeholder function with the following signature to\n"
+    "// mandate where the prelude should be placed:\n"
+    "//\n"
+    "// void __dredd_prelude_start();\n"
+    "//\n";
+}  // namespace
+
 void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
   const std::string filename =
       ast_context.getSourceManager()
@@ -155,9 +166,11 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
             .getLimitedValue());
   }
 
-  const clang::SourceLocation start_location_of_first_function_in_source_file =
-      visitor_->GetStartLocationOfFirstFunctionInSourceFile();
-  assert(start_location_of_first_function_in_source_file.isValid() &&
+  const clang::SourceLocation dredd_prelude_start_location =
+      visitor_->HasDreddPreludeStartLocation()
+          ? visitor_->GetDreddPreludeStartLocation()
+          : visitor_->GetStartLocationOfFirstFunctionInSourceFile();
+  assert(dredd_prelude_start_location.isValid() &&
          "There is at least one mutation, therefore there must be at least one "
          "function.");
 
@@ -167,8 +180,8 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
   sorted_dredd_declarations.insert(dredd_declarations.begin(),
                                    dredd_declarations.end());
   for (const auto& decl : sorted_dredd_declarations) {
-    const bool rewriter_result = rewriter_.InsertTextBefore(
-        start_location_of_first_function_in_source_file, decl);
+    const bool rewriter_result =
+        rewriter_.InsertTextBefore(dredd_prelude_start_location, decl);
     (void)rewriter_result;  // Keep release-mode compilers happy.
     assert(!rewriter_result && "Rewrite failed.\n");
   }
@@ -178,8 +191,8 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
           ? GetDreddPreludeCpp(initial_mutation_id)
           : GetDreddPreludeC(initial_mutation_id);
 
-  bool rewriter_result = rewriter_.InsertTextBefore(
-      start_location_of_first_function_in_source_file, dredd_prelude);
+  bool rewriter_result =
+      rewriter_.InsertTextBefore(dredd_prelude_start_location, dredd_prelude);
   (void)rewriter_result;  // Keep release-mode compilers happy.
   assert(!rewriter_result && "Rewrite failed.\n");
 
@@ -334,10 +347,10 @@ std::string MutateAstConsumer::GetMutantTrackingDreddPreludeCpp(
 
 std::string MutateAstConsumer::GetDreddPreludeCpp(
     int initial_mutation_id) const {
-  if (only_track_mutant_coverage_) {
-    return GetMutantTrackingDreddPreludeCpp(initial_mutation_id);
-  }
-  return GetRegularDreddPreludeCpp(initial_mutation_id);
+  return kDreddPreludeStartComment +
+         (only_track_mutant_coverage_
+              ? GetMutantTrackingDreddPreludeCpp(initial_mutation_id)
+              : GetRegularDreddPreludeCpp(initial_mutation_id));
 }
 
 std::string MutateAstConsumer::GetRegularDreddPreludeC(
@@ -433,10 +446,10 @@ std::string MutateAstConsumer::GetMutantTrackingDreddPreludeC(
 }
 
 std::string MutateAstConsumer::GetDreddPreludeC(int initial_mutation_id) const {
-  if (only_track_mutant_coverage_) {
-    return GetMutantTrackingDreddPreludeC(initial_mutation_id);
-  }
-  return GetRegularDreddPreludeC(initial_mutation_id);
+  return kDreddPreludeStartComment +
+         (only_track_mutant_coverage_
+              ? GetMutantTrackingDreddPreludeC(initial_mutation_id)
+              : GetRegularDreddPreludeC(initial_mutation_id));
 }
 
 void MutateAstConsumer::ApplyMutations(

@@ -15,7 +15,9 @@
 #ifndef LIBDREDD_MUTATE_VISITOR_H
 #define LIBDREDD_MUTATE_VISITOR_H
 
+#include <cassert>
 #include <memory>
+#include <optional>
 #include <set>
 #include <unordered_set>
 #include <utility>
@@ -108,6 +110,16 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
   [[nodiscard]] const std::vector<const clang::DeclaratorDecl*>&
   GetConstantSizedArraysToRewrite() const {
     return constant_sized_arrays_to_rewrite_;
+  }
+
+  [[nodiscard]] bool HasDreddPreludeStartLocation() const {
+    return dredd_prelude_start_location_.has_value();
+  }
+
+  [[nodiscard]] clang::SourceLocation GetDreddPreludeStartLocation() const {
+    assert(HasDreddPreludeStartLocation() &&
+           "No Dredd prelude starting function was found");
+    return dredd_prelude_start_location_.value();
   }
 
   [[nodiscard]] clang::SourceLocation
@@ -219,8 +231,16 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
   const clang::CompilerInstance* compiler_instance_;
   bool optimise_mutations_;
 
+  // The begin location of a special function that can be written to indicate
+  // where the Dredd prelude should be inserted. This is useful to cater for
+  // cases where the heuristic that Dredd uses to insert its prelude would lead
+  // to compilation problems.
+  std::optional<clang::SourceLocation> dredd_prelude_start_location_;
+
   // Records the start location of the very first function definition in the
-  // source file, before which Dredd's prelude can be placed.
+  // source file. Dredd's prelude will be placed before this if it is a valid
+  // source location, unless a special Dredd prelude starting function has been
+  // declared.
   clang::SourceLocation start_location_of_first_function_in_source_file_;
 
   // Tracks the nest of declarations currently being traversed. Any new Dredd

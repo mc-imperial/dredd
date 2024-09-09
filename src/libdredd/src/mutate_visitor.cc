@@ -18,6 +18,7 @@
 #include <cstddef>
 #include <memory>
 #include <optional>
+#include <string>
 
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/Attrs.inc"
@@ -169,6 +170,12 @@ bool MutateVisitor::TraverseDecl(clang::Decl* decl) {
     return true;
   }
   if (const auto* function_decl = llvm::dyn_cast<clang::FunctionDecl>(decl)) {
+    if (function_decl->getNameAsString() == "__dredd_prelude_start" &&
+        !HasDreddPreludeStartLocation()) {
+      // This is a special function provided by the user to record where the
+      // Dredd prelude should be inserted.
+      dredd_prelude_start_location_ = function_decl->getBeginLoc();
+    }
     if (function_decl->isConstexpr()) {
       // Because Dredd's mutations occur dynamically, they cannot be applied to
       // C++ constexpr functions, which require compile-time evaluation.

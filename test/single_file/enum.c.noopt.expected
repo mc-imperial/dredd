@@ -3,6 +3,13 @@ enum A {
   Y
 };
 
+// DREDD PRELUDE START
+// If this has been inserted at an inappropriate place in a source file,
+// declare a placeholder function with the following signature to
+// mandate where the prelude should be placed:
+//
+// void __dredd_prelude_start();
+//
 #include <inttypes.h>
 #include <stdbool.h>
 #include <stdlib.h>

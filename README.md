@@ -322,7 +322,7 @@ To work on Dredd from CLion, open the `CMakeLists.txt` within the root of the Dr
 
 If the code being mutated contains very large expressions, Dredd's mutation may introduce deep nests of lambda functions.
 In extreme cases these may exceed the maximum bracket nesting level supported by a compiler.
-See (this issue)[https://github.com/mc-imperial/dredd/issues/288] for an example.
+See [this issue](https://github.com/mc-imperial/dredd/issues/288) for an example.
 To work around this, you may need to:
 
 - use a compiler option (such as Clang's `-fbracket-depth=N`) to increase the maximum nesting level, or
@@ -336,6 +336,21 @@ programming practices.
 For example, Dredd wraps `return` statements in conditional blocks (to simulate statement deletion), which will lead to warnings that not all paths through a function return a value.
 If your project treats compiler warnings as errors then you will need to disable
 this feature in your project's build configuration.
+
+### Dredd's prelude is injected at an inappropriate location in a source file
+
+The mutations that Dredd applies rely on a number of function definitions that must be present at a suitable point in each file that Dredd mutates.
+These are referred to as the Dredd *prelude*.
+Dredd uses a heuristic to determine where to place its prelude.
+Sometimes this heuristic may not find an appropriate place, e.g. because of limitations or bugs in Clang's libTooling (see [this issue](https://github.com/mc-imperial/dredd/issues/322) for example).
+
+If you face a problem where Dredd-mutated code does not compile due to the Dredd prelude being injected in a bad place, you can declare a function prototype with void return type and no arguments called `__dredd_prelude_start` somewhere in your source file.
+Dredd will then insert its prelude right before this function prototype (regardless of whether this is a sensible place to insert the prelude).
+The signature of this prototype is:
+
+```
+void __dredd_prelude_start();
+```
 
 ## Planned features
 
