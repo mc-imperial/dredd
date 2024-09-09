@@ -137,6 +137,10 @@ def main():
              str(path_to_original_code),
              "mutant-info.json"]).stdout.decode('utf-8'))
 
+    print("All mutant info:")
+    print(all_mutant_info)
+    print("End all mutant info:")
+    
     for expected_mutation in [EXPECTED_MUTATION_1,
                               EXPECTED_MUTATION_2,
                               EXPECTED_MUTATION_3,
