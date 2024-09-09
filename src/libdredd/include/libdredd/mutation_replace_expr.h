@@ -159,6 +159,14 @@ class MutationReplaceExpr : public Mutation {
       int& mutation_id_offset,
       protobufs::MutationReplaceExpr& protobuf_message);
 
+  // Determines whether the given expression is the child of both an implicit
+  // cast expression and an initializer list expression. In the presence of
+  // templates, such an expression may have more than two parents, because it
+  // may have the initializer list for the non-instantiated template as a
+  // parent, as well as the initializer list for the instantiated template.
+  static bool IsSubjectToImplicitCastInInitializerList(
+      const clang::Expr& expr, clang::ASTContext& ast_context);
+
   const clang::Expr* expr_;
   InfoForSourceRange info_for_source_range_;
 };

@@ -589,16 +589,12 @@ void MutationReplaceExpr::ReplaceExprWithFunctionCall(
              *deparenthesis_expr, ast_context)) {
     deparenthesis_expr = paren_expr;
   }
-  auto parents = ast_context.getParents<clang::Expr>(*deparenthesis_expr);
-  // The expression that occurs in an initializer list and is then subject to an
-  // explicit cast will have at least two parents: the initializer list and the
-  // implicit cast. (This is probably due to implicit casts being treated as
-  // invisible nodes in the AST.)
-  if (ast_context.getLangOpts().CPlusPlus && parents.size() >= 2 &&
-      parents[0].get<clang::InitListExpr>() != nullptr &&
-      parents[1].get<clang::ImplicitCastExpr>() != nullptr) {
+  if (IsSubjectToImplicitCastInInitializerList(*deparenthesis_expr,
+                                               ast_context)) {
     // Add an explicit cast to the result type of the explicit cast.
-    const auto* implicit_cast_expr = parents[1].get<clang::ImplicitCastExpr>();
+    const auto* implicit_cast_expr =
+        GetFirstParentOfType<clang::ImplicitCastExpr>(*deparenthesis_expr,
+                                                      ast_context);
     prefix = "static_cast<" +
              implicit_cast_expr->getType()
                  ->getAs<clang::BuiltinType>()
@@ -877,6 +873,26 @@ bool MutationReplaceExpr::
     }
   }
   return false;
+}
+
+bool MutationReplaceExpr::IsSubjectToImplicitCastInInitializerList(
+    const clang::Expr& expr, clang::ASTContext& ast_context) {
+  // The expression that occurs in an initializer list and is then subject to an
+  // explicit cast will have at least two parents: the initializer list and the
+  // implicit cast. (This is probably due to implicit casts being treated as
+  // invisible nodes in the AST.) In the presence of templates there may in
+  // fact be multiple parents of type InitListExpr - one for the uninstantiated
+  // version of the initializer list, and one for the instantiated version.
+  bool found_implicit_cast_parent = false;
+  bool found_initializer_list_parent = false;
+  for (const auto& parent : ast_context.getParents<clang::Expr>(expr)) {
+    if (parent.get<clang::ImplicitCastExpr>() != nullptr) {
+      found_implicit_cast_parent = true;
+    } else if (parent.get<clang::InitListExpr>() != nullptr) {
+      found_initializer_list_parent = true;
+    }
+  }
+  return found_implicit_cast_parent && found_initializer_list_parent;
 }
 
 }  // namespace dredd
