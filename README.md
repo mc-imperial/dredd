@@ -205,11 +205,15 @@ To clean up the `examples/math` directory, return to the repository root and del
 
 ```
 rm mutant-info.json
-rm -rf build
+rm -rf buildemail@justinhsu.net
 git checkout HEAD .
 cd ../..
 rm -rf examples/math-original
 ```
+
+### Using Dredd to track the mutants that are *reached* during testing
+
+TODO
 
 ## Building Dredd from source
 
