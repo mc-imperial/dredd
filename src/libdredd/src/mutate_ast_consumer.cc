@@ -131,7 +131,9 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
       RewriteExpressionInMainFileToIntegerConstant(
           constant_array_typeloc.getSizeExpr(),
           llvm::dyn_cast<clang::ConstantArrayType>(
-              constant_sized_array_decl->getType()->getAsArrayTypeUnsafe())
+              constant_array_typeloc.getType()
+                  ->getAsArrayTypeUnsafe()
+                  ->getAsArrayTypeUnsafe())
               ->getSize()
               .getLimitedValue());
       typeloc = constant_array_typeloc.getElementLoc();
