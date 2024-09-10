@@ -205,11 +205,52 @@ To clean up the `examples/math` directory, return to the repository root and del
 
 ```
 rm mutant-info.json
-rm -rf build
+rm -rf buildemail@justinhsu.net
 git checkout HEAD .
 cd ../..
 rm -rf examples/math-original
 ```
+
+### Using Dredd to track the mutants that are *reached* during testing
+
+When conducting practical mutation testing experiments using Dredd, it can be useful to know whether or not a test case, or a suite of tests, reaches a given mutant at all.
+That is, does the code associated with the mutant get executed at all during testing?
+If not, then (assuming that the software under test is deterministic) this test or test suite has no chance of killing the mutant.
+
+To cater for this, Dredd can be executed with the `--only-track-mutant-coverage` option.
+With this option, the source code is modified in such a way that:
+
+- the IDs of any mutant that is reached during testing is written to a file, but
+- the semantics of the program are unchanged.
+
+To control the file to which the IDs of reached mutants are written, use the `DREDD_MUTANT_TRACKING_FILE` environment variable.
+
+### Using Dredd for mutation analysis
+
+A deliberate design decision when creating Dredd has been to make the tool simple.
+It applies mutations, and provides facilities for mutants to be enabled via an environment variable, as well as for reached mutants to be tracked.
+Beyond that, it is up to the user of Dredd to write their own scripts to decide how to conduct mutation analysis.
+This is because the details of how this should work vary greatly according to the system under test, being influenced by factors such as the form of test cases.
+
+A typical workflow for using Dredd to determine which mutants are killed by a given set of tests might be the following:
+
+- Check out two copies of the source code of the software under test.
+
+- Mutate the first copy with the `--only-track-mutant-coverage` option, and build this version of the software. Call this the *mutant tracking* version of the software. 
+
+- Mutate the second copy without this option, and build this version of the software. Call this the *mutated* version of the software.
+
+- Initialise *unkilled* to be the set of all mutants. This can be obtained via the `query_mutant_info.py` script, with the `--largest-mutant-id` option as described above.
+
+- Initialise *killed* to be the empty set
+
+- For each test case, repeat the following process:
+
+    - Run the test case against the *mutant tracking* version of the software, setting the `DREDD_MUTANT_TRACKING_FILE` environment variable so that the IDs of the reached mutants are written to some temporary file.
+
+    - For each mutant identified as being reached, if the mutant is in *unkilled*, use the *mutated* version of the software to check whether the test kills the mutant. The `DREDD_ENABLED_MUTATION` can be used to enable the mutant when running a test.
+
+    - If the test does kill the mutant, move the mutant from *unkilled* to *killed*.
 
 ## Building Dredd from source
 
