@@ -47,6 +47,7 @@
 #include "libdredd/mutation_replace_expr.h"
 #include "libdredd/mutation_replace_unary_operator.h"
 #include "libdredd/util.h"
+#include "llvm/ADT/iterator.h"
 #include "llvm/Support/Casting.h"
 
 namespace dredd {
