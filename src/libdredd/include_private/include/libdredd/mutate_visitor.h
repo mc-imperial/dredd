@@ -244,7 +244,8 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
   // reference to a temporary, which is invalid.
   //
   // This function checks for this case.
-  bool IsLvalueCallThatUsesMaterializedTemporary(const clang::Expr& expr) const;
+  static bool IsLvalueCallThatUsesMaterializedTemporary(
+      const clang::Expr& expr) const;
 
   const clang::CompilerInstance* compiler_instance_;
   bool optimise_mutations_;
