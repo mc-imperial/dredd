@@ -228,6 +228,24 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
   // results of) argument-dependent lookup.
   bool MutatingMayAffectArgumentDependentLookup(const clang::Expr& expr) const;
 
+  // A subtle issue can arise when a call expression takes materialized
+  // temporaries as an argument and returns an l-value. It might be that the
+  // returned l-value is a reference to temporary storage. This happens for
+  // instance with an expression like:
+  //
+  //    foo()[0]
+  //
+  // where function foo returns a std::vector. The array operator yields an
+  // element reference, which is a reference into the temporary object
+  // associated with the vector returned by foo.
+  //
+  // We must avoid mutating such calls, because this will end up with a lambda
+  // to provide the call result, and that lambda will end up yielding a
+  // reference to a temporary, which is invalid.
+  //
+  // This function checks for this case.
+  bool IsLvalueCallThatUsesMaterializedTemporary(const clang::Expr& expr) const;
+
   const clang::CompilerInstance* compiler_instance_;
   bool optimise_mutations_;
 
