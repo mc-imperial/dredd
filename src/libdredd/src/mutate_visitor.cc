@@ -837,7 +837,7 @@ bool MutateVisitor::MutatingMayAffectArgumentDependentLookup(
 }
 
 bool MutateVisitor::IsLvalueCallThatUsesMaterializedTemporary(
-    const clang::Expr& expr) const {
+    const clang::Expr& expr) {
   if (!expr.isLValue()) {
     // Not an l-value: not a problem.
     return false;

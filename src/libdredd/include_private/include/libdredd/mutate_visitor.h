@@ -245,7 +245,7 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
   //
   // This function checks for this case.
   static bool IsLvalueCallThatUsesMaterializedTemporary(
-      const clang::Expr& expr) const;
+      const clang::Expr& expr);
 
   const clang::CompilerInstance* compiler_instance_;
   bool optimise_mutations_;
