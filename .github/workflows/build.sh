@@ -214,6 +214,9 @@ case "$(uname)" in
   rm test/single_file/positive_int_as_minus_one.cc
   rm test/single_file/positive_int_as_minus_one.cc.expected
   rm test/single_file/positive_int_as_minus_one.cc.noopt.expected
+  rm test/single_file/vector_returns_temporary.cc
+  rm test/single_file/vector_returns_temporary.cc.expected
+  rm test/single_file/vector_returns_temporary.cc.noopt.expected
 
   # These tests rely on non-constant sized arrays, which the Microsoft compiler
   # does not support.

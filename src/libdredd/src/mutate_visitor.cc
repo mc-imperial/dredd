@@ -47,6 +47,7 @@
 #include "libdredd/mutation_replace_expr.h"
 #include "libdredd/mutation_replace_unary_operator.h"
 #include "libdredd/util.h"
+#include "llvm/ADT/iterator.h"
 #include "llvm/Support/Casting.h"
 
 namespace dredd {
@@ -651,6 +652,13 @@ bool MutateVisitor::VisitExpr(clang::Expr* expr) {
     return true;
   }
 
+  if (IsLvalueCallThatUsesMaterializedTemporary(*expr)) {
+    // Do not mutate a call expression if there is a risk that the value
+    // returned by the call might be a reference to temporary storage arising
+    // from a materialized temporary expression.
+    return true;
+  }
+
   if (auto* unary_operator = llvm::dyn_cast<clang::UnaryOperator>(expr)) {
     HandleUnaryOperator(unary_operator);
   }
@@ -825,6 +833,28 @@ bool MutateVisitor::MutatingMayAffectArgumentDependentLookup(
     }
   }
 
+  return false;
+}
+
+bool MutateVisitor::IsLvalueCallThatUsesMaterializedTemporary(
+    const clang::Expr& expr) {
+  if (!expr.isLValue()) {
+    // Not an l-value: not a problem.
+    return false;
+  }
+  const auto* call_expr = llvm::dyn_cast<clang::CallExpr>(&expr);
+  if (call_expr == nullptr) {
+    // Not a call: not a problem.
+    return false;
+  }
+  // We have a call that yields an l-value. Confirm that none of the call
+  // arguments are materialized temporaries.
+  for (const auto* arg : call_expr->arguments()) {
+    if (llvm::dyn_cast<clang::MaterializeTemporaryExpr>(arg) != nullptr) {
+      // This is the case that we need to avoid.
+      return true;
+    }
+  }
   return false;
 }
 

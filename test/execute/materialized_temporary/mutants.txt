@@ -1,0 +1,2 @@
+0 ; Replace 42 with 0
+1 ; Replace 42 with 1
