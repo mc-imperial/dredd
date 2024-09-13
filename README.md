@@ -393,6 +393,15 @@ The signature of this prototype is:
 void __dredd_prelude_start();
 ```
 
+### Debugging Dredd
+
+If you are surprised at the mutations that Dredd is applying and believe they may be incorrect, the following options may be useful in debugging Dredd:
+
+- `--dump-asts`: this causes Dredd to dump the Clang abstract syntax tree for each translation unit that it processes.
+
+- `--show-ast-node-types`: this causes Dredd to insert, as a source code comment in the mutated code, the name of the type of AST node associated with each statement or expression that is mutated.
+Each comment is placed right after the name of the associated mutator function.
+
 ## Planned features
 
 See [planned feature
