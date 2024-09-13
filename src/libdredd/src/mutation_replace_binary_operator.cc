@@ -31,6 +31,7 @@
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Rewrite/Core/Rewriter.h"
 #include "libdredd/mutation_replace_expr.h"
+#include "libdredd/options.h"
 #include "libdredd/util.h"
 #include "llvm/ADT/StringRef.h"
 
@@ -521,8 +522,8 @@ std::string MutationReplaceBinaryOperator::GenerateMutatorFunction(
 
 protobufs::MutationGroup MutationReplaceBinaryOperator::Apply(
     clang::ASTContext& ast_context, const clang::Preprocessor& preprocessor,
-    bool optimise_mutations, bool only_track_mutant_coverage,
-    int first_mutation_id_in_file, int& mutation_id, clang::Rewriter& rewriter,
+    const Options& options, int first_mutation_id_in_file, int& mutation_id,
+    clang::Rewriter& rewriter,
     std::unordered_set<std::string>& dredd_declarations) const {
   // The protobuf object for the mutation, which will be wrapped in a
   // MutationGroup.
@@ -554,7 +555,7 @@ protobufs::MutationGroup MutationReplaceBinaryOperator::Apply(
   *inner_result.mutable_rhs_snippet() = info_for_rhs_.GetSnippet();
 
   const std::string new_function_name =
-      GetFunctionName(optimise_mutations, ast_context);
+      GetFunctionName(options.GetOptimiseMutations(), ast_context);
   std::string result_type = binary_operator_->getType()
                                 ->getAs<clang::BuiltinType>()
                                 ->getName(ast_context.getPrintingPolicy())
@@ -575,10 +576,10 @@ protobufs::MutationGroup MutationReplaceBinaryOperator::Apply(
     // details). Rather than scattering this special treatment throughout the
     // logic for handling other operators, it is simpler to handle this case
     // separately.
-    HandleCLogicalOperator(preprocessor, new_function_name, result_type,
-                           lhs_type, rhs_type, only_track_mutant_coverage,
-                           first_mutation_id_in_file, mutation_id, rewriter,
-                           dredd_declarations);
+    HandleCLogicalOperator(
+        preprocessor, new_function_name, result_type, lhs_type, rhs_type,
+        options.GetOnlyTrackMutantCoverage(), first_mutation_id_in_file,
+        mutation_id, rewriter, dredd_declarations);
 
     protobufs::MutationGroup result;
     *result.mutable_replace_binary_operator() = inner_result;
@@ -606,12 +607,12 @@ protobufs::MutationGroup MutationReplaceBinaryOperator::Apply(
 
   ReplaceOperator(lhs_type, rhs_type, new_function_name, ast_context,
                   preprocessor, first_mutation_id_in_file, mutation_id,
-                  rewriter);
+                  options.GetShowAstNodeTypes(), rewriter);
 
   const std::string new_function = GenerateMutatorFunction(
       ast_context, new_function_name, result_type, lhs_type, rhs_type,
-      optimise_mutations, only_track_mutant_coverage, mutation_id,
-      inner_result);
+      options.GetOptimiseMutations(), options.GetOnlyTrackMutantCoverage(),
+      mutation_id, inner_result);
   assert(!new_function.empty() && "Unsupported opcode.");
 
   // Add the mutation function to the set of Dredd declarations - there may
@@ -627,7 +628,8 @@ void MutationReplaceBinaryOperator::ReplaceOperator(
     const std::string& lhs_type, const std::string& rhs_type,
     const std::string& new_function_name, clang::ASTContext& ast_context,
     const clang::Preprocessor& preprocessor, int first_mutation_id_in_file,
-    int mutation_id, clang::Rewriter& rewriter) const {
+    int mutation_id, bool show_ast_node_types,
+    clang::Rewriter& rewriter) const {
   const clang::SourceRange lhs_source_range_in_main_file =
       GetSourceRangeInMainFile(preprocessor, *binary_operator_->getLHS());
   assert(lhs_source_range_in_main_file.isValid() && "Invalid source range.");
@@ -661,7 +663,12 @@ void MutationReplaceBinaryOperator::ReplaceOperator(
 
   // These record the text that should be inserted before and after the LHS and
   // RHS operands.
-  std::string lhs_prefix = new_function_name + "(";
+  std::string lhs_prefix = new_function_name;
+  if (show_ast_node_types) {
+    lhs_prefix +=
+        "/*" + std::string(binary_operator_->getStmtClassName()) + "*/";
+  }
+  lhs_prefix += "(";
   std::string lhs_suffix;
   std::string rhs_prefix;
   std::string rhs_suffix;

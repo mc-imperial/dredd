@@ -70,7 +70,7 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
     return;
   }
 
-  if (dump_ast_) {
+  if (options_->GetDumpAsts()) {
     llvm::errs() << "AST:\n";
     ast_context.getTranslationUnitDecl()->dump();
     llvm::errs() << "\n";
@@ -350,7 +350,7 @@ std::string MutateAstConsumer::GetMutantTrackingDreddPreludeCpp(
 std::string MutateAstConsumer::GetDreddPreludeCpp(
     int initial_mutation_id) const {
   return kDreddPreludeStartComment +
-         (only_track_mutant_coverage_
+         (options_->GetOnlyTrackMutantCoverage()
               ? GetMutantTrackingDreddPreludeCpp(initial_mutation_id)
               : GetRegularDreddPreludeCpp(initial_mutation_id));
 }
@@ -449,7 +449,7 @@ std::string MutateAstConsumer::GetMutantTrackingDreddPreludeC(
 
 std::string MutateAstConsumer::GetDreddPreludeC(int initial_mutation_id) const {
   return kDreddPreludeStartComment +
-         (only_track_mutant_coverage_
+         (options_->GetOnlyTrackMutantCoverage()
               ? GetMutantTrackingDreddPreludeC(initial_mutation_id)
               : GetRegularDreddPreludeC(initial_mutation_id));
 }
@@ -478,9 +478,8 @@ void MutateAstConsumer::ApplyMutations(
   for (const auto& mutation : dredd_mutation_tree_node.GetMutations()) {
     const int mutation_id_old = *mutation_id_;
     const auto mutation_group = mutation->Apply(
-        context, compiler_instance_->getPreprocessor(), optimise_mutations_,
-        only_track_mutant_coverage_, initial_mutation_id, *mutation_id_,
-        rewriter_, dredd_declarations);
+        context, compiler_instance_->getPreprocessor(), *options_,
+        initial_mutation_id, *mutation_id_, rewriter_, dredd_declarations);
     if (build_tree && *mutation_id_ > mutation_id_old) {
       // Only add the result of applying the mutation if it had an effect.
       *protobufs_mutation_tree_node.add_mutation_groups() = mutation_group;

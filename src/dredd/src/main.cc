@@ -21,6 +21,7 @@
 #include "clang/Tooling/Tooling.h"
 #include "dredd/protobufs/protobuf_serialization.h"
 #include "libdredd/new_mutate_frontend_action_factory.h"
+#include "libdredd/options.h"
 #include "libdredd/protobufs/dredd_protobufs.h"
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/StringRef.h"
@@ -66,6 +67,13 @@ static llvm::cl::opt<std::string> mutation_info_file(
     llvm::cl::desc(
         ".json file into which mutation information should be written"),
     llvm::cl::cat(mutate_category));
+// NOLINTNEXTLINE
+static llvm::cl::opt<bool> show_ast_node_types(
+    "show-ast-node-types",
+    llvm::cl::desc(
+        "In the mutated code, show (via comments) the type of each AST node to "
+        "which mutation has been applied; useful for debugging"),
+    llvm::cl::cat(mutate_category));
 
 #if defined(__clang__)
 #pragma clang diagnostic pop
@@ -78,17 +86,19 @@ static llvm::cl::opt<std::string> mutation_info_file(
 int main(int argc, const char** argv) {
   llvm::sys::PrintStackTraceOnErrorSignal(argv[0]);
 
-  llvm::Expected<clang::tooling::CommonOptionsParser> options =
+  llvm::Expected<clang::tooling::CommonOptionsParser> command_line_options =
       clang::tooling::CommonOptionsParser::create(argc, argv, mutate_category,
                                                   llvm::cl::OneOrMore);
-  if (!options) {
-    const std::string error_message = toString(options.takeError());
+  if (!command_line_options) {
+    const std::string error_message =
+        toString(command_line_options.takeError());
     llvm::errs() << error_message;
     return 1;
   }
 
-  clang::tooling::ClangTool Tool(options.get().getCompilations(),
-                                 options.get().getSourcePathList());
+  clang::tooling::ClangTool Tool(
+      command_line_options.get().getCompilations(),
+      command_line_options.get().getSourcePathList());
 
   // Used to give each mutation a unique identifier.
   int mutation_id = 0;
@@ -103,10 +113,13 @@ int main(int argc, const char** argv) {
     mutation_info = dredd::protobufs::MutationInfo();
   }
 
+  const dredd::Options dredd_options(!no_mutation_opts, dump_asts,
+                                     only_track_mutant_coverage,
+                                     show_ast_node_types);
+
   const std::unique_ptr<clang::tooling::FrontendActionFactory> factory =
-      dredd::NewMutateFrontendActionFactory(!no_mutation_opts, dump_asts,
-                                            only_track_mutant_coverage,
-                                            mutation_id, mutation_info);
+      dredd::NewMutateFrontendActionFactory(dredd_options, mutation_id,
+                                            mutation_info);
 
   const int return_code = Tool.run(factory.get());
 

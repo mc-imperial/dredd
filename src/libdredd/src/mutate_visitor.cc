@@ -46,6 +46,7 @@
 #include "libdredd/mutation_replace_binary_operator.h"
 #include "libdredd/mutation_replace_expr.h"
 #include "libdredd/mutation_replace_unary_operator.h"
+#include "libdredd/options.h"
 #include "libdredd/util.h"
 #include "llvm/ADT/iterator.h"
 #include "llvm/Support/Casting.h"
@@ -53,9 +54,9 @@
 namespace dredd {
 
 MutateVisitor::MutateVisitor(const clang::CompilerInstance& compiler_instance,
-                             bool optimise_mutations)
+                             const Options& options)
     : compiler_instance_(&compiler_instance),
-      optimise_mutations_(optimise_mutations),
+      options_(&options),
       mutation_tree_root_() {
   mutation_tree_path_.push_back(&mutation_tree_root_);
 }
@@ -417,7 +418,7 @@ void MutateVisitor::HandleUnaryOperator(clang::UnaryOperator* unary_operator) {
     return;
   }
 
-  if (optimise_mutations_) {
+  if (options_->GetOptimiseMutations()) {
     if (unary_operator->getOpcode() == clang::UO_Minus &&
         (MutationReplaceExpr::ExprIsEquivalentToInt(
              *unary_operator->getSubExpr(), 1,
@@ -491,7 +492,7 @@ void MutateVisitor::HandleBinaryOperator(
 
   // There is no useful way to mutate this expression since it is equivalent to
   // replacement with a constant in all cases.
-  if (optimise_mutations_ &&
+  if (options_->GetOptimiseMutations() &&
       (MutationReplaceExpr::ExprIsEquivalentToInt(
            *binary_operator->getLHS(), 0,
            compiler_instance_->getASTContext()) ||
@@ -558,7 +559,7 @@ void MutateVisitor::HandleExpr(clang::Expr* expr) {
     }
   }
 
-  if (optimise_mutations_) {
+  if (options_->GetOptimiseMutations()) {
     // If an expression is the direct child of a cast expression, do not mutate
     // it unless the cast is an l-value to r-value cast. In an l-value to
     // r-value cast it is worth mutating the expression before and after casting
@@ -605,7 +606,7 @@ void MutateVisitor::HandleExpr(clang::Expr* expr) {
 }
 
 bool MutateVisitor::VisitExpr(clang::Expr* expr) {
-  if (optimise_mutations_ &&
+  if (options_->GetOptimiseMutations() &&
       llvm::dyn_cast<clang::ParenExpr>(expr) != nullptr) {
     // There is no value in mutating a parentheses expression.
     return true;
@@ -688,7 +689,7 @@ bool MutateVisitor::TraverseCompoundStmt(clang::CompoundStmt* compound_stmt) {
     while (auto* switch_case = llvm::dyn_cast<clang::SwitchCase>(target_stmt)) {
       target_stmt = switch_case->getSubStmt();
     }
-    if (optimise_mutations_) {
+    if (options_->GetOptimiseMutations()) {
       if (const auto* expr = llvm::dyn_cast<clang::Expr>(target_stmt)) {
         if (!expr->HasSideEffects(compiler_instance_->getASTContext())) {
           // There is no point mutating a side-effect free expression statement.
@@ -716,7 +717,7 @@ bool MutateVisitor::TraverseCompoundStmt(clang::CompoundStmt* compound_stmt) {
       // without risking breaking compilation.
       continue;
     }
-    if (optimise_mutations_ &&
+    if (options_->GetOptimiseMutations() &&
         llvm::dyn_cast<clang::CompoundStmt>(target_stmt) != nullptr) {
       // It is likely redundant to remove a compound statement since each of its
       // sub-statements will be considered for removal anyway.

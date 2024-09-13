@@ -27,6 +27,7 @@
 #include "clang/Lex/Token.h"
 #include "clang/Rewrite/Core/Rewriter.h"
 #include "clang/Tooling/Transformer/SourceCode.h"
+#include "libdredd/options.h"
 #include "libdredd/util.h"
 
 namespace dredd {
@@ -40,11 +41,10 @@ MutationRemoveStmt::MutationRemoveStmt(const clang::Stmt& stmt,
 
 protobufs::MutationGroup MutationRemoveStmt::Apply(
     clang::ASTContext& ast_context, const clang::Preprocessor& preprocessor,
-    bool optimise_mutations, bool only_track_mutant_coverage,
-    int first_mutation_id_in_file, int& mutation_id, clang::Rewriter& rewriter,
+    const Options& options, int first_mutation_id_in_file, int& mutation_id,
+    clang::Rewriter& rewriter,
     std::unordered_set<std::string>& dredd_declarations) const {
   (void)dredd_declarations;  // Unused.
-  (void)optimise_mutations;  // Unused.
 
   // The protobuf object for the mutation, which will be wrapped in a
   // MutationGroup.
@@ -99,18 +99,24 @@ protobufs::MutationGroup MutationRemoveStmt::Apply(
   // |mutation_id|, into a file-local mutation id.
   const int local_mutation_id = mutation_id - first_mutation_id_in_file;
 
-  if (only_track_mutant_coverage) {
+  std::string ast_node_type_comment = "";
+  if (options.GetShowAstNodeTypes()) {
+    ast_node_type_comment =
+        "/*" + std::string(stmt_->getStmtClassName()) + "*/";
+  }
+
+  if (options.GetOnlyTrackMutantCoverage()) {
     const bool rewriter_result = rewriter.InsertTextBefore(
-        source_range.getBegin(), "__dredd_record_covered_mutants(" +
-                                     std::to_string(local_mutation_id) +
-                                     ", 1); ");
+        source_range.getBegin(),
+        "__dredd_record_covered_mutants" + ast_node_type_comment + "(" +
+            std::to_string(local_mutation_id) + ", 1); ");
     assert(!rewriter_result && "Rewrite failed.\n");
     (void)rewriter_result;  // Keep release-mode compilers happy.
   } else {
     bool rewriter_result = rewriter.InsertTextBefore(
-        source_range.getBegin(), "if (!__dredd_enabled_mutation(" +
-                                     std::to_string(local_mutation_id) +
-                                     ")) { ");
+        source_range.getBegin(),
+        "if (!__dredd_enabled_mutation" + ast_node_type_comment + "(" +
+            std::to_string(local_mutation_id) + ")) { ");
     assert(!rewriter_result && "Rewrite failed.\n");
     std::string to_insert = " }";
     if (!is_extended_with_semi && IsNextTokenHash(source_range, preprocessor)) {

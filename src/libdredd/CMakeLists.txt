@@ -39,6 +39,7 @@ add_library(
   include/libdredd/mutation_replace_binary_operator.h
   include/libdredd/mutation_replace_expr.h
   include/libdredd/mutation_replace_unary_operator.h
+  include/libdredd/options.h
   include/libdredd/new_mutate_frontend_action_factory.h
   include/libdredd/protobufs/dredd_protobufs.h
   include/libdredd/util.h

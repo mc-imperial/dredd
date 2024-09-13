@@ -24,6 +24,7 @@
 #include "clang/Frontend/FrontendOptions.h"
 #include "clang/Tooling/Tooling.h"
 #include "libdredd/mutate_ast_consumer.h"
+#include "libdredd/options.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/Support/raw_ostream.h"
 
@@ -31,13 +32,10 @@ namespace dredd {
 
 class MutateFrontendAction : public clang::ASTFrontendAction {
  public:
-  MutateFrontendAction(bool optimise_mutations, bool dump_asts,
-                       bool only_track_mutant_coverage, int& mutation_id,
+  MutateFrontendAction(const Options& options, int& mutation_id,
                        std::optional<protobufs::MutationInfo>& mutation_info,
                        std::set<std::string>& processed_files)
-      : optimise_mutations_(optimise_mutations),
-        dump_asts_(dump_asts),
-        only_track_mutant_coverage_(only_track_mutant_coverage),
+      : options_(&options),
         mutation_id_(&mutation_id),
         mutation_info_(&mutation_info),
         processed_files_(&processed_files) {}
@@ -61,9 +59,7 @@ class MutateFrontendAction : public clang::ASTFrontendAction {
   }
 
  private:
-  bool optimise_mutations_;
-  bool dump_asts_;
-  bool only_track_mutant_coverage_;
+  const Options* options_;
   int* mutation_id_;
   std::optional<protobufs::MutationInfo>* mutation_info_;
   std::set<std::string>* processed_files_;
@@ -71,31 +67,25 @@ class MutateFrontendAction : public clang::ASTFrontendAction {
 
 std::unique_ptr<clang::tooling::FrontendActionFactory>
 NewMutateFrontendActionFactory(
-    bool optimise_mutations, bool dump_asts, bool only_track_mutant_coverage,
-    int& mutation_id, std::optional<protobufs::MutationInfo>& mutation_info) {
+    const Options& options, int& mutation_id,
+    std::optional<protobufs::MutationInfo>& mutation_info) {
   class MutateFrontendActionFactory
       : public clang::tooling::FrontendActionFactory {
    public:
     MutateFrontendActionFactory(
-        bool optimise_mutations, bool dump_asts,
-        bool only_track_mutant_coverage, int& mutation_id,
+        const Options& options, int& mutation_id,
         std::optional<protobufs::MutationInfo>& mutation_info)
-        : optimise_mutations_(optimise_mutations),
-          dump_asts_(dump_asts),
-          only_track_mutant_coverage_(only_track_mutant_coverage),
+        : options_(&options),
           mutation_id_(&mutation_id),
           mutation_info_(&mutation_info) {}
 
     std::unique_ptr<clang::FrontendAction> create() override {
       return std::make_unique<MutateFrontendAction>(
-          optimise_mutations_, dump_asts_, only_track_mutant_coverage_,
-          *mutation_id_, *mutation_info_, processed_files_);
+          *options_, *mutation_id_, *mutation_info_, processed_files_);
     }
 
    private:
-    bool optimise_mutations_;
-    bool dump_asts_;
-    bool only_track_mutant_coverage_;
+    const Options* options_;
     int* mutation_id_;
     std::optional<protobufs::MutationInfo>* mutation_info_;
 
@@ -104,17 +94,15 @@ NewMutateFrontendActionFactory(
     std::set<std::string> processed_files_;
   };
 
-  return std::make_unique<MutateFrontendActionFactory>(
-      optimise_mutations, dump_asts, only_track_mutant_coverage, mutation_id,
-      mutation_info);
+  return std::make_unique<MutateFrontendActionFactory>(options, mutation_id,
+                                                       mutation_info);
 }
 
 std::unique_ptr<clang::ASTConsumer> MutateFrontendAction::CreateASTConsumer(
     clang::CompilerInstance& compiler_instance, llvm::StringRef file) {
   (void)file;  // Unused.
-  return std::make_unique<MutateAstConsumer>(
-      compiler_instance, optimise_mutations_, dump_asts_,
-      only_track_mutant_coverage_, *mutation_id_, *mutation_info_);
+  return std::make_unique<MutateAstConsumer>(compiler_instance, *options_,
+                                             *mutation_id_, *mutation_info_);
 }
 
 }  // namespace dredd

@@ -26,6 +26,7 @@
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Rewrite/Core/Rewriter.h"
 #include "libdredd/mutation.h"
+#include "libdredd/options.h"
 #include "libdredd/protobufs/dredd_protobufs.h"
 #include "libdredd/util.h"
 
@@ -39,8 +40,7 @@ class MutationReplaceBinaryOperator : public Mutation {
 
   protobufs::MutationGroup Apply(
       clang::ASTContext& ast_context, const clang::Preprocessor& preprocessor,
-      bool optimise_mutations, bool only_track_mutant_coverage,
-      int first_mutation_id_in_file, int& mutation_id,
+      const Options& options, int first_mutation_id_in_file, int& mutation_id,
       clang::Rewriter& rewriter,
       std::unordered_set<std::string>& dredd_declarations) const override;
 
@@ -57,6 +57,7 @@ class MutationReplaceBinaryOperator : public Mutation {
                        clang::ASTContext& ast_context,
                        const clang::Preprocessor& preprocessor,
                        int first_mutation_id_in_file, int mutation_id,
+                       bool show_ast_node_types,
                        clang::Rewriter& rewriter) const;
 
   std::string GetFunctionName(bool optimise_mutations,

@@ -21,6 +21,7 @@
 #include "clang/AST/ASTContext.h"
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Rewrite/Core/Rewriter.h"
+#include "libdredd/options.h"
 #include "libdredd/protobufs/dredd_protobufs.h"
 
 namespace dredd {
@@ -50,8 +51,7 @@ class Mutation {
   // avoiding redundant repeat declarations.
   virtual protobufs::MutationGroup Apply(
       clang::ASTContext& ast_context, const clang::Preprocessor& preprocessor,
-      bool optimise_mutations, bool only_track_mutant_coverage,
-      int first_mutation_id_in_file, int& mutation_id,
+      const Options& options, int first_mutation_id_in_file, int& mutation_id,
       clang::Rewriter& rewriter,
       std::unordered_set<std::string>& dredd_declarations) const = 0;
 };

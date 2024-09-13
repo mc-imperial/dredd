@@ -38,13 +38,14 @@
 #include "clang/Frontend/CompilerInstance.h"
 #include "libdredd/mutation.h"
 #include "libdredd/mutation_tree_node.h"
+#include "libdredd/options.h"
 
 namespace dredd {
 
 class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
  public:
   MutateVisitor(const clang::CompilerInstance& compiler_instance,
-                bool optimise_mutations);
+                const Options& options);
 
   bool TraverseDecl(clang::Decl* decl);
 
@@ -248,7 +249,7 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
       const clang::Expr& expr);
 
   const clang::CompilerInstance* compiler_instance_;
-  bool optimise_mutations_;
+  const Options* options_;
 
   // The begin location of a special function that can be written to indicate
   // where the Dredd prelude should be inserted. This is useful to cater for
