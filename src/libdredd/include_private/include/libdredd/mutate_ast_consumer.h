@@ -28,6 +28,7 @@
 #include "clang/Rewrite/Core/Rewriter.h"
 #include "libdredd/mutate_visitor.h"
 #include "libdredd/mutation_tree_node.h"
+#include "libdredd/options.h"
 #include "libdredd/protobufs/dredd_protobufs.h"
 
 namespace dredd {
@@ -35,15 +36,11 @@ namespace dredd {
 class MutateAstConsumer : public clang::ASTConsumer {
  public:
   MutateAstConsumer(const clang::CompilerInstance& compiler_instance,
-                    bool optimise_mutations, bool dump_ast,
-                    bool only_track_mutant_coverage, int& mutation_id,
+                    const Options& options, int& mutation_id,
                     std::optional<protobufs::MutationInfo>& mutation_info)
       : compiler_instance_(&compiler_instance),
-        optimise_mutations_(optimise_mutations),
-        dump_ast_(dump_ast),
-        only_track_mutant_coverage_(only_track_mutant_coverage),
-        visitor_(std::make_unique<MutateVisitor>(compiler_instance,
-                                                 optimise_mutations)),
+        options_(&options),
+        visitor_(std::make_unique<MutateVisitor>(compiler_instance, options)),
         mutation_id_(&mutation_id),
         mutation_info_(&mutation_info) {}
 
@@ -78,14 +75,7 @@ class MutateAstConsumer : public clang::ASTConsumer {
 
   const clang::CompilerInstance* compiler_instance_;
 
-  // True if and only if Dredd's optimisations are enabled.
-  bool optimise_mutations_;
-
-  // True if and only if the AST being consumed should be dumped; useful for
-  // debugging.
-  bool dump_ast_;
-
-  bool only_track_mutant_coverage_;
+  const Options* options_;
 
   std::unique_ptr<MutateVisitor> visitor_;
 

@@ -30,6 +30,7 @@
 #include "clang/Basic/SourceManager.h"
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Rewrite/Core/Rewriter.h"
+#include "libdredd/options.h"
 #include "libdredd/util.h"
 #include "llvm/ADT/APFloat.h"
 #include "llvm/ADT/APSInt.h"
@@ -537,7 +538,8 @@ void MutationReplaceExpr::ApplyCTypeModifiers(const clang::Expr& expr,
 void MutationReplaceExpr::ReplaceExprWithFunctionCall(
     const std::string& new_function_name, const std::string& input_type,
     int local_mutation_id, clang::ASTContext& ast_context,
-    const clang::Preprocessor& preprocessor, clang::Rewriter& rewriter) const {
+    const clang::Preprocessor& preprocessor, bool show_ast_node_types,
+    clang::Rewriter& rewriter) const {
   // Replacement of an expression with a function call is simulated by
   // Inserting suitable text before and after the expression.
   // This is preferable over the (otherwise more intuitive) approach of directly
@@ -546,7 +548,13 @@ void MutationReplaceExpr::ReplaceExprWithFunctionCall(
 
   // These record the text that should be inserted before and after the
   // expression.
-  std::string prefix = new_function_name + "(";
+  std::string prefix = new_function_name;
+
+  if (show_ast_node_types) {
+    prefix += "/*" + std::string(expr_->getStmtClassName()) + "*/";
+  }
+
+  prefix += "(";
   std::string suffix;
 
   if (ast_context.getLangOpts().CPlusPlus &&
@@ -629,8 +637,8 @@ void MutationReplaceExpr::ReplaceExprWithFunctionCall(
 
 protobufs::MutationGroup MutationReplaceExpr::Apply(
     clang::ASTContext& ast_context, const clang::Preprocessor& preprocessor,
-    bool optimise_mutations, bool only_track_mutant_coverage,
-    int first_mutation_id_in_file, int& mutation_id, clang::Rewriter& rewriter,
+    const Options& options, int first_mutation_id_in_file, int& mutation_id,
+    clang::Rewriter& rewriter,
     std::unordered_set<std::string>& dredd_declarations) const {
   // The protobuf object for the mutation, which will be wrapped in a
   // MutationGroup.
@@ -644,7 +652,7 @@ protobufs::MutationGroup MutationReplaceExpr::Apply(
   *inner_result.mutable_snippet() = info_for_source_range_.GetSnippet();
 
   const std::string new_function_name =
-      GetFunctionName(optimise_mutations, ast_context);
+      GetFunctionName(options.GetOptimiseMutations(), ast_context);
   const std::string result_type = expr_->getType()
                                       ->getAs<clang::BuiltinType>()
                                       ->getName(ast_context.getPrintingPolicy())
@@ -664,14 +672,14 @@ protobufs::MutationGroup MutationReplaceExpr::Apply(
   // Replace the expression with a function call.
   // Subtracting |first_mutation_id_in_file| turns the global mutation id,
   // |mutation_id|, into a file-local mutation id.
-  ReplaceExprWithFunctionCall(new_function_name, input_type,
-                              mutation_id - first_mutation_id_in_file,
-                              ast_context, preprocessor, rewriter);
+  ReplaceExprWithFunctionCall(
+      new_function_name, input_type, mutation_id - first_mutation_id_in_file,
+      ast_context, preprocessor, options.GetShowAstNodeTypes(), rewriter);
 
   const std::string new_function = GenerateMutatorFunction(
       ast_context, new_function_name, result_type, input_type,
-      optimise_mutations, only_track_mutant_coverage, mutation_id,
-      inner_result);
+      options.GetOptimiseMutations(), options.GetOnlyTrackMutantCoverage(),
+      mutation_id, inner_result);
   assert(!new_function.empty() && "Unsupported expression.");
 
   dredd_declarations.insert(new_function);

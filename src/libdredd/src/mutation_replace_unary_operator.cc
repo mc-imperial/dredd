@@ -27,6 +27,7 @@
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Rewrite/Core/Rewriter.h"
 #include "libdredd/mutation_replace_expr.h"
+#include "libdredd/options.h"
 #include "libdredd/util.h"
 #include "llvm/ADT/StringRef.h"
 
@@ -337,8 +338,8 @@ void MutationReplaceUnaryOperator::GenerateUnaryOperatorReplacement(
 
 protobufs::MutationGroup MutationReplaceUnaryOperator::Apply(
     clang::ASTContext& ast_context, const clang::Preprocessor& preprocessor,
-    bool optimise_mutations, bool only_track_mutant_coverage,
-    int first_mutation_id_in_file, int& mutation_id, clang::Rewriter& rewriter,
+    const Options& options, int first_mutation_id_in_file, int& mutation_id,
+    clang::Rewriter& rewriter,
     std::unordered_set<std::string>& dredd_declarations) const {
   // The protobuf object for the mutation, which will be wrapped in a
   // MutationGroup.
@@ -367,7 +368,7 @@ protobufs::MutationGroup MutationReplaceUnaryOperator::Apply(
   *inner_result.mutable_operand_snippet() = info_for_sub_expr_.GetSnippet();
 
   const std::string new_function_name =
-      GetFunctionName(optimise_mutations, ast_context);
+      GetFunctionName(options.GetOptimiseMutations(), ast_context);
   std::string result_type = unary_operator_->getType()
                                 ->getAs<clang::BuiltinType>()
                                 ->getName(ast_context.getPrintingPolicy())
@@ -416,7 +417,11 @@ protobufs::MutationGroup MutationReplaceUnaryOperator::Apply(
       "");
 
   // These record the text that should be inserted before and after the operand.
-  std::string prefix = new_function_name + "(";
+  std::string prefix = new_function_name;
+  if (options.GetShowAstNodeTypes()) {
+    prefix += "/*" + std::string(unary_operator_->getStmtClassName()) + "*/";
+  }
+  prefix += "(";
   std::string suffix;
   if (ast_context.getLangOpts().CPlusPlus &&
       unary_operator_->HasSideEffects(ast_context)) {
@@ -450,8 +455,8 @@ protobufs::MutationGroup MutationReplaceUnaryOperator::Apply(
 
   const std::string new_function = GenerateMutatorFunction(
       ast_context, new_function_name, result_type, input_type,
-      optimise_mutations, only_track_mutant_coverage, mutation_id,
-      inner_result);
+      options.GetOptimiseMutations(), options.GetOnlyTrackMutantCoverage(),
+      mutation_id, inner_result);
   assert(!new_function.empty() && "Unsupported opcode.");
 
   dredd_declarations.insert(new_function);

@@ -19,14 +19,15 @@
 #include <optional>
 
 #include "clang/Tooling/Tooling.h"
+#include "libdredd/options.h"
 #include "libdredd/protobufs/dredd_protobufs.h"
 
 namespace dredd {
 
 std::unique_ptr<clang::tooling::FrontendActionFactory>
 NewMutateFrontendActionFactory(
-    bool optimise_mutations, bool dump_asts, bool only_track_mutant_coverage,
-    int& mutation_id, std::optional<protobufs::MutationInfo>& mutation_info);
+    const Options& options, int& mutation_id,
+    std::optional<protobufs::MutationInfo>& mutation_info);
 
 }  // namespace dredd
 
