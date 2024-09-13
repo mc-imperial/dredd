@@ -99,7 +99,7 @@ protobufs::MutationGroup MutationRemoveStmt::Apply(
   // |mutation_id|, into a file-local mutation id.
   const int local_mutation_id = mutation_id - first_mutation_id_in_file;
 
-  std::string ast_node_type_comment = "";
+  std::string ast_node_type_comment;
   if (options.GetShowAstNodeTypes()) {
     ast_node_type_comment =
         "/*" + std::string(stmt_->getStmtClassName()) + "*/";

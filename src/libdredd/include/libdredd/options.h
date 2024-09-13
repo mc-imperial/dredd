@@ -44,19 +44,19 @@ class Options {
 
  private:
   // True if and only if Dredd's optimisations are enabled.
-  const bool optimise_mutations_;
+  bool optimise_mutations_;
 
   // True if and only if the AST being consumed should be dumped; useful for
   // debugging.
-  const bool dump_asts_;
+  bool dump_asts_;
 
   // True if and only if instrumentation should track whether mutants are
   // reached, rather than allowing mutants to be enabled.
-  const bool only_track_mutant_coverage_;
+  bool only_track_mutant_coverage_;
 
   // True if and only if a comment showing the type of each mutated AST node
   // should be emitted. This is useful for debugging.
-  const bool show_ast_node_types_;
+  bool show_ast_node_types_;
 };
 
 }  // namespace dredd
