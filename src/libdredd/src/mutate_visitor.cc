@@ -14,6 +14,8 @@
 
 #include "libdredd/mutate_visitor.h"
 
+#include <llvm/ADT/ArrayRef.h>
+
 #include <cassert>
 #include <cstddef>
 #include <memory>
