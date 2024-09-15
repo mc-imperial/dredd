@@ -157,9 +157,9 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
         static_assert_decl->getAssertExpr(), 1);
   }
 
-  // Rewrite the constant integer arguments of some builtin functions.
+  // Rewrite the constant integer arguments of builtin functions and templates.
   for (const auto* constant_argument_expresion :
-       visitor_->GetConstantBuiltinFunctionArgumentsToRewrite()) {
+       visitor_->GetConstantArgumentsToRewrite()) {
     RewriteExpressionInMainFileToIntegerConstant(
         constant_argument_expresion,
         constant_argument_expresion
