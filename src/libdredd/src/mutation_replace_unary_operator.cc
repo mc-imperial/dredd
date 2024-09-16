@@ -419,7 +419,10 @@ protobufs::MutationGroup MutationReplaceUnaryOperator::Apply(
   // These record the text that should be inserted before and after the operand.
   std::string prefix = new_function_name;
   if (options.GetShowAstNodeTypes()) {
-    prefix += "/*" + std::string(unary_operator_->getStmtClassName()) + "*/";
+    std::stringstream stringstream;
+    stringstream << unary_operator_;
+    prefix += "/*" + std::string(unary_operator_->getStmtClassName()) + " " +
+              stringstream.str() + "*/";
   }
   prefix += "(";
   std::string suffix;

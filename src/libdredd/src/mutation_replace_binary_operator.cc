@@ -665,8 +665,10 @@ void MutationReplaceBinaryOperator::ReplaceOperator(
   // RHS operands.
   std::string lhs_prefix = new_function_name;
   if (show_ast_node_types) {
-    lhs_prefix +=
-        "/*" + std::string(binary_operator_->getStmtClassName()) + "*/";
+    std::stringstream stringstream;
+    stringstream << binary_operator_;
+    lhs_prefix += "/*" + std::string(binary_operator_->getStmtClassName()) +
+                  " " + stringstream.str() + "*/";
   }
   lhs_prefix += "(";
   std::string lhs_suffix;

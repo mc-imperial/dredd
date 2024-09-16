@@ -551,7 +551,10 @@ void MutationReplaceExpr::ReplaceExprWithFunctionCall(
   std::string prefix = new_function_name;
 
   if (show_ast_node_types) {
-    prefix += "/*" + std::string(expr_->getStmtClassName()) + "*/";
+    std::stringstream stringstream;
+    stringstream << expr_;
+    prefix += "/*" + std::string(expr_->getStmtClassName()) + " " +
+              stringstream.str() + "*/";
   }
 
   prefix += "(";
