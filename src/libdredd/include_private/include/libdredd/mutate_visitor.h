@@ -316,7 +316,7 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
   // expressions can be rewritten with the integers to which they evaluate.
   std::vector<const clang::StaticAssertDecl*> static_assertions_to_rewrite_;
 
-  // This records constant integer builtin_functions' and templates' arguments,
+  // This records constant integer builtin functions' and templates' arguments,
   // so that their expressions can be rewritten with the integers to which they
   // evaluate.
   std::vector<const clang::Expr*> constant_arguments_to_rewrite_;
