@@ -653,7 +653,7 @@ bool MutateVisitor::VisitExpr(clang::Expr* expr) {
     return true;
   }
 
-  if (IsLvalueCallThatUsesMaterializedTemporary(*expr)) {
+  if (MayDependOnLifetimeOfMaterializedTemporaryStorage(*expr)) {
     // Do not mutate a call expression if there is a risk that the value
     // returned by the call might be a reference to temporary storage arising
     // from a materialized temporary expression.
@@ -837,25 +837,42 @@ bool MutateVisitor::MutatingMayAffectArgumentDependentLookup(
   return false;
 }
 
-bool MutateVisitor::IsLvalueCallThatUsesMaterializedTemporary(
+bool MutateVisitor::MayDependOnLifetimeOfMaterializedTemporaryStorage(
     const clang::Expr& expr) {
-  if (!expr.isLValue()) {
-    // Not an l-value: not a problem.
-    return false;
+  if (llvm::dyn_cast<clang::MaterializeTemporaryExpr>(&expr) != nullptr) {
+    // Base case: this is a materialized temporary.
+    return true;
   }
-  const auto* call_expr = llvm::dyn_cast<clang::CallExpr>(&expr);
-  if (call_expr == nullptr) {
-    // Not a call: not a problem.
-    return false;
-  }
-  // We have a call that yields an l-value. Confirm that none of the call
-  // arguments are materialized temporaries.
-  for (const auto* arg : call_expr->arguments()) {
-    if (llvm::dyn_cast<clang::MaterializeTemporaryExpr>(arg) != nullptr) {
-      // This is the case that we need to avoid.
-      return true;
+
+  if (const auto* member_expr = llvm::dyn_cast<clang::MemberExpr>(&expr)) {
+    // Consider a member expression whose base expression may depend on the
+    // lifetime of a materialized temporary. If the member expression yields
+    // an lvalue or a pointer, then the member expression itself may depend on
+    // the lifetime of the materialized temporary.
+    if (member_expr->isLValue() || member_expr->getType()->isPointerType()) {
+      return MayDependOnLifetimeOfMaterializedTemporaryStorage(
+          *member_expr->getBase());
     }
+    return false;
   }
+
+  if (const auto* call_expr = llvm::dyn_cast<clang::CallExpr>(&expr)) {
+    // Consider a calll expression that returns an lvalue or pointer. If some
+    // argument to the call depends on the lifetime of a materialized temporary
+    // then the overall call expression may do so too. In practice this occurs
+    // in the context of the [] operator on a std::vector. When the target
+    // vector is a temporary, the [] operator may yield a reference into
+    // storage owned by the temporary.
+    if (call_expr->isLValue() || call_expr->getType()->isPointerType()) {
+      for (const auto* arg : call_expr->arguments()) {
+        if (MayDependOnLifetimeOfMaterializedTemporaryStorage(*arg)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
   return false;
 }
 

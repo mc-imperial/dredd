@@ -229,10 +229,9 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
   // results of) argument-dependent lookup.
   bool MutatingMayAffectArgumentDependentLookup(const clang::Expr& expr) const;
 
-  // A subtle issue can arise when a call expression takes materialized
-  // temporaries as an argument and returns an l-value. It might be that the
-  // returned l-value is a reference to temporary storage. This happens for
-  // instance with an expression like:
+  // A subtle issue can arise when an expression has subexpressions that
+  // correspond to temporary objects. For instance, consider an expression such
+  // as:
   //
   //    foo()[0]
   //
@@ -240,12 +239,15 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
   // element reference, which is a reference into the temporary object
   // associated with the vector returned by foo.
   //
-  // We must avoid mutating such calls, because this will end up with a lambda
-  // to provide the call result, and that lambda will end up yielding a
-  // reference to a temporary, which is invalid.
+  // We must avoid mutating such expressions, because doing so will lead to
+  // the original expression being provided to a mutator function via lambda.
+  // Because the temporary object will no longer be in the same scope as the
+  // reference that ultimately depends on it (in this case the lvalue to rvalue
+  // cast that turns the array reference into a value), the temporary object
+  // will be destroyed too early.
   //
-  // This function checks for this case.
-  static bool IsLvalueCallThatUsesMaterializedTemporary(
+  // This function checks for such cases.
+  static bool MayDependOnLifetimeOfMaterializedTemporaryStorage(
       const clang::Expr& expr);
 
   const clang::CompilerInstance* compiler_instance_;
