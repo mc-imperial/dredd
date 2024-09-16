@@ -22,7 +22,6 @@
 #include <optional>
 #include <string>
 
-#include "clang/AST/ASTContext.h"
 #include "clang/AST/Attrs.inc"
 #include "clang/AST/Decl.h"
 #include "clang/AST/DeclBase.h"
@@ -39,10 +38,8 @@
 #include "clang/Basic/Builtins.h"
 #include "clang/Basic/LangOptions.h"
 #include "clang/Basic/SourceLocation.h"
-#include "clang/Basic/SourceManager.h"
 #include "clang/Basic/TypeTraits.h"
 #include "clang/Frontend/CompilerInstance.h"
-#include "clang/Tooling/Transformer/SourceCode.h"
 #include "libdredd/mutation.h"
 #include "libdredd/mutation_remove_stmt.h"
 #include "libdredd/mutation_replace_binary_operator.h"
@@ -70,45 +67,6 @@ bool MutateVisitor::IsTypeSupported(const clang::QualType qual_type) {
   const auto* builtin_type = qual_type->getAs<clang::BuiltinType>();
   return builtin_type != nullptr &&
          (builtin_type->isInteger() || builtin_type->isFloatingPoint());
-}
-
-void MutateVisitor::UpdateStartLocationOfFirstFunctionInSourceFile() {
-  assert(IsInFunction() &&
-         "A mutation should only be created for code that is in a function.");
-  const auto& source_manager =
-      compiler_instance_->getASTContext().getSourceManager();
-
-  const auto& outermost_enclosing_decl = *enclosing_decls_[0];
-
-  // The outermost enclosing declaration's regular source range may not include
-  // features such as attributes, like [[nodiscard]]. The "associated range"
-  // provides a range that includes these.
-  auto associated_range = clang::tooling::getAssociatedRange(
-      outermost_enclosing_decl, compiler_instance_->getASTContext());
-  if (associated_range.isInvalid()) {
-    // An example why the associated range may be invalid: instead of using an
-    // explicit [[nodiscard]] attribute, this has been defined by a preprocessor
-    // macro, NODISCARD, and the macro has been used. In such cases, if no start
-    // location of a first function has been recorded, we fall back to the
-    // beginning of the source file.
-    if (start_location_of_first_function_in_source_file_.isInvalid()) {
-      start_location_of_first_function_in_source_file_ =
-          source_manager.translateLineCol(source_manager.getMainFileID(), 1, 1);
-      assert(
-          start_location_of_first_function_in_source_file_.isValid() &&
-          "There is at least one mutation, therefore the file must have some "
-          "content.");
-    }
-    return;
-  }
-  const clang::BeforeThanCompare<clang::SourceLocation> comparator(
-      compiler_instance_->getSourceManager());
-  if (start_location_of_first_function_in_source_file_.isInvalid() ||
-      comparator(associated_range.getBegin(),
-                 start_location_of_first_function_in_source_file_)) {
-    start_location_of_first_function_in_source_file_ =
-        associated_range.getBegin();
-  }
 }
 
 bool MutateVisitor::IsInFunction() {
@@ -762,7 +720,6 @@ bool MutateVisitor::TraverseCompoundStmt(clang::CompoundStmt* compound_stmt) {
 }
 
 void MutateVisitor::AddMutation(std::unique_ptr<Mutation> mutation) {
-  UpdateStartLocationOfFirstFunctionInSourceFile();
   mutation_tree_path_.back()->AddMutation(std::move(mutation));
 }
 

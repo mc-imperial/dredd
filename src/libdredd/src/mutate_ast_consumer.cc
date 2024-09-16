@@ -168,10 +168,13 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
             .getLimitedValue());
   }
 
+  auto& source_manager = ast_context.getSourceManager();
+  const clang::SourceLocation start_of_source_file =
+      source_manager.translateLineCol(source_manager.getMainFileID(), 1, 1);
   const clang::SourceLocation dredd_prelude_start_location =
       visitor_->HasDreddPreludeStartLocation()
           ? visitor_->GetDreddPreludeStartLocation()
-          : visitor_->GetStartLocationOfFirstFunctionInSourceFile();
+          : start_of_source_file;
   assert(dredd_prelude_start_location.isValid() &&
          "There is at least one mutation, therefore there must be at least one "
          "function.");
