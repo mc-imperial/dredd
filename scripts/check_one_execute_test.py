@@ -53,7 +53,10 @@ for line in open(test_directory / 'mutants.txt', 'r').readlines():
     expected_mutant_outputs.add(component)
 
 # Mutate the program using Dredd.
-cmd = [DREDD_INSTALLED_EXECUTABLE, '--mutation-info-file', 'temp.json', f'tomutate.{extension}', '--', '--std=c++20']
+cmd = [DREDD_INSTALLED_EXECUTABLE, '--mutation-info-file', 'temp.json', f'tomutate.{extension}', '--']
+if test_is_cxx:
+    # This supports execute tests that use C++ 20 features.
+    cmd.append('--std=c++20')
 dredd_result = subprocess.run(cmd)
 if dredd_result.returncode != 0:
     print("Dredd failed.")
