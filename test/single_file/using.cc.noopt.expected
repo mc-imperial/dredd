@@ -1,5 +1,3 @@
-using blah = int;
-
 // DREDD PRELUDE START
 // If this has been inserted at an inappropriate place in a source file,
 // declare a placeholder function with the following signature to
@@ -72,6 +70,8 @@ static int __dredd_replace_binary_operator_Add_arg1_int_arg2_int(int arg1, int a
   if (__dredd_enabled_mutation(local_mutation_id + 5)) return arg2;
   return arg1 + arg2;
 }
+
+using blah = int;
 
 void foo() {
   if (!__dredd_enabled_mutation(24)) { __dredd_replace_expr_int(__dredd_replace_binary_operator_Add_arg1_int_arg2_int(__dredd_replace_expr_int(1, 0) , __dredd_replace_expr_int(2, 6), 12), 18); }

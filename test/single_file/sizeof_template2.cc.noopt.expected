@@ -1,5 +1,3 @@
-bool f(int);
-
 // DREDD PRELUDE START
 // If this has been inserted at an inappropriate place in a source file,
 // declare a placeholder function with the following signature to
@@ -78,6 +76,8 @@ static bool __dredd_replace_expr_bool(std::function<bool()> arg, int local_mutat
   if (__dredd_enabled_mutation(local_mutation_id + 2)) return false;
   return arg();
 }
+
+bool f(int);
 
 template <typename a> struct b {
   bool c() { if (!__dredd_enabled_mutation(13)) { return __dredd_replace_expr_bool([&]() -> bool { return static_cast<bool>(f(__dredd_replace_expr_int(__dredd_replace_expr_unsigned_long(sizeof(a), 0), 4))); }, 10); } }
