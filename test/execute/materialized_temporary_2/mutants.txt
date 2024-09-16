@@ -1,0 +1,3 @@
+0 ; Replace 42 or overall expression with 0
+1 ; Replace 42 or overall expression with 1
+-1 ; Replace overall expression with -1
