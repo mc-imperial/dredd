@@ -885,9 +885,7 @@ void MutateVisitor::SaveConstantTemplateArgumentForRewrite(
     switch (template_argument.getKind()) {
       case clang::TemplateArgument::Expression:
         // Template Argument is Expression
-        if (const auto* expr = template_argument.getAsExpr()) {
-          constant_arguments_to_rewrite_.push_back(expr);
-        }
+        constant_arguments_to_rewrite_.push_back(template_argument.getAsExpr());
         break;
       case clang::TemplateArgument::Type:
         // Template Argument is Type, which could be a template specialisation.
