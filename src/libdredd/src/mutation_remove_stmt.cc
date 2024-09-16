@@ -15,6 +15,7 @@
 #include "libdredd/mutation_remove_stmt.h"
 
 #include <cassert>
+#include <sstream>
 #include <string>
 #include <unordered_set>
 
@@ -101,8 +102,10 @@ protobufs::MutationGroup MutationRemoveStmt::Apply(
 
   std::string ast_node_type_comment;
   if (options.GetShowAstNodeTypes()) {
-    ast_node_type_comment =
-        "/*" + std::string(stmt_->getStmtClassName()) + "*/";
+    std::stringstream stringstream;
+    stringstream << stmt_;
+    ast_node_type_comment = "/*" + std::string(stmt_->getStmtClassName()) +
+                            " " + stringstream.str() + "*/";
   }
 
   if (options.GetOnlyTrackMutantCoverage()) {
