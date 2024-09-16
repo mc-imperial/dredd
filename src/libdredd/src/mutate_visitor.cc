@@ -14,6 +14,8 @@
 
 #include "libdredd/mutate_visitor.h"
 
+#include <llvm/ADT/ArrayRef.h>
+
 #include <cassert>
 #include <cstddef>
 #include <memory>
@@ -184,33 +186,6 @@ bool MutateVisitor::TraverseDecl(clang::Decl* decl) {
       return true;
     }
   }
-  if (const auto* var_decl = llvm::dyn_cast<clang::VarDecl>(decl)) {
-    if (compiler_instance_->getLangOpts().CPlusPlus &&
-        var_decl->getType()->isConstantArrayType()) {
-      // We have a constant-sized C++ array. Some C++ compilers complain if
-      // components of the size expression are not compile-time constants. Other
-      // compilers are OK with this unless the array is also initialized. To
-      // allow the constant declarations that occur in a size expression to have
-      // their initial values mutated (because they may be used elsewhere), but
-      // to avoid compilation errors, we record the arrays in question so that
-      // later their size expressions can be replaced with the value to which
-      // the size expression would normally evaluate.
-      constant_sized_arrays_to_rewrite_.push_back(var_decl);
-    }
-
-    if (var_decl->isConstexpr() || var_decl->hasAttr<clang::ConstInitAttr>()) {
-      // Because Dredd's mutations occur dynamically, they cannot be applied to
-      // C++ constexprs or variables that require constant initialization as
-      // these both require compile-time evaluation.
-      return true;
-    }
-    if (!compiler_instance_->getLangOpts().CPlusPlus &&
-        var_decl->isStaticLocal()) {
-      // In C, static local variables can only be initialized using constant
-      // expressions, which require compile-time evaluation.
-      return true;
-    }
-  }
 
   // Besides variable declaration, constant-sized C++ arrays can occur inside a
   // struct as a field. As in the case of variable declarations, we record the
@@ -225,6 +200,51 @@ bool MutateVisitor::TraverseDecl(clang::Decl* decl) {
   enclosing_decls_.push_back(decl);
   // Consider the declaration for mutation.
   RecursiveASTVisitor::TraverseDecl(decl);
+  enclosing_decls_.pop_back();
+
+  return true;
+}
+
+bool MutateVisitor::TraverseVarDecl(clang::VarDecl* var_decl) {
+  if (const auto* template_specialization_type =
+          var_decl->getType()->getAs<clang::TemplateSpecializationType>()) {
+    // We have a template specialization type where the arguments could be
+    // constant expressions. Compilers may issue a compilation error if a
+    // template argument is not a compile-time constant. To allow the constant
+    // expressions used as template arguments to have their initial values
+    // modified, we record the template argument expression so that it can be
+    // replaced with the value it would normally evaluate to. This has to be
+    // done recursively to handle nested template specializations.
+    SaveConstantTemplateArgumentForRewrite(template_specialization_type);
+  }
+  if (compiler_instance_->getLangOpts().CPlusPlus &&
+      var_decl->getType()->isConstantArrayType()) {
+    // We have a constant-sized C++ array. Some C++ compilers complain if
+    // components of the size expression are not compile-time constants. Other
+    // compilers are OK with this unless the array is also initialized. To
+    // allow the constant declarations that occur in a size expression to have
+    // their initial values mutated (because they may be used elsewhere), but
+    // to avoid compilation errors, we record the arrays in question so that
+    // later their size expressions can be replaced with the value to which
+    // the size expression would normally evaluate.
+    constant_sized_arrays_to_rewrite_.push_back(var_decl);
+  }
+  if (var_decl->isConstexpr() || var_decl->hasAttr<clang::ConstInitAttr>()) {
+    // Because Dredd's mutations occur dynamically, they cannot be applied to
+    // C++ constexprs or variables that require constant initialization as
+    // these both require compile-time evaluation.
+    return true;
+  }
+  if (!compiler_instance_->getLangOpts().CPlusPlus &&
+      var_decl->isStaticLocal()) {
+    // In C, static local variables can only be initialized using constant
+    // expressions, which require compile-time evaluation.
+    return true;
+  }
+
+  enclosing_decls_.push_back(var_decl);
+  // Consider the declaration for mutation.
+  RecursiveASTVisitor::TraverseVarDecl(var_decl);
   enclosing_decls_.pop_back();
 
   return true;
@@ -294,8 +314,7 @@ bool MutateVisitor::TraverseStmt(clang::Stmt* stmt) {
     if (call_expr->getBuiltinCallee() ==
         clang::Builtin::BI__builtin_frame_address) {
       // callee is `__builtin_frame_address()`
-      constant_builtin_function_arguments_to_rewrite_.push_back(
-          call_expr->getArg(0));
+      constant_arguments_to_rewrite_.push_back(call_expr->getArg(0));
       return true;
     }
   }
@@ -874,6 +893,33 @@ bool MutateVisitor::MayDependOnLifetimeOfMaterializedTemporaryStorage(
   }
 
   return false;
+}
+
+void MutateVisitor::SaveConstantTemplateArgumentForRewrite(
+    const clang::TemplateSpecializationType* template_specialization_type) {
+  for (auto template_argument :
+       template_specialization_type->template_arguments()) {
+    switch (template_argument.getKind()) {
+      case clang::TemplateArgument::Expression:
+        // Template Argument is Expression
+        constant_arguments_to_rewrite_.push_back(template_argument.getAsExpr());
+        break;
+      case clang::TemplateArgument::Type:
+        // Template Argument is Type, which could be a template specialisation.
+        if (const auto* nested_template_specialization_type =
+                template_argument.getAsType()
+                    ->getAs<clang::TemplateSpecializationType>()) {
+          SaveConstantTemplateArgumentForRewrite(
+              nested_template_specialization_type);
+        }
+        break;
+      default:
+        // We do not check for `clang::TemplateArgument::Integral`, as it is
+        // always represented as `TemplateArgument::Expression` in
+        // `TemplateSpecializationType`,
+        break;
+    }
+  }
 }
 
 }  // namespace dredd

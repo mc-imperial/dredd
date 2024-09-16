@@ -49,6 +49,8 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
 
   bool TraverseDecl(clang::Decl* decl);
 
+  bool TraverseVarDecl(clang::VarDecl* decl);
+
   bool TraverseStmt(clang::Stmt* stmt);
 
   // Overridden in order to avoid visiting the expressions associated with case
@@ -135,10 +137,10 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
     return static_assertions_to_rewrite_;
   }
 
-  // Yields the constant function arguments which need to be rewritten.
+  // Yields the constant arguments which need to be rewritten.
   [[nodiscard]] const std::vector<const clang::Expr*>&
-  GetConstantBuiltinFunctionArgumentsToRewrite() const {
-    return constant_builtin_function_arguments_to_rewrite_;
+  GetConstantArgumentsToRewrite() const {
+    return constant_arguments_to_rewrite_;
   }
 
  private:
@@ -250,6 +252,11 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
   static bool MayDependOnLifetimeOfMaterializedTemporaryStorage(
       const clang::Expr& expr);
 
+  // Recursively saves constant template arguments that need to be rewritten
+  // later to avoid compilation errors.
+  void SaveConstantTemplateArgumentForRewrite(
+      const clang::TemplateSpecializationType* template_specialization_type);
+
   const clang::CompilerInstance* compiler_instance_;
   const Options* options_;
 
@@ -311,10 +318,10 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
   // expressions can be rewritten with the integers to which they evaluate.
   std::vector<const clang::StaticAssertDecl*> static_assertions_to_rewrite_;
 
-  // This records constant integer function arguments, so that their expressions
-  // can be rewritten with the integers to which they evaluate.
-  std::vector<const clang::Expr*>
-      constant_builtin_function_arguments_to_rewrite_;
+  // This records constant integer builtin functions' and templates' arguments,
+  // so that their expressions can be rewritten with the integers to which they
+  // evaluate.
+  std::vector<const clang::Expr*> constant_arguments_to_rewrite_;
 };
 
 }  // namespace dredd
