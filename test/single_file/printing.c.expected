@@ -1,5 +1,3 @@
-#include <stdio.h>
-
 // DREDD PRELUDE START
 // If this has been inserted at an inappropriate place in a source file,
 // declare a placeholder function with the following signature to
@@ -48,6 +46,8 @@ static bool __dredd_enabled_mutation(int local_mutation_id) {
   }
   return enabled_bitset[local_mutation_id / 64] & ((uint64_t) 1 << (local_mutation_id % 64));
 }
+
+#include <stdio.h>
 
 int main() {
   if (!__dredd_enabled_mutation(0)) { printf("%s\n", "A\n"); }

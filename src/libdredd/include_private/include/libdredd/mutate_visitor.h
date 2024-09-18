@@ -125,11 +125,6 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
     return dredd_prelude_start_location_.value();
   }
 
-  [[nodiscard]] clang::SourceLocation
-  GetStartLocationOfFirstFunctionInSourceFile() const {
-    return start_location_of_first_function_in_source_file_;
-  }
-
   // Yields the static assertions, whose expression need to be
   // rewritten.
   [[nodiscard]] const std::vector<const clang::StaticAssertDecl*>&
@@ -209,10 +204,6 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
   // this special case, so that it can be ignored.
   bool IsConversionOfEnumToConstructor(const clang::Expr& expr) const;
 
-  // It is safe to put Dredd's prelude before the first function we encounter in
-  // a file as Dredd only makes source code modifications inside functions.
-  void UpdateStartLocationOfFirstFunctionInSourceFile();
-
   // Adds details of a mutation that can be applied, and performs associated
   // bookkeeping.
   void AddMutation(std::unique_ptr<Mutation> mutation);
@@ -265,12 +256,6 @@ class MutateVisitor : public clang::RecursiveASTVisitor<MutateVisitor> {
   // cases where the heuristic that Dredd uses to insert its prelude would lead
   // to compilation problems.
   std::optional<clang::SourceLocation> dredd_prelude_start_location_;
-
-  // Records the start location of the very first function definition in the
-  // source file. Dredd's prelude will be placed before this if it is a valid
-  // source location, unless a special Dredd prelude starting function has been
-  // declared.
-  clang::SourceLocation start_location_of_first_function_in_source_file_;
 
   // Tracks the nest of declarations currently being traversed. Any new Dredd
   // functions will be put before the start of the current nest, which avoids

@@ -382,8 +382,8 @@ this feature in your project's build configuration.
 
 The mutations that Dredd applies rely on a number of function definitions that must be present at a suitable point in each file that Dredd mutates.
 These are referred to as the Dredd *prelude*.
-Dredd uses a heuristic to determine where to place its prelude.
-Sometimes this heuristic may not find an appropriate place, e.g. because of limitations or bugs in Clang's libTooling (see [this issue](https://github.com/mc-imperial/dredd/issues/322) for example).
+Dredd inserts its prelude at the beginning of each mutated source file.
+Sometimes this heuristic may not be appropriate, e.g. because a feature test macro must be defined before including any header files (see [this issue](https://github.com/mc-imperial/dredd/issues/215) for example).
 
 If you face a problem where Dredd-mutated code does not compile due to the Dredd prelude being injected in a bad place, you can declare a function prototype with void return type and no arguments called `__dredd_prelude_start` somewhere in your source file.
 Dredd will then insert its prelude right before this function prototype (regardless of whether this is a sensible place to insert the prelude).

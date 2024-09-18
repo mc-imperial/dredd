@@ -1,8 +1,3 @@
-class foo {
-public:
-  foo(int x) {}
-};
-
 // DREDD PRELUDE START
 // If this has been inserted at an inappropriate place in a source file,
 // declare a placeholder function with the following signature to
@@ -63,6 +58,11 @@ static int __dredd_replace_expr_int_constant(int arg, int local_mutation_id) {
   if (__dredd_enabled_mutation(local_mutation_id + 4)) return -1;
   return arg;
 }
+
+class foo {
+public:
+  foo(int x) {}
+};
 
 int main() { 
   if (!__dredd_enabled_mutation(10)) { new foo[2]{__dredd_replace_expr_int_constant(4, 0), __dredd_replace_expr_int_constant(5, 5)}; } 

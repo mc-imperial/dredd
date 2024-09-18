@@ -1,5 +1,3 @@
-#include <stdbool.h>
-
 // DREDD PRELUDE START
 // If this has been inserted at an inappropriate place in a source file,
 // declare a placeholder function with the following signature to
@@ -76,6 +74,8 @@ static int __dredd_replace_binary_operator_LAnd_arg1_int_arg2_int_lhs(int arg, i
   if (__dredd_enabled_mutation(local_mutation_id + 2)) return 1;
   return arg;
 }
+#include <stdbool.h>
+
 int main() {
   int x = __dredd_replace_expr_int(__dredd_replace_binary_operator_LAnd_arg1_int_arg2_int_outer(__dredd_replace_binary_operator_LAnd_arg1_int_arg2_int_lhs(__dredd_replace_expr_int(1, 0), 12) && __dredd_replace_binary_operator_LAnd_arg1_int_arg2_int_rhs(__dredd_replace_expr_int(0, 6), 12), 12), 15);
 }

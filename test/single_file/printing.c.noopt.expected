@@ -1,5 +1,3 @@
-#include <stdio.h>
-
 // DREDD PRELUDE START
 // If this has been inserted at an inappropriate place in a source file,
 // declare a placeholder function with the following signature to
@@ -59,6 +57,8 @@ static int __dredd_replace_expr_int(int arg, int local_mutation_id) {
   if (__dredd_enabled_mutation(local_mutation_id + 5)) return -1;
   return arg;
 }
+
+#include <stdio.h>
 
 int main() {
   if (!__dredd_enabled_mutation(6)) { __dredd_replace_expr_int(printf("%s\n", "A\n"), 0); }
