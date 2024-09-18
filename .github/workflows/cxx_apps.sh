@@ -94,7 +94,7 @@ pushd examples/math
   ${DREDD_EXECUTABLE} -p build --mutation-info-file mutation-info.json math/src/*.cc
   ./build/mathtest/mathtest
   NUM_MUTANTS=`python3 ${DREDD_ROOT}/scripts/query_mutant_info.py mutation-info.json --largest-mutant-id`
-  EXPECTED_NUM_MUTANTS=1132
+  EXPECTED_NUM_MUTANTS=1119
   if [ ${NUM_MUTANTS} -ne ${EXPECTED_NUM_MUTANTS} ]
   then
      echo "Found ${NUM_MUTANTS} mutants when mutating the math library source code. Expected ${EXPECTED_NUM_MUTANTS}. If Dredd changed recently, the expected value may just need to be updated, if it still looks sensible. Otherwise, there is likely a problem."
@@ -157,7 +157,7 @@ pushd SPIRV-Tools
   ./build/test/val/test_val_fghijklmnop
   ./build/test/val/test_val_rstuvw
   NUM_MUTANTS=`python3 ${DREDD_ROOT}/scripts/query_mutant_info.py mutation-info.json --largest-mutant-id`
-  EXPECTED_NUM_MUTANTS=68467
+  EXPECTED_NUM_MUTANTS=68191
   if [ ${NUM_MUTANTS} -ne ${EXPECTED_NUM_MUTANTS} ]
   then
      echo "Found ${NUM_MUTANTS} mutants when mutating the SPIR-V validator source code. Expected ${EXPECTED_NUM_MUTANTS}. If Dredd changed recently, the expected value may just need to be updated, if it still looks sensible. Otherwise, there is likely a problem."
@@ -183,7 +183,7 @@ pushd llvm-project
   ${DREDD_EXECUTABLE} --mutation-info-file mutation-info.json -p "${DREDD_ROOT}/llvm-project/build" "${FILES[@]}"
   cmake --build build --target LLVMInstCombine
   NUM_MUTANTS=`python3 ${DREDD_ROOT}/scripts/query_mutant_info.py mutation-info.json --largest-mutant-id`
-  EXPECTED_NUM_MUTANTS=98033
+  EXPECTED_NUM_MUTANTS=93081
   if [ ${NUM_MUTANTS} -ne ${EXPECTED_NUM_MUTANTS} ]
   then
      echo "Found ${NUM_MUTANTS} mutants when mutating the LLVM source code. Expected ${EXPECTED_NUM_MUTANTS}. If Dredd changed recently, the expected value may just need to be updated, if it still looks sensible. Otherwise, there is likely a problem."

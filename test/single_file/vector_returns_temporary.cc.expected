@@ -34,7 +34,7 @@ static bool __dredd_enabled_mutation(int local_mutation_id) {
         if (!token.empty()) {
           int value = std::stoi(token);
           int local_value = value - 0;
-          if (local_value >= 0 && local_value < 14) {
+          if (local_value >= 0 && local_value < 10) {
             enabled_bitset[local_value / 64] |= (static_cast<uint64_t>(1) << (local_value % 64));
             some_mutation_enabled = true;
           }
@@ -81,5 +81,5 @@ std::vector<unsigned int> bar() {
 }
 
 int main() {
-    unsigned foo = __dredd_replace_expr_unsigned_int([&]() -> unsigned int { return static_cast<unsigned int>(__dredd_replace_expr_unsigned_int([&]() -> unsigned int { return static_cast<unsigned int>(bar()[__dredd_replace_expr_unsigned_long_zero(0, 4)]); }, 6)); }, 10);
+    unsigned foo = __dredd_replace_expr_unsigned_int([&]() -> unsigned int { return static_cast<unsigned int>(bar()[__dredd_replace_expr_unsigned_long_zero(0, 4)]); }, 6);
 }

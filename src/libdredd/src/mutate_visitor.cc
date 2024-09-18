@@ -631,6 +631,15 @@ bool MutateVisitor::VisitExpr(clang::Expr* expr) {
     return true;
   }
 
+  if (options_->GetOptimiseMutations() &&
+      llvm::dyn_cast<clang::ExprWithCleanups>(expr) != nullptr) {
+    // This special AST node represents an expression with certain associated
+    // cleanup actions. The node's subexpression captures the actual syntactic
+    // expression, and the ExprWithCleanups has the same type as its
+    // subexpression, so there is no value in mutating both of them.
+    return true;
+  }
+
   if (!IsInFunction()) {
     // Only consider mutating expressions that occur inside functions.
     return true;
