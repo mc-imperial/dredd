@@ -108,37 +108,7 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
     return;
   }
 
-  // Rewrite the size expressions of constant-sized arrays as needed.
-  for (const auto& constant_sized_array_decl :
-       visitor_->GetConstantSizedArraysToRewrite()) {
-    assert(compiler_instance_->getLangOpts().CPlusPlus &&
-           constant_sized_array_decl->getType()->isConstantArrayType());
-    auto typeloc = constant_sized_array_decl->getTypeSourceInfo()->getTypeLoc();
-
-    // Note: in some cases a declaration with constant array type does not have
-    // an associated ConstantArrayTypeLoc object. This happens, for example,
-    // when structured bindings are used. For example, consider:
-    //
-    //     auto [x, y] = a;
-    //
-    // This yields a constant-sized array, but there is no explicit array type
-    // declaration. In such cases, no action is required.
-    //
-    // We use a loop to descend into nests of arrays.
-    while (
-        auto constant_array_typeloc =
-            typeloc.getUnqualifiedLoc().getAs<clang::ConstantArrayTypeLoc>()) {
-      RewriteExpressionInMainFileToIntegerConstant(
-          constant_array_typeloc.getSizeExpr(),
-          llvm::dyn_cast<clang::ConstantArrayType>(
-              constant_array_typeloc.getType()
-                  ->getAsArrayTypeUnsafe()
-                  ->getAsArrayTypeUnsafe())
-              ->getSize()
-              .getLimitedValue());
-      typeloc = constant_array_typeloc.getElementLoc();
-    }
-  }
+  RewriteExpressionsInMainFile();
 
   if (mutation_info_->has_value()) {
     mutation_info_for_file.set_filename(
@@ -147,25 +117,6 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
             ->getName()
             .str());
     *mutation_info_->value().add_info_for_files() = mutation_info_for_file;
-  }
-  // Rewrite the argument of static assertion as needed to `1`.
-  // There's no need to evaluate the actual expression, as any value other than
-  // 1 would have caused the front-end used by Dredd to fail.
-  for (const auto& static_assert_decl :
-       visitor_->GetStaticAssertionsToRewrite()) {
-    RewriteExpressionInMainFileToIntegerConstant(
-        static_assert_decl->getAssertExpr(), 1);
-  }
-
-  // Rewrite the constant integer arguments of builtin functions and templates.
-  for (const auto* constant_argument_expresion :
-       visitor_->GetConstantArgumentsToRewrite()) {
-    RewriteExpressionInMainFileToIntegerConstant(
-        constant_argument_expresion,
-        constant_argument_expresion
-            ->getIntegerConstantExpr(compiler_instance_->getASTContext())
-            .value()
-            .getLimitedValue());
   }
 
   auto& source_manager = ast_context.getSourceManager();
@@ -204,6 +155,61 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
   rewriter_result = rewriter_.overwriteChangedFiles();
   (void)rewriter_result;  // Keep release mode compilers happy
   assert(!rewriter_result && "Something went wrong emitting rewritten files.");
+}
+
+void MutateAstConsumer::RewriteExpressionsInMainFile() {
+  // Rewrite the size expressions of constant-sized arrays as needed.
+  for (const auto& constant_sized_array_decl :
+       visitor_->GetConstantSizedArraysToRewrite()) {
+    assert(compiler_instance_->getLangOpts().CPlusPlus &&
+           constant_sized_array_decl->getType()->isConstantArrayType());
+    auto typeloc = constant_sized_array_decl->getTypeSourceInfo()->getTypeLoc();
+
+    // Note: in some cases a declaration with constant array type does not have
+    // an associated ConstantArrayTypeLoc object. This happens, for example,
+    // when structured bindings are used. For example, consider:
+    //
+    //     auto [x, y] = a;
+    //
+    // This yields a constant-sized array, but there is no explicit array type
+    // declaration. In such cases, no action is required.
+    //
+    // We use a loop to descend into nests of arrays.
+    while (
+        auto constant_array_typeloc =
+            typeloc.getUnqualifiedLoc().getAs<clang::ConstantArrayTypeLoc>()) {
+      RewriteExpressionInMainFileToIntegerConstant(
+          constant_array_typeloc.getSizeExpr(),
+          llvm::dyn_cast<clang::ConstantArrayType>(
+              constant_array_typeloc.getType()
+                  ->getAsArrayTypeUnsafe()
+                  ->getAsArrayTypeUnsafe())
+              ->getSize()
+              .getLimitedValue());
+      typeloc = constant_array_typeloc.getElementLoc();
+    }
+  }
+
+  // Rewrite the argument of static assertion as needed to `1`.
+  // There's no need to evaluate the actual expression, as any value other than
+  // 1 would have caused the front-end used by Dredd to fail.
+  for (const auto& static_assert_decl :
+       visitor_->GetStaticAssertionsToRewrite()) {
+    RewriteExpressionInMainFileToIntegerConstant(
+        static_assert_decl->getAssertExpr(), 1);
+  }
+
+  // Rewrite the constant integer arguments of builtin functions and templates.
+  for (const auto* constant_argument_expresion :
+       visitor_->GetConstantArgumentsToRewrite()) {
+    if (const auto integer_const_expr =
+            constant_argument_expresion->getIntegerConstantExpr(
+                compiler_instance_->getASTContext())) {
+      // Argument is an integer constant
+      RewriteExpressionInMainFileToIntegerConstant(
+          constant_argument_expresion, integer_const_expr->getLimitedValue());
+    }
+  }
 }
 
 bool MutateAstConsumer::RewriteExpressionInMainFileToIntegerConstant(
