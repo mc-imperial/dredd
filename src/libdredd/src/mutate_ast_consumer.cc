@@ -108,7 +108,7 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
     return;
   }
 
-  RewriteExpressionInMainFile();
+  RewriteExpressionsInMainFile();
 
   if (mutation_info_->has_value()) {
     mutation_info_for_file.set_filename(
@@ -157,7 +157,7 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
   assert(!rewriter_result && "Something went wrong emitting rewritten files.");
 }
 
-void MutateAstConsumer::RewriteExpressionInMainFile() {
+void MutateAstConsumer::RewriteExpressionsInMainFile() {
   // Rewrite the size expressions of constant-sized arrays as needed.
   for (const auto& constant_sized_array_decl :
        visitor_->GetConstantSizedArraysToRewrite()) {

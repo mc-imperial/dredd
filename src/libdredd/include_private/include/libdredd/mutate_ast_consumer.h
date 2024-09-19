@@ -63,7 +63,7 @@ class MutateAstConsumer : public clang::ASTConsumer {
   [[nodiscard]] std::string GetMutantTrackingDreddPreludeC(
       int initial_mutation_id) const;
 
-  void RewriteExpressionInMainFile();
+  void RewriteExpressionsInMainFile();
 
   bool RewriteExpressionInMainFileToIntegerConstant(const clang::Expr* expr,
                                                     uint64_t integer_constant);
