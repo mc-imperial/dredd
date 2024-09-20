@@ -14,9 +14,12 @@ class a : foo {
 //
 // void __dredd_prelude_start();
 //
+#include <atomic>
 #include <cinttypes>
 #include <cstddef>
+#include <fstream>
 #include <functional>
+#include <sstream>
 #include <string>
 
 
