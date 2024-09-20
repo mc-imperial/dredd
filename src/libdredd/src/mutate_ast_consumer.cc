@@ -241,9 +241,12 @@ std::string MutateAstConsumer::GetRegularDreddPreludeCpp(
       (num_mutations + kWordSize - 1) / kWordSize;
 
   std::stringstream result;
+  result << "#include <atomic>\n";
   result << "#include <cinttypes>\n";
   result << "#include <cstddef>\n";
+  result << "#include <fstream>\n";
   result << "#include <functional>\n";
+  result << "#include <sstream>\n";
   result << "#include <string>\n\n";
   result << "\n";
   result << "#ifdef _MSC_VER\n";
@@ -332,9 +335,12 @@ std::string MutateAstConsumer::GetMutantTrackingDreddPreludeCpp(
 
   std::stringstream result;
   result << "#include <atomic>\n";
+  result << "#include <cinttypes>\n";
+  result << "#include <cstddef>\n";
   result << "#include <fstream>\n";
   result << "#include <functional>\n";
   result << "#include <sstream>\n";
+  result << "#include <string>\n\n";
   result << "\n";
   result << "static void __dredd_record_covered_mutants(int local_mutation_id, "
             "int num_mutations) {\n";
@@ -375,7 +381,9 @@ std::string MutateAstConsumer::GetRegularDreddPreludeC(
 
   std::stringstream result;
   result << "#include <inttypes.h>\n";
+  result << "#include <stdatomic.h>\n";
   result << "#include <stdbool.h>\n";
+  result << "#include <stdio.h>\n";
   result << "#include <stdlib.h>\n";
   result << "#include <string.h>\n";
   result << "\n";
@@ -437,6 +445,7 @@ std::string MutateAstConsumer::GetMutantTrackingDreddPreludeC(
   result << "#include <stdbool.h>\n";
   result << "#include <stdio.h>\n";
   result << "#include <stdlib.h>\n";
+  result << "#include <string.h>\n";
   result << "\n";
   result << "static void __dredd_record_covered_mutants(int local_mutation_id, "
             "int num_mutations) {\n";
