@@ -23,10 +23,70 @@
 #include "clang/Basic/SourceLocation.h"
 #include "clang/Basic/SourceManager.h"
 #include "clang/Lex/Lexer.h"
+#include "clang/Lex/Preprocessor.h"
 #include "llvm/ADT/APFloat.h"
 #include "llvm/ADT/StringRef.h"
 
 namespace dredd {
+
+namespace {
+
+clang::SourceLocation getSourceLocationInMainFileForExtremeOfRange(
+    const clang::SourceLocation& extreme_of_range,
+    const clang::Preprocessor& preprocessor, bool is_start_of_range) {
+  const clang::SourceManager& source_manager = preprocessor.getSourceManager();
+  auto file_id = source_manager.getFileID(extreme_of_range);
+  if (file_id == source_manager.getMainFileID()) {
+    // This is the easy case: the source location occurs directly in the main
+    // file.
+    return extreme_of_range;
+  }
+  // The source location's file ID is not the main file's ID. This means it is
+  // either part of a macro expansion, or it is in some other file.
+  if (!extreme_of_range.isMacroID()) {
+    // The source location is in some other file.
+    return {};
+  }
+  // The source location is part of a macro expansion. If it is part of a
+  // "paste" operation in a macro, which uses the ## preprocessor operator, then
+  // it is hard to trace this back accurately to a non-macro source location,
+  // so we give up. Testing for this is done by checking whether source location
+  // is written into "scratch" space, which is the case for pasted macro
+  // expansions.
+  if (preprocessor.getSourceManager().isWrittenInScratchSpace(
+          source_manager.getSpellingLoc(extreme_of_range))) {
+    return {};
+  }
+  clang::SourceLocation macro_expansion_location;
+  // We now check whether the macro expansion location is at the start/end of
+  // the expansion, depending on whether the source location corresponds to the
+  // start/end of a range.
+  if (is_start_of_range) {
+    if (!preprocessor.isAtStartOfMacroExpansion(extreme_of_range,
+                                                &macro_expansion_location)) {
+      // The source location is somewhere in the middle of a macro expansion -
+      // it cannot be traced back to the main file.
+      return {};
+    }
+  } else {
+    if (!preprocessor.isAtEndOfMacroExpansion(extreme_of_range,
+                                              &macro_expansion_location)) {
+      // Similar.
+      return {};
+    }
+  }
+  // The source location does correspond to the extreme of a macro expansion.
+  // Finally, we check whether the expansion location is in the main file or
+  // some other file.
+  if (source_manager.getFileID(macro_expansion_location) ==
+      source_manager.getMainFileID()) {
+    // The expansion location is in the main file, so can be returned.
+    return macro_expansion_location;
+  }
+  // Tne expansion location is in some file other than the main file.
+  return {};
+}
+}  // namespace
 
 // Utility method used to avoid spaces when types, such as 'unsigned int', are
 // used in mutation function names.
@@ -127,6 +187,30 @@ bool EvaluateAsFloat(const clang::Expr& expr,
 bool IsCxx11ConstantExpr(const clang::Expr& expr,
                          const clang::ASTContext& ast_context) {
   return !expr.isValueDependent() && expr.isCXX11ConstantExpr(ast_context);
+}
+
+[[nodiscard]] clang::SourceRange GetSourceRangeInMainFile(
+    const clang::Preprocessor& preprocessor,
+    const clang::SourceRange& source_range) {
+  // Try to get the beginning of the source range in th emain file.
+  const clang::SourceLocation begin_loc_in_main_file =
+      getSourceLocationInMainFileForExtremeOfRange(source_range.getBegin(),
+                                                   preprocessor, true);
+  if (begin_loc_in_main_file.isInvalid()) {
+    // The beginning of the source range could not be traced to the main file,
+    // so the entire range cannot.
+    return {};
+  }
+  // Try to get the end of the source range in th emain file.
+  const clang::SourceLocation end_loc_in_main_file =
+      getSourceLocationInMainFileForExtremeOfRange(source_range.getEnd(),
+                                                   preprocessor, false);
+  if (end_loc_in_main_file.isInvalid()) {
+    // The end of the source range could not be traced to the main file, so the
+    // entire range cannot.
+    return {};
+  }
+  return {begin_loc_in_main_file, end_loc_in_main_file};
 }
 
 }  // namespace dredd

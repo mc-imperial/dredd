@@ -22,7 +22,6 @@
 #include "clang/AST/ParentMapContext.h"
 #include "clang/AST/Stmt.h"
 #include "clang/Basic/SourceLocation.h"
-#include "clang/Basic/SourceManager.h"
 #include "clang/Lex/Preprocessor.h"
 #include "llvm/ADT/APFloat.h"
 
@@ -52,52 +51,14 @@ class InfoForSourceRange {
 
 std::string SpaceToUnderscore(const std::string& input);
 
+[[nodiscard]] clang::SourceRange GetSourceRangeInMainFile(
+    const clang::Preprocessor& preprocessor,
+    const clang::SourceRange& source_range);
+
 template <typename HasSourceRange>
 [[nodiscard]] clang::SourceRange GetSourceRangeInMainFile(
     const clang::Preprocessor& preprocessor, const HasSourceRange& ast_node) {
-  const clang::SourceManager& source_manager = preprocessor.getSourceManager();
-  auto main_file_id = source_manager.getMainFileID();
-
-  clang::SourceLocation begin_loc_in_main_file;
-  clang::SourceLocation end_loc_in_main_file;
-  clang::SourceLocation macro_expansion_location;
-  {
-    const clang::SourceLocation begin_loc =
-        ast_node.getSourceRange().getBegin();
-    auto begin_file_id = source_manager.getFileID(begin_loc);
-    if (begin_file_id == main_file_id) {
-      begin_loc_in_main_file = begin_loc;
-    } else if (begin_loc.isMacroID() &&
-               preprocessor.isAtStartOfMacroExpansion(
-                   begin_loc, &macro_expansion_location) &&
-               source_manager.getFileID(macro_expansion_location) ==
-                   main_file_id) {
-      begin_loc_in_main_file = macro_expansion_location;
-    } else {
-      // There is no location in the main file corresponding to the start of the
-      // AST node.
-      return {};
-    }
-  }
-  {
-    const clang::SourceLocation end_loc = ast_node.getSourceRange().getEnd();
-    auto end_file_id = source_manager.getFileID(end_loc);
-    if (end_file_id == main_file_id) {
-      end_loc_in_main_file = end_loc;
-    } else if (end_loc.isMacroID() &&
-               preprocessor.isAtEndOfMacroExpansion(
-                   end_loc, &macro_expansion_location) &&
-               source_manager.getFileID(macro_expansion_location) ==
-                   main_file_id) {
-      end_loc_in_main_file = macro_expansion_location;
-    } else {
-      // There is no location in the main file corresponding to the end of the
-      // AST node.
-      return {};
-    }
-  }
-
-  return {begin_loc_in_main_file, end_loc_in_main_file};
+  return GetSourceRangeInMainFile(preprocessor, ast_node.getSourceRange());
 }
 
 // Introduced to work around what seems like a bug in Clang, where a source
