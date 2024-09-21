@@ -1,0 +1,90 @@
+// DREDD PRELUDE START
+// If this has been inserted at an inappropriate place in a source file,
+// declare a placeholder function with the following signature to
+// mandate where the prelude should be placed:
+//
+// void __dredd_prelude_start();
+//
+#include <inttypes.h>
+#include <stdbool.h>
+#include <stdlib.h>
+#include <string.h>
+
+#ifdef _MSC_VER
+#define thread_local __declspec(thread)
+#elif __APPLE__
+#define thread_local __thread
+#else
+#include <threads.h>
+#endif
+
+static thread_local int __dredd_some_mutation_enabled = 1;
+static bool __dredd_enabled_mutation(int local_mutation_id) {
+  static thread_local int initialized = 0;
+  static thread_local uint64_t enabled_bitset[1];
+  if (!initialized) {
+    int some_mutation_enabled = 0;
+    const char* dredd_environment_variable = getenv("DREDD_ENABLED_MUTATION");
+    if (dredd_environment_variable) {
+      char* temp = malloc(strlen(dredd_environment_variable) + 1);
+      strcpy(temp, dredd_environment_variable);
+      char* token;
+      token = strtok(temp, ",");
+      while(token) {
+        int value = atoi(token);
+        int local_value = value - 0;
+        if (local_value >= 0 && local_value < 23) {
+          enabled_bitset[local_value / 64] |= ((uint64_t) 1 << (local_value % 64));
+          some_mutation_enabled = 1;
+        }
+        token = strtok(NULL, ",");
+      }
+      free(temp);
+    }
+    initialized = 1;
+    __dredd_some_mutation_enabled = some_mutation_enabled;
+  }
+  return enabled_bitset[local_mutation_id / 64] & ((uint64_t) 1 << (local_mutation_id % 64));
+}
+
+static int __dredd_replace_unary_operator_Minus_int(int arg, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return -arg;
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return ~arg;
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return !arg;
+  if (__dredd_enabled_mutation(local_mutation_id + 2)) return arg;
+  return -arg;
+}
+
+static int __dredd_replace_expr_int(int arg, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return arg;
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return !(arg);
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return ~(arg);
+  if (__dredd_enabled_mutation(local_mutation_id + 2)) return -(arg);
+  if (__dredd_enabled_mutation(local_mutation_id + 3)) return 0;
+  if (__dredd_enabled_mutation(local_mutation_id + 4)) return 1;
+  if (__dredd_enabled_mutation(local_mutation_id + 5)) return -1;
+  return arg;
+}
+
+#define MINUS -
+#define ONE 1
+
+int a () {
+  if (!__dredd_enabled_mutation(15)) { return __dredd_replace_expr_int(__dredd_replace_unary_operator_Minus_int(MINUS __dredd_replace_expr_int(ONE, 0), 6), 9); }
+}
+
+#define ADD_SUFFIX(X) X##L
+
+#define NUM_L -ADD_SUFFIX(2)
+
+int b () {
+  return NUM_L;
+}
+
+#define ADD_PARENS(X) (X)
+
+#define NUM_PARENS ADD_PARENS(5)
+
+int c() {
+  if (!__dredd_enabled_mutation(22)) { return __dredd_replace_expr_int(NUM_PARENS, 16); }
+}
