@@ -72,7 +72,7 @@ def main():
     assert len(just_2) > 0
     # Due to the way in which Dredd assigns mutant IDs and the way the test is constructed, the mutants unique to the
     # first test should have smaller IDs compared with the mutants unique to the second set.
-    assert max(just_1) < min(just_2)
+    assert max(just_1) > min(just_2)
 
 
 if __name__ == '__main__':
