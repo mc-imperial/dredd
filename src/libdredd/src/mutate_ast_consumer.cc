@@ -54,6 +54,23 @@ const char* const kDreddPreludeStartComment =
     "//\n"
     "// void __dredd_prelude_start();\n"
     "//\n";
+
+const char* const kDreddPreludeHeadersCpp =
+    "#include <atomic>\n"
+    "#include <cinttypes>\n"
+    "#include <cstddef>\n"
+    "#include <fstream>\n"
+    "#include <functional>\n"
+    "#include <sstream>\n"
+    "#include <string>\n\n";
+
+const char* const kDreddPreludeHeadersC =
+    "#include <inttypes.h>\n"
+    "#include <stdatomic.h>\n"
+    "#include <stdbool.h>\n"
+    "#include <stdio.h>\n"
+    "#include <stdlib.h>\n"
+    "#include <string.h>\n";
 }  // namespace
 
 void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
@@ -241,10 +258,7 @@ std::string MutateAstConsumer::GetRegularDreddPreludeCpp(
       (num_mutations + kWordSize - 1) / kWordSize;
 
   std::stringstream result;
-  result << "#include <cinttypes>\n";
-  result << "#include <cstddef>\n";
-  result << "#include <functional>\n";
-  result << "#include <string>\n\n";
+  result << kDreddPreludeHeadersCpp;
   result << "\n";
   result << "#ifdef _MSC_VER\n";
   result << "#define thread_local __declspec(thread)\n";
@@ -331,10 +345,7 @@ std::string MutateAstConsumer::GetMutantTrackingDreddPreludeCpp(
   const int num_mutations = *mutation_id_ - initial_mutation_id;
 
   std::stringstream result;
-  result << "#include <atomic>\n";
-  result << "#include <fstream>\n";
-  result << "#include <functional>\n";
-  result << "#include <sstream>\n";
+  result << kDreddPreludeHeadersCpp;
   result << "\n";
   result << "static void __dredd_record_covered_mutants(int local_mutation_id, "
             "int num_mutations) {\n";
@@ -374,10 +385,7 @@ std::string MutateAstConsumer::GetRegularDreddPreludeC(
       (num_mutations + kWordSize - 1) / kWordSize;
 
   std::stringstream result;
-  result << "#include <inttypes.h>\n";
-  result << "#include <stdbool.h>\n";
-  result << "#include <stdlib.h>\n";
-  result << "#include <string.h>\n";
+  result << kDreddPreludeHeadersC;
   result << "\n";
   result << "#ifdef _MSC_VER\n";
   result << "#define thread_local __declspec(thread)\n";
@@ -432,11 +440,7 @@ std::string MutateAstConsumer::GetMutantTrackingDreddPreludeC(
   // port to C.
   const int num_mutations = *mutation_id_ - initial_mutation_id;
   std::stringstream result;
-  result << "#include <inttypes.h>\n";
-  result << "#include <stdatomic.h>\n";
-  result << "#include <stdbool.h>\n";
-  result << "#include <stdio.h>\n";
-  result << "#include <stdlib.h>\n";
+  result << kDreddPreludeHeadersC;
   result << "\n";
   result << "static void __dredd_record_covered_mutants(int local_mutation_id, "
             "int num_mutations) {\n";
