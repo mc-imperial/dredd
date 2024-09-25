@@ -6,7 +6,9 @@
 // void __dredd_prelude_start();
 //
 #include <inttypes.h>
+#include <stdatomic.h>
 #include <stdbool.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -33,7 +35,7 @@ static bool __dredd_enabled_mutation(int local_mutation_id) {
       while(token) {
         int value = atoi(token);
         int local_value = value - 0;
-        if (local_value >= 0 && local_value < 23) {
+        if (local_value >= 0 && local_value < 24) {
           enabled_bitset[local_value / 64] |= ((uint64_t) 1 << (local_value % 64));
           some_mutation_enabled = 1;
         }
@@ -78,7 +80,7 @@ int a () {
 #define NUM_L -ADD_SUFFIX(2)
 
 int b () {
-  return NUM_L;
+  if (!__dredd_enabled_mutation(16)) { return NUM_L; }
 }
 
 #define ADD_PARENS(X) (X)
@@ -86,5 +88,5 @@ int b () {
 #define NUM_PARENS ADD_PARENS(5)
 
 int c() {
-  if (!__dredd_enabled_mutation(22)) { return __dredd_replace_expr_int(NUM_PARENS, 16); }
+  if (!__dredd_enabled_mutation(23)) { return __dredd_replace_expr_int(NUM_PARENS, 17); }
 }
