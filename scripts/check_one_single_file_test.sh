@@ -81,7 +81,7 @@ pushd "${DREDD_REPO_ROOT}/temp"
       then
         ${CC} -c "${copy_of_f}"
       else
-        ${CC} "${DREDD_EXTRA_C_ARGS}" -c "${copy_of_f}"
+        ${CC} ${DREDD_EXTRA_C_ARGS} -c "${copy_of_f}"
       fi
     fi
 
