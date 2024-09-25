@@ -35,7 +35,7 @@ static bool __dredd_enabled_mutation(int local_mutation_id) {
       while(token) {
         int value = atoi(token);
         int local_value = value - 0;
-        if (local_value >= 0 && local_value < 8) {
+        if (local_value >= 0 && local_value < 7) {
           enabled_bitset[local_value / 64] |= ((uint64_t) 1 << (local_value % 64));
           some_mutation_enabled = 1;
         }
@@ -76,7 +76,7 @@ int a () {
 #define NUM_L -ADD_SUFFIX(2)
 
 int b () {
-  if (!__dredd_enabled_mutation(6)) { return NUM_L; }
+  return NUM_L;
 }
 
 #define ADD_PARENS(X) (X)
@@ -84,5 +84,5 @@ int b () {
 #define NUM_PARENS ADD_PARENS(5)
 
 int c() {
-  if (!__dredd_enabled_mutation(7)) { return NUM_PARENS; }
+  if (!__dredd_enabled_mutation(6)) { return NUM_PARENS; }
 }
