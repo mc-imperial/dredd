@@ -393,6 +393,12 @@ The signature of this prototype is:
 void __dredd_prelude_start();
 ```
 
+### Dredd's mutated source file fails to compile or causes build failure
+
+Dredd may mutate a source file without a compilation database, but the mutated source file might fail to compile if it becomes invalid under certain compilation flags (e.g., -D or -I options) (see [this issue](https://github.com/mc-imperial/dredd/issues/201) for example).
+
+Even when a compilation database is provided, there may be multiple entries for the same file. Dredd mutates the source file based on only one of these entries. As a result, the build process may fail if the mutation is invalid in the context of another entry. One workaround is to manually duplicate the file and modify the build system to refer to different versions of the file. Alternatively, one can choose to skip applying Dredd to the file entirely.
+
 ### Debugging Dredd
 
 If you are surprised at the mutations that Dredd is applying and believe they may be incorrect, the following options may be useful in debugging Dredd:
