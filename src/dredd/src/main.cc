@@ -152,6 +152,8 @@ int main(int argc, const char** argv) {
   const int return_code = tool.run(factory.get());
 
   if (return_code == 0) {
+    // Keep release mode compilers happy.
+    (void)text_diagnostic_printer_ptr;
     assert(text_diagnostic_printer_ptr->getNumErrors() == 0);
     assert(
         log_failed_files_diagnostic_consumer_ptr->GetFilesWithErrors().empty());
