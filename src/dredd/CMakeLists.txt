@@ -12,7 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-add_executable(dredd src/main.cc)
+add_executable(
+  dredd include_private/include/dredd/log_failed_files_diagnostic_consumer.h
+        src/main.cc src/log_failed_files_diagnostic_consumer.cc)
 target_include_directories(dredd PRIVATE include_private/include)
 target_include_directories(dredd SYSTEM PRIVATE ${CMAKE_BINARY_DIR}/src)
 target_include_directories(
