@@ -19,6 +19,7 @@
 #include <string>
 
 #include "clang/AST/ASTConsumer.h"
+#include "clang/Basic/Diagnostic.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/FrontendAction.h"
 #include "clang/Frontend/FrontendOptions.h"
