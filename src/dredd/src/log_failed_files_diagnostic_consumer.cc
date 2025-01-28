@@ -16,6 +16,7 @@
 
 #include "clang/Basic/Diagnostic.h"
 #include "clang/Basic/FileEntry.h"
+#include "clang/Basic/SourceLocation.h"
 #include "clang/Basic/SourceManager.h"
 #include "llvm/ADT/StringRef.h"
 
