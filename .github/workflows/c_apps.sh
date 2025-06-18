@@ -29,7 +29,7 @@ case "$(uname)" in
   df -h
   sudo swapoff -a
   sudo rm -f /swapfile
-  sudo apt install llvm-19 clang-19 clang-tidy-19 clang-format-19 libclang-19-dev
+  sudo apt install llvm-18 clang-18 clang-tidy-18 clang-format-18 libclang-18-dev
   sudo apt clean
   # shellcheck disable=SC2046
   docker rmi $(docker image ls -aq)
