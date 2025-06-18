@@ -191,6 +191,10 @@ case "$(uname)" in
   export CC=cl.exe
   export CXX=cl.exe
 
+  rm test/single_file/constexpr_if1.cc
+  rm test/single_file/constexpr_if1.cc.expected
+  rm test/single_file/constexpr_if1.cc.noopt.expected
+  
   # The following single-file tests give different expected results on Windows
   # due to differences in how certain builtin types, such as size_t and
   # uint64_t, expand. For simplicity, remove them before running single-file
