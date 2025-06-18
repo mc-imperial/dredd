@@ -18,6 +18,8 @@ set -e
 set -u
 set -x
 
+: "${DREDD_CLANG_LLVM_DIR?DREDD_CLANG_LLVM_DIR must be set to an installation of Clang/LLVM}"
+
 # Check that it looks like we are in the repo root.
 test -f ./src/dredd/src/main.cc
 test -f ./src/.clang-format
@@ -26,9 +28,9 @@ test -f ./src/iwyu.imp
 DREDD_REPO_ROOT="$(pwd)"
 export DREDD_REPO_ROOT
 
-# Check that the Clang/LLVM release has been downloaded.
-CLANG_RELEASE="${DREDD_REPO_ROOT}/third_party/clang+llvm"
-test -f ${CLANG_RELEASE}/bin/clang++
+# Check that the Clang/LLVM release looks right.
+test -f ${DREDD_CLANG_LLVM_DIR}/bin/clang++
+test -f ${DREDD_CLANG_LLVM_DIR}/lib/cmake/clang/ClangConfig.cmake
 
 # If DREDD_SKIP_COMPILER_SET is unset:
 if test -z ${DREDD_SKIP_COMPILER_SET+x}; then
@@ -37,7 +39,7 @@ if test -z ${DREDD_SKIP_COMPILER_SET+x}; then
 fi
 
 # Ensure that the downloaded Clang/LLVM release is on the path
-PATH="${CLANG_RELEASE}/bin:${PATH}"
+PATH="${DREDD_CLANG_LLVM_DIR}/bin:${PATH}"
 export PATH
 
 cd temp/
@@ -85,20 +87,21 @@ export CPPLINT_PY
 
 IWYU_VERSION="0.21"
 IWYU_OUT="iwyu-${IWYU_VERSION}"
+IWYU_INSTALL="$(pwd)/${IWYU_OUT}/build/install"
 
 if test ! -f "${IWYU_OUT}.touch"; then
   git clone --branch ${IWYU_VERSION} --depth 1 https://github.com/include-what-you-use/include-what-you-use.git "${IWYU_OUT}"
   pushd "${IWYU_OUT}"
     mkdir build
     pushd build
-      cmake -G Ninja .. -DCMAKE_BUILD_TYPE=Release "-DCMAKE_INSTALL_PREFIX=${CLANG_RELEASE}"
+      cmake -G Ninja .. -DCMAKE_BUILD_TYPE=Release "-DCMAKE_INSTALL_PREFIX=${IWYU_INSTALL}"
       cmake --build . --config Release
       cmake -P cmake_install.cmake --config Release
     popd
   popd
   touch "${IWYU_OUT}.touch"
 fi
-PATH="$(pwd)/${IWYU_OUT}/build/install/bin:${PATH}"
+PATH="${IWYU_INSTALL}/bin:${PATH}"
 export PATH
 
 cd "${DREDD_REPO_ROOT}"
