@@ -94,6 +94,8 @@ pushd "${HOME}/bin"
 
 popd
 
+export DREDD_CLANG_LLVM_DIR=$(pwd)/third_party/clang+llvm
+
 case "$(uname)" in
 "Linux")
 
@@ -120,7 +122,7 @@ esac
 
 mkdir -p build
 pushd build
-  cmake -G Ninja .. -DCMAKE_BUILD_TYPE="${CONFIG}" "${CMAKE_OPTIONS[@]}"
+  cmake -G Ninja .. -DCMAKE_BUILD_TYPE="${CONFIG}" -DDREDD_CLANG_LLVM_DIR="${DREDD_CLANG_LLVM_DIR}" "${CMAKE_OPTIONS[@]}"
   cmake --build . --config "${CONFIG}"
   cmake -DCMAKE_INSTALL_PREFIX=./install -DBUILD_TYPE="${CONFIG}" -P cmake_install.cmake
   # Run the unit tests
