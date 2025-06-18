@@ -29,6 +29,7 @@ case "$(uname)" in
   df -h
   sudo swapoff -a
   sudo rm -f /swapfile
+  sudo apt update
   sudo apt install llvm-17 clang-17 clang-tidy-17 clang-format-17 libclang-17-dev
   sudo apt clean
   # shellcheck disable=SC2046
