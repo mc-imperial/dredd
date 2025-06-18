@@ -68,9 +68,8 @@ endif()
 # Third party targets.
 if(NOT DEFINED DREDD_CLANG_LLVM_DIR)
   message(
-    FATAL_ERROR
-      "DEFINED DREDD_CLANG_LLVM_DIR must refer to an installation of Clang/LLVM."
-  )
+    FATAL_ERROR "DEFINED DREDD_CLANG_LLVM_DIR must refer to an installation of \
+Clang/LLVM.")
 endif()
 
 set(LLVM_DIR "${DREDD_CLANG_LLVM_DIR}/lib/cmake/llvm")
