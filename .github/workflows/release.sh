@@ -70,7 +70,7 @@ CMAKE_BUILD_TYPE="${CONFIG}"
 BUILD_DIR="b_${CONFIG}"
 
 cmake -S . -B ${BUILD_DIR} -G Ninja -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DDREDD_CLANG_LLVM_DIR=/usr/lib/llvm-17
-cmake --build build --config ${CMAKE_BUILD_TYPE}
+cmake --build ${BUILD_DIR} --config ${CMAKE_BUILD_TYPE}
 
 # Get the file actually needed for the release: the dredd executable
 mkdir -p dredd/bin
