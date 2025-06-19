@@ -4,11 +4,11 @@ import sys
 from pathlib import Path
 
 DREDD_REPO_ROOT = os.environ['DREDD_REPO_ROOT']
-DREDD_INSTALLED_EXECUTABLE = Path(DREDD_REPO_ROOT, 'third_party', 'clang+llvm', 'bin', 'dredd')
+DREDD_EXECUTABLE = Path(DREDD_REPO_ROOT, 'temp', 'build-Debug', 'src', 'dredd', 'dredd') if 'DREDD_EXECUTABLE' not in os.environ else os.environ['DREDD_EXECUTABLE']
 
 
 def main():
-    cmd = [DREDD_INSTALLED_EXECUTABLE, 'tomutate.c', '--']
+    cmd = [DREDD_EXECUTABLE, 'tomutate.c', '--']
     result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     # We expect an error due to a non-existent file.
     assert result.returncode != 0
