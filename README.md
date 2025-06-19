@@ -48,9 +48,26 @@ To get started, either
 
 Either way, ensure that the `dredd` executable is on your path.
 
-The instructions that follow also assume that you have the Clang compiler installed, so that `clang` and `clang++` are on your path.
+The Dredd release requires that you have various various Clang/LLVM packages, which you can install via:
+  - `sudo apt install -y llvm-17 clang-17 clang
 
-Set the `DREDD_CHECKOUT` environment variable to refer to the root of the directory into which Dredd is checked out, e.g.:
+### Clone the repository and get submodules
+
+Either do:
+
+```
+git clone --recursive https://github.com/mc-imperial/dredd.git
+```
+
+or:
+
+```
+git clone --recursive git@github.com:mc-imperial/dredd.git
+```
+
+The `--recursive` flag ensures that submodules are fetched.
+
+Set the `DREDD_CHECKOUT` environment variable to refer to the root of the directory into which Dredd is cloned, e.g.:
 
 ```
 export DREDD_CHECKOUT=/path/to/dredd
@@ -255,23 +272,9 @@ The following instructions have been tested on Ubuntu 22.04.
 - CMake version 3.13 or higher
 - ninja version 1.10.0 or higher
 
-### Clone the repository and get submodules
-
-Either do:
-
-```
-git clone --recursive https://github.com/mc-imperial/dredd.git
-```
-
-or:
-
-```
-git clone --recursive git@github.com:mc-imperial/dredd.git
-```
-
-The `--recursive` flag ensures that submodules are fetched.
-
 ### Build steps
+
+First, clone the repository including submodules, as described above.
 
 From the root of the repository, execute the following commands,
 which assume that LLVM 17 resides at `/usr/lib/llvm-17`.
