@@ -28,7 +28,8 @@ for CONFIG in Debug Release; do
     cmake \
       -G Ninja \
       ../.. \
-      "-DCMAKE_BUILD_TYPE=${CONFIG}"
+      "-DCMAKE_BUILD_TYPE=${CONFIG}" \
+      "-DDREDD_CLANG_LLVM_DIR=${DREDD_CLANG_LLVM_DIR}"
 
     cmake --build . --config "${CONFIG}"
 

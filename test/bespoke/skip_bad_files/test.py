@@ -6,7 +6,7 @@ import sys
 from pathlib import Path
 
 DREDD_REPO_ROOT = os.environ['DREDD_REPO_ROOT']
-DREDD_INSTALLED_EXECUTABLE = Path(DREDD_REPO_ROOT, 'third_party', 'clang+llvm', 'bin', 'dredd')
+DREDD_EXECUTABLE = Path(DREDD_REPO_ROOT, 'temp', 'build-Debug', 'src', 'dredd', 'dredd') if 'DREDD_EXECUTABLE' not in os.environ else os.environ['DREDD_EXECUTABLE']
 
 
 def run_successfully(cmd):
@@ -14,7 +14,7 @@ def run_successfully(cmd):
 
 
 def main():
-    cmd = [DREDD_INSTALLED_EXECUTABLE,
+    cmd = [DREDD_EXECUTABLE,
            '--mutation-info-file',
            'info.json',
            'good1.c',
@@ -26,7 +26,7 @@ def main():
     # Dredd should return non-zero, due to 'bad1.c' and 'bad2.c'
     assert result.returncode != 0
     error_output = result.stderr.decode('utf-8')
-    pattern = "The following files were not mutated due to compile-time errors; see above for details:\s+[^\s]+bad1\.c\s+[^\s]+bad2\.c"
+    pattern = r"The following files were not mutated due to compile-time errors; see above for details:\s+[^\s]+bad1\.c\s+[^\s]+bad2\.c"
     match = re.search(pattern, error_output)
     assert match is not None
     dictionary = json.load(open('info.json'))

@@ -22,7 +22,7 @@ import sys
 from pathlib import Path
 
 DREDD_REPO_ROOT = os.environ['DREDD_REPO_ROOT']
-DREDD_INSTALLED_EXECUTABLE = Path(DREDD_REPO_ROOT, 'third_party', 'clang+llvm', 'bin', 'dredd')
+DREDD_EXECUTABLE = Path(DREDD_REPO_ROOT, 'temp', 'build-Debug', 'src', 'dredd', 'dredd') if 'DREDD_EXECUTABLE' not in os.environ else os.environ['DREDD_EXECUTABLE']
 test_directory = Path(DREDD_REPO_ROOT, sys.argv[1])
 test_is_cxx = os.path.exists(test_directory / 'harness.cc')
 extension = 'cc' if test_is_cxx else 'c'
@@ -30,12 +30,6 @@ extension = 'cc' if test_is_cxx else 'c'
 # Back up current directory and move to a temporary directory
 original_dir = os.getcwd()
 os.chdir(Path(DREDD_REPO_ROOT, 'temp'))
-
-if 'DREDD_SKIP_COPY_EXECUTABLE' not in os.environ or os.environ['DREDD_SKIP_COPY_EXECUTABLE'] != '1':
-    # Ensure that Dredd is in its installed location. This depends on a
-    # debug build being available
-    shutil.copy(src=Path('build-Debug', 'src', 'dredd', 'dredd'),
-                dst=DREDD_INSTALLED_EXECUTABLE)
 
 # Copy the test files into the temporary directory for mutation
 shutil.copy(src=test_directory / f'harness.{extension}',
@@ -53,7 +47,7 @@ for line in open(test_directory / 'mutants.txt', 'r').readlines():
     expected_mutant_outputs.add(component)
 
 # Mutate the program using Dredd.
-cmd = [DREDD_INSTALLED_EXECUTABLE, '--mutation-info-file', 'temp.json', f'tomutate.{extension}', '--']
+cmd = [DREDD_EXECUTABLE, '--mutation-info-file', 'temp.json', f'tomutate.{extension}', '--']
 if test_is_cxx:
     # This supports execute tests that use C++ 20 features.
     cmd.append('--std=c++20')

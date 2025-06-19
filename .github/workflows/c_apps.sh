@@ -26,12 +26,15 @@ uname
 case "$(uname)" in
 "Linux")
   NINJA_OS="linux"
+
+  sudo apt update
+  sudo apt install -y llvm-17 clang-17 clang-tidy-17 clang-format-17 libclang-17-dev
+
+  # Free up some space
   df -h
   sudo swapoff -a
   sudo rm -f /swapfile
   sudo apt clean
-  # shellcheck disable=SC2046
-  docker rmi $(docker image ls -aq)
   df -h
   ;;
 
@@ -50,18 +53,10 @@ pushd "${HOME}/bin"
   ls
 popd
 
-# Install clang.
-DREDD_LLVM_TAG=$(./scripts/llvm_tag.sh)
-pushd ./third_party/clang+llvm
-  curl -fsSL -o clang+llvm.tar.xz "https://github.com/llvm/llvm-project/releases/download/llvmorg-${DREDD_LLVM_TAG}/clang+llvm-${DREDD_LLVM_TAG}-x86_64-linux-gnu-ubuntu-22.04.tar.xz"
-  tar xf clang+llvm.tar.xz
-  mv clang+llvm-${DREDD_LLVM_TAG}-x86_64-linux-gnu-ubuntu-22.04/* .
-  rm clang+llvm.tar.xz
-popd
-
 DREDD_ROOT=$(pwd)
 
-export PATH="${DREDD_ROOT}/third_party/clang+llvm/bin:$PATH"
+DREDD_CLANG_LLVM_DIR="/usr/lib/llvm-17"
+export PATH="${DREDD_CLANG_LLVM_DIR}/bin:$PATH"
 
 export CC=clang
 export CXX=clang++
@@ -69,16 +64,11 @@ export CXX=clang++
 which ${CC}
 which ${CXX}
 
-mkdir -p build
-pushd build
-  cmake -G Ninja .. -DCMAKE_BUILD_TYPE=Debug
-  cmake --build . --config Debug
-  cmake -DCMAKE_INSTALL_PREFIX=./install -DBUILD_TYPE=Debug -P cmake_install.cmake
-popd
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DDREDD_CLANG_LLVM_DIR="${DREDD_CLANG_LLVM_DIR}"
+cmake --build build --config Debug
 
 # Check that dredd works on some projects
-DREDD_EXECUTABLE="${DREDD_ROOT}/third_party/clang+llvm/bin/dredd"
-cp "${DREDD_ROOT}/build/src/dredd/dredd" "${DREDD_EXECUTABLE}"
+DREDD_EXECUTABLE="${DREDD_ROOT}/build/src/dredd/dredd"
 
 echo "Curl"
 date

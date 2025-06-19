@@ -23,7 +23,7 @@ import sys
 from pathlib import Path
 
 DREDD_REPO_ROOT = os.environ['DREDD_REPO_ROOT']
-DREDD_INSTALLED_EXECUTABLE = Path(DREDD_REPO_ROOT, 'third_party', 'clang+llvm', 'bin', 'dredd')
+DREDD_EXECUTABLE = Path(DREDD_REPO_ROOT, 'temp', 'build-Debug', 'src', 'dredd', 'dredd') if 'DREDD_EXECUTABLE' not in os.environ else os.environ['DREDD_EXECUTABLE']
 test_directory = Path(DREDD_REPO_ROOT, sys.argv[1])
 
 # Back up current directory and move to a temporary directory
@@ -36,12 +36,6 @@ if Path(bespoke_test_work_dir).exists():
 
 Path(bespoke_test_work_dir).mkdir(exist_ok=False)
 os.chdir(bespoke_test_work_dir)
-
-if 'DREDD_SKIP_COPY_EXECUTABLE' not in os.environ or os.environ['DREDD_SKIP_COPY_EXECUTABLE'] != '1':
-    # Ensure that Dredd is in its installed location. This depends on a
-    # debug build being available
-    shutil.copy(src=Path('../build-Debug', 'src', 'dredd', 'dredd'),
-                dst=DREDD_INSTALLED_EXECUTABLE)
 
 if not os.path.exists(test_directory / 'test.py'):
     print(f"No 'test.py' file found for bespoke test {test_directory}")
