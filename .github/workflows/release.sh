@@ -39,8 +39,6 @@ case "$(uname)" in
   # Free up some space
   df -h
   sudo apt clean
-  # shellcheck disable=SC2046
-  docker rmi -f $(docker image ls -aq)
   sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
   df -h
   ;;
