@@ -88,7 +88,7 @@ DESCRIPTION="$(echo -e "Automated build for dredd revision ${GITHUB_SHA}.")"
 "${PYTHON}" -m github_release_retry.github_release_retry \
   --user "mc-imperial" \
   --repo "dredd" \
-  --tag_name "0.2" \
+  --tag_name "1.0" \
   --target_commitish "${GITHUB_SHA}" \
   --body_string "${DESCRIPTION}" \
   "${DREDD_ZIP_NAME}"
