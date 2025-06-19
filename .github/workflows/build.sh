@@ -129,10 +129,10 @@ pushd build
   ./src/libdreddtest/libdreddtest
 popd
 
-cp build/src/dredd/dredd third_party/clang+llvm/bin/
-DREDD_REPO_ROOT=$(pwd)
-export DREDD_REPO_ROOT
+export DREDD_REPO_ROOT=$(pwd)
+export DREDD_EXECUTABLE=${DREDD_REPO_ROOT}/third_party/clang+llvm/bin/dredd
 export PATH=${PATH}:${DREDD_REPO_ROOT}/scripts
+cp build/src/dredd/dredd ${DREDD_EXECUTABLE}
 
 case "$(uname)" in
   "Linux")
@@ -151,9 +151,9 @@ case "$(uname)" in
   export DREDD_EXTRA_CXX_ARGS="-std=c++20"
   export DREDD_EXTRA_C_ARGS="-std=c17"
 
-  DREDD_SKIP_COPY_EXECUTABLE=1 ./scripts/check_single_file_tests.sh
-  DREDD_SKIP_COPY_EXECUTABLE=1 ./scripts/check_execute_tests.sh
-  DREDD_SKIP_COPY_EXECUTABLE=1 ./scripts/check_bespoke_tests.sh
+  ./scripts/check_single_file_tests.sh
+  ./scripts/check_execute_tests.sh
+  ./scripts/check_bespoke_tests.sh
   ;;
 
 "Darwin"*)
@@ -189,9 +189,9 @@ case "$(uname)" in
   export DREDD_EXTRA_CXX_ARGS="-std=c++20"
   export DREDD_EXTRA_C_ARGS="-std=c17"
 
-  DREDD_SKIP_COPY_EXECUTABLE=1 ./scripts/check_single_file_tests.sh
-  DREDD_SKIP_COPY_EXECUTABLE=1 ./scripts/check_execute_tests.sh
-  DREDD_SKIP_COPY_EXECUTABLE=1 ./scripts/check_bespoke_tests.sh
+  ./scripts/check_single_file_tests.sh
+  ./scripts/check_execute_tests.sh
+  ./scripts/check_bespoke_tests.sh
   ;;
 
 "MINGW"*|"MSYS_NT"*)

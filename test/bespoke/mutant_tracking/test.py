@@ -6,9 +6,10 @@ import sys
 from pathlib import Path
 
 DREDD_REPO_ROOT = os.environ['DREDD_REPO_ROOT']
-DREDD_INSTALLED_EXECUTABLE = Path(DREDD_REPO_ROOT, 'third_party', 'clang+llvm', 'bin', 'dredd')
+DREDD_CLANG_LLVM_DIR = os.environ['DREDD_CLANG_LLVM_DIR']
+DREDD_EXECUTABLE = Path(DREDD_REPO_ROOT, 'temp', 'build-Debug', 'src', 'dredd', 'dredd') if 'DREDD_EXECUTABLE' not in os.environ else os.environ['DREDD_EXECUTABLE']
 QUERY_MUTANT_INFO_SCRIPT = Path(DREDD_REPO_ROOT, 'scripts', 'query_mutant_info.py')
-CLANG_INSTALLED_EXECUTABLE = Path(DREDD_REPO_ROOT, 'third_party', 'clang+llvm', 'bin', 'clang')
+CLANG_EXECUTABLE = Path(DREDD_CLANG_LLVM_DIR, 'bin', 'clang')
 COMPILED_EXECUTABLE_FILENAME = 'a.exe' if os.name == 'nt' else './a.out'
 
 
@@ -25,11 +26,11 @@ def run_successfully(cmd):
 def main():
     # Run Dredd without tracking
     shutil.copyfile(src='example.c', dst='tomutate.c')
-    run_successfully([DREDD_INSTALLED_EXECUTABLE, '--mutation-info-file', 'info-mutate.json', 'tomutate.c', '--'])
+    run_successfully([DREDD_EXECUTABLE, '--mutation-info-file', 'info-mutate.json', 'tomutate.c', '--'])
 
     # Run Dredd with tracking
     shutil.copyfile(src='example.c', dst='tomutate.c')
-    run_successfully([DREDD_INSTALLED_EXECUTABLE,
+    run_successfully([DREDD_EXECUTABLE,
                       '--mutation-info-file',
                       'info-track.json',
                       '--only-track-mutant-coverage',
@@ -41,7 +42,7 @@ def main():
     assert filecmp.cmp('info-mutate.json', 'info-track.json')
 
     # The mutant tracking version should compile successfully.
-    run_successfully([CLANG_INSTALLED_EXECUTABLE, 'tomutate.c'])
+    run_successfully([CLANG_EXECUTABLE, 'tomutate.c'])
 
     # When executed with no command line arguments the program should return 0.
     dredd_env = os.environ.copy()
