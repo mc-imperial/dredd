@@ -263,7 +263,7 @@ A typical workflow for using Dredd to determine which mutants are killed by a gi
 
 ## Building Dredd from source
 
-The following instructions have been tested on Ubuntu 22.04.
+The following instructions have been tested on Ubuntu 24.04.
 
 ### Prerequisites
 
