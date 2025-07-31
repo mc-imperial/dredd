@@ -26,7 +26,7 @@ namespace dredd {
 
 std::unique_ptr<clang::tooling::FrontendActionFactory>
 NewMutateFrontendActionFactory(
-    const Options& options, int& mutation_id,
+    const Options& options, int& mutation_id, int& file_id,
     std::optional<protobufs::MutationInfo>& mutation_info);
 
 }  // namespace dredd

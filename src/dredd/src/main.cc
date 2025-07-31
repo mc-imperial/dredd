@@ -83,6 +83,11 @@ static llvm::cl::opt<bool> show_ast_node_types(
         "In the mutated code, show (via comments) the type of each AST node to "
         "which mutation has been applied; useful for debugging"),
     llvm::cl::cat(mutate_category));
+// NOLINTNEXTLINE
+static llvm::cl::opt<bool> allow_reset_of_tracking_counters(
+    "allow-reset-of-tracking-counters",
+    llvm::cl::desc("Emit the code necessary to reset mutant tracking counters"),
+    llvm::cl::cat(mutate_category));
 
 #if defined(__clang__)
 #pragma clang diagnostic pop
@@ -131,6 +136,9 @@ int main(int argc, const char** argv) {
   // Used to give each mutation a unique identifier.
   int mutation_id = 0;
 
+  // Used to give each file a unique identifier.
+  int file_id = 0;
+
   // Keeps track of the mutations that are applied to each source file,
   // including their hierarchical structure.
   std::optional<dredd::protobufs::MutationInfo> mutation_info;
@@ -141,12 +149,12 @@ int main(int argc, const char** argv) {
     mutation_info = dredd::protobufs::MutationInfo();
   }
 
-  const dredd::Options dredd_options(!no_mutation_opts, dump_asts,
-                                     only_track_mutant_coverage,
-                                     show_ast_node_types);
+  const dredd::Options dredd_options(
+      !no_mutation_opts, dump_asts, only_track_mutant_coverage,
+      show_ast_node_types, allow_reset_of_tracking_counters);
 
   const std::unique_ptr<clang::tooling::FrontendActionFactory> factory =
-      dredd::NewMutateFrontendActionFactory(dredd_options, mutation_id,
+      dredd::NewMutateFrontendActionFactory(dredd_options, mutation_id, file_id,
                                             mutation_info);
 
   const int return_code = tool.run(factory.get());

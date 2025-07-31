@@ -164,6 +164,27 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
           ? GetDreddPreludeCpp(initial_mutation_id)
           : GetDreddPreludeC(initial_mutation_id);
 
+  if (options_->GetAllowResetOfTrackingCounters()) {
+    const int num_mutations = *mutation_id_ - initial_mutation_id;
+    if (compiler_instance_->getLangOpts().CPlusPlus) {
+      mutation_info_->value()
+          .mutable_reset_tracking_code()
+          ->mutable_extern_declarations()
+          ->append("extern std::atomic<bool> __dredd_already_recorded_" +
+                   std::to_string(*file_id_) + "[" +
+                   std::to_string(num_mutations) + "];\n");
+    } else {
+      mutation_info_->value()
+          .mutable_reset_tracking_code()
+          ->mutable_extern_declarations()
+          ->append("extern atomic_bool __dredd_already_recorded_" +
+                   std::to_string(*file_id_) + "[" +
+                   std::to_string(num_mutations) + "];\n");
+    }
+    // TODO - also generate the necessary code for resetting, via a call to
+    // memset
+  }
+
   bool rewriter_result =
       rewriter_.InsertTextBefore(dredd_prelude_start_location, dredd_prelude);
   (void)rewriter_result;  // Keep release-mode compilers happy.
@@ -172,6 +193,8 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
   rewriter_result = rewriter_.overwriteChangedFiles();
   (void)rewriter_result;  // Keep release mode compilers happy
   assert(!rewriter_result && "Something went wrong emitting rewritten files.");
+
+  (*file_id_)++;
 }
 
 void MutateAstConsumer::RewriteExpressionsInMainFile() {
@@ -347,12 +370,13 @@ std::string MutateAstConsumer::GetMutantTrackingDreddPreludeCpp(
   std::stringstream result;
   result << kDreddPreludeHeadersCpp;
   result << "\n";
+  result << "std::atomic<bool> __dredd_already_recorded_" << *file_id_ << "["
+         << num_mutations << "];\n";
+  result << "\n";
   result << "static void __dredd_record_covered_mutants(int local_mutation_id, "
             "int num_mutations) {\n";
-  result << "  static std::atomic<bool> already_recorded[" << num_mutations
-         << "];\n";
-  result
-      << "  if (already_recorded[local_mutation_id].exchange(true)) return;\n";
+  result << "  if (__dredd_already_recorded_" << *file_id_
+         << "[local_mutation_id].exchange(true)) return;\n";
   result << "  const char* dredd_tracking_environment_variable = "
             "std::getenv(\"DREDD_MUTANT_TRACKING_FILE\");\n";
   result << "  if (dredd_tracking_environment_variable == nullptr) return;\n";
@@ -442,10 +466,13 @@ std::string MutateAstConsumer::GetMutantTrackingDreddPreludeC(
   std::stringstream result;
   result << kDreddPreludeHeadersC;
   result << "\n";
+  result << "atomic_bool __dredd_already_recorded_" << *file_id_ << "["
+         << num_mutations << "];\n";
+  result << "\n";
   result << "static void __dredd_record_covered_mutants(int local_mutation_id, "
             "int num_mutations) {\n";
-  result << "  static atomic_bool already_recorded[" << num_mutations << "];\n";
-  result << "  if (atomic_exchange(&already_recorded[local_mutation_id], 1)) "
+  result << "  if (atomic_exchange(&__dredd_already_recorded_" << *file_id_
+         << "[local_mutation_id], 1)) "
             "return;\n";
   result << "  const char* dredd_tracking_environment_variable = "
             "getenv(\"DREDD_MUTANT_TRACKING_FILE\");\n";

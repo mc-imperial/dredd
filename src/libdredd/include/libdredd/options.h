@@ -20,13 +20,15 @@ namespace dredd {
 class Options {
  public:
   Options(bool optimise_mutations, bool dump_asts,
-          bool only_track_mutant_coverage, bool show_ast_node_types)
+          bool only_track_mutant_coverage, bool show_ast_node_types,
+          bool allow_reset_of_tracking_counters)
       : optimise_mutations_(optimise_mutations),
         dump_asts_(dump_asts),
         only_track_mutant_coverage_(only_track_mutant_coverage),
-        show_ast_node_types_(show_ast_node_types) {}
+        show_ast_node_types_(show_ast_node_types),
+        allow_reset_of_tracking_counters_(allow_reset_of_tracking_counters) {}
 
-  Options() : Options(true, false, false, false) {}
+  Options() : Options(true, false, false, false, false) {}
 
   [[nodiscard]] bool GetOptimiseMutations() const {
     return optimise_mutations_;
@@ -40,6 +42,10 @@ class Options {
 
   [[nodiscard]] bool GetShowAstNodeTypes() const {
     return show_ast_node_types_;
+  }
+
+  [[nodiscard]] bool GetAllowResetOfTrackingCounters() const {
+    return allow_reset_of_tracking_counters_;
   }
 
  private:
@@ -57,6 +63,9 @@ class Options {
   // True if and only if a comment showing the type of each mutated AST node
   // should be emitted. This is useful for debugging.
   bool show_ast_node_types_;
+
+  // True only if code to reset mutant tracking counters should be generated..
+  bool allow_reset_of_tracking_counters_;
 };
 
 }  // namespace dredd

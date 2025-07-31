@@ -36,12 +36,13 @@ namespace dredd {
 class MutateAstConsumer : public clang::ASTConsumer {
  public:
   MutateAstConsumer(const clang::CompilerInstance& compiler_instance,
-                    const Options& options, int& mutation_id,
+                    const Options& options, int& mutation_id, int& file_id,
                     std::optional<protobufs::MutationInfo>& mutation_info)
       : compiler_instance_(&compiler_instance),
         options_(&options),
         visitor_(std::make_unique<MutateVisitor>(compiler_instance, options)),
         mutation_id_(&mutation_id),
+        file_id_(&file_id),
         mutation_info_(&mutation_info) {}
 
   void HandleTranslationUnit(clang::ASTContext& ast_context) override;
@@ -86,6 +87,9 @@ class MutateAstConsumer : public clang::ASTConsumer {
   // Counter used to give each mutation a unique id; shared among AST consumers
   // for different translation units.
   int* mutation_id_;
+
+  // Counter to uniquely identify each file being mutated.
+  int* file_id_;
 
   std::optional<protobufs::MutationInfo>* mutation_info_;
 };
