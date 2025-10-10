@@ -13,11 +13,11 @@
 // limitations under the License.
 syntax = "proto3";
 
-package dredd.protobufs;
+package dredd.protobufs; 
 
 message MutationInfo {
   repeated MutationInfoForFile info_for_files = 1;
-  ResetTrackingCode reset_tracking_code = 2;
+  optional ResetTrackingCode reset_tracking_code = 2;
 }
 
 message ResetTrackingCode {
