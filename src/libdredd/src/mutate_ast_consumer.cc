@@ -196,8 +196,6 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
                    "sizeof(__dredd_already_recorded_" +
                    std::to_string(*file_id_) + ");\n");
     }
-    // TODO - also generate the necessary code for resetting, via a call to
-    // memset
   }
 
   bool rewriter_result =
