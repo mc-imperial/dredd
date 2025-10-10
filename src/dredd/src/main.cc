@@ -147,6 +147,11 @@ int main(int argc, const char** argv) {
     mutation_info = std::nullopt;
   } else {
     mutation_info = dredd::protobufs::MutationInfo();
+    if (allow_reset_of_tracking_counters) {  
+        mutation_info->mutable_reset_tracking_code()
+          ->mutable_reset_function()
+          ->append("void __dredd_reset_tracking() {\n");
+    }
   }
 
   const dredd::Options dredd_options(
@@ -186,6 +191,11 @@ int main(int argc, const char** argv) {
     auto json_options = google::protobuf::util::JsonOptions();
     json_options.add_whitespace = true;
     json_options.always_print_primitive_fields = true;
+    if (allow_reset_of_tracking_counters) {  
+        mutation_info->mutable_reset_tracking_code()
+          ->mutable_reset_function()
+          ->append("};\n");
+    }
     auto json_generation_status = google::protobuf::util::MessageToJsonString(
         mutation_info.value(), &json_string, json_options);
     if (json_generation_status.ok()) {
