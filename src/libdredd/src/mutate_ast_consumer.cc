@@ -173,6 +173,13 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
           ->append("extern std::atomic<bool> __dredd_already_recorded_" +
                    std::to_string(*file_id_) + "[" +
                    std::to_string(num_mutations) + "];\n");
+      mutation_info_->value()
+          .mutable_reset_tracking_code()
+          ->mutable_reset_function()
+          ->append("  std::memset(__dredd_already_recorded_" + 
+                   std::to_string(*file_id_) + ", 0, " +
+                   "sizeof(__dredd_already_recorded_" +
+                   std::to_string(*file_id_) + ");\n");
     } else {
       mutation_info_->value()
           .mutable_reset_tracking_code()
@@ -180,6 +187,14 @@ void MutateAstConsumer::HandleTranslationUnit(clang::ASTContext& ast_context) {
           ->append("extern atomic_bool __dredd_already_recorded_" +
                    std::to_string(*file_id_) + "[" +
                    std::to_string(num_mutations) + "];\n");
+      
+      mutation_info_->value()
+          .mutable_reset_tracking_code()
+          ->mutable_reset_function()
+          ->append("  memset(__dredd_already_recorded_" + 
+                   std::to_string(*file_id_) + ", 0, " +
+                   "sizeof(__dredd_already_recorded_" +
+                   std::to_string(*file_id_) + ");\n");
     }
     // TODO - also generate the necessary code for resetting, via a call to
     // memset
