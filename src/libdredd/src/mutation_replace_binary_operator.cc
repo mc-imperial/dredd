@@ -579,7 +579,7 @@ protobufs::MutationGroup MutationReplaceBinaryOperator::Apply(
     HandleCLogicalOperator(
         preprocessor, new_function_name, result_type, lhs_type, rhs_type,
         options.GetOnlyTrackMutantCoverage(), first_mutation_id_in_file,
-        mutation_id, rewriter, dredd_declarations);
+        mutation_id, rewriter, dredd_declarations, inner_result);
 
     protobufs::MutationGroup result;
     *result.mutable_replace_binary_operator() = inner_result;
@@ -717,7 +717,8 @@ void MutationReplaceBinaryOperator::HandleCLogicalOperator(
     const std::string& lhs_type, const std::string& rhs_type,
     bool only_track_mutant_coverage, int first_mutation_id_in_file,
     int& mutation_id, clang::Rewriter& rewriter,
-    std::unordered_set<std::string>& dredd_declarations) const {
+    std::unordered_set<std::string>& dredd_declarations,
+    protobufs::MutationReplaceBinaryOperator& protobuf_message) const {
   // A C logical operator "op" is handled by transforming:
   //
   //   a op b
@@ -867,10 +868,31 @@ void MutationReplaceBinaryOperator::HandleCLogicalOperator(
     dredd_declarations.insert(outer_function.str());
   }
 
-  // The mutation id is increased by 3 due to:
-  // - Swapping the operator
-  // - Replacing with LHS
-  // - Replacing with RHS
+  // Record the mutations in the associated protobuf object:
+  // Swapping the operator
+  int mutation_id_offset = 0;
+  if (binary_operator_->getOpcode() == clang::BinaryOperatorKind::BO_LAnd) {
+    AddMutationInstance(
+        mutation_id,
+        protobufs::MutationReplaceBinaryOperatorAction::ReplaceWithLOr,
+        mutation_id_offset, protobuf_message);
+  } else {
+    AddMutationInstance(
+        mutation_id,
+        protobufs::MutationReplaceBinaryOperatorAction::ReplaceWithLAnd,
+        mutation_id_offset, protobuf_message);
+  }
+  // Replacing with LHS
+  AddMutationInstance(
+      mutation_id,
+      protobufs::MutationReplaceBinaryOperatorAction::ReplaceWithLHS,
+      mutation_id_offset, protobuf_message);
+  // Replacing with RHS
+  AddMutationInstance(
+      mutation_id,
+      protobufs::MutationReplaceBinaryOperatorAction::ReplaceWithRHS,
+      mutation_id_offset, protobuf_message);
+  // The mutation id is increased appropriately:
   mutation_id += 3;
 }
 
