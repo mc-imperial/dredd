@@ -115,7 +115,8 @@ class MutationReplaceBinaryOperator : public Mutation {
       const std::string& lhs_type, const std::string& rhs_type,
       bool only_track_mutant_coverage, int first_mutation_id_in_file,
       int& mutation_id, clang::Rewriter& rewriter,
-      std::unordered_set<std::string>& dredd_declarations) const;
+      std::unordered_set<std::string>& dredd_declarations,
+      protobufs::MutationReplaceBinaryOperator& protobuf_message) const;
 
   static void AddMutationInstance(
       int mutation_id_base,
