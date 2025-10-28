@@ -39,8 +39,6 @@ case "$(uname)" in
   # Free up some space
   df -h
   sudo apt clean
-  # shellcheck disable=SC2046
-  docker rmi -f $(docker image ls -aq)
   sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
   df -h
   ;;
@@ -72,7 +70,7 @@ CMAKE_BUILD_TYPE="${CONFIG}"
 BUILD_DIR="b_${CONFIG}"
 
 cmake -S . -B ${BUILD_DIR} -G Ninja -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DDREDD_CLANG_LLVM_DIR=/usr/lib/llvm-17
-cmake --build build --config ${CMAKE_BUILD_TYPE}
+cmake --build ${BUILD_DIR} --config ${CMAKE_BUILD_TYPE}
 
 # Get the file actually needed for the release: the dredd executable
 mkdir -p dredd/bin
@@ -90,7 +88,7 @@ DESCRIPTION="$(echo -e "Automated build for dredd revision ${GITHUB_SHA}.")"
 "${PYTHON}" -m github_release_retry.github_release_retry \
   --user "mc-imperial" \
   --repo "dredd" \
-  --tag_name "0.2" \
+  --tag_name "1.0" \
   --target_commitish "${GITHUB_SHA}" \
   --body_string "${DESCRIPTION}" \
   "${DREDD_ZIP_NAME}"
