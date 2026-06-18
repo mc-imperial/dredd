@@ -217,8 +217,13 @@ void MutateAstConsumer::RewriteExpressionsInMainFile() {
   }
 
   // Rewrite the constant integer arguments of builtin functions and templates.
+  std::unordered_set<const clang::Expr*> already_rewritten;
   for (const auto* constant_argument_expresion :
        visitor_->GetConstantArgumentsToRewrite()) {
+    if (already_rewritten.contains(constant_argument_expresion)) {
+      continue;
+    }
+    already_rewritten.insert(constant_argument_expresion);
     if (const auto integer_const_expr =
             constant_argument_expresion->getIntegerConstantExpr(
                 compiler_instance_->getASTContext())) {
