@@ -18,14 +18,22 @@ on:
     branches:
       - main
 
+# Cancel any in-progress run for the same workflow + ref when a new commit is pushed.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     strategy:
       fail-fast: false
       matrix:
         os:
-          - macos-13
-          - windows-latest
+          - macos-15-intel
+          # Pinned to windows-2022 (VS 2022). The prebuilt clang+llvm downloaded
+          # in build.sh links diaguids.lib from the VS 2022 DIA SDK by absolute
+          # path; that path does not exist on the VS 2026 'windows-latest' image.
+          - windows-2022
         config:
           - Release
         # Manually list various Linux configurations.
@@ -57,17 +65,12 @@ jobs:
       LINUX_CC: ${{ matrix.linux_cc }}
       LINUX_CXX: ${{ matrix.linux_cxx }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           submodules: 'true'
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.9'
-
-      - name: cancel_previous
-        uses: styfle/cancel-workflow-action@0.8.0
-        with:
-          access_token: ${{ github.token }}
+          python-version: '3.12'
 
       - name: build_step_nix
         run: |

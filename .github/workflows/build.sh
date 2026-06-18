@@ -36,8 +36,10 @@ case "$(uname)" in
   # Free up some space
   df -h
   sudo apt clean
-  # shellcheck disable=SC2046
-  docker rmi -f $(docker image ls -aq)
+  # Remove any preloaded Docker images to free space. Hosted runners may now
+  # ship with none, so guard against running `docker rmi` with no arguments
+  # (which errors out and, under `set -e`, would abort the build).
+  docker image ls -aq | xargs -r docker rmi -f
   sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
   df -h
 
