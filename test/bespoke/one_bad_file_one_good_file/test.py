@@ -6,12 +6,12 @@ import sys
 from pathlib import Path
 
 DREDD_REPO_ROOT = os.environ['DREDD_REPO_ROOT']
-DREDD_INSTALLED_EXECUTABLE = Path(DREDD_REPO_ROOT, 'third_party', 'clang+llvm', 'bin', 'dredd')
+DREDD_EXECUTABLE = Path(DREDD_REPO_ROOT, 'temp', 'build-Debug', 'src', 'dredd', 'dredd') if 'DREDD_EXECUTABLE' not in os.environ else os.environ['DREDD_EXECUTABLE']
 
 
 def main():
     # Run Dredd
-    cmd = [DREDD_INSTALLED_EXECUTABLE, 'bad.c', 'good.c', '--']
+    cmd = [DREDD_EXECUTABLE, 'bad.c', 'good.c', '--']
     result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     assert result.returncode != 0
     error_output = result.stderr.decode('utf-8')
