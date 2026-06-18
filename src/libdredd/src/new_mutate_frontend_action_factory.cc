@@ -19,6 +19,7 @@
 #include <string>
 
 #include "clang/AST/ASTConsumer.h"
+#include "clang/Basic/Diagnostic.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/FrontendAction.h"
 #include "clang/Frontend/FrontendOptions.h"
@@ -45,15 +46,23 @@ class MutateFrontendAction : public clang::ASTFrontendAction {
       llvm::StringRef file) override;
 
   bool BeginInvocation(clang::CompilerInstance& compiler_instance) override {
-    (void)compiler_instance;  // Unused.
+    // Clear any diagnostics generated when operating on previous source files.
+    compiler_instance.getDiagnostics().getClient()->clear();
+
+    // Sanity check to confirm that there is a current input file.
     const bool input_exists = !getCurrentInput().isEmpty();
     (void)input_exists;  // Keep release-mode compilers happy.
     assert(input_exists && "No current file.");
+
+    // Check whether this file has already been processed.
     if (processed_files_->contains(getCurrentFile().str())) {
       llvm::errs() << "Warning: already processed " << getCurrentFile()
                    << "; skipping repeat occurrence.\n";
       return false;
     }
+
+    // Record that this file has been processed so that duplicate processing
+    // will be detected in the future.
     processed_files_->insert(getCurrentFile().str());
     return true;
   }
