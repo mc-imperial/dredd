@@ -397,7 +397,7 @@ std::string MutateAstConsumer::GetRegularDreddPreludeC(
   result << "#elif __APPLE__\n";
   result << "#define thread_local __thread\n";
   result << "#else\n";
-  result << "#include <threads.h>\n";
+  result << "#define thread_local _Thread_local\n";
   result << "#endif\n";
   result << "\n";
   result << "static thread_local int __dredd_some_mutation_enabled = 1;\n";

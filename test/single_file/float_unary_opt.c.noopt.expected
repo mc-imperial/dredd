@@ -17,7 +17,7 @@
 #elif __APPLE__
 #define thread_local __thread
 #else
-#include <threads.h>
+#define thread_local _Thread_local
 #endif
 
 static thread_local int __dredd_some_mutation_enabled = 1;
