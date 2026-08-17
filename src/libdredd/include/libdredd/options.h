@@ -19,17 +19,29 @@ namespace dredd {
 
 class Options {
  public:
-  Options(bool optimise_mutations, bool dump_asts,
+  struct Optimisations {
+    static Optimisations AllEnabled() { return Optimisations(true); }
+
+    static Optimisations AllDisabled() { return Optimisations(false); }
+
+    [[nodiscard]] bool TemporaryAsBool() const { return enabled_; }
+    bool enabled_;
+
+   private:
+    explicit Optimisations(bool enabled) : enabled_(enabled) {}
+  };
+
+  Options(const Optimisations& optimisations, bool dump_asts,
           bool only_track_mutant_coverage, bool show_ast_node_types)
-      : optimise_mutations_(optimise_mutations),
+      : optimisations_(optimisations),
         dump_asts_(dump_asts),
         only_track_mutant_coverage_(only_track_mutant_coverage),
         show_ast_node_types_(show_ast_node_types) {}
 
-  Options() : Options(true, false, false, false) {}
+  Options() : Options(Optimisations::AllEnabled(), false, false, false) {}
 
-  [[nodiscard]] bool GetOptimiseMutations() const {
-    return optimise_mutations_;
+  [[nodiscard]] Optimisations GetOptimisations() const {
+    return optimisations_;
   }
 
   [[nodiscard]] bool GetOnlyTrackMutantCoverage() const {
@@ -43,8 +55,8 @@ class Options {
   }
 
  private:
-  // True if and only if Dredd's optimisations are enabled.
-  bool optimise_mutations_;
+  // Records which of Dredd's optimisations are enabled.
+  Optimisations optimisations_;
 
   // True if and only if the AST being consumed should be dumped; useful for
   // debugging.

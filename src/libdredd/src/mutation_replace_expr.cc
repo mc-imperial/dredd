@@ -66,7 +66,8 @@ dredd::MutationReplaceExpr::MutationReplaceExpr(
                              ast_context) {}
 
 std::string MutationReplaceExpr::GetFunctionName(
-    bool optimise_mutations, clang::ASTContext& ast_context) const {
+    const Options::Optimisations& optimisations,
+    clang::ASTContext& ast_context) const {
   std::string result = "__dredd_replace_expr_";
 
   if (expr_->isLValue()) {
@@ -91,7 +92,7 @@ std::string MutationReplaceExpr::GetFunctionName(
     result += "_lvalue";
   }
 
-  if (optimise_mutations) {
+  if (optimisations.TemporaryAsBool()) {
     AddOptimisationSpecifier(ast_context, result);
   }
 
@@ -229,9 +230,9 @@ void MutationReplaceExpr::GenerateUnaryOperatorInsertionBeforeLValue(
 
 void MutationReplaceExpr::GenerateUnaryOperatorInsertionBeforeNonLValue(
     const std::string& arg_evaluated, clang::ASTContext& ast_context,
-    bool optimise_mutations, bool only_track_mutant_coverage,
-    int mutation_id_base, std::stringstream& new_function,
-    int& mutation_id_offset,
+    const Options::Optimisations& optimisations,
+    bool only_track_mutant_coverage, int mutation_id_base,
+    std::stringstream& new_function, int& mutation_id_offset,
     protobufs::MutationReplaceExpr& protobuf_message) const {
   if (expr_->isLValue()) {
     return;
@@ -240,7 +241,7 @@ void MutationReplaceExpr::GenerateUnaryOperatorInsertionBeforeNonLValue(
       *expr_->getType()->getAs<clang::BuiltinType>();
   // Insert '!'
   if (exprType.isBooleanType() || exprType.isInteger()) {
-    if (!optimise_mutations ||
+    if (!optimisations.TemporaryAsBool() ||
         !IsRedundantOperatorInsertion(ast_context, clang::UO_LNot)) {
       if (!only_track_mutant_coverage) {
         new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
@@ -255,7 +256,7 @@ void MutationReplaceExpr::GenerateUnaryOperatorInsertionBeforeNonLValue(
 
   // Insert '~'
   if (exprType.isInteger() && !exprType.isBooleanType()) {
-    if (!optimise_mutations ||
+    if (!optimisations.TemporaryAsBool() ||
         !IsRedundantOperatorInsertion(ast_context, clang::UO_Not)) {
       if (!only_track_mutant_coverage) {
         new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
@@ -270,7 +271,7 @@ void MutationReplaceExpr::GenerateUnaryOperatorInsertionBeforeNonLValue(
 
   // Insert '-'
   if (exprType.isSignedInteger() || exprType.isFloatingPoint()) {
-    if (!optimise_mutations ||
+    if (!optimisations.TemporaryAsBool() ||
         !IsRedundantOperatorInsertion(ast_context, clang::UO_Minus)) {
       if (!only_track_mutant_coverage) {
         new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
@@ -286,46 +287,46 @@ void MutationReplaceExpr::GenerateUnaryOperatorInsertionBeforeNonLValue(
 
 void MutationReplaceExpr::GenerateUnaryOperatorInsertion(
     const std::string& arg_evaluated, clang::ASTContext& ast_context,
-    bool optimise_mutations, bool only_track_mutant_coverage,
-    int mutation_id_base, std::stringstream& new_function,
-    int& mutation_id_offset,
+    const Options::Optimisations& optimisations,
+    bool only_track_mutant_coverage, int mutation_id_base,
+    std::stringstream& new_function, int& mutation_id_offset,
     protobufs::MutationReplaceExpr& protobuf_message) const {
   GenerateUnaryOperatorInsertionBeforeLValue(
       arg_evaluated, ast_context, only_track_mutant_coverage, mutation_id_base,
       new_function, mutation_id_offset, protobuf_message);
   GenerateUnaryOperatorInsertionBeforeNonLValue(
-      arg_evaluated, ast_context, optimise_mutations,
-      only_track_mutant_coverage, mutation_id_base, new_function,
-      mutation_id_offset, protobuf_message);
+      arg_evaluated, ast_context, optimisations, only_track_mutant_coverage,
+      mutation_id_base, new_function, mutation_id_offset, protobuf_message);
 }
 
 void MutationReplaceExpr::GenerateConstantReplacement(
-    clang::ASTContext& ast_context, bool optimise_mutations,
+    clang::ASTContext& ast_context, const Options::Optimisations& optimisations,
     bool only_track_mutant_coverage, int mutation_id_base,
     std::stringstream& new_function, int& mutation_id_offset,
     protobufs::MutationReplaceExpr& protobuf_message) const {
   if (!expr_->isLValue()) {
     GenerateBooleanConstantReplacement(
-        ast_context, optimise_mutations, only_track_mutant_coverage,
+        ast_context, optimisations, only_track_mutant_coverage,
         mutation_id_base, new_function, mutation_id_offset, protobuf_message);
     GenerateIntegerConstantReplacement(
-        ast_context, optimise_mutations, only_track_mutant_coverage,
+        ast_context, optimisations, only_track_mutant_coverage,
         mutation_id_base, new_function, mutation_id_offset, protobuf_message);
     GenerateFloatConstantReplacement(
-        ast_context, optimise_mutations, only_track_mutant_coverage,
+        ast_context, optimisations, only_track_mutant_coverage,
         mutation_id_base, new_function, mutation_id_offset, protobuf_message);
   }
 }
 
 void MutationReplaceExpr::GenerateFloatConstantReplacement(
-    const clang::ASTContext& ast_context, bool optimise_mutations,
+    const clang::ASTContext& ast_context,
+    const Options::Optimisations& optimisations,
     bool only_track_mutant_coverage, int mutation_id_base,
     std::stringstream& new_function, int& mutation_id_offset,
     protobufs::MutationReplaceExpr& protobuf_message) const {
   const clang::BuiltinType& exprType =
       *expr_->getType()->getAs<clang::BuiltinType>();
   if (exprType.isFloatingPoint()) {
-    if (!optimise_mutations ||
+    if (!optimisations.TemporaryAsBool() ||
         !ExprIsEquivalentToFloat(*expr_, 0.0, ast_context)) {
       // Replace floating point expression with 0.0
       if (!only_track_mutant_coverage) {
@@ -338,7 +339,7 @@ void MutationReplaceExpr::GenerateFloatConstantReplacement(
           mutation_id_offset, protobuf_message);
     }
 
-    if (!optimise_mutations ||
+    if (!optimisations.TemporaryAsBool() ||
         !ExprIsEquivalentToFloat(*expr_, 1.0, ast_context)) {
       // Replace floating point expression with 1.0
       if (!only_track_mutant_coverage) {
@@ -351,7 +352,7 @@ void MutationReplaceExpr::GenerateFloatConstantReplacement(
           mutation_id_offset, protobuf_message);
     }
 
-    if (!optimise_mutations ||
+    if (!optimisations.TemporaryAsBool() ||
         !ExprIsEquivalentToFloat(*expr_, -1.0, ast_context)) {
       // Replace floating point expression with -1.0
       if (!only_track_mutant_coverage) {
@@ -366,14 +367,16 @@ void MutationReplaceExpr::GenerateFloatConstantReplacement(
   }
 }
 void MutationReplaceExpr::GenerateIntegerConstantReplacement(
-    const clang::ASTContext& ast_context, bool optimise_mutations,
+    const clang::ASTContext& ast_context,
+    const Options::Optimisations& optimisations,
     bool only_track_mutant_coverage, int mutation_id_base,
     std::stringstream& new_function, int& mutation_id_offset,
     protobufs::MutationReplaceExpr& protobuf_message) const {
   const clang::BuiltinType& exprType =
       *expr_->getType()->getAs<clang::BuiltinType>();
   if (exprType.isInteger() && !exprType.isBooleanType()) {
-    if (!optimise_mutations || !ExprIsEquivalentToInt(*expr_, 0, ast_context)) {
+    if (!optimisations.TemporaryAsBool() ||
+        !ExprIsEquivalentToInt(*expr_, 0, ast_context)) {
       // Replace expression with 0
       if (!only_track_mutant_coverage) {
         new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
@@ -385,7 +388,8 @@ void MutationReplaceExpr::GenerateIntegerConstantReplacement(
           mutation_id_offset, protobuf_message);
     }
 
-    if (!optimise_mutations || !ExprIsEquivalentToInt(*expr_, 1, ast_context)) {
+    if (!optimisations.TemporaryAsBool() ||
+        !ExprIsEquivalentToInt(*expr_, 1, ast_context)) {
       // Replace expression with 1
       if (!only_track_mutant_coverage) {
         new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
@@ -399,7 +403,7 @@ void MutationReplaceExpr::GenerateIntegerConstantReplacement(
   }
 
   if (exprType.isSignedInteger()) {
-    if (!optimise_mutations ||
+    if (!optimisations.TemporaryAsBool() ||
         !ExprIsEquivalentToInt(*expr_, -1, ast_context)) {
       // Replace signed integer expression with -1
       if (!only_track_mutant_coverage) {
@@ -414,14 +418,14 @@ void MutationReplaceExpr::GenerateIntegerConstantReplacement(
   }
 }
 void MutationReplaceExpr::GenerateBooleanConstantReplacement(
-    clang::ASTContext& ast_context, bool optimise_mutations,
+    clang::ASTContext& ast_context, const Options::Optimisations& optimisations,
     bool only_track_mutant_coverage, int mutation_id_base,
     std::stringstream& new_function, int& mutation_id_offset,
     protobufs::MutationReplaceExpr& protobuf_message) const {
   const clang::BuiltinType& exprType =
       *expr_->getType()->getAs<clang::BuiltinType>();
   if (exprType.isBooleanType()) {
-    if (!optimise_mutations ||
+    if (!optimisations.TemporaryAsBool() ||
         (!ExprIsEquivalentToBool(*expr_, true, ast_context) &&
          !IsBooleanReplacementRedundantForBinaryOperator(true, ast_context))) {
       // Replace expression with true
@@ -436,7 +440,7 @@ void MutationReplaceExpr::GenerateBooleanConstantReplacement(
                           mutation_id_offset, protobuf_message);
     }
 
-    if (!optimise_mutations ||
+    if (!optimisations.TemporaryAsBool() ||
         (!ExprIsEquivalentToBool(*expr_, false, ast_context) &&
          !IsBooleanReplacementRedundantForBinaryOperator(false, ast_context))) {
       // Replace expression with false
@@ -457,7 +461,8 @@ void MutationReplaceExpr::GenerateBooleanConstantReplacement(
 std::string MutationReplaceExpr::GenerateMutatorFunction(
     clang::ASTContext& ast_context, const std::string& function_name,
     const std::string& result_type, const std::string& input_type,
-    bool optimise_mutations, bool only_track_mutant_coverage, int& mutation_id,
+    const Options::Optimisations& optimisations,
+    bool only_track_mutant_coverage, int& mutation_id,
     protobufs::MutationReplaceExpr& protobuf_message) const {
   std::stringstream new_function;
   new_function << "static " << result_type << " " << function_name << "(";
@@ -488,12 +493,11 @@ std::string MutationReplaceExpr::GenerateMutatorFunction(
 
   int mutation_id_offset = 0;
 
-  GenerateUnaryOperatorInsertion(arg_evaluated, ast_context, optimise_mutations,
-                                 only_track_mutant_coverage, mutation_id,
-                                 new_function, mutation_id_offset,
-                                 protobuf_message);
+  GenerateUnaryOperatorInsertion(
+      arg_evaluated, ast_context, optimisations, only_track_mutant_coverage,
+      mutation_id, new_function, mutation_id_offset, protobuf_message);
   GenerateConstantReplacement(
-      ast_context, optimise_mutations, only_track_mutant_coverage, mutation_id,
+      ast_context, optimisations, only_track_mutant_coverage, mutation_id,
       new_function, mutation_id_offset, protobuf_message);
 
   if (only_track_mutant_coverage) {
@@ -655,7 +659,7 @@ protobufs::MutationGroup MutationReplaceExpr::Apply(
   *inner_result.mutable_snippet() = info_for_source_range_.GetSnippet();
 
   const std::string new_function_name =
-      GetFunctionName(options.GetOptimiseMutations(), ast_context);
+      GetFunctionName(options.GetOptimisations(), ast_context);
   const std::string result_type = expr_->getType()
                                       ->getAs<clang::BuiltinType>()
                                       ->getName(ast_context.getPrintingPolicy())
@@ -681,7 +685,7 @@ protobufs::MutationGroup MutationReplaceExpr::Apply(
 
   const std::string new_function = GenerateMutatorFunction(
       ast_context, new_function_name, result_type, input_type,
-      options.GetOptimiseMutations(), options.GetOnlyTrackMutantCoverage(),
+      options.GetOptimisations(), options.GetOnlyTrackMutantCoverage(),
       mutation_id, inner_result);
   assert(!new_function.empty() && "Unsupported expression.");
 

@@ -141,7 +141,11 @@ int main(int argc, const char** argv) {
     mutation_info = dredd::protobufs::MutationInfo();
   }
 
-  const dredd::Options dredd_options(!no_mutation_opts, dump_asts,
+  const dredd::Options::Optimisations optimisations =
+      no_mutation_opts ? dredd::Options::Optimisations::AllDisabled()
+                       : dredd::Options::Optimisations::AllEnabled();
+
+  const dredd::Options dredd_options(optimisations, dump_asts,
                                      only_track_mutant_coverage,
                                      show_ast_node_types);
 
