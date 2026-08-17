@@ -80,13 +80,13 @@ class Options {
     }
 
    private:
-    const bool do_not_remove_side_effect_free_expression_statements_;
-    const bool do_not_remove_compound_statements_;
-    const bool do_not_mutate_casts_cleanups_and_parentheses_;
-    const bool leverage_constant_folding_;
-    const bool do_not_replace_relational_with_argument_;
-    const bool avoid_redundant_operator_mutation_combinations_;
-    const bool avoid_self_inverse_unary_operator_removal_;
+    bool do_not_remove_side_effect_free_expression_statements_;
+    bool do_not_remove_compound_statements_;
+    bool do_not_mutate_casts_cleanups_and_parentheses_;
+    bool leverage_constant_folding_;
+    bool do_not_replace_relational_with_argument_;
+    bool avoid_redundant_operator_mutation_combinations_;
+    bool avoid_self_inverse_unary_operator_removal_;
   };
 
   Options(const Optimisations& optimisations, bool dump_asts,
