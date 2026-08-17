@@ -154,7 +154,7 @@ std::string MutationReplaceUnaryOperator::GetFunctionName(
   // important to change the name of the mutator function to avoid clashes
   // with other versions that apply to the same operator and types but cannot
   // be optimised.
-  if (optimisations.TemporaryAsBool()) {
+  if (optimisations.GetLeverageConstantFolding()) {
     if (MutationReplaceExpr::ExprIsEquivalentToInt(
             *unary_operator_->getSubExpr(), 0, ast_context) ||
         MutationReplaceExpr::ExprIsEquivalentToFloat(
@@ -301,7 +301,7 @@ void MutationReplaceUnaryOperator::GenerateUnaryOperatorReplacement(
   for (const auto operator_kind : candidate_replacement_operators) {
     if (operator_kind == unary_operator_->getOpcode() ||
         !IsValidReplacementOperator(operator_kind) ||
-        (optimisations.TemporaryAsBool() &&
+        (optimisations.GetAvoidRedundantOperatorMutationCombinations() &&
          IsRedundantReplacementOperator(operator_kind, ast_context))) {
       continue;
     }
@@ -324,7 +324,8 @@ void MutationReplaceUnaryOperator::GenerateUnaryOperatorReplacement(
   // Various operators are self-inverse, so that removing the operator is
   // equivalent to inserting another occurrence of it, which will be done by
   // another mutation.
-  if (!optimisations.TemporaryAsBool() || !IsOperatorSelfInverse()) {
+  if (!optimisations.GetAvoidSelfInverseUnaryOperatorRemoval() ||
+      !IsOperatorSelfInverse()) {
     if (!only_track_mutant_coverage) {
       new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
                    << mutation_id_offset

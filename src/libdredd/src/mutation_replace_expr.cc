@@ -92,7 +92,7 @@ std::string MutationReplaceExpr::GetFunctionName(
     result += "_lvalue";
   }
 
-  if (optimisations.TemporaryAsBool()) {
+  if (optimisations.GetLeverageConstantFolding()) {
     AddOptimisationSpecifier(ast_context, result);
   }
 
@@ -241,7 +241,7 @@ void MutationReplaceExpr::GenerateUnaryOperatorInsertionBeforeNonLValue(
       *expr_->getType()->getAs<clang::BuiltinType>();
   // Insert '!'
   if (exprType.isBooleanType() || exprType.isInteger()) {
-    if (!optimisations.TemporaryAsBool() ||
+    if (!optimisations.GetAvoidRedundantOperatorMutationCombinations() ||
         !IsRedundantOperatorInsertion(ast_context, clang::UO_LNot)) {
       if (!only_track_mutant_coverage) {
         new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
@@ -256,7 +256,7 @@ void MutationReplaceExpr::GenerateUnaryOperatorInsertionBeforeNonLValue(
 
   // Insert '~'
   if (exprType.isInteger() && !exprType.isBooleanType()) {
-    if (!optimisations.TemporaryAsBool() ||
+    if (!optimisations.GetAvoidRedundantOperatorMutationCombinations() ||
         !IsRedundantOperatorInsertion(ast_context, clang::UO_Not)) {
       if (!only_track_mutant_coverage) {
         new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
@@ -271,7 +271,7 @@ void MutationReplaceExpr::GenerateUnaryOperatorInsertionBeforeNonLValue(
 
   // Insert '-'
   if (exprType.isSignedInteger() || exprType.isFloatingPoint()) {
-    if (!optimisations.TemporaryAsBool() ||
+    if (!optimisations.GetAvoidRedundantOperatorMutationCombinations() ||
         !IsRedundantOperatorInsertion(ast_context, clang::UO_Minus)) {
       if (!only_track_mutant_coverage) {
         new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
@@ -326,7 +326,7 @@ void MutationReplaceExpr::GenerateFloatConstantReplacement(
   const clang::BuiltinType& exprType =
       *expr_->getType()->getAs<clang::BuiltinType>();
   if (exprType.isFloatingPoint()) {
-    if (!optimisations.TemporaryAsBool() ||
+    if (!optimisations.GetLeverageConstantFolding() ||
         !ExprIsEquivalentToFloat(*expr_, 0.0, ast_context)) {
       // Replace floating point expression with 0.0
       if (!only_track_mutant_coverage) {
@@ -339,7 +339,7 @@ void MutationReplaceExpr::GenerateFloatConstantReplacement(
           mutation_id_offset, protobuf_message);
     }
 
-    if (!optimisations.TemporaryAsBool() ||
+    if (!optimisations.GetLeverageConstantFolding() ||
         !ExprIsEquivalentToFloat(*expr_, 1.0, ast_context)) {
       // Replace floating point expression with 1.0
       if (!only_track_mutant_coverage) {
@@ -352,7 +352,7 @@ void MutationReplaceExpr::GenerateFloatConstantReplacement(
           mutation_id_offset, protobuf_message);
     }
 
-    if (!optimisations.TemporaryAsBool() ||
+    if (!optimisations.GetLeverageConstantFolding() ||
         !ExprIsEquivalentToFloat(*expr_, -1.0, ast_context)) {
       // Replace floating point expression with -1.0
       if (!only_track_mutant_coverage) {
@@ -375,7 +375,7 @@ void MutationReplaceExpr::GenerateIntegerConstantReplacement(
   const clang::BuiltinType& exprType =
       *expr_->getType()->getAs<clang::BuiltinType>();
   if (exprType.isInteger() && !exprType.isBooleanType()) {
-    if (!optimisations.TemporaryAsBool() ||
+    if (!optimisations.GetLeverageConstantFolding() ||
         !ExprIsEquivalentToInt(*expr_, 0, ast_context)) {
       // Replace expression with 0
       if (!only_track_mutant_coverage) {
@@ -388,7 +388,7 @@ void MutationReplaceExpr::GenerateIntegerConstantReplacement(
           mutation_id_offset, protobuf_message);
     }
 
-    if (!optimisations.TemporaryAsBool() ||
+    if (!optimisations.GetLeverageConstantFolding() ||
         !ExprIsEquivalentToInt(*expr_, 1, ast_context)) {
       // Replace expression with 1
       if (!only_track_mutant_coverage) {
@@ -403,7 +403,7 @@ void MutationReplaceExpr::GenerateIntegerConstantReplacement(
   }
 
   if (exprType.isSignedInteger()) {
-    if (!optimisations.TemporaryAsBool() ||
+    if (!optimisations.GetLeverageConstantFolding() ||
         !ExprIsEquivalentToInt(*expr_, -1, ast_context)) {
       // Replace signed integer expression with -1
       if (!only_track_mutant_coverage) {
@@ -425,8 +425,9 @@ void MutationReplaceExpr::GenerateBooleanConstantReplacement(
   const clang::BuiltinType& exprType =
       *expr_->getType()->getAs<clang::BuiltinType>();
   if (exprType.isBooleanType()) {
-    if (!optimisations.TemporaryAsBool() ||
-        (!ExprIsEquivalentToBool(*expr_, true, ast_context) &&
+    if ((!optimisations.GetLeverageConstantFolding() ||
+         !ExprIsEquivalentToBool(*expr_, true, ast_context)) &&
+        (!optimisations.GetAvoidRedundantOperatorMutationCombinations() ||
          !IsBooleanReplacementRedundantForBinaryOperator(true, ast_context))) {
       // Replace expression with true
       if (!only_track_mutant_coverage) {
@@ -440,8 +441,9 @@ void MutationReplaceExpr::GenerateBooleanConstantReplacement(
                           mutation_id_offset, protobuf_message);
     }
 
-    if (!optimisations.TemporaryAsBool() ||
-        (!ExprIsEquivalentToBool(*expr_, false, ast_context) &&
+    if ((!optimisations.GetLeverageConstantFolding() ||
+         !ExprIsEquivalentToBool(*expr_, false, ast_context)) &&
+        (!optimisations.GetAvoidRedundantOperatorMutationCombinations() ||
          !IsBooleanReplacementRedundantForBinaryOperator(false, ast_context))) {
       // Replace expression with false
       if (!only_track_mutant_coverage) {

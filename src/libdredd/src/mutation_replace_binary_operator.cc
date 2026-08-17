@@ -217,7 +217,8 @@ std::string MutationReplaceBinaryOperator::GetFunctionName(
   // important to change the name of the mutator function to avoid clashes
   // with other versions that apply to the same operator and types but cannot
   // be optimised.
-  if (optimisations.TemporaryAsBool() && !binary_operator_->isAssignmentOp()) {
+  if (optimisations.GetLeverageConstantFolding() &&
+      !binary_operator_->isAssignmentOp()) {
     if (MutationReplaceExpr::ExprIsEquivalentToInt(*binary_operator_->getRHS(),
                                                    0, ast_context) ||
         MutationReplaceExpr::ExprIsEquivalentToFloat(
@@ -263,7 +264,7 @@ void MutationReplaceBinaryOperator::GenerateArgumentReplacement(
     bool only_track_mutant_coverage, int mutation_id_base,
     std::stringstream& new_function, int& mutation_id_offset,
     protobufs::MutationReplaceBinaryOperator& protobuf_message) const {
-  if (optimisations.TemporaryAsBool()) {
+  if (optimisations.GetDoNotReplaceRelationalWithArgument()) {
     switch (binary_operator_->getOpcode()) {
       case clang::BO_GT:
       case clang::BO_GE:
@@ -291,7 +292,7 @@ void MutationReplaceBinaryOperator::GenerateArgumentReplacement(
   // LHS
   // These cases are equivalent to constant replacement with the respective
   // constants
-  if (!optimisations.TemporaryAsBool() ||
+  if (!optimisations.GetLeverageConstantFolding() ||
       !(MutationReplaceExpr::ExprIsEquivalentToInt(*binary_operator_->getLHS(),
                                                    0, ast_context) ||
         MutationReplaceExpr::ExprIsEquivalentToFloat(
@@ -318,7 +319,7 @@ void MutationReplaceBinaryOperator::GenerateArgumentReplacement(
   // RHS
   // These cases are equivalent to constant replacement with the respective
   // constants
-  if (!optimisations.TemporaryAsBool() ||
+  if (!optimisations.GetLeverageConstantFolding() ||
       !(MutationReplaceExpr::ExprIsEquivalentToInt(*binary_operator_->getRHS(),
                                                    0, ast_context) ||
         MutationReplaceExpr::ExprIsEquivalentToFloat(
@@ -430,7 +431,7 @@ MutationReplaceBinaryOperator::GetReplacementOperators(
   for (auto operator_kind : candidate_operator_kinds) {
     if (operator_kind == binary_operator_->getOpcode() ||
         !IsValidReplacementOperator(operator_kind) ||
-        (optimisations.TemporaryAsBool() &&
+        (optimisations.GetAvoidRedundantOperatorMutationCombinations() &&
          IsRedundantReplacementOperator(operator_kind, ast_context))) {
       continue;
     }
