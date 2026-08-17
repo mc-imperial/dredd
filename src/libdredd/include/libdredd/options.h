@@ -21,9 +21,34 @@ class Options {
  public:
   class Optimisations {
    public:
-    static Optimisations AllEnabled() { return Optimisations(true); }
+    explicit Optimisations(
+        bool do_not_remove_side_effect_free_expression_statements,
+        bool do_not_remove_compound_statements,
+        bool do_not_mutate_casts_cleanups_and_parentheses,
+        bool leverage_constant_folding,
+        bool do_not_replace_relational_with_argument,
+        bool avoid_redundant_operator_mutation_combinations,
+        bool avoid_self_inverse_unary_operator_removal)
+        : do_not_remove_side_effect_free_expression_statements_(
+              do_not_remove_side_effect_free_expression_statements),
+          do_not_remove_compound_statements_(do_not_remove_compound_statements),
+          do_not_mutate_casts_cleanups_and_parentheses_(
+              do_not_mutate_casts_cleanups_and_parentheses),
+          leverage_constant_folding_(leverage_constant_folding),
+          do_not_replace_relational_with_argument_(
+              do_not_replace_relational_with_argument),
+          avoid_redundant_operator_mutation_combinations_(
+              avoid_redundant_operator_mutation_combinations),
+          avoid_self_inverse_unary_operator_removal_(
+              avoid_self_inverse_unary_operator_removal) {}
 
-    static Optimisations AllDisabled() { return Optimisations(false); }
+    static Optimisations AllEnabled() {
+      return Optimisations(true, true, true, true, true, true, true);
+    }
+
+    static Optimisations AllDisabled() {
+      return Optimisations(false, false, false, false, false, false, false);
+    }
 
     [[nodiscard]] bool GetDoNotRemoveSideEffectFreeExpressionStatements()
         const {
@@ -55,22 +80,13 @@ class Options {
     }
 
    private:
-    explicit Optimisations(bool enabled)
-        : do_not_remove_side_effect_free_expression_statements_(enabled),
-          do_not_remove_compound_statements_(enabled),
-          do_not_mutate_casts_cleanups_and_parentheses_(enabled),
-          leverage_constant_folding_(enabled),
-          do_not_replace_relational_with_argument_(enabled),
-          avoid_redundant_operator_mutation_combinations_(enabled),
-          avoid_self_inverse_unary_operator_removal_(enabled) {}
-
-    bool do_not_remove_side_effect_free_expression_statements_;
-    bool do_not_remove_compound_statements_;
-    bool do_not_mutate_casts_cleanups_and_parentheses_;
-    bool leverage_constant_folding_;
-    bool do_not_replace_relational_with_argument_;
-    bool avoid_redundant_operator_mutation_combinations_;
-    bool avoid_self_inverse_unary_operator_removal_;
+    const bool do_not_remove_side_effect_free_expression_statements_;
+    const bool do_not_remove_compound_statements_;
+    const bool do_not_mutate_casts_cleanups_and_parentheses_;
+    const bool leverage_constant_folding_;
+    const bool do_not_replace_relational_with_argument_;
+    const bool avoid_redundant_operator_mutation_combinations_;
+    const bool avoid_self_inverse_unary_operator_removal_;
   };
 
   Options(const Optimisations& optimisations, bool dump_asts,
