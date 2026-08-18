@@ -59,6 +59,35 @@ static llvm::cl::OptionCategory mutate_category("mutate options");
 static llvm::cl::opt<bool> no_mutation_opts(
     "no-mutation-opts", llvm::cl::desc("Disable Dredd's optimisations"),
     llvm::cl::cat(mutate_category));
+static llvm::cl::opt<bool>
+    // NOLINTNEXTLINE
+    opt_do_not_remove_side_effect_free_expression_statements(
+        "opt-do-not-remove-side-effect-free-expression-statements",
+        llvm::cl::desc("TODO"), llvm::cl::cat(mutate_category));
+// NOLINTNEXTLINE
+static llvm::cl::opt<bool> opt_do_not_remove_compound_statements(
+    "opt-do-not-remove-compound-statements", llvm::cl::desc("TODO"),
+    llvm::cl::cat(mutate_category));
+// NOLINTNEXTLINE
+static llvm::cl::opt<bool> opt_do_not_mutate_casts_cleanups_and_parentheses(
+    "opt-do-not-mutate-casts-cleanups-and-parentheses", llvm::cl::desc("TODO"),
+    llvm::cl::cat(mutate_category));
+// NOLINTNEXTLINE
+static llvm::cl::opt<bool> opt_leverage_constant_folding(
+    "opt-leverage-constant-folding", llvm::cl::desc("TODO"),
+    llvm::cl::cat(mutate_category));
+// NOLINTNEXTLINE
+static llvm::cl::opt<bool> opt_do_not_replace_relational_with_argument(
+    "opt-do-not-replace-relational-with-argument", llvm::cl::desc("TODO"),
+    llvm::cl::cat(mutate_category));
+// NOLINTNEXTLINE
+static llvm::cl::opt<bool> opt_avoid_redundant_operator_mutation_combinations(
+    "opt-avoid-redundant-operator-mutation-combinations",
+    llvm::cl::desc("TODO"), llvm::cl::cat(mutate_category));
+// NOLINTNEXTLINE
+static llvm::cl::opt<bool> opt_avoid_self_inverse_unary_operator_removal(
+    "opt-avoid-self-inverse-unary-operator-removal", llvm::cl::desc("TODO"),
+    llvm::cl::cat(mutate_category));
 // NOLINTNEXTLINE
 static llvm::cl::opt<bool> only_track_mutant_coverage(
     "only-track-mutant-coverage",
@@ -91,6 +120,59 @@ static llvm::cl::opt<bool> show_ast_node_types(
 #elif defined(_MSC_VER)
 #pragma warning(pop)
 #endif
+
+namespace {
+[[nodiscard]] dredd::Options::Optimisations GetOptimisations() {
+  bool specific_optimisations_enabled = false;
+  bool enabled_do_not_remove_side_effect_free_expression_statements = false;
+  if (opt_do_not_remove_side_effect_free_expression_statements) {
+    specific_optimisations_enabled = true;
+    enabled_do_not_remove_side_effect_free_expression_statements = true;
+  }
+  bool enabled_do_not_remove_compound_statements = false;
+  if (opt_do_not_remove_compound_statements) {
+    specific_optimisations_enabled = true;
+    enabled_do_not_remove_compound_statements = true;
+  }
+  bool enabled_do_not_mutate_casts_cleanups_and_parentheses = false;
+  if (opt_do_not_mutate_casts_cleanups_and_parentheses) {
+    specific_optimisations_enabled = true;
+    enabled_do_not_mutate_casts_cleanups_and_parentheses = true;
+  }
+  bool enabled_leverage_constant_folding = false;
+  if (opt_leverage_constant_folding) {
+    specific_optimisations_enabled = true;
+    enabled_leverage_constant_folding = true;
+  }
+  bool enabled_do_not_replace_relational_with_argument = false;
+  if (opt_do_not_replace_relational_with_argument) {
+    specific_optimisations_enabled = true;
+    enabled_do_not_replace_relational_with_argument = true;
+  }
+  bool enabled_avoid_redundant_operator_mutation_combinations = false;
+  if (opt_avoid_redundant_operator_mutation_combinations) {
+    specific_optimisations_enabled = true;
+    enabled_avoid_redundant_operator_mutation_combinations = true;
+  }
+  bool enabled_avoid_self_inverse_unary_operator_removal = false;
+  if (opt_avoid_self_inverse_unary_operator_removal) {
+    specific_optimisations_enabled = true;
+    enabled_avoid_self_inverse_unary_operator_removal = true;
+  }
+  if (specific_optimisations_enabled) {
+    return dredd::Options::Optimisations(
+        enabled_do_not_remove_side_effect_free_expression_statements,
+        enabled_do_not_remove_compound_statements,
+        enabled_do_not_mutate_casts_cleanups_and_parentheses,
+        enabled_leverage_constant_folding,
+        enabled_do_not_replace_relational_with_argument,
+        enabled_avoid_redundant_operator_mutation_combinations,
+        enabled_avoid_self_inverse_unary_operator_removal);
+  }
+  return no_mutation_opts ? dredd::Options::Optimisations::AllDisabled()
+                          : dredd::Options::Optimisations::AllEnabled();
+}
+}  // namespace
 
 int main(int argc, const char** argv) {
   llvm::sys::PrintStackTraceOnErrorSignal(argv[0]);
@@ -141,7 +223,7 @@ int main(int argc, const char** argv) {
     mutation_info = dredd::protobufs::MutationInfo();
   }
 
-  const dredd::Options dredd_options(!no_mutation_opts, dump_asts,
+  const dredd::Options dredd_options(GetOptimisations(), dump_asts,
                                      only_track_mutant_coverage,
                                      show_ast_node_types);
 

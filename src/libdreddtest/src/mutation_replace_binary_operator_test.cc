@@ -37,7 +37,8 @@ namespace dredd {
 namespace {
 
 void TestReplacement(const std::string& original, const std::string& expected,
-                     int num_replacements, bool optimise_mutations,
+                     int num_replacements,
+                     const Options::Optimisations& optimisations,
                      const std::string& expected_dredd_declaration) {
   auto ast_unit = clang::tooling::buildASTFromCodeWithArgs(original, {"-w"});
   ASSERT_FALSE(ast_unit->getDiagnostics().hasErrorOccurred());
@@ -61,8 +62,8 @@ void TestReplacement(const std::string& original, const std::string& expected,
   int mutation_id = 0;
   std::unordered_set<std::string> dredd_declarations;
   mutation.Apply(ast_unit->getASTContext(), ast_unit->getPreprocessor(),
-                 Options(optimise_mutations, false, false, false), 0,
-                 mutation_id, rewriter, dredd_declarations);
+                 Options(optimisations, false, false, false), 0, mutation_id,
+                 rewriter, dredd_declarations);
   ASSERT_EQ(num_replacements, mutation_id);
   ASSERT_EQ(1, dredd_declarations.size());
   ASSERT_EQ(expected_dredd_declaration, *dredd_declarations.begin());
@@ -94,7 +95,8 @@ TEST(MutationReplaceBinaryOperatorTest, MutateAdd) {
 )";
   const int kNumReplacementsOpt = 4;
   // Test with optimisations enabled.
-  TestReplacement(original, expected_opt, kNumReplacementsOpt, true,
+  TestReplacement(original, expected_opt, kNumReplacementsOpt,
+                  Options::Optimisations::AllEnabled(),
                   expected_dredd_declaration_opt);
 
   const std::string expected_no_opt =
@@ -116,7 +118,8 @@ TEST(MutationReplaceBinaryOperatorTest, MutateAdd) {
 )";
   const int kNumReplacementsNoOpt = 6;
   // Test without optimisations enabled.
-  TestReplacement(original, expected_no_opt, kNumReplacementsNoOpt, false,
+  TestReplacement(original, expected_no_opt, kNumReplacementsNoOpt,
+                  Options::Optimisations::AllDisabled(),
                   expected_dredd_declaration_no_opt);
 }
 
@@ -142,7 +145,8 @@ TEST(MutationReplaceBinaryOperatorTest, MutateLAnd) {
 )";
   const int kNumReplacementsOpt = 3;
   // Test with optimisations enabled.
-  TestReplacement(original, expected_opt, kNumReplacementsOpt, true,
+  TestReplacement(original, expected_opt, kNumReplacementsOpt,
+                  Options::Optimisations::AllEnabled(),
                   expected_dredd_declaration_opt);
 
   const std::string expected_no_opt =
@@ -164,7 +168,8 @@ TEST(MutationReplaceBinaryOperatorTest, MutateLAnd) {
 )";
   const int kNumReplacementsNoOpt = 5;
   // Test without optimisations enabled.
-  TestReplacement(original, expected_no_opt, kNumReplacementsNoOpt, false,
+  TestReplacement(original, expected_no_opt, kNumReplacementsNoOpt,
+                  Options::Optimisations::AllDisabled(),
                   expected_dredd_declaration_no_opt);
 }
 
@@ -190,7 +195,8 @@ TEST(MutationReplaceBinaryOperatorTest, MutateLOr) {
 )";
   const int kNumReplacementsOpt = 3;
   // Test with optimisations enabled.
-  TestReplacement(original, expected_opt, kNumReplacementsOpt, true,
+  TestReplacement(original, expected_opt, kNumReplacementsOpt,
+                  Options::Optimisations::AllEnabled(),
                   expected_dredd_declaration_opt);
 
   const std::string expected_no_opt =
@@ -212,7 +218,8 @@ TEST(MutationReplaceBinaryOperatorTest, MutateLOr) {
 )";
   const int kNumReplacementsNoOpt = 5;
   // Test without optimisations enabled.
-  TestReplacement(original, expected_no_opt, kNumReplacementsNoOpt, false,
+  TestReplacement(original, expected_no_opt, kNumReplacementsNoOpt,
+                  Options::Optimisations::AllDisabled(),
                   expected_dredd_declaration_no_opt);
 }
 
@@ -237,7 +244,8 @@ TEST(MutationReplaceBinaryOperatorTest, MutateGT) {
 )";
   const int kNumReplacementsOpt = 2;
   // Test with optimisations enabled.
-  TestReplacement(original, expected_opt, kNumReplacementsOpt, true,
+  TestReplacement(original, expected_opt, kNumReplacementsOpt,
+                  Options::Optimisations::AllEnabled(),
                   expected_dredd_declaration_opt);
 
   const std::string expected_no_opt =
@@ -261,7 +269,8 @@ TEST(MutationReplaceBinaryOperatorTest, MutateGT) {
 )";
   const int kNumReplacementsNoOpt = 7;
   // Test without optimisations enabled.
-  TestReplacement(original, expected_no_opt, kNumReplacementsNoOpt, false,
+  TestReplacement(original, expected_no_opt, kNumReplacementsNoOpt,
+                  Options::Optimisations::AllDisabled(),
                   expected_dredd_declaration_no_opt);
 }
 
@@ -286,7 +295,8 @@ TEST(MutationReplaceBinaryOperatorTest, MutateLT) {
 )";
   const int kNumReplacementsOpt = 2;
   // Test with optimisations enabled.
-  TestReplacement(original, expected_opt, kNumReplacementsOpt, true,
+  TestReplacement(original, expected_opt, kNumReplacementsOpt,
+                  Options::Optimisations::AllEnabled(),
                   expected_dredd_declaration_opt);
 
   const std::string expected_no_opt =
@@ -310,7 +320,8 @@ TEST(MutationReplaceBinaryOperatorTest, MutateLT) {
 )";
   const int kNumReplacementsNoOpt = 7;
   // Test without optimisations enabled.
-  TestReplacement(original, expected_no_opt, kNumReplacementsNoOpt, false,
+  TestReplacement(original, expected_no_opt, kNumReplacementsNoOpt,
+                  Options::Optimisations::AllDisabled(),
                   expected_dredd_declaration_no_opt);
 }
 
@@ -335,7 +346,8 @@ TEST(MutationReplaceBinaryOperatorTest, MutateEQ) {
 )";
   const int kNumReplacementsOpt = 2;
   // Test with optimisations enabled.
-  TestReplacement(original, expected_opt, kNumReplacementsOpt, true,
+  TestReplacement(original, expected_opt, kNumReplacementsOpt,
+                  Options::Optimisations::AllEnabled(),
                   expected_dredd_declaration_opt);
 
   const std::string expected_no_opt =
@@ -359,7 +371,8 @@ TEST(MutationReplaceBinaryOperatorTest, MutateEQ) {
 )";
   const int kNumReplacementsNoOpt = 7;
   // Test without optimisations enabled.
-  TestReplacement(original, expected_no_opt, kNumReplacementsNoOpt, false,
+  TestReplacement(original, expected_no_opt, kNumReplacementsNoOpt,
+                  Options::Optimisations::AllDisabled(),
                   expected_dredd_declaration_no_opt);
 }
 
@@ -384,7 +397,8 @@ TEST(MutationReplaceBinaryOperatorTest, MutateGE) {
 )";
   const int kNumReplacementsOpt = 2;
   // Test with optimisations enabled.
-  TestReplacement(original, expected_opt, kNumReplacementsOpt, true,
+  TestReplacement(original, expected_opt, kNumReplacementsOpt,
+                  Options::Optimisations::AllEnabled(),
                   expected_dredd_declaration_opt);
 
   const std::string expected_no_opt =
@@ -408,7 +422,8 @@ TEST(MutationReplaceBinaryOperatorTest, MutateGE) {
 )";
   const int kNumReplacementsNoOpt = 7;
   // Test without optimisations enabled.
-  TestReplacement(original, expected_no_opt, kNumReplacementsNoOpt, false,
+  TestReplacement(original, expected_no_opt, kNumReplacementsNoOpt,
+                  Options::Optimisations::AllDisabled(),
                   expected_dredd_declaration_no_opt);
 }
 
@@ -433,7 +448,8 @@ TEST(MutationReplaceBinaryOperatorTest, MutateLE) {
 )";
   const int kNumReplacementsOpt = 2;
   // Test with optimisations enabled.
-  TestReplacement(original, expected_opt, kNumReplacementsOpt, true,
+  TestReplacement(original, expected_opt, kNumReplacementsOpt,
+                  Options::Optimisations::AllEnabled(),
                   expected_dredd_declaration_opt);
 
   const std::string expected_no_opt =
@@ -457,7 +473,8 @@ TEST(MutationReplaceBinaryOperatorTest, MutateLE) {
 )";
   const int kNumReplacementsNoOpt = 7;
   // Test without optimisations enabled.
-  TestReplacement(original, expected_no_opt, kNumReplacementsNoOpt, false,
+  TestReplacement(original, expected_no_opt, kNumReplacementsNoOpt,
+                  Options::Optimisations::AllDisabled(),
                   expected_dredd_declaration_no_opt);
 }
 
@@ -482,7 +499,8 @@ TEST(MutationReplaceBinaryOperatorTest, MutateNE) {
 )";
   const int kNumReplacementsOpt = 2;
   // Test with optimisations enabled.
-  TestReplacement(original, expected_opt, kNumReplacementsOpt, true,
+  TestReplacement(original, expected_opt, kNumReplacementsOpt,
+                  Options::Optimisations::AllEnabled(),
                   expected_dredd_declaration_opt);
 
   const std::string expected_no_opt =
@@ -506,7 +524,8 @@ TEST(MutationReplaceBinaryOperatorTest, MutateNE) {
 )";
   const int kNumReplacementsNoOpt = 7;
   // Test without optimisations enabled.
-  TestReplacement(original, expected_no_opt, kNumReplacementsNoOpt, false,
+  TestReplacement(original, expected_no_opt, kNumReplacementsNoOpt,
+                  Options::Optimisations::AllDisabled(),
                   expected_dredd_declaration_no_opt);
 }
 
@@ -541,7 +560,8 @@ TEST(MutationReplaceBinaryOperatorTest, MutateAssign) {
 )";
   const int kNumReplacementsOpt = 10;
   // Test with optimisations enabled.
-  TestReplacement(original, expected_opt, kNumReplacementsOpt, true,
+  TestReplacement(original, expected_opt, kNumReplacementsOpt,
+                  Options::Optimisations::AllEnabled(),
                   expected_dredd_declaration_opt);
 
   const std::string expected_no_opt =
@@ -569,7 +589,8 @@ TEST(MutationReplaceBinaryOperatorTest, MutateAssign) {
 )";
   const int kNumReplacementsNoOpt = 10;
   // Test without optimisations enabled.
-  TestReplacement(original, expected_no_opt, kNumReplacementsNoOpt, false,
+  TestReplacement(original, expected_no_opt, kNumReplacementsNoOpt,
+                  Options::Optimisations::AllDisabled(),
                   expected_dredd_declaration_no_opt);
 }
 
@@ -608,7 +629,8 @@ void foo() {
 )";
   const int kNumReplacementsOpt = 10;
   // Test with optimisations enabled.
-  TestReplacement(original, expected_opt, kNumReplacementsOpt, true,
+  TestReplacement(original, expected_opt, kNumReplacementsOpt,
+                  Options::Optimisations::AllEnabled(),
                   expected_dredd_declaration_opt);
 
   const std::string expected_no_opt =
@@ -638,7 +660,8 @@ void foo() {
 )";
   const int kNumReplacementsNoOpt = 10;
   // Test with optimisations enabled.
-  TestReplacement(original, expected_no_opt, kNumReplacementsNoOpt, false,
+  TestReplacement(original, expected_no_opt, kNumReplacementsNoOpt,
+                  Options::Optimisations::AllDisabled(),
                   expected_dredd_declaration_no_opt);
 }
 
@@ -670,7 +693,8 @@ TEST(MutationReplaceBinaryOperatorTest, MutateFloatDiv) {
 )";
   const int kNumReplacementsOpt = 5;
   // Test with optimisations enabled.
-  TestReplacement(original, expected_opt, kNumReplacementsOpt, true,
+  TestReplacement(original, expected_opt, kNumReplacementsOpt,
+                  Options::Optimisations::AllEnabled(),
                   expected_dredd_declaration_opt);
 
   const std::string expected_no_opt =
@@ -694,7 +718,8 @@ TEST(MutationReplaceBinaryOperatorTest, MutateFloatDiv) {
 )";
   const int kNumReplacementsNoOpt = 5;
   // Test without optimisations enabled.
-  TestReplacement(original, expected_no_opt, kNumReplacementsNoOpt, false,
+  TestReplacement(original, expected_no_opt, kNumReplacementsNoOpt,
+                  Options::Optimisations::AllDisabled(),
                   expected_dredd_declaration_no_opt);
 }
 
@@ -725,7 +750,8 @@ TEST(MutationReplaceBinaryOperatorTest, MutateFloatSubAssign) {
 )";
   const int kNumReplacementsOpt = 4;
   // Test with optimisations enabled.
-  TestReplacement(original, expected_opt, kNumReplacementsOpt, true,
+  TestReplacement(original, expected_opt, kNumReplacementsOpt,
+                  Options::Optimisations::AllEnabled(),
                   expected_dredd_declaration_opt);
 
   const std::string expected_no_opt =
@@ -748,7 +774,8 @@ TEST(MutationReplaceBinaryOperatorTest, MutateFloatSubAssign) {
 )";
   const int kNumReplacementsNoOpt = 4;
   // Test without optimisations enabled.
-  TestReplacement(original, expected_no_opt, kNumReplacementsNoOpt, false,
+  TestReplacement(original, expected_no_opt, kNumReplacementsNoOpt,
+                  Options::Optimisations::AllDisabled(),
                   expected_dredd_declaration_no_opt);
 }
 
@@ -774,7 +801,8 @@ TEST(MutationReplaceBinaryOperatorTest, MutateLAndWithLhsSideEffect) {
 )";
   const int kNumReplacementsOpt = 3;
   // Test with optimisations enabled.
-  TestReplacement(original, expected_opt, kNumReplacementsOpt, true,
+  TestReplacement(original, expected_opt, kNumReplacementsOpt,
+                  Options::Optimisations::AllEnabled(),
                   expected_dredd_declaration_opt);
 
   const std::string expected_no_opt =
@@ -796,7 +824,8 @@ TEST(MutationReplaceBinaryOperatorTest, MutateLAndWithLhsSideEffect) {
 )";
   const int kNumReplacementsNoOpt = 5;
   // Test without optimisations enabled.
-  TestReplacement(original, expected_no_opt, kNumReplacementsNoOpt, false,
+  TestReplacement(original, expected_no_opt, kNumReplacementsNoOpt,
+                  Options::Optimisations::AllDisabled(),
                   expected_dredd_declaration_no_opt);
 }
 
@@ -822,7 +851,8 @@ TEST(MutationReplaceBinaryOperatorTest, MutateLAndWithRhsSideEffect) {
 )";
   const int kNumReplacementsOpt = 3;
   // Test with optimisations enabled.
-  TestReplacement(original, expected_opt, kNumReplacementsOpt, true,
+  TestReplacement(original, expected_opt, kNumReplacementsOpt,
+                  Options::Optimisations::AllEnabled(),
                   expected_dredd_declaration_opt);
 
   const std::string expected_no_opt =
@@ -844,7 +874,8 @@ TEST(MutationReplaceBinaryOperatorTest, MutateLAndWithRhsSideEffect) {
 )";
   const int kNumReplacementsNoOpt = 5;
   // Test without optimisations enabled.
-  TestReplacement(original, expected_no_opt, kNumReplacementsNoOpt, false,
+  TestReplacement(original, expected_no_opt, kNumReplacementsNoOpt,
+                  Options::Optimisations::AllDisabled(),
                   expected_dredd_declaration_no_opt);
 }
 
@@ -870,7 +901,8 @@ TEST(MutationReplaceBinaryOperatorTest, MutateLAndWithLhsRhsSideEffect) {
 )";
   const int kNumReplacementsOpt = 3;
   // Test with optimisations enabled.
-  TestReplacement(original, expected_opt, kNumReplacementsOpt, true,
+  TestReplacement(original, expected_opt, kNumReplacementsOpt,
+                  Options::Optimisations::AllEnabled(),
                   expected_dredd_declaration_opt);
 
   const std::string expected_no_opt =
@@ -892,7 +924,8 @@ TEST(MutationReplaceBinaryOperatorTest, MutateLAndWithLhsRhsSideEffect) {
 )";
   const int kNumReplacementsNoOpt = 5;
   // Test without optimisations enabled.
-  TestReplacement(original, expected_no_opt, kNumReplacementsNoOpt, false,
+  TestReplacement(original, expected_no_opt, kNumReplacementsNoOpt,
+                  Options::Optimisations::AllDisabled(),
                   expected_dredd_declaration_no_opt);
 }
 
