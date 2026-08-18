@@ -271,11 +271,15 @@ std::string MutateAstConsumer::GetRegularDreddPreludeCpp(
   result << "#define thread_local __thread\n";
   result << "#endif\n";
   result << "\n";
-  // This allows for fast checking that at least *some* mutation in the file is
-  // enabled. It is set to true initially so that __dredd_enabled_mutation gets
-  // invoked the first time enabledness is queried. At that point it will get
-  // set to false if no mutations are actually enabled.
-  result << "static thread_local bool __dredd_some_mutation_enabled = true;\n";
+  if (options_->GetEnablednessCheckingMode() ==
+      Options::EnablednessCheckingMode::STANDARD) {
+    // This allows for fast checking that at least *some* mutation in the file
+    // is enabled. It is set to true initially so that __dredd_enabled_mutation
+    // gets invoked the first time enabledness is queried. At that point it will
+    // get set to false if no mutations are actually enabled.
+    result
+        << "static thread_local bool __dredd_some_mutation_enabled = true;\n";
+  }
   result << "static bool __dredd_enabled_mutation(int local_mutation_id) {\n";
   result << "  static thread_local bool initialized = false;\n";
   // Array of booleans, one per mutation in this file, determining whether they
@@ -333,7 +337,10 @@ std::string MutateAstConsumer::GetRegularDreddPreludeCpp(
   // Initialisation is now complete, and whether at least one mutation is
   // enabled is known.
   result << "    initialized = true;\n";
-  result << "    __dredd_some_mutation_enabled = some_mutation_enabled;\n";
+  if (options_->GetEnablednessCheckingMode() ==
+      Options::EnablednessCheckingMode::STANDARD) {
+    result << "    __dredd_some_mutation_enabled = some_mutation_enabled;\n";
+  }
   result << "  }\n";
   // Similar to the above, a combination of division, modulo and bit-shifting
   // is used to look up whether this mutant is enabled in the bitset.
@@ -400,7 +407,10 @@ std::string MutateAstConsumer::GetRegularDreddPreludeC(
   result << "#define thread_local _Thread_local\n";
   result << "#endif\n";
   result << "\n";
-  result << "static thread_local int __dredd_some_mutation_enabled = 1;\n";
+  if (options_->GetEnablednessCheckingMode() ==
+      Options::EnablednessCheckingMode::STANDARD) {
+    result << "static thread_local int __dredd_some_mutation_enabled = 1;\n";
+  }
   result << "static bool __dredd_enabled_mutation(int local_mutation_id) {\n";
   result << "  static thread_local int initialized = 0;\n";
   result << "  static thread_local uint64_t enabled_bitset["
@@ -430,7 +440,10 @@ std::string MutateAstConsumer::GetRegularDreddPreludeC(
   result << "      free(temp);\n";
   result << "    }\n";
   result << "    initialized = 1;\n";
-  result << "    __dredd_some_mutation_enabled = some_mutation_enabled;\n";
+  if (options_->GetEnablednessCheckingMode() ==
+      Options::EnablednessCheckingMode::STANDARD) {
+    result << "    __dredd_some_mutation_enabled = some_mutation_enabled;\n";
+  }
   result << "  }\n";
   result
       << "  return enabled_bitset[local_mutation_id / 64] & ((uint64_t) 1 << "

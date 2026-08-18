@@ -89,14 +89,35 @@ class Options {
     bool avoid_self_inverse_unary_operator_removal_;
   };
 
+  enum class EnablednessCheckingMode {
+    // The default, optimised mode, where the contents of the environment
+    // variable are read once per file, and each enabledness check first checks
+    // whether some mutation is enabled for the file before checking each
+    // potential mutant case.
+    STANDARD,
+    // The contents of the environment variable is read once per file, but
+    // thereafter the pre-check for per-file enabledness is omitted. This is
+    // included merely for comparison purposes against the standard mode; it is
+    // expected to be less efficient.
+    NO_SOME_ENABLED_CHECK,
+    // The environment variable is read from every time an enabledness check is
+    // made. This is likely to be very efficient and is provided merely for
+    // comparison purposes.
+    ALWAYS_READ_ENVIRONMENT_VARIABLE,
+  };
+
   Options(const Optimisations& optimisations, bool dump_asts,
-          bool only_track_mutant_coverage, bool show_ast_node_types)
+          bool only_track_mutant_coverage, bool show_ast_node_types,
+          EnablednessCheckingMode enabledness_checking_mode)
       : optimisations_(optimisations),
         dump_asts_(dump_asts),
         only_track_mutant_coverage_(only_track_mutant_coverage),
-        show_ast_node_types_(show_ast_node_types) {}
+        show_ast_node_types_(show_ast_node_types),
+        enabledness_checking_mode_(enabledness_checking_mode) {}
 
-  Options() : Options(Optimisations::AllEnabled(), false, false, false) {}
+  Options()
+      : Options(Optimisations::AllEnabled(), false, false, false,
+                EnablednessCheckingMode::STANDARD) {}
 
   [[nodiscard]] Optimisations GetOptimisations() const {
     return optimisations_;
@@ -110,6 +131,10 @@ class Options {
 
   [[nodiscard]] bool GetShowAstNodeTypes() const {
     return show_ast_node_types_;
+  }
+
+  [[nodiscard]] EnablednessCheckingMode GetEnablednessCheckingMode() const {
+    return enabledness_checking_mode_;
   }
 
  private:
@@ -127,6 +152,9 @@ class Options {
   // True if and only if a comment showing the type of each mutated AST node
   // should be emitted. This is useful for debugging.
   bool show_ast_node_types_;
+
+  // Controls the mode used for checking mutant enabledness.
+  EnablednessCheckingMode enabledness_checking_mode_;
 };
 
 }  // namespace dredd

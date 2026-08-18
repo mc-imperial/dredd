@@ -223,9 +223,9 @@ int main(int argc, const char** argv) {
     mutation_info = dredd::protobufs::MutationInfo();
   }
 
-  const dredd::Options dredd_options(GetOptimisations(), dump_asts,
-                                     only_track_mutant_coverage,
-                                     show_ast_node_types);
+  const dredd::Options dredd_options(
+      GetOptimisations(), dump_asts, only_track_mutant_coverage,
+      show_ast_node_types, dredd::Options::EnablednessCheckingMode::STANDARD);
 
   const std::unique_ptr<clang::tooling::FrontendActionFactory> factory =
       dredd::NewMutateFrontendActionFactory(dredd_options, mutation_id,
