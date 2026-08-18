@@ -112,8 +112,8 @@ static llvm::cl::opt<bool> show_ast_node_types(
         "In the mutated code, show (via comments) the type of each AST node to "
         "which mutation has been applied; useful for debugging"),
     llvm::cl::cat(mutate_category));
-// NOLINTNEXTLINE
 static llvm::cl::opt<dredd::Options::EnablednessCheckingMode>
+    // NOLINTNEXTLINE
     enabledness_checking_mode(
         "enabledness-checking-mode",
         llvm::cl::desc("Method for enabledness checking (default: STANDARD)"),
