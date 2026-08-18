@@ -145,8 +145,7 @@ class MutationReplaceExpr : public Mutation {
   std::string GenerateMutatorFunction(
       clang::ASTContext& ast_context, const std::string& function_name,
       const std::string& result_type, const std::string& input_type,
-      const Options::Optimisations& optimisations,
-      bool only_track_mutant_coverage, int& mutation_id,
+      const Options& options, int& mutation_id,
       protobufs::MutationReplaceExpr& protobuf_message) const;
 
   [[nodiscard]] std::string GetFunctionName(
