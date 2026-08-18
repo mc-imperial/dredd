@@ -47,8 +47,8 @@ class MutationReplaceUnaryOperator : public Mutation {
   std::string GenerateMutatorFunction(
       clang::ASTContext& ast_context, const std::string& function_name,
       const std::string& result_type, const std::string& input_type,
-      bool optimise_mutations, bool only_track_mutant_coverage,
-      int& mutation_id,
+      const Options::Optimisations& optimisations,
+      bool only_track_mutant_coverage, int& mutation_id,
       protobufs::MutationReplaceUnaryOperator& protobuf_message) const;
 
   [[nodiscard]] static bool IsPrefix(clang::UnaryOperatorKind operator_kind);
@@ -62,15 +62,15 @@ class MutationReplaceUnaryOperator : public Mutation {
 
   [[nodiscard]] bool IsOperatorSelfInverse() const;
 
-  std::string GetFunctionName(bool optimise_mutations,
+  std::string GetFunctionName(const Options::Optimisations& optimisations,
                               clang::ASTContext& ast_context) const;
 
   // Replaces unary operators with other valid unary operators.
   void GenerateUnaryOperatorReplacement(
       const std::string& arg_evaluated, const clang::ASTContext& ast_context,
-      bool optimise_mutations, bool only_track_mutant_coverage,
-      int mutation_id_base, std::stringstream& new_function,
-      int& mutation_id_offset,
+      const Options::Optimisations& optimisations,
+      bool only_track_mutant_coverage, int mutation_id_base,
+      std::stringstream& new_function, int& mutation_id_offset,
       protobufs::MutationReplaceUnaryOperator& protobuf_message) const;
 
   static void AddMutationInstance(

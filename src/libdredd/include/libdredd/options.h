@@ -19,17 +19,87 @@ namespace dredd {
 
 class Options {
  public:
-  Options(bool optimise_mutations, bool dump_asts,
+  class Optimisations {
+   public:
+    explicit Optimisations(
+        bool do_not_remove_side_effect_free_expression_statements,
+        bool do_not_remove_compound_statements,
+        bool do_not_mutate_casts_cleanups_and_parentheses,
+        bool leverage_constant_folding,
+        bool do_not_replace_relational_with_argument,
+        bool avoid_redundant_operator_mutation_combinations,
+        bool avoid_self_inverse_unary_operator_removal)
+        : do_not_remove_side_effect_free_expression_statements_(
+              do_not_remove_side_effect_free_expression_statements),
+          do_not_remove_compound_statements_(do_not_remove_compound_statements),
+          do_not_mutate_casts_cleanups_and_parentheses_(
+              do_not_mutate_casts_cleanups_and_parentheses),
+          leverage_constant_folding_(leverage_constant_folding),
+          do_not_replace_relational_with_argument_(
+              do_not_replace_relational_with_argument),
+          avoid_redundant_operator_mutation_combinations_(
+              avoid_redundant_operator_mutation_combinations),
+          avoid_self_inverse_unary_operator_removal_(
+              avoid_self_inverse_unary_operator_removal) {}
+
+    static Optimisations AllEnabled() {
+      return Optimisations(true, true, true, true, true, true, true);
+    }
+
+    static Optimisations AllDisabled() {
+      return Optimisations(false, false, false, false, false, false, false);
+    }
+
+    [[nodiscard]] bool GetDoNotRemoveSideEffectFreeExpressionStatements()
+        const {
+      return do_not_remove_side_effect_free_expression_statements_;
+    }
+
+    [[nodiscard]] bool GetDoNotRemoveCompoundStatements() const {
+      return do_not_remove_compound_statements_;
+    }
+
+    [[nodiscard]] bool GetDoNotMutateCastsCleanupsAndParentheses() const {
+      return do_not_mutate_casts_cleanups_and_parentheses_;
+    }
+
+    [[nodiscard]] bool GetLeverageConstantFolding() const {
+      return leverage_constant_folding_;
+    }
+
+    [[nodiscard]] bool GetDoNotReplaceRelationalWithArgument() const {
+      return do_not_replace_relational_with_argument_;
+    }
+
+    [[nodiscard]] bool GetAvoidRedundantOperatorMutationCombinations() const {
+      return avoid_redundant_operator_mutation_combinations_;
+    }
+
+    [[nodiscard]] bool GetAvoidSelfInverseUnaryOperatorRemoval() const {
+      return avoid_self_inverse_unary_operator_removal_;
+    }
+
+   private:
+    bool do_not_remove_side_effect_free_expression_statements_;
+    bool do_not_remove_compound_statements_;
+    bool do_not_mutate_casts_cleanups_and_parentheses_;
+    bool leverage_constant_folding_;
+    bool do_not_replace_relational_with_argument_;
+    bool avoid_redundant_operator_mutation_combinations_;
+    bool avoid_self_inverse_unary_operator_removal_;
+  };
+
+  Options(const Optimisations& optimisations, bool dump_asts,
           bool only_track_mutant_coverage, bool show_ast_node_types)
-      : optimise_mutations_(optimise_mutations),
+      : optimisations_(optimisations),
         dump_asts_(dump_asts),
         only_track_mutant_coverage_(only_track_mutant_coverage),
         show_ast_node_types_(show_ast_node_types) {}
 
-  Options() : Options(true, false, false, false) {}
+  Options() : Options(Optimisations::AllEnabled(), false, false, false) {}
 
-  [[nodiscard]] bool GetOptimiseMutations() const {
-    return optimise_mutations_;
+  [[nodiscard]] Optimisations GetOptimisations() const {
+    return optimisations_;
   }
 
   [[nodiscard]] bool GetOnlyTrackMutantCoverage() const {
@@ -43,8 +113,8 @@ class Options {
   }
 
  private:
-  // True if and only if Dredd's optimisations are enabled.
-  bool optimise_mutations_;
+  // Records which of Dredd's optimisations are enabled.
+  Optimisations optimisations_;
 
   // True if and only if the AST being consumed should be dumped; useful for
   // debugging.
