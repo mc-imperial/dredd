@@ -265,89 +265,126 @@ std::string MutateAstConsumer::GetRegularDreddPreludeCpp(
   std::stringstream result;
   result << kDreddPreludeHeadersCpp;
   result << "\n";
-  result << "#ifdef _MSC_VER\n";
-  result << "#define thread_local __declspec(thread)\n";
-  result << "#elif __APPLE__\n";
-  result << "#define thread_local __thread\n";
-  result << "#endif\n";
-  result << "\n";
+
   if (options_->GetEnablednessCheckingMode() ==
-      Options::EnablednessCheckingMode::STANDARD) {
-    // This allows for fast checking that at least *some* mutation in the file
-    // is enabled. It is set to true initially so that __dredd_enabled_mutation
-    // gets invoked the first time enabledness is queried. At that point it will
-    // get set to false if no mutations are actually enabled.
-    result
-        << "static thread_local bool __dredd_some_mutation_enabled = true;\n";
+      Options::EnablednessCheckingMode::ALWAYS_READ_ENVIRONMENT_VARIABLE) {
+    result << "static bool __dredd_enabled_mutation(int local_mutation_id) {\n";
+    result << "  const char* dredd_environment_variable = "
+              "std::getenv(\"DREDD_ENABLED_MUTATION\");\n";
+    result << "  if (dredd_environment_variable != nullptr) {\n";
+    result << "    std::string contents(dredd_environment_variable);\n";
+    result << "    while (true) {\n";
+    result << "      size_t pos = contents.find(\",\");\n";
+    result << "      std::string token = (pos == std::string::npos ? contents "
+              ": contents.substr(0, pos));\n";
+    result << "      if (!token.empty()) {\n";
+    result << "        int value = std::stoi(token);\n";
+    result << "        if (value - " << initial_mutation_id
+           << " == local_mutation_id) {\n";
+    result << "          return true;\n";
+    result << "        }\n";
+    result << "      }\n";
+    result << "      if (pos == std::string::npos) {\n";
+    result << "        break;\n";
+    result << "      }\n";
+    result << "      contents.erase(0, pos + 1);\n";
+    result << "    }\n";
+    result << "  }\n";
+    result << "  return false;\n";
+    result << "}\n";
+  } else {
+    result << "#ifdef _MSC_VER\n";
+    result << "#define thread_local __declspec(thread)\n";
+    result << "#elif __APPLE__\n";
+    result << "#define thread_local __thread\n";
+    result << "#endif\n";
+    result << "\n";
+    if (options_->GetEnablednessCheckingMode() ==
+        Options::EnablednessCheckingMode::STANDARD) {
+      // This allows for fast checking that at least *some* mutation in the file
+      // is enabled. It is set to true initially so that
+      // __dredd_enabled_mutation gets invoked the first time enabledness is
+      // queried. At that point it will get set to false if no mutations are
+      // actually enabled.
+      result
+          << "static thread_local bool __dredd_some_mutation_enabled = true;\n";
+    }
+    result << "static bool __dredd_enabled_mutation(int local_mutation_id) {\n";
+    result << "  static thread_local bool initialized = false;\n";
+    // Array of booleans, one per mutation in this file, determining whether
+    // they are enabled.
+    result << "  static thread_local uint64_t enabled_bitset["
+           << num_64_bit_words_required << "];\n";
+    result << "  if (!initialized) {\n";
+    // Record locally whether some mutation is enabled.
+    if (options_->GetEnablednessCheckingMode() ==
+        Options::EnablednessCheckingMode::STANDARD) {
+      result << "    bool some_mutation_enabled = false;\n";
+    }
+    result << "    const char* dredd_environment_variable = "
+              "std::getenv(\"DREDD_ENABLED_MUTATION\");\n";
+    result << "    if (dredd_environment_variable != nullptr) {\n";
+    // The environment variable for mutations is set, so process the contents of
+    // this environment variable as a comma-seprated list of strings.
+    result << "      std::string contents(dredd_environment_variable);\n";
+    result << "      while (true) {\n";
+    // Find the position of the next comma.
+    result << "        size_t pos = contents.find(\",\");\n";
+    // The next token is either the whole string (if there is no comma) or the
+    // prefix before the next comma (if there is a comma).
+    result << "        std::string token = (pos == std::string::npos ? "
+              "contents : contents.substr(0, pos));\n";
+    // Ignore an empty token: this allows for a trailing comma at the end of the
+    // string.
+    result << "        if (!token.empty()) {\n";
+    // Parse the token as an integer. This will throw an exception if parsing
+    // fails, which is OK: it is expected that the user has set the environment
+    // variable to a legitimate value.
+    result << "          int value = std::stoi(token);\n";
+    result << "          int local_value = value - " << initial_mutation_id
+           << ";\n";
+    // Check whether the mutant id actually corresponds to a mutant in this
+    // file; skip it if it does not.
+    result << "          if (local_value >= 0 && local_value < "
+           << num_mutations << ") {\n";
+    // `local_value / 64` gives the element in the bitset array corresponding to
+    // this mutant. Then `local_value % 64` determines which bit of that element
+    // needs to be set in order to enable the mutant, and a bitwise operation is
+    // used to set the correct bit.
+    result << "            enabled_bitset[local_value / 64] |= "
+              "(static_cast<uint64_t>(1) << "
+              "(local_value % 64));\n";
+    if (options_->GetEnablednessCheckingMode() ==
+        Options::EnablednessCheckingMode::STANDARD) {
+      // Note that at least one enabled mutation has been encountered.
+      result << "            some_mutation_enabled = true;\n";
+    }
+    result << "          }\n";
+    result << "        }\n";
+    // If the end of the string has been reached, exit the parsing loop.
+    result << "        if (pos == std::string::npos) {\n";
+    result << "          break;\n";
+    result << "        }\n";
+    // Move past the first comma so that the rest of the string can be
+    // processed.
+    result << "        contents.erase(0, pos + 1);\n";
+    result << "      }\n";
+    result << "    }\n";
+    // Initialisation is now complete, and whether at least one mutation is
+    // enabled is known.
+    result << "    initialized = true;\n";
+    if (options_->GetEnablednessCheckingMode() ==
+        Options::EnablednessCheckingMode::STANDARD) {
+      result << "    __dredd_some_mutation_enabled = some_mutation_enabled;\n";
+    }
+    result << "  }\n";
+    // Similar to the above, a combination of division, modulo and bit-shifting
+    // is used to look up whether this mutant is enabled in the bitset.
+    result << "  return (enabled_bitset[local_mutation_id / 64] & "
+              "(static_cast<uint64_t>(1) << "
+              "(local_mutation_id % 64))) != 0;\n";
+    result << "}\n\n";
   }
-  result << "static bool __dredd_enabled_mutation(int local_mutation_id) {\n";
-  result << "  static thread_local bool initialized = false;\n";
-  // Array of booleans, one per mutation in this file, determining whether they
-  // are enabled.
-  result << "  static thread_local uint64_t enabled_bitset["
-         << num_64_bit_words_required << "];\n";
-  result << "  if (!initialized) {\n";
-  // Record locally whether some mutation is enabled.
-  result << "    bool some_mutation_enabled = false;\n";
-  result << "    const char* dredd_environment_variable = "
-            "std::getenv(\"DREDD_ENABLED_MUTATION\");\n";
-  result << "    if (dredd_environment_variable != nullptr) {\n";
-  // The environment variable for mutations is set, so process the contents of
-  // this environment variable as a comma-seprated list of strings.
-  result << "      std::string contents(dredd_environment_variable);\n";
-  result << "      while (true) {\n";
-  // Find the position of the next comma.
-  result << "        size_t pos = contents.find(\",\");\n";
-  // The next token is either the whole string (if there is no comma) or the
-  // prefix before the next comma (if there is a comma).
-  result << "        std::string token = (pos == std::string::npos ? "
-            "contents : contents.substr(0, pos));\n";
-  // Ignore an empty token: this allows for a trailing comma at the end of the
-  // string.
-  result << "        if (!token.empty()) {\n";
-  // Parse the token as an integer. This will throw an exception if parsing
-  // fails, which is OK: it is expected that the user has set the environment
-  // variable to a legitimate value.
-  result << "          int value = std::stoi(token);\n";
-  result << "          int local_value = value - " << initial_mutation_id
-         << ";\n";
-  // Check whether the mutant id actually corresponds to a mutant in this file;
-  // skip it if it does not.
-  result << "          if (local_value >= 0 && local_value < " << num_mutations
-         << ") {\n";
-  // `local_value / 64` gives the element in the bitset array corresponding to
-  // this mutant. Then `local_value % 64` determines which bit of that element
-  // needs to be set in order to enable the mutant, and a bitwise operation is
-  // used to set the correct bit.
-  result << "            enabled_bitset[local_value / 64] |= "
-            "(static_cast<uint64_t>(1) << "
-            "(local_value % 64));\n";
-  // Note that at least one enabled mutation has been encountered.
-  result << "            some_mutation_enabled = true;\n";
-  result << "          }\n";
-  result << "        }\n";
-  // If the end of the string has been reached, exit the parsing loop.
-  result << "        if (pos == std::string::npos) {\n";
-  result << "          break;\n";
-  result << "        }\n";
-  // Move past the first comma so that the rest of the string can be processed.
-  result << "        contents.erase(0, pos + 1);\n";
-  result << "      }\n";
-  result << "    }\n";
-  // Initialisation is now complete, and whether at least one mutation is
-  // enabled is known.
-  result << "    initialized = true;\n";
-  if (options_->GetEnablednessCheckingMode() ==
-      Options::EnablednessCheckingMode::STANDARD) {
-    result << "    __dredd_some_mutation_enabled = some_mutation_enabled;\n";
-  }
-  result << "  }\n";
-  // Similar to the above, a combination of division, modulo and bit-shifting
-  // is used to look up whether this mutant is enabled in the bitset.
-  result << "  return (enabled_bitset[local_mutation_id / 64] & "
-            "(static_cast<uint64_t>(1) << "
-            "(local_mutation_id % 64))) != 0;\n";
-  result << "}\n\n";
   return result.str();
 }
 
@@ -399,56 +436,90 @@ std::string MutateAstConsumer::GetRegularDreddPreludeC(
   std::stringstream result;
   result << kDreddPreludeHeadersC;
   result << "\n";
-  result << "#ifdef _MSC_VER\n";
-  result << "#define thread_local __declspec(thread)\n";
-  result << "#elif __APPLE__\n";
-  result << "#define thread_local __thread\n";
-  result << "#else\n";
-  result << "#define thread_local _Thread_local\n";
-  result << "#endif\n";
+
+  if (options_->GetEnablednessCheckingMode() ==
+      Options::EnablednessCheckingMode::ALWAYS_READ_ENVIRONMENT_VARIABLE) {
+    result << "static bool __dredd_enabled_mutation(int local_mutation_id) {\n";
+    result << "  const char* dredd_environment_variable = "
+              "getenv(\"DREDD_ENABLED_MUTATION\");\n";
+    result << "  if (dredd_environment_variable) {\n";
+    result
+        << "    char* temp = malloc(strlen(dredd_environment_variable) + 1);\n";
+    result << "    strcpy(temp, dredd_environment_variable);\n";
+    result << "    char* token;\n";
+    result << "    token = strtok(temp, \",\");\n";
+    result << "    while(token) {\n";
+    result << "      int value = atoi(token);\n";
+    result << "      if (value - " << initial_mutation_id
+           << " == local_mutation_id) {\n";
+    result << "        free(temp);\n";
+    result << "        return true;\n";
+    result << "      }\n";
+    result << "    token = strtok(NULL, \",\");\n";
+    result << "  }\n";
+    result << "  free(temp);\n";
+    result << "  }\n";
+    result << "  return false;\n";
+    result << "}\n";
+  } else {
+    result << "#ifdef _MSC_VER\n";
+    result << "#define thread_local __declspec(thread)\n";
+    result << "#elif __APPLE__\n";
+    result << "#define thread_local __thread\n";
+    result << "#else\n";
+    result << "#define thread_local _Thread_local\n";
+    result << "#endif\n";
+    result << "\n";
+    if (options_->GetEnablednessCheckingMode() ==
+        Options::EnablednessCheckingMode::STANDARD) {
+      result << "static thread_local int __dredd_some_mutation_enabled = 1;\n";
+    }
+    result << "static bool __dredd_enabled_mutation(int local_mutation_id) {\n";
+    result << "  static thread_local int initialized = 0;\n";
+    result << "  static thread_local uint64_t enabled_bitset["
+           << num_64_bit_words_required << "];\n";
+    result << "  if (!initialized) {\n";
+    if (options_->GetEnablednessCheckingMode() ==
+        Options::EnablednessCheckingMode::STANDARD) {
+      result << "    int some_mutation_enabled = 0;\n";
+    }
+    result << "    const char* dredd_environment_variable = "
+              "getenv(\"DREDD_ENABLED_MUTATION\");\n";
+    result << "    if (dredd_environment_variable) {\n";
+    result << "      char* temp = malloc(strlen(dredd_environment_variable) + "
+              "1);\n";
+    result << "      strcpy(temp, dredd_environment_variable);\n";
+    result << "      char* token;\n";
+    result << "      token = strtok(temp, \",\");\n";
+    result << "      while(token) {\n";
+    result << "        int value = atoi(token);\n";
+    result << "        int local_value = value - " << initial_mutation_id
+           << ";\n";
+    result << "        if (local_value >= 0 && local_value < " << num_mutations
+           << ") {\n";
+    result << "          enabled_bitset[local_value / 64] |= ((uint64_t) 1 << "
+              "(local_value % 64));\n";
+    if (options_->GetEnablednessCheckingMode() ==
+        Options::EnablednessCheckingMode::STANDARD) {
+      result << "          some_mutation_enabled = 1;\n";
+    }
+    result << "        }\n";
+    result << "        token = strtok(NULL, \",\");\n";
+    result << "      }\n";
+    result << "      free(temp);\n";
+    result << "    }\n";
+    result << "    initialized = 1;\n";
+    if (options_->GetEnablednessCheckingMode() ==
+        Options::EnablednessCheckingMode::STANDARD) {
+      result << "    __dredd_some_mutation_enabled = some_mutation_enabled;\n";
+    }
+    result << "  }\n";
+    result
+        << "  return enabled_bitset[local_mutation_id / 64] & ((uint64_t) 1 << "
+           "(local_mutation_id % 64));\n";
+    result << "}\n";
+  }
   result << "\n";
-  if (options_->GetEnablednessCheckingMode() ==
-      Options::EnablednessCheckingMode::STANDARD) {
-    result << "static thread_local int __dredd_some_mutation_enabled = 1;\n";
-  }
-  result << "static bool __dredd_enabled_mutation(int local_mutation_id) {\n";
-  result << "  static thread_local int initialized = 0;\n";
-  result << "  static thread_local uint64_t enabled_bitset["
-         << num_64_bit_words_required << "];\n";
-  result << "  if (!initialized) {\n";
-  result << "    int some_mutation_enabled = 0;\n";
-  result << "    const char* dredd_environment_variable = "
-            "getenv(\"DREDD_ENABLED_MUTATION\");\n";
-  result << "    if (dredd_environment_variable) {\n";
-  result
-      << "      char* temp = malloc(strlen(dredd_environment_variable) + 1);\n";
-  result << "      strcpy(temp, dredd_environment_variable);\n";
-  result << "      char* token;\n";
-  result << "      token = strtok(temp, \",\");\n";
-  result << "      while(token) {\n";
-  result << "        int value = atoi(token);\n";
-  result << "        int local_value = value - " << initial_mutation_id
-         << ";\n";
-  result << "        if (local_value >= 0 && local_value < " << num_mutations
-         << ") {\n";
-  result << "          enabled_bitset[local_value / 64] |= ((uint64_t) 1 << "
-            "(local_value % 64));\n";
-  result << "          some_mutation_enabled = 1;\n";
-  result << "        }\n";
-  result << "        token = strtok(NULL, \",\");\n";
-  result << "      }\n";
-  result << "      free(temp);\n";
-  result << "    }\n";
-  result << "    initialized = 1;\n";
-  if (options_->GetEnablednessCheckingMode() ==
-      Options::EnablednessCheckingMode::STANDARD) {
-    result << "    __dredd_some_mutation_enabled = some_mutation_enabled;\n";
-  }
-  result << "  }\n";
-  result
-      << "  return enabled_bitset[local_mutation_id / 64] & ((uint64_t) 1 << "
-         "(local_mutation_id % 64));\n";
-  result << "}\n\n";
   return result.str();
 }
 

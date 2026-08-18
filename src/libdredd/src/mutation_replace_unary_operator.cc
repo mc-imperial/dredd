@@ -212,18 +212,18 @@ std::string MutationReplaceUnaryOperator::GenerateMutatorFunction(
     if (options.GetEnablednessCheckingMode() ==
         Options::EnablednessCheckingMode::STANDARD) {
       new_function << "  if (!__dredd_some_mutation_enabled) return ";
-    }
-    if (IsPrefix(unary_operator_->getOpcode())) {
-      new_function << clang::UnaryOperator::getOpcodeStr(
-                          unary_operator_->getOpcode())
-                          .str()
-                   << arg_evaluated + ";\n";
-    } else {
-      new_function << arg_evaluated
-                   << clang::UnaryOperator::getOpcodeStr(
-                          unary_operator_->getOpcode())
-                          .str()
-                   << ";\n";
+      if (IsPrefix(unary_operator_->getOpcode())) {
+        new_function << clang::UnaryOperator::getOpcodeStr(
+                            unary_operator_->getOpcode())
+                            .str()
+                     << arg_evaluated + ";\n";
+      } else {
+        new_function << arg_evaluated
+                     << clang::UnaryOperator::getOpcodeStr(
+                            unary_operator_->getOpcode())
+                            .str()
+                     << ";\n";
+      }
     }
   }
 

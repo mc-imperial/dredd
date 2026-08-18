@@ -112,6 +112,27 @@ static llvm::cl::opt<bool> show_ast_node_types(
         "In the mutated code, show (via comments) the type of each AST node to "
         "which mutation has been applied; useful for debugging"),
     llvm::cl::cat(mutate_category));
+// NOLINTNEXTLINE
+static llvm::cl::opt<dredd::Options::EnablednessCheckingMode>
+    enabledness_checking_mode(
+        "enabledness-checking-mode",
+        llvm::cl::desc("Method for enabledness checking (default: STANDARD)"),
+        llvm::cl::init(dredd::Options::EnablednessCheckingMode::STANDARD),
+        llvm::cl::values(
+            clEnumValN(dredd::Options::EnablednessCheckingMode::STANDARD,
+                       "STANDARD", "Default and recommended"),
+            clEnumValN(
+                dredd::Options::EnablednessCheckingMode::NO_SOME_ENABLED_CHECK,
+                "NO_SOME_ENABLED_CHECK",
+                "Disable pre-testing of whether any mutants are enabled "
+                "for a file"),
+            clEnumValN(
+                dredd::Options::EnablednessCheckingMode::
+                    ALWAYS_READ_ENVIRONMENT_VARIABLE,
+                "ALWAYS_READ_ENVIRONMENT_VARIABLE",
+                "Read the environment variable on every mutant enabledness "
+                "check; for evaluation purposes only")),
+        llvm::cl::cat(mutate_category));
 
 #if defined(__clang__)
 #pragma clang diagnostic pop
@@ -225,7 +246,7 @@ int main(int argc, const char** argv) {
 
   const dredd::Options dredd_options(
       GetOptimisations(), dump_asts, only_track_mutant_coverage,
-      show_ast_node_types, dredd::Options::EnablednessCheckingMode::STANDARD);
+      show_ast_node_types, enabledness_checking_mode);
 
   const std::unique_ptr<clang::tooling::FrontendActionFactory> factory =
       dredd::NewMutateFrontendActionFactory(dredd_options, mutation_id,
