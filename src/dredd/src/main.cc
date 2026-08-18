@@ -59,8 +59,8 @@ static llvm::cl::OptionCategory mutate_category("mutate options");
 static llvm::cl::opt<bool> no_mutation_opts(
     "no-mutation-opts", llvm::cl::desc("Disable Dredd's optimisations"),
     llvm::cl::cat(mutate_category));
-// NOLINTNEXTLINE
 static llvm::cl::opt<bool>
+    // NOLINTNEXTLINE
     opt_do_not_remove_side_effect_free_expression_statements(
         "opt-do-not-remove-side-effect-free-expression-statements",
         llvm::cl::desc("TODO"), llvm::cl::cat(mutate_category));
