@@ -463,8 +463,7 @@ void MutationReplaceExpr::GenerateBooleanConstantReplacement(
 std::string MutationReplaceExpr::GenerateMutatorFunction(
     clang::ASTContext& ast_context, const std::string& function_name,
     const std::string& result_type, const std::string& input_type,
-    const Options::Optimisations& optimisations,
-    bool only_track_mutant_coverage, int& mutation_id,
+    const Options& options, int& mutation_id,
     protobufs::MutationReplaceExpr& protobuf_message) const {
   std::stringstream new_function;
   new_function << "static " << result_type << " " << function_name << "(";
@@ -486,7 +485,9 @@ std::string MutationReplaceExpr::GenerateMutatorFunction(
     arg_evaluated = "(*" + arg_evaluated + ")";
   }
 
-  if (!only_track_mutant_coverage) {
+  if (!options.GetOnlyTrackMutantCoverage() &&
+      options.GetEnablednessCheckingMode() ==
+          Options::EnablednessCheckingMode::STANDARD) {
     // Quickly apply the original operator if no mutant is enabled (which will
     // be the common case).
     new_function << "  if (!__dredd_some_mutation_enabled) return "
@@ -496,13 +497,15 @@ std::string MutationReplaceExpr::GenerateMutatorFunction(
   int mutation_id_offset = 0;
 
   GenerateUnaryOperatorInsertion(
-      arg_evaluated, ast_context, optimisations, only_track_mutant_coverage,
-      mutation_id, new_function, mutation_id_offset, protobuf_message);
-  GenerateConstantReplacement(
-      ast_context, optimisations, only_track_mutant_coverage, mutation_id,
-      new_function, mutation_id_offset, protobuf_message);
+      arg_evaluated, ast_context, options.GetOptimisations(),
+      options.GetOnlyTrackMutantCoverage(), mutation_id, new_function,
+      mutation_id_offset, protobuf_message);
+  GenerateConstantReplacement(ast_context, options.GetOptimisations(),
+                              options.GetOnlyTrackMutantCoverage(), mutation_id,
+                              new_function, mutation_id_offset,
+                              protobuf_message);
 
-  if (only_track_mutant_coverage) {
+  if (options.GetOnlyTrackMutantCoverage()) {
     new_function << "  __dredd_record_covered_mutants(local_mutation_id, " +
                         std::to_string(mutation_id_offset) + ");\n";
   }
@@ -685,10 +688,9 @@ protobufs::MutationGroup MutationReplaceExpr::Apply(
       new_function_name, input_type, mutation_id - first_mutation_id_in_file,
       ast_context, preprocessor, options.GetShowAstNodeTypes(), rewriter);
 
-  const std::string new_function = GenerateMutatorFunction(
-      ast_context, new_function_name, result_type, input_type,
-      options.GetOptimisations(), options.GetOnlyTrackMutantCoverage(),
-      mutation_id, inner_result);
+  const std::string new_function =
+      GenerateMutatorFunction(ast_context, new_function_name, result_type,
+                              input_type, options, mutation_id, inner_result);
   assert(!new_function.empty() && "Unsupported expression.");
 
   dredd_declarations.insert(new_function);

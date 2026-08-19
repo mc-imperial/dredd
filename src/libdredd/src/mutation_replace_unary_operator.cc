@@ -183,8 +183,7 @@ std::string MutationReplaceUnaryOperator::GetFunctionName(
 std::string MutationReplaceUnaryOperator::GenerateMutatorFunction(
     clang::ASTContext& ast_context, const std::string& function_name,
     const std::string& result_type, const std::string& input_type,
-    const Options::Optimisations& optimisations,
-    bool only_track_mutant_coverage, int& mutation_id,
+    const Options& options, int& mutation_id,
     protobufs::MutationReplaceUnaryOperator& protobuf_message) const {
   std::stringstream new_function;
   new_function << "static " << result_type << " " << function_name << "(";
@@ -207,30 +206,33 @@ std::string MutationReplaceUnaryOperator::GenerateMutatorFunction(
     arg_evaluated = "(*" + arg_evaluated + ")";
   }
 
-  if (!only_track_mutant_coverage) {
+  if (!options.GetOnlyTrackMutantCoverage()) {
     // Quickly apply the original operator if no mutant is enabled (which will
     // be the common case).
-    new_function << "  if (!__dredd_some_mutation_enabled) return ";
-    if (IsPrefix(unary_operator_->getOpcode())) {
-      new_function << clang::UnaryOperator::getOpcodeStr(
-                          unary_operator_->getOpcode())
-                          .str()
-                   << arg_evaluated + ";\n";
-    } else {
-      new_function << arg_evaluated
-                   << clang::UnaryOperator::getOpcodeStr(
-                          unary_operator_->getOpcode())
-                          .str()
-                   << ";\n";
+    if (options.GetEnablednessCheckingMode() ==
+        Options::EnablednessCheckingMode::STANDARD) {
+      new_function << "  if (!__dredd_some_mutation_enabled) return ";
+      if (IsPrefix(unary_operator_->getOpcode())) {
+        new_function << clang::UnaryOperator::getOpcodeStr(
+                            unary_operator_->getOpcode())
+                            .str()
+                     << arg_evaluated + ";\n";
+      } else {
+        new_function << arg_evaluated
+                     << clang::UnaryOperator::getOpcodeStr(
+                            unary_operator_->getOpcode())
+                            .str()
+                     << ";\n";
+      }
     }
   }
 
   int mutation_id_offset = 0;
-  GenerateUnaryOperatorReplacement(
-      arg_evaluated, ast_context, optimisations, only_track_mutant_coverage,
-      mutation_id, new_function, mutation_id_offset, protobuf_message);
+  GenerateUnaryOperatorReplacement(arg_evaluated, ast_context, options,
+                                   mutation_id, new_function,
+                                   mutation_id_offset, protobuf_message);
 
-  if (only_track_mutant_coverage) {
+  if (options.GetOnlyTrackMutantCoverage()) {
     new_function << "  __dredd_record_covered_mutants(local_mutation_id, " +
                         std::to_string(mutation_id_offset) + ");\n";
   }
@@ -285,8 +287,7 @@ bool MutationReplaceUnaryOperator::IsRedundantReplacementOperator(
 
 void MutationReplaceUnaryOperator::GenerateUnaryOperatorReplacement(
     const std::string& arg_evaluated, const clang::ASTContext& ast_context,
-    const Options::Optimisations& optimisations,
-    bool only_track_mutant_coverage, int mutation_id_base,
+    const Options& options, int mutation_id_base,
     std::stringstream& new_function, int& mutation_id_offset,
     protobufs::MutationReplaceUnaryOperator& protobuf_message) const {
   const std::vector<clang::UnaryOperatorKind> candidate_replacement_operators =
@@ -301,11 +302,12 @@ void MutationReplaceUnaryOperator::GenerateUnaryOperatorReplacement(
   for (const auto operator_kind : candidate_replacement_operators) {
     if (operator_kind == unary_operator_->getOpcode() ||
         !IsValidReplacementOperator(operator_kind) ||
-        (optimisations.GetAvoidRedundantOperatorMutationCombinations() &&
+        (options.GetOptimisations()
+             .GetAvoidRedundantOperatorMutationCombinations() &&
          IsRedundantReplacementOperator(operator_kind, ast_context))) {
       continue;
     }
-    if (!only_track_mutant_coverage) {
+    if (!options.GetOnlyTrackMutantCoverage()) {
       new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
                    << mutation_id_offset << ")) return ";
       if (IsPrefix(operator_kind)) {
@@ -324,9 +326,9 @@ void MutationReplaceUnaryOperator::GenerateUnaryOperatorReplacement(
   // Various operators are self-inverse, so that removing the operator is
   // equivalent to inserting another occurrence of it, which will be done by
   // another mutation.
-  if (!optimisations.GetAvoidSelfInverseUnaryOperatorRemoval() ||
+  if (!options.GetOptimisations().GetAvoidSelfInverseUnaryOperatorRemoval() ||
       !IsOperatorSelfInverse()) {
-    if (!only_track_mutant_coverage) {
+    if (!options.GetOnlyTrackMutantCoverage()) {
       new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
                    << mutation_id_offset
                    << ")) return " + arg_evaluated + ";\n";
@@ -458,10 +460,9 @@ protobufs::MutationGroup MutationReplaceUnaryOperator::Apply(
   assert(!rewriter_result && "Rewrite failed.\n");
   (void)rewriter_result;  // Keep release-mode compilers happy.
 
-  const std::string new_function = GenerateMutatorFunction(
-      ast_context, new_function_name, result_type, input_type,
-      options.GetOptimisations(), options.GetOnlyTrackMutantCoverage(),
-      mutation_id, inner_result);
+  const std::string new_function =
+      GenerateMutatorFunction(ast_context, new_function_name, result_type,
+                              input_type, options, mutation_id, inner_result);
   assert(!new_function.empty() && "Unsupported opcode.");
 
   dredd_declarations.insert(new_function);
