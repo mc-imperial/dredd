@@ -48,8 +48,7 @@ class MutationReplaceBinaryOperator : public Mutation {
   std::string GenerateMutatorFunction(
       clang::ASTContext& ast_context, const std::string& function_name,
       const std::string& result_type, const std::string& lhs_type,
-      const std::string& rhs_type, const Options::Optimisations& optimisations,
-      bool only_track_mutant_coverage, int& mutation_id,
+      const std::string& rhs_type, const Options& options, int& mutation_id,
       protobufs::MutationReplaceBinaryOperator& protobuf_message) const;
 
   void ReplaceOperator(const std::string& lhs_type, const std::string& rhs_type,
@@ -80,19 +79,17 @@ class MutationReplaceBinaryOperator : public Mutation {
   // Replaces binary expressions with either the left or right operand.
   void GenerateArgumentReplacement(
       const std::string& arg1_evaluated, const std::string& arg2_evaluated,
-      const clang::ASTContext& ast_context,
-      const Options::Optimisations& optimisations,
-      bool only_track_mutant_coverage, int mutation_id_base,
-      std::stringstream& new_function, int& mutation_id_offset,
+      const clang::ASTContext& ast_context, const Options& options,
+      int mutation_id_base, std::stringstream& new_function,
+      int& mutation_id_offset,
       protobufs::MutationReplaceBinaryOperator& protobuf_message) const;
 
   // Replaces binary operators with other valid binary operators.
   void GenerateBinaryOperatorReplacement(
       const std::string& arg1_evaluated, const std::string& arg2_evaluated,
-      const clang::ASTContext& ast_context,
-      const Options::Optimisations& optimisations,
-      bool only_track_mutant_coverage, int mutation_id_base,
-      std::stringstream& new_function, int& mutation_id_offset,
+      const clang::ASTContext& ast_context, const Options& options,
+      int mutation_id_base, std::stringstream& new_function,
+      int& mutation_id_offset,
       protobufs::MutationReplaceBinaryOperator& protobuf_message) const;
 
   [[nodiscard]] std::vector<clang::BinaryOperatorKind> GetReplacementOperators(
@@ -116,8 +113,8 @@ class MutationReplaceBinaryOperator : public Mutation {
       const clang::Preprocessor& preprocessor,
       const std::string& new_function_prefix, const std::string& result_type,
       const std::string& lhs_type, const std::string& rhs_type,
-      bool only_track_mutant_coverage, int first_mutation_id_in_file,
-      int& mutation_id, clang::Rewriter& rewriter,
+      const Options& options, int first_mutation_id_in_file, int& mutation_id,
+      clang::Rewriter& rewriter,
       std::unordered_set<std::string>& dredd_declarations,
       protobufs::MutationReplaceBinaryOperator& protobuf_message) const;
 
