@@ -56,8 +56,7 @@ class MutationReplaceBinaryOperator : public Mutation {
                        clang::ASTContext& ast_context,
                        const clang::Preprocessor& preprocessor,
                        int first_mutation_id_in_file, int mutation_id,
-                       bool show_ast_node_types,
-                       clang::Rewriter& rewriter) const;
+                       const Options& options, clang::Rewriter& rewriter) const;
 
   std::string GetFunctionName(const Options::Optimisations& optimisations,
                               clang::ASTContext& ast_context) const;
@@ -117,6 +116,15 @@ class MutationReplaceBinaryOperator : public Mutation {
       clang::Rewriter& rewriter,
       std::unordered_set<std::string>& dredd_declarations,
       protobufs::MutationReplaceBinaryOperator& protobuf_message) const;
+
+  [[nodiscard]] bool ArgumentReplacementIsRelevant(
+      const Options& options) const;
+
+  [[nodiscard]] bool Arg1RequiresLambda(const clang::ASTContext& ast_context,
+                                        const Options& options) const;
+
+  [[nodiscard]] bool Arg2RequiresLambda(const clang::ASTContext& ast_context,
+                                        const Options& options) const;
 
   static void AddMutationInstance(
       int mutation_id_base,

@@ -263,29 +263,7 @@ void MutationReplaceBinaryOperator::GenerateArgumentReplacement(
     int mutation_id_base, std::stringstream& new_function,
     int& mutation_id_offset,
     protobufs::MutationReplaceBinaryOperator& protobuf_message) const {
-  if (options.GetOptimisations().GetDoNotReplaceRelationalWithArgument()) {
-    switch (binary_operator_->getOpcode()) {
-      case clang::BO_GT:
-      case clang::BO_GE:
-      case clang::BO_LT:
-      case clang::BO_LE:
-      case clang::BO_EQ:
-      case clang::BO_NE:
-        // Even though it is type-correct in C/C++ to replace the result of a
-        // relational operator with one of its arguments, this will typically be
-        // uninteresting and almost certainly subsumed by other mutations.
-        return;
-      default:
-        break;
-    }
-  }
-
-  if (binary_operator_->isAssignmentOp()) {
-    // It would be possible to replace an assignment operator, such as `x = y`,
-    // with its LHS. However, since the most common case is for such expressions
-    // to appear as top-level statements, with the LHS being a side effect-free
-    // expression, this replacement will almost always be equivalent to removing
-    // the enclosing statement.
+  if (!ArgumentReplacementIsRelevant(options)) {
     return;
   }
   // LHS
@@ -446,42 +424,29 @@ std::string MutationReplaceBinaryOperator::GenerateMutatorFunction(
   std::stringstream new_function;
   new_function << "static " << result_type << " " << function_name << "(";
 
-  if (ast_context.getLangOpts().CPlusPlus &&
-      binary_operator_->getLHS()->HasSideEffects(ast_context)) {
+  std::string arg1_evaluated("arg1");
+  if (Arg1RequiresLambda(ast_context, options)) {
     new_function << "std::function<" << lhs_type << "()>";
+    arg1_evaluated += "()";
   } else {
     new_function << lhs_type;
-  }
-  new_function << " arg1, ";
-
-  if (ast_context.getLangOpts().CPlusPlus &&
-      (binary_operator_->isLogicalOp() ||
-       binary_operator_->getRHS()->HasSideEffects(ast_context))) {
-    new_function << "std::function<" << rhs_type << "()>";
-  } else {
-    new_function << rhs_type;
-  }
-
-  new_function << " arg2, int local_mutation_id) {\n";
-
-  int mutation_id_offset = 0;
-
-  std::string arg1_evaluated("arg1");
-  if (ast_context.getLangOpts().CPlusPlus &&
-      binary_operator_->getLHS()->HasSideEffects(ast_context)) {
-    arg1_evaluated += "()";
   }
   if (!ast_context.getLangOpts().CPlusPlus &&
       binary_operator_->isAssignmentOp()) {
     arg1_evaluated = "(*" + arg1_evaluated + ")";
   }
+  new_function << " arg1, ";
 
   std::string arg2_evaluated("arg2");
-  if (ast_context.getLangOpts().CPlusPlus &&
-      (binary_operator_->isLogicalOp() ||
-       binary_operator_->getRHS()->HasSideEffects(ast_context))) {
+  if (Arg2RequiresLambda(ast_context, options)) {
+    new_function << "std::function<" << rhs_type << "()>";
     arg2_evaluated += "()";
+  } else {
+    new_function << rhs_type;
   }
+  new_function << " arg2, int local_mutation_id) {\n";
+
+  int mutation_id_offset = 0;
 
   if (!options.GetOnlyTrackMutantCoverage() &&
       options.GetEnablednessCheckingMode() ==
@@ -608,8 +573,8 @@ protobufs::MutationGroup MutationReplaceBinaryOperator::Apply(
   }
 
   ReplaceOperator(lhs_type, rhs_type, new_function_name, ast_context,
-                  preprocessor, first_mutation_id_in_file, mutation_id,
-                  options.GetShowAstNodeTypes(), rewriter);
+                  preprocessor, first_mutation_id_in_file, mutation_id, options,
+                  rewriter);
 
   const std::string new_function = GenerateMutatorFunction(
       ast_context, new_function_name, result_type, lhs_type, rhs_type, options,
@@ -629,8 +594,7 @@ void MutationReplaceBinaryOperator::ReplaceOperator(
     const std::string& lhs_type, const std::string& rhs_type,
     const std::string& new_function_name, clang::ASTContext& ast_context,
     const clang::Preprocessor& preprocessor, int first_mutation_id_in_file,
-    int mutation_id, bool show_ast_node_types,
-    clang::Rewriter& rewriter) const {
+    int mutation_id, const Options& options, clang::Rewriter& rewriter) const {
   const clang::SourceRange lhs_source_range_in_main_file =
       GetSourceRangeInMainFile(preprocessor, *binary_operator_->getLHS());
   assert(lhs_source_range_in_main_file.isValid() && "Invalid source range.");
@@ -665,7 +629,7 @@ void MutationReplaceBinaryOperator::ReplaceOperator(
   // These record the text that should be inserted before and after the LHS and
   // RHS operands.
   std::string lhs_prefix = new_function_name;
-  if (show_ast_node_types) {
+  if (options.GetShowAstNodeTypes()) {
     std::stringstream stringstream;
     stringstream << binary_operator_;
     lhs_prefix += "/*" + std::string(binary_operator_->getStmtClassName()) +
@@ -677,13 +641,12 @@ void MutationReplaceBinaryOperator::ReplaceOperator(
   std::string rhs_suffix;
 
   if (ast_context.getLangOpts().CPlusPlus) {
-    if (binary_operator_->getLHS()->HasSideEffects(ast_context)) {
+    if (Arg1RequiresLambda(ast_context, options)) {
       lhs_prefix.append("[&]() -> " + lhs_type + " { return static_cast<" +
                         lhs_type + ">(");
       lhs_suffix.append("); }");
     }
-    if (binary_operator_->isLogicalOp() ||
-        binary_operator_->getRHS()->HasSideEffects(ast_context)) {
+    if (Arg2RequiresLambda(ast_context, options)) {
       rhs_prefix.append("[&]() -> " + rhs_type + " { return static_cast<" +
                         rhs_type + ">(");
       rhs_suffix.append("); }");
@@ -1159,6 +1122,51 @@ bool MutationReplaceBinaryOperator::IsRedundantReplacementForArithmeticOperator(
   }
 
   return false;
+}
+
+bool MutationReplaceBinaryOperator::ArgumentReplacementIsRelevant(
+    const Options& options) const {
+  if (options.GetOptimisations().GetDoNotReplaceRelationalWithArgument()) {
+    switch (binary_operator_->getOpcode()) {
+      case clang::BO_GT:
+      case clang::BO_GE:
+      case clang::BO_LT:
+      case clang::BO_LE:
+      case clang::BO_EQ:
+      case clang::BO_NE:
+        // Even though it is type-correct in C/C++ to replace the result of a
+        // relational operator with one of its arguments, this will typically be
+        // uninteresting and almost certainly subsumed by other mutations.
+        return false;
+      default:
+        break;
+    }
+  }
+
+  if (binary_operator_->isAssignmentOp()) {
+    // It would be possible to replace an assignment operator, such as `x = y`,
+    // with its LHS. However, since the most common case is for such expressions
+    // to appear as top-level statements, with the LHS being a side effect-free
+    // expression, this replacement will almost always be equivalent to removing
+    // the enclosing statement.
+    return false;
+  }
+  return true;
+}
+
+bool MutationReplaceBinaryOperator::Arg1RequiresLambda(
+    const clang::ASTContext& ast_context, const Options& options) const {
+  return ast_context.getLangOpts().CPlusPlus &&
+         binary_operator_->getLHS()->HasSideEffects(ast_context) &&
+         ArgumentReplacementIsRelevant(options);
+}
+
+bool MutationReplaceBinaryOperator::Arg2RequiresLambda(
+    const clang::ASTContext& ast_context, const Options& options) const {
+  return ast_context.getLangOpts().CPlusPlus &&
+         (binary_operator_->isLogicalOp() ||
+          (binary_operator_->getRHS()->HasSideEffects(ast_context) &&
+           ArgumentReplacementIsRelevant(options)));
 }
 
 }  // namespace dredd

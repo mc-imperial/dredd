@@ -467,23 +467,17 @@ std::string MutationReplaceExpr::GenerateMutatorFunction(
     protobufs::MutationReplaceExpr& protobuf_message) const {
   std::stringstream new_function;
   new_function << "static " << result_type << " " << function_name << "(";
-  if (ast_context.getLangOpts().CPlusPlus &&
-      expr_->HasSideEffects(ast_context)) {
+  std::string arg_evaluated = "arg";
+  if (ArgRequiresLambda(ast_context)) {
     new_function << "std::function<" << input_type << "()>";
+    arg_evaluated += "()";
   } else {
     new_function << input_type;
   }
-  new_function << " arg, int local_mutation_id) {\n";
-
-  std::string arg_evaluated = "arg";
-  if (ast_context.getLangOpts().CPlusPlus &&
-      expr_->HasSideEffects(ast_context)) {
-    arg_evaluated += "()";
-  }
-
   if (!ast_context.getLangOpts().CPlusPlus && expr_->isLValue()) {
     arg_evaluated = "(*" + arg_evaluated + ")";
   }
+  new_function << " arg, int local_mutation_id) {\n";
 
   if (!options.GetOnlyTrackMutantCoverage() &&
       options.GetEnablednessCheckingMode() ==
@@ -569,8 +563,7 @@ void MutationReplaceExpr::ReplaceExprWithFunctionCall(
   prefix += "(";
   std::string suffix;
 
-  if (ast_context.getLangOpts().CPlusPlus &&
-      expr_->HasSideEffects(ast_context)) {
+  if (ArgRequiresLambda(ast_context)) {
     prefix.append(+"[&]() -> " + input_type + " { return " +
                   // We don't need to static cast constant expressions
                   (IsCxx11ConstantExpr(*expr_, ast_context)
@@ -912,6 +905,12 @@ bool MutationReplaceExpr::IsSubjectToImplicitCastInInitializerList(
     }
   }
   return found_implicit_cast_parent && found_initializer_list_parent;
+}
+
+bool MutationReplaceExpr::ArgRequiresLambda(
+    const clang::ASTContext& ast_context) const {
+  return ast_context.getLangOpts().CPlusPlus &&
+         expr_->HasSideEffects(ast_context);
 }
 
 }  // namespace dredd
