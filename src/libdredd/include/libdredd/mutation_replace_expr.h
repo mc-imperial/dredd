@@ -160,6 +160,9 @@ class MutationReplaceExpr : public Mutation {
                                    bool show_ast_node_types,
                                    clang::Rewriter& rewriter) const;
 
+  [[nodiscard]] bool ArgRequiresLambda(
+      const clang::ASTContext& ast_context) const;
+
   static void AddMutationInstance(
       int mutation_id_base, protobufs::MutationReplaceExprAction action,
       int& mutation_id_offset,

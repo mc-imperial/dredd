@@ -71,6 +71,9 @@ class MutationReplaceUnaryOperator : public Mutation {
       std::stringstream& new_function, int& mutation_id_offset,
       protobufs::MutationReplaceUnaryOperator& protobuf_message) const;
 
+  [[nodiscard]] bool ArgRequiresLambda(
+      const clang::ASTContext& ast_context) const;
+
   static void AddMutationInstance(
       int mutation_id_base,
       protobufs::MutationReplaceUnaryOperatorAction action,
