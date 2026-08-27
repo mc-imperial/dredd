@@ -118,6 +118,9 @@ class MutationReplaceBinaryOperator : public Mutation {
       std::unordered_set<std::string>& dredd_declarations,
       protobufs::MutationReplaceBinaryOperator& protobuf_message) const;
 
+  [[nodiscard]] bool ArgumentReplacementIsRelevant(
+      const Options& options) const;
+
   static void AddMutationInstance(
       int mutation_id_base,
       protobufs::MutationReplaceBinaryOperatorAction action,

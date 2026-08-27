@@ -263,29 +263,7 @@ void MutationReplaceBinaryOperator::GenerateArgumentReplacement(
     int mutation_id_base, std::stringstream& new_function,
     int& mutation_id_offset,
     protobufs::MutationReplaceBinaryOperator& protobuf_message) const {
-  if (options.GetOptimisations().GetDoNotReplaceRelationalWithArgument()) {
-    switch (binary_operator_->getOpcode()) {
-      case clang::BO_GT:
-      case clang::BO_GE:
-      case clang::BO_LT:
-      case clang::BO_LE:
-      case clang::BO_EQ:
-      case clang::BO_NE:
-        // Even though it is type-correct in C/C++ to replace the result of a
-        // relational operator with one of its arguments, this will typically be
-        // uninteresting and almost certainly subsumed by other mutations.
-        return;
-      default:
-        break;
-    }
-  }
-
-  if (binary_operator_->isAssignmentOp()) {
-    // It would be possible to replace an assignment operator, such as `x = y`,
-    // with its LHS. However, since the most common case is for such expressions
-    // to appear as top-level statements, with the LHS being a side effect-free
-    // expression, this replacement will almost always be equivalent to removing
-    // the enclosing statement.
+  if (!ArgumentReplacementIsRelevant(options)) {
     return;
   }
   // LHS
@@ -1159,6 +1137,36 @@ bool MutationReplaceBinaryOperator::IsRedundantReplacementForArithmeticOperator(
   }
 
   return false;
+}
+
+bool MutationReplaceBinaryOperator::ArgumentReplacementIsRelevant(
+    const Options& options) const {
+  if (options.GetOptimisations().GetDoNotReplaceRelationalWithArgument()) {
+    switch (binary_operator_->getOpcode()) {
+      case clang::BO_GT:
+      case clang::BO_GE:
+      case clang::BO_LT:
+      case clang::BO_LE:
+      case clang::BO_EQ:
+      case clang::BO_NE:
+        // Even though it is type-correct in C/C++ to replace the result of a
+        // relational operator with one of its arguments, this will typically be
+        // uninteresting and almost certainly subsumed by other mutations.
+        return false;
+      default:
+        break;
+    }
+  }
+
+  if (binary_operator_->isAssignmentOp()) {
+    // It would be possible to replace an assignment operator, such as `x = y`,
+    // with its LHS. However, since the most common case is for such expressions
+    // to appear as top-level statements, with the LHS being a side effect-free
+    // expression, this replacement will almost always be equivalent to removing
+    // the enclosing statement.
+    return false;
+  }
+  return true;
 }
 
 }  // namespace dredd
