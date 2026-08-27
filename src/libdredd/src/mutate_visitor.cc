@@ -232,16 +232,18 @@ bool MutateVisitor::TraverseStmt(clang::Stmt* stmt) {
     return true;
   }
 
-  // Do not mutate under 'sizeof' or 'alignof', as this is guaranteed to yield
-  // equivalent mutants. Note that we *do* want to mutate above these
-  // expressions, hence we ignore children of such expressions, rather than
-  // ignoring the expressions themselves.
-  if (const auto* unary_expr_or_type_trait_parent =
-          GetFirstParentOfType<clang::UnaryExprOrTypeTraitExpr>(
-              *stmt, compiler_instance_->getASTContext())) {
-    const auto kind = unary_expr_or_type_trait_parent->getKind();
-    if (kind == clang::UETT_SizeOf || kind == clang::UETT_AlignOf) {
-      return true;
+  if (options_->GetOptimisations().DoNotMutateSizeofAndAlignof()) {
+    // Do not mutate under 'sizeof' or 'alignof', as this is guaranteed to yield
+    // equivalent mutants. Note that we *do* want to mutate above these
+    // expressions, hence we ignore children of such expressions, rather than
+    // ignoring the expressions themselves.
+    if (const auto* unary_expr_or_type_trait_parent =
+            GetFirstParentOfType<clang::UnaryExprOrTypeTraitExpr>(
+                *stmt, compiler_instance_->getASTContext())) {
+      const auto kind = unary_expr_or_type_trait_parent->getKind();
+      if (kind == clang::UETT_SizeOf || kind == clang::UETT_AlignOf) {
+        return true;
+      }
     }
   }
 
