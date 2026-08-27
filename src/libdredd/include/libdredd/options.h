@@ -28,7 +28,8 @@ class Options {
         bool leverage_constant_folding,
         bool do_not_replace_relational_with_argument,
         bool avoid_redundant_operator_mutation_combinations,
-        bool avoid_self_inverse_unary_operator_removal)
+        bool avoid_self_inverse_unary_operator_removal,
+        bool do_not_mutate_sizeof_and_alignof)
         : do_not_remove_side_effect_free_expression_statements_(
               do_not_remove_side_effect_free_expression_statements),
           do_not_remove_compound_statements_(do_not_remove_compound_statements),
@@ -40,14 +41,16 @@ class Options {
           avoid_redundant_operator_mutation_combinations_(
               avoid_redundant_operator_mutation_combinations),
           avoid_self_inverse_unary_operator_removal_(
-              avoid_self_inverse_unary_operator_removal) {}
+              avoid_self_inverse_unary_operator_removal),
+          do_not_mutate_sizeof_and_alignof_(do_not_mutate_sizeof_and_alignof) {}
 
     static Optimisations AllEnabled() {
-      return Optimisations(true, true, true, true, true, true, true);
+      return Optimisations(true, true, true, true, true, true, true, true);
     }
 
     static Optimisations AllDisabled() {
-      return Optimisations(false, false, false, false, false, false, false);
+      return Optimisations(false, false, false, false, false, false, false,
+                           false);
     }
 
     [[nodiscard]] bool GetDoNotRemoveSideEffectFreeExpressionStatements()
@@ -79,6 +82,10 @@ class Options {
       return avoid_self_inverse_unary_operator_removal_;
     }
 
+    [[nodiscard]] bool DoNotMutateSizeofAndAlignof() const {
+      return do_not_mutate_sizeof_and_alignof_;
+    }
+
    private:
     bool do_not_remove_side_effect_free_expression_statements_;
     bool do_not_remove_compound_statements_;
@@ -87,6 +94,7 @@ class Options {
     bool do_not_replace_relational_with_argument_;
     bool avoid_redundant_operator_mutation_combinations_;
     bool avoid_self_inverse_unary_operator_removal_;
+    bool do_not_mutate_sizeof_and_alignof_;
   };
 
   enum class EnablednessCheckingMode {

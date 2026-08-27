@@ -89,6 +89,10 @@ static llvm::cl::opt<bool> opt_avoid_self_inverse_unary_operator_removal(
     "opt-avoid-self-inverse-unary-operator-removal", llvm::cl::desc("TODO"),
     llvm::cl::cat(mutate_category));
 // NOLINTNEXTLINE
+static llvm::cl::opt<bool> opt_do_not_mutate_sizeof_and_alignof(
+    "opt-do-not-mutate-sizeof-and-alignof", llvm::cl::desc("TODO"),
+    llvm::cl::cat(mutate_category));
+// NOLINTNEXTLINE
 static llvm::cl::opt<bool> only_track_mutant_coverage(
     "only-track-mutant-coverage",
     llvm::cl::desc("Add instrumentation to track which mutants are covered by "
@@ -146,6 +150,7 @@ namespace {
 [[nodiscard]] dredd::Options::Optimisations GetOptimisations() {
   bool specific_optimisations_enabled = false;
   bool enabled_do_not_remove_side_effect_free_expression_statements = false;
+  bool enabled_do_not_mutate_sizeof_and_alignof = false;
   if (opt_do_not_remove_side_effect_free_expression_statements) {
     specific_optimisations_enabled = true;
     enabled_do_not_remove_side_effect_free_expression_statements = true;
@@ -180,6 +185,10 @@ namespace {
     specific_optimisations_enabled = true;
     enabled_avoid_self_inverse_unary_operator_removal = true;
   }
+  if (opt_do_not_mutate_sizeof_and_alignof) {
+    specific_optimisations_enabled = true;
+    enabled_do_not_mutate_sizeof_and_alignof = true;
+  }
   if (specific_optimisations_enabled) {
     return dredd::Options::Optimisations(
         enabled_do_not_remove_side_effect_free_expression_statements,
@@ -188,7 +197,8 @@ namespace {
         enabled_leverage_constant_folding,
         enabled_do_not_replace_relational_with_argument,
         enabled_avoid_redundant_operator_mutation_combinations,
-        enabled_avoid_self_inverse_unary_operator_removal);
+        enabled_avoid_self_inverse_unary_operator_removal,
+        enabled_do_not_mutate_sizeof_and_alignof);
   }
   return no_mutation_opts ? dredd::Options::Optimisations::AllDisabled()
                           : dredd::Options::Optimisations::AllEnabled();
