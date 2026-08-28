@@ -186,14 +186,9 @@ std::string MutationReplaceUnaryOperator::GenerateMutatorFunction(
     const Options& options, int& mutation_id,
     protobufs::MutationReplaceUnaryOperator& protobuf_message) const {
   std::stringstream new_function;
-  new_function << "static " << result_type << " " << function_name << "(";
+  new_function << "static " << result_type << " " << function_name << "("
+               << input_type;
   std::string arg_evaluated = "arg";
-  if (ArgRequiresLambda(ast_context)) {
-    new_function << "std::function<" << input_type << "()>";
-    arg_evaluated += "()";
-  } else {
-    new_function << input_type;
-  }
   if (!ast_context.getLangOpts().CPlusPlus &&
       unary_operator_->isIncrementDecrementOp()) {
     arg_evaluated = "(*" + arg_evaluated + ")";
@@ -424,19 +419,6 @@ protobufs::MutationGroup MutationReplaceUnaryOperator::Apply(
   }
   prefix += "(";
   std::string suffix;
-  if (ArgRequiresLambda(ast_context)) {
-    prefix.append(
-        "[&]() -> " + input_type + " { return " +
-        // We don't need to static cast constant expressions
-        (IsCxx11ConstantExpr(*unary_operator_->getSubExpr(), ast_context)
-             ? ""
-             : "static_cast<" + input_type + ">("));
-    suffix.append(
-        IsCxx11ConstantExpr(*unary_operator_->getSubExpr(), ast_context) ? ""
-                                                                         : ")");
-    suffix.append("; }");
-  }
-
   if (!ast_context.getLangOpts().CPlusPlus &&
       unary_operator_->isIncrementDecrementOp()) {
     prefix.append("&(");
@@ -532,12 +514,6 @@ bool MutationReplaceUnaryOperator::IsOperatorSelfInverse() const {
     default:
       return false;
   }
-}
-
-bool MutationReplaceUnaryOperator::ArgRequiresLambda(
-    const clang::ASTContext& ast_context) const {
-  return ast_context.getLangOpts().CPlusPlus &&
-         unary_operator_->HasSideEffects(ast_context);
 }
 
 }  // namespace dredd

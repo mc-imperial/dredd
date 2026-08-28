@@ -67,14 +67,14 @@ static int& __dredd_replace_binary_operator_Assign_arg1_int_arg2_int(int& arg1, 
   return arg1 = arg2;
 }
 
-static int __dredd_replace_unary_operator_PostInc_int(std::function<int&()> arg, int local_mutation_id) {
-  if (!__dredd_some_mutation_enabled) return arg()++;
-  if (__dredd_enabled_mutation(local_mutation_id + 0)) return arg()--;
-  if (__dredd_enabled_mutation(local_mutation_id + 1)) return ~arg();
-  if (__dredd_enabled_mutation(local_mutation_id + 2)) return -arg();
-  if (__dredd_enabled_mutation(local_mutation_id + 3)) return !arg();
-  if (__dredd_enabled_mutation(local_mutation_id + 4)) return arg();
-  return arg()++;
+static int __dredd_replace_unary_operator_PostInc_int(int& arg, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return arg++;
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return arg--;
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return ~arg;
+  if (__dredd_enabled_mutation(local_mutation_id + 2)) return -arg;
+  if (__dredd_enabled_mutation(local_mutation_id + 3)) return !arg;
+  if (__dredd_enabled_mutation(local_mutation_id + 4)) return arg;
+  return arg++;
 }
 
 static int __dredd_replace_expr_int(std::function<int()> arg, int local_mutation_id) {
@@ -101,5 +101,5 @@ static int __dredd_replace_expr_int(int arg, int local_mutation_id) {
 
 int main() {
   int x = __dredd_replace_expr_int(0, 0);
-  if (!__dredd_enabled_mutation(45)) { __dredd_replace_binary_operator_Assign_arg1_int_arg2_int(x , __dredd_replace_expr_int([&]() -> int { return static_cast<int>((__dredd_replace_expr_int([&]() -> int { return static_cast<int>((__dredd_replace_expr_int(0, 6), __dredd_replace_expr_int([&]() -> int { return static_cast<int>(__dredd_replace_unary_operator_PostInc_int([&]() -> int& { return static_cast<int&>(x); }, 12)); }, 17))); }, 23))); }, 29), 35); }
+  if (!__dredd_enabled_mutation(45)) { __dredd_replace_binary_operator_Assign_arg1_int_arg2_int(x , __dredd_replace_expr_int([&]() -> int { return static_cast<int>((__dredd_replace_expr_int([&]() -> int { return static_cast<int>((__dredd_replace_expr_int(0, 6), __dredd_replace_expr_int([&]() -> int { return static_cast<int>(__dredd_replace_unary_operator_PostInc_int(x, 12)); }, 17))); }, 23))); }, 29), 35); }
 }
