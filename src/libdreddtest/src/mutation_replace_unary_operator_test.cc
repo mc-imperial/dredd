@@ -178,15 +178,15 @@ TEST(MutationReplaceUnaryOperatorTest, MutateIncrement) {
   const std::string expected_opt =
       R"(void foo() {
   double x = 5.364;
-  __dredd_replace_unary_operator_PreInc_double([&]() -> double& { return static_cast<double&>(x); }, 0);
+  __dredd_replace_unary_operator_PreInc_double(x, 0);
 }
 )";
   const std::string expected_dredd_declaration_opt =
-      R"(static double& __dredd_replace_unary_operator_PreInc_double(std::function<double&()> arg, int local_mutation_id) {
-  if (!__dredd_some_mutation_enabled) return ++arg();
-  if (__dredd_enabled_mutation(local_mutation_id + 0)) return --arg();
-  if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg();
-  return ++arg();
+      R"(static double& __dredd_replace_unary_operator_PreInc_double(double& arg, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return ++arg;
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return --arg;
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg;
+  return ++arg;
 }
 
 )";
@@ -200,15 +200,15 @@ TEST(MutationReplaceUnaryOperatorTest, MutateIncrement) {
   const std::string expected_no_opt =
       R"(void foo() {
   double x = 5.364;
-  __dredd_replace_unary_operator_PreInc_double([&]() -> double& { return static_cast<double&>(x); }, 0);
+  __dredd_replace_unary_operator_PreInc_double(x, 0);
 }
 )";
   const std::string expected_dredd_declaration_noopt =
-      R"(static double& __dredd_replace_unary_operator_PreInc_double(std::function<double&()> arg, int local_mutation_id) {
-  if (!__dredd_some_mutation_enabled) return ++arg();
-  if (__dredd_enabled_mutation(local_mutation_id + 0)) return --arg();
-  if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg();
-  return ++arg();
+      R"(static double& __dredd_replace_unary_operator_PreInc_double(double& arg, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return ++arg;
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return --arg;
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg;
+  return ++arg;
 }
 
 )";
@@ -229,18 +229,18 @@ TEST(MutationReplaceUnaryOperatorTest, MutateDecrement) {
   const std::string expected_opt =
       R"(void foo() {
   int x = 2;
-  __dredd_replace_unary_operator_PostDec_int([&]() -> int& { return static_cast<int&>(x); }, 0);
+  __dredd_replace_unary_operator_PostDec_int(x, 0);
 }
 )";
   const std::string expected_dredd_declaration_opt =
-      R"(static int __dredd_replace_unary_operator_PostDec_int(std::function<int&()> arg, int local_mutation_id) {
-  if (!__dredd_some_mutation_enabled) return arg()--;
-  if (__dredd_enabled_mutation(local_mutation_id + 0)) return arg()++;
-  if (__dredd_enabled_mutation(local_mutation_id + 1)) return ~arg();
-  if (__dredd_enabled_mutation(local_mutation_id + 2)) return -arg();
-  if (__dredd_enabled_mutation(local_mutation_id + 3)) return !arg();
-  if (__dredd_enabled_mutation(local_mutation_id + 4)) return arg();
-  return arg()--;
+      R"(static int __dredd_replace_unary_operator_PostDec_int(int& arg, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return arg--;
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return arg++;
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return ~arg;
+  if (__dredd_enabled_mutation(local_mutation_id + 2)) return -arg;
+  if (__dredd_enabled_mutation(local_mutation_id + 3)) return !arg;
+  if (__dredd_enabled_mutation(local_mutation_id + 4)) return arg;
+  return arg--;
 }
 
 )";
@@ -254,18 +254,18 @@ TEST(MutationReplaceUnaryOperatorTest, MutateDecrement) {
   const std::string expected_no_opt =
       R"(void foo() {
   int x = 2;
-  __dredd_replace_unary_operator_PostDec_int([&]() -> int& { return static_cast<int&>(x); }, 0);
+  __dredd_replace_unary_operator_PostDec_int(x, 0);
 }
 )";
   const std::string expected_dredd_declaration_no_opt =
-      R"(static int __dredd_replace_unary_operator_PostDec_int(std::function<int&()> arg, int local_mutation_id) {
-  if (!__dredd_some_mutation_enabled) return arg()--;
-  if (__dredd_enabled_mutation(local_mutation_id + 0)) return arg()++;
-  if (__dredd_enabled_mutation(local_mutation_id + 1)) return ~arg();
-  if (__dredd_enabled_mutation(local_mutation_id + 2)) return -arg();
-  if (__dredd_enabled_mutation(local_mutation_id + 3)) return !arg();
-  if (__dredd_enabled_mutation(local_mutation_id + 4)) return arg();
-  return arg()--;
+      R"(static int __dredd_replace_unary_operator_PostDec_int(int& arg, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return arg--;
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return arg++;
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return ~arg;
+  if (__dredd_enabled_mutation(local_mutation_id + 2)) return -arg;
+  if (__dredd_enabled_mutation(local_mutation_id + 3)) return !arg;
+  if (__dredd_enabled_mutation(local_mutation_id + 4)) return arg;
+  return arg--;
 }
 
 )";
@@ -286,15 +286,15 @@ TEST(MutationReplaceUnaryOperatorTest, MutateDecrementAssign) {
   const std::string expected_opt =
       R"(void foo() {
   int x = 5;
-  __dredd_replace_unary_operator_PreDec_int([&]() -> int& { return static_cast<int&>(x); }, 0) = 2;
+  __dredd_replace_unary_operator_PreDec_int(x, 0) = 2;
 }
 )";
   const std::string expected_dredd_declaration_opt =
-      R"(static int& __dredd_replace_unary_operator_PreDec_int(std::function<int&()> arg, int local_mutation_id) {
-  if (!__dredd_some_mutation_enabled) return --arg();
-  if (__dredd_enabled_mutation(local_mutation_id + 0)) return ++arg();
-  if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg();
-  return --arg();
+      R"(static int& __dredd_replace_unary_operator_PreDec_int(int& arg, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return --arg;
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return ++arg;
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg;
+  return --arg;
 }
 
 )";
@@ -308,15 +308,15 @@ TEST(MutationReplaceUnaryOperatorTest, MutateDecrementAssign) {
   const std::string expected_no_opt =
       R"(void foo() {
   int x = 5;
-  __dredd_replace_unary_operator_PreDec_int([&]() -> int& { return static_cast<int&>(x); }, 0) = 2;
+  __dredd_replace_unary_operator_PreDec_int(x, 0) = 2;
 }
 )";
   const std::string expected_dredd_declaration_no_opt =
-      R"(static int& __dredd_replace_unary_operator_PreDec_int(std::function<int&()> arg, int local_mutation_id) {
-  if (!__dredd_some_mutation_enabled) return --arg();
-  if (__dredd_enabled_mutation(local_mutation_id + 0)) return ++arg();
-  if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg();
-  return --arg();
+      R"(static int& __dredd_replace_unary_operator_PreDec_int(int& arg, int local_mutation_id) {
+  if (!__dredd_some_mutation_enabled) return --arg;
+  if (__dredd_enabled_mutation(local_mutation_id + 0)) return ++arg;
+  if (__dredd_enabled_mutation(local_mutation_id + 1)) return arg;
+  return --arg;
 }
 
 )";
