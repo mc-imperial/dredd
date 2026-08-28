@@ -90,7 +90,8 @@ static llvm::cl::opt<bool> opt_avoid_self_inverse_unary_operator_removal(
     llvm::cl::cat(mutate_category));
 // NOLINTNEXTLINE
 static llvm::cl::opt<bool> opt_do_not_mutate_sizeof_and_alignof(
-    "opt-do-not-mutate-sizeof-and-alignof", llvm::cl::desc("TODO"),
+    "opt-do-not-mutate-sizeof-and-alignof",
+    llvm::cl::desc("Do not mutate arguments to 'sizeof' and 'alignof'"),
     llvm::cl::cat(mutate_category));
 // NOLINTNEXTLINE
 static llvm::cl::opt<bool> only_track_mutant_coverage(
