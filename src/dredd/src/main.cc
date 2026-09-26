@@ -63,30 +63,50 @@ static llvm::cl::opt<bool>
     // NOLINTNEXTLINE
     opt_do_not_remove_side_effect_free_expression_statements(
         "opt-do-not-remove-side-effect-free-expression-statements",
-        llvm::cl::desc("TODO"), llvm::cl::cat(mutate_category));
+        llvm::cl::desc(
+            "Do not remove a statement if it is a side-effect-free expression"),
+        llvm::cl::cat(mutate_category));
 // NOLINTNEXTLINE
 static llvm::cl::opt<bool> opt_do_not_remove_compound_statements(
-    "opt-do-not-remove-compound-statements", llvm::cl::desc("TODO"),
+    "opt-do-not-remove-compound-statements",
+    llvm::cl::desc(
+        "Do not delete an entire compound statement, because each "
+        "sub-statement will be considered for individual deletetion"),
     llvm::cl::cat(mutate_category));
 // NOLINTNEXTLINE
 static llvm::cl::opt<bool> opt_do_not_mutate_casts_cleanups_and_parentheses(
-    "opt-do-not-mutate-casts-cleanups-and-parentheses", llvm::cl::desc("TODO"),
+    "opt-do-not-mutate-casts-cleanups-and-parentheses",
+    llvm::cl::desc("Skip over internal AST nodes for casts and cleanups, as "
+                   "well as parentheses, because it is already sufficient to "
+                   "mutate the expressions that such nodes target"),
     llvm::cl::cat(mutate_category));
 // NOLINTNEXTLINE
 static llvm::cl::opt<bool> opt_leverage_constant_folding(
-    "opt-leverage-constant-folding", llvm::cl::desc("TODO"),
+    "opt-leverage-constant-folding",
+    llvm::cl::desc("Use constant folding to identify and avoid redundant and "
+                   "equivalent mutants - e.g., do not replace an expression "
+                   "with 0 if constant folding shows that it is already 0"),
     llvm::cl::cat(mutate_category));
 // NOLINTNEXTLINE
 static llvm::cl::opt<bool> opt_do_not_replace_relational_with_argument(
-    "opt-do-not-replace-relational-with-argument", llvm::cl::desc("TODO"),
+    "opt-do-not-replace-relational-with-argument",
+    llvm::cl::desc(
+        "Do not replace a relational expression with one of its arguments; "
+        "even though this is type-correct in C/C++, it will typically be "
+        "uninteresting and almost certainly subsumed by other mutations"),
     llvm::cl::cat(mutate_category));
 // NOLINTNEXTLINE
 static llvm::cl::opt<bool> opt_avoid_redundant_operator_mutation_combinations(
     "opt-avoid-redundant-operator-mutation-combinations",
-    llvm::cl::desc("TODO"), llvm::cl::cat(mutate_category));
+    llvm::cl::desc("Avoid redundant mutation operator combinations as proposed "
+                   "by Just and Schweiggert (STVR 2014)"),
+    llvm::cl::cat(mutate_category));
 // NOLINTNEXTLINE
 static llvm::cl::opt<bool> opt_avoid_self_inverse_unary_operator_removal(
-    "opt-avoid-self-inverse-unary-operator-removal", llvm::cl::desc("TODO"),
+    "opt-avoid-self-inverse-unary-operator-removal",
+    llvm::cl::desc("Do not replace a self-inverse binary operator with its "
+                   "argument, because this is equivalent to applying the "
+                   "binary operator again (which will also be considered)"),
     llvm::cl::cat(mutate_category));
 // NOLINTNEXTLINE
 static llvm::cl::opt<bool> opt_do_not_mutate_sizeof_and_alignof(
