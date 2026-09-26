@@ -1065,7 +1065,8 @@ bool MutationReplaceBinaryOperator::
         clang::BinaryOperatorKind operator_kind) const {
   switch (binary_operator_->getOpcode()) {
     // From
-    // https://people.cs.umass.edu/~rjust/publ/non_redundant_mutants_jstvr_2014.pdf:
+    // https://doi.org/10.1002/stvr.1561
+    // https://homes.cs.washington.edu/~rjust/publ/non_redundant_mutants_jstvr_2014.pdf:
     // For boolean operators, only a subset of replacements are non-redundant.
     case clang::BO_LAnd:
       return operator_kind != clang::BO_EQ;

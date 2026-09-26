@@ -736,7 +736,8 @@ void MutationReplaceExpr::AddMutationInstance(
 bool MutationReplaceExpr::IsBooleanReplacementRedundantForBinaryOperator(
     bool replacement_value, const clang::ASTContext& ast_context) const {
   // From
-  // https://people.cs.umass.edu/~rjust/publ/non_redundant_mutants_jstvr_2014.pdf:
+  // https://doi.org/10.1002/stvr.1561
+  // https://homes.cs.washington.edu/~rjust/publ/non_redundant_mutants_jstvr_2014.pdf:
   // Various cases of replacing a boolean-valued binary operator with a boolean
   // constant are redundant.
   if (const auto* binary_operator =
@@ -839,7 +840,8 @@ bool MutationReplaceExpr::IsRedundantOperatorInsertionBeforeBinaryExpr(
           llvm::dyn_cast<clang::BinaryOperator>(expr_)) {
     switch (binary_operator->getOpcode()) {
         // From
-        // https://people.cs.umass.edu/~rjust/publ/non_redundant_mutants_jstvr_2014.pdf:
+        // https://doi.org/10.1002/stvr.1561
+        // https://homes.cs.washington.edu/~rjust/publ/non_redundant_mutants_jstvr_2014.pdf:
         // Unary operator insertion is redundant when the expression being
         // mutated is a && b or a || b.
       case clang::BO_LAnd:
@@ -873,7 +875,8 @@ bool MutationReplaceExpr::
     IsRedundantOperatorInsertionBeforeLogicalOperatorArgument(
         clang::ASTContext& ast_context) const {
   // From
-  // https://people.cs.umass.edu/~rjust/publ/non_redundant_mutants_jstvr_2014.pdf:
+  // https://doi.org/10.1002/stvr.1561
+  // https://homes.cs.washington.edu/~rjust/publ/non_redundant_mutants_jstvr_2014.pdf:
   // Do not replace `a && b` with `!a && b` or `a && !b`, similar for logical
   // or.
 
