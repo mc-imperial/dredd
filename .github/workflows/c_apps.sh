@@ -28,7 +28,24 @@ case "$(uname)" in
   NINJA_OS="linux"
 
   sudo apt update
-  sudo apt install -y llvm-17 clang-17 clang-tidy-17 clang-format-17 libclang-17-dev
+  sudo apt install -y \
+       llvm-17 \
+       clang-17 \
+       clang-tidy-17 \
+       clang-format-17 \
+       libclang-17-dev \
+       llvm-20-dev \
+       libllvm20 \
+       meson-1.7 \
+       ninja-build \
+       jq \
+       glslang-tools \
+       pkg-config \
+       bison \
+       flex \
+       libdrm-dev
+  python3 -m pip install --upgrade mako packaging pyyaml
+  python3 -c "import packaging, mako, yaml; print('py deps ok')"
 
   # Free up some space
   df -h
@@ -43,15 +60,6 @@ case "$(uname)" in
   exit 1
   ;;
 esac
-
-export PATH="${HOME}/bin:$PATH"
-mkdir -p "${HOME}/bin"
-pushd "${HOME}/bin"
-  # Install ninja.
-  curl -fsSL -o ninja-build.zip "https://github.com/ninja-build/ninja/releases/download/v1.11.0/ninja-${NINJA_OS}.zip"
-  unzip ninja-build.zip
-  ls
-popd
 
 DREDD_ROOT=$(pwd)
 
@@ -69,6 +77,39 @@ cmake --build build --config Debug
 
 # Check that dredd works on some projects
 DREDD_EXECUTABLE="${DREDD_ROOT}/build/src/dredd/dredd"
+
+
+echo "Mesa"
+date
+
+git clone --depth 1 --branch mesa-26.1.4 https://gitlab.freedesktop.org/mesa/mesa.git mesa-26.1.4
+
+pushd mesa-26.1.4
+
+LLVM_CONFIG=llvm-config-20 CC=clang-17 CXX=clang++-17 meson setup builddir/ \
+  -Dbuildtype=debugoptimized \
+  -Dvulkan-drivers=swrast \
+  -Dgallium-drivers=llvmpipe \
+  -Dplatforms= \
+  -Dllvm=enabled \
+  -Dshared-llvm=enabled \
+  -Dopengl=false \
+  -Dgles1=disabled \
+  -Dgles2=disabled \
+  -Dglx=disabled \
+  -Degl=disabled \
+  -Dgbm=disabled \
+  -Dc_args='-Wno-error=return-type'
+meson compile -C builddir/
+pushd builddir
+"${DREDD_EXECUTABLE}" \
+    --mutation-info-file=mutation-info.json \
+    -p . \
+    $(jq -r '.[].file' compile_commands.json | grep -E '/(compiler/(spirv|nir)/[^/]+\.(c|cc|cpp))' | sort)
+popd
+meson compile -C builddir/
+popd
+
 
 echo "Curl"
 date

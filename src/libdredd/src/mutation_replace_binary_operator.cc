@@ -86,7 +86,8 @@ bool MutationReplaceBinaryOperator::IsValidReplacementOperator(
 }
 
 std::string MutationReplaceBinaryOperator::GetFunctionName(
-    bool optimise_mutations, clang::ASTContext& ast_context) const {
+    const Options::Optimisations& optimisations,
+    clang::ASTContext& ast_context) const {
   std::string result = "__dredd_replace_binary_operator_";
 
   // A string corresponding to the binary operator forms part of the name of the
@@ -216,7 +217,8 @@ std::string MutationReplaceBinaryOperator::GetFunctionName(
   // important to change the name of the mutator function to avoid clashes
   // with other versions that apply to the same operator and types but cannot
   // be optimised.
-  if (optimise_mutations && !binary_operator_->isAssignmentOp()) {
+  if (optimisations.GetLeverageConstantFolding() &&
+      !binary_operator_->isAssignmentOp()) {
     if (MutationReplaceExpr::ExprIsEquivalentToInt(*binary_operator_->getRHS(),
                                                    0, ast_context) ||
         MutationReplaceExpr::ExprIsEquivalentToFloat(
@@ -257,39 +259,17 @@ std::string MutationReplaceBinaryOperator::GetFunctionName(
 
 void MutationReplaceBinaryOperator::GenerateArgumentReplacement(
     const std::string& arg1_evaluated, const std::string& arg2_evaluated,
-    const clang::ASTContext& ast_context, bool optimise_mutations,
-    bool only_track_mutant_coverage, int mutation_id_base,
-    std::stringstream& new_function, int& mutation_id_offset,
+    const clang::ASTContext& ast_context, const Options& options,
+    int mutation_id_base, std::stringstream& new_function,
+    int& mutation_id_offset,
     protobufs::MutationReplaceBinaryOperator& protobuf_message) const {
-  if (optimise_mutations) {
-    switch (binary_operator_->getOpcode()) {
-      case clang::BO_GT:
-      case clang::BO_GE:
-      case clang::BO_LT:
-      case clang::BO_LE:
-      case clang::BO_EQ:
-      case clang::BO_NE:
-        // Even though it is type-correct in C/C++ to replace the result of a
-        // relational operator with one of its arguments, this will typically be
-        // uninteresting and almost certainly subsumed by other mutations.
-        return;
-      default:
-        break;
-    }
-  }
-
-  if (binary_operator_->isAssignmentOp()) {
-    // It would be possible to replace an assignment operator, such as `x = y`,
-    // with its LHS. However, since the most common case is for such expressions
-    // to appear as top-level statements, with the LHS being a side effect-free
-    // expression, this replacement will almost always be equivalent to removing
-    // the enclosing statement.
+  if (!ArgumentReplacementIsRelevant(options)) {
     return;
   }
   // LHS
   // These cases are equivalent to constant replacement with the respective
   // constants
-  if (!optimise_mutations ||
+  if (!options.GetOptimisations().GetLeverageConstantFolding() ||
       !(MutationReplaceExpr::ExprIsEquivalentToInt(*binary_operator_->getLHS(),
                                                    0, ast_context) ||
         MutationReplaceExpr::ExprIsEquivalentToFloat(
@@ -302,7 +282,7 @@ void MutationReplaceBinaryOperator::GenerateArgumentReplacement(
                                                    -1, ast_context) ||
         MutationReplaceExpr::ExprIsEquivalentToFloat(
             *binary_operator_->getLHS(), -1.0, ast_context))) {
-    if (!only_track_mutant_coverage) {
+    if (!options.GetOnlyTrackMutantCoverage()) {
       new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
                    << mutation_id_offset << ")) return " << arg1_evaluated
                    << ";\n";
@@ -316,7 +296,7 @@ void MutationReplaceBinaryOperator::GenerateArgumentReplacement(
   // RHS
   // These cases are equivalent to constant replacement with the respective
   // constants
-  if (!optimise_mutations ||
+  if (!options.GetOptimisations().GetLeverageConstantFolding() ||
       !(MutationReplaceExpr::ExprIsEquivalentToInt(*binary_operator_->getRHS(),
                                                    0, ast_context) ||
         MutationReplaceExpr::ExprIsEquivalentToFloat(
@@ -329,7 +309,7 @@ void MutationReplaceBinaryOperator::GenerateArgumentReplacement(
                                                    -1, ast_context) ||
         MutationReplaceExpr::ExprIsEquivalentToFloat(
             *binary_operator_->getRHS(), -1.0, ast_context))) {
-    if (!only_track_mutant_coverage) {
+    if (!options.GetOnlyTrackMutantCoverage()) {
       new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
                    << mutation_id_offset << ")) return " << arg2_evaluated
                    << ";\n";
@@ -343,13 +323,13 @@ void MutationReplaceBinaryOperator::GenerateArgumentReplacement(
 
 void MutationReplaceBinaryOperator::GenerateBinaryOperatorReplacement(
     const std::string& arg1_evaluated, const std::string& arg2_evaluated,
-    const clang::ASTContext& ast_context, bool optimise_mutations,
-    bool only_track_mutant_coverage, int mutation_id_base,
-    std::stringstream& new_function, int& mutation_id_offset,
+    const clang::ASTContext& ast_context, const Options& options,
+    int mutation_id_base, std::stringstream& new_function,
+    int& mutation_id_offset,
     protobufs::MutationReplaceBinaryOperator& protobuf_message) const {
   for (auto operator_kind :
-       GetReplacementOperators(optimise_mutations, ast_context)) {
-    if (!only_track_mutant_coverage) {
+       GetReplacementOperators(options.GetOptimisations(), ast_context)) {
+    if (!options.GetOnlyTrackMutantCoverage()) {
       new_function << "  if (__dredd_enabled_mutation(local_mutation_id + "
                    << mutation_id_offset << ")) return " << arg1_evaluated
                    << " "
@@ -363,7 +343,8 @@ void MutationReplaceBinaryOperator::GenerateBinaryOperatorReplacement(
 
 std::vector<clang::BinaryOperatorKind>
 MutationReplaceBinaryOperator::GetReplacementOperators(
-    bool optimise_mutations, const clang::ASTContext& ast_context) const {
+    const Options::Optimisations& optimisations,
+    const clang::ASTContext& ast_context) const {
   const std::vector<clang::BinaryOperatorKind> kArithmeticOperators = {
       clang::BinaryOperatorKind::BO_Add, clang::BinaryOperatorKind::BO_Div,
       clang::BinaryOperatorKind::BO_Mul, clang::BinaryOperatorKind::BO_Rem,
@@ -426,7 +407,7 @@ MutationReplaceBinaryOperator::GetReplacementOperators(
   for (auto operator_kind : candidate_operator_kinds) {
     if (operator_kind == binary_operator_->getOpcode() ||
         !IsValidReplacementOperator(operator_kind) ||
-        (optimise_mutations &&
+        (optimisations.GetAvoidRedundantOperatorMutationCombinations() &&
          IsRedundantReplacementOperator(operator_kind, ast_context))) {
       continue;
     }
@@ -438,50 +419,38 @@ MutationReplaceBinaryOperator::GetReplacementOperators(
 std::string MutationReplaceBinaryOperator::GenerateMutatorFunction(
     clang::ASTContext& ast_context, const std::string& function_name,
     const std::string& result_type, const std::string& lhs_type,
-    const std::string& rhs_type, bool optimise_mutations,
-    bool only_track_mutant_coverage, int& mutation_id,
+    const std::string& rhs_type, const Options& options, int& mutation_id,
     protobufs::MutationReplaceBinaryOperator& protobuf_message) const {
   std::stringstream new_function;
   new_function << "static " << result_type << " " << function_name << "(";
 
-  if (ast_context.getLangOpts().CPlusPlus &&
-      binary_operator_->getLHS()->HasSideEffects(ast_context)) {
+  std::string arg1_evaluated("arg1");
+  if (Arg1RequiresLambda(ast_context, options)) {
     new_function << "std::function<" << lhs_type << "()>";
+    arg1_evaluated += "()";
   } else {
     new_function << lhs_type;
-  }
-  new_function << " arg1, ";
-
-  if (ast_context.getLangOpts().CPlusPlus &&
-      (binary_operator_->isLogicalOp() ||
-       binary_operator_->getRHS()->HasSideEffects(ast_context))) {
-    new_function << "std::function<" << rhs_type << "()>";
-  } else {
-    new_function << rhs_type;
-  }
-
-  new_function << " arg2, int local_mutation_id) {\n";
-
-  int mutation_id_offset = 0;
-
-  std::string arg1_evaluated("arg1");
-  if (ast_context.getLangOpts().CPlusPlus &&
-      binary_operator_->getLHS()->HasSideEffects(ast_context)) {
-    arg1_evaluated += "()";
   }
   if (!ast_context.getLangOpts().CPlusPlus &&
       binary_operator_->isAssignmentOp()) {
     arg1_evaluated = "(*" + arg1_evaluated + ")";
   }
+  new_function << " arg1, ";
 
   std::string arg2_evaluated("arg2");
-  if (ast_context.getLangOpts().CPlusPlus &&
-      (binary_operator_->isLogicalOp() ||
-       binary_operator_->getRHS()->HasSideEffects(ast_context))) {
+  if (Arg2RequiresLambda(ast_context, options)) {
+    new_function << "std::function<" << rhs_type << "()>";
     arg2_evaluated += "()";
+  } else {
+    new_function << rhs_type;
   }
+  new_function << " arg2, int local_mutation_id) {\n";
 
-  if (!only_track_mutant_coverage) {
+  int mutation_id_offset = 0;
+
+  if (!options.GetOnlyTrackMutantCoverage() &&
+      options.GetEnablednessCheckingMode() ==
+          Options::EnablednessCheckingMode::STANDARD) {
     // Quickly apply the original operator if no mutant is enabled (which will
     // be the common case).
     new_function << "  if (!__dredd_some_mutation_enabled) return "
@@ -492,16 +461,14 @@ std::string MutationReplaceBinaryOperator::GenerateMutatorFunction(
                  << " " << arg2_evaluated << ";\n";
   }
 
-  GenerateBinaryOperatorReplacement(
-      arg1_evaluated, arg2_evaluated, ast_context, optimise_mutations,
-      only_track_mutant_coverage, mutation_id, new_function, mutation_id_offset,
-      protobuf_message);
+  GenerateBinaryOperatorReplacement(arg1_evaluated, arg2_evaluated, ast_context,
+                                    options, mutation_id, new_function,
+                                    mutation_id_offset, protobuf_message);
   GenerateArgumentReplacement(arg1_evaluated, arg2_evaluated, ast_context,
-                              optimise_mutations, only_track_mutant_coverage,
-                              mutation_id, new_function, mutation_id_offset,
-                              protobuf_message);
+                              options, mutation_id, new_function,
+                              mutation_id_offset, protobuf_message);
 
-  if (only_track_mutant_coverage) {
+  if (options.GetOnlyTrackMutantCoverage()) {
     new_function << "  __dredd_record_covered_mutants(local_mutation_id, " +
                         std::to_string(mutation_id_offset) + ");\n";
   }
@@ -555,7 +522,7 @@ protobufs::MutationGroup MutationReplaceBinaryOperator::Apply(
   *inner_result.mutable_rhs_snippet() = info_for_rhs_.GetSnippet();
 
   const std::string new_function_name =
-      GetFunctionName(options.GetOptimiseMutations(), ast_context);
+      GetFunctionName(options.GetOptimisations(), ast_context);
   std::string result_type = binary_operator_->getType()
                                 ->getAs<clang::BuiltinType>()
                                 ->getName(ast_context.getPrintingPolicy())
@@ -576,10 +543,10 @@ protobufs::MutationGroup MutationReplaceBinaryOperator::Apply(
     // details). Rather than scattering this special treatment throughout the
     // logic for handling other operators, it is simpler to handle this case
     // separately.
-    HandleCLogicalOperator(
-        preprocessor, new_function_name, result_type, lhs_type, rhs_type,
-        options.GetOnlyTrackMutantCoverage(), first_mutation_id_in_file,
-        mutation_id, rewriter, dredd_declarations, inner_result);
+    HandleCLogicalOperator(preprocessor, new_function_name, result_type,
+                           lhs_type, rhs_type, options,
+                           first_mutation_id_in_file, mutation_id, rewriter,
+                           dredd_declarations, inner_result);
 
     protobufs::MutationGroup result;
     *result.mutable_replace_binary_operator() = inner_result;
@@ -606,12 +573,11 @@ protobufs::MutationGroup MutationReplaceBinaryOperator::Apply(
   }
 
   ReplaceOperator(lhs_type, rhs_type, new_function_name, ast_context,
-                  preprocessor, first_mutation_id_in_file, mutation_id,
-                  options.GetShowAstNodeTypes(), rewriter);
+                  preprocessor, first_mutation_id_in_file, mutation_id, options,
+                  rewriter);
 
   const std::string new_function = GenerateMutatorFunction(
-      ast_context, new_function_name, result_type, lhs_type, rhs_type,
-      options.GetOptimiseMutations(), options.GetOnlyTrackMutantCoverage(),
+      ast_context, new_function_name, result_type, lhs_type, rhs_type, options,
       mutation_id, inner_result);
   assert(!new_function.empty() && "Unsupported opcode.");
 
@@ -628,8 +594,7 @@ void MutationReplaceBinaryOperator::ReplaceOperator(
     const std::string& lhs_type, const std::string& rhs_type,
     const std::string& new_function_name, clang::ASTContext& ast_context,
     const clang::Preprocessor& preprocessor, int first_mutation_id_in_file,
-    int mutation_id, bool show_ast_node_types,
-    clang::Rewriter& rewriter) const {
+    int mutation_id, const Options& options, clang::Rewriter& rewriter) const {
   const clang::SourceRange lhs_source_range_in_main_file =
       GetSourceRangeInMainFile(preprocessor, *binary_operator_->getLHS());
   assert(lhs_source_range_in_main_file.isValid() && "Invalid source range.");
@@ -664,7 +629,7 @@ void MutationReplaceBinaryOperator::ReplaceOperator(
   // These record the text that should be inserted before and after the LHS and
   // RHS operands.
   std::string lhs_prefix = new_function_name;
-  if (show_ast_node_types) {
+  if (options.GetShowAstNodeTypes()) {
     std::stringstream stringstream;
     stringstream << binary_operator_;
     lhs_prefix += "/*" + std::string(binary_operator_->getStmtClassName()) +
@@ -676,13 +641,12 @@ void MutationReplaceBinaryOperator::ReplaceOperator(
   std::string rhs_suffix;
 
   if (ast_context.getLangOpts().CPlusPlus) {
-    if (binary_operator_->getLHS()->HasSideEffects(ast_context)) {
+    if (Arg1RequiresLambda(ast_context, options)) {
       lhs_prefix.append("[&]() -> " + lhs_type + " { return static_cast<" +
                         lhs_type + ">(");
       lhs_suffix.append("); }");
     }
-    if (binary_operator_->isLogicalOp() ||
-        binary_operator_->getRHS()->HasSideEffects(ast_context)) {
+    if (Arg2RequiresLambda(ast_context, options)) {
       rhs_prefix.append("[&]() -> " + rhs_type + " { return static_cast<" +
                         rhs_type + ">(");
       rhs_suffix.append("); }");
@@ -715,8 +679,8 @@ void MutationReplaceBinaryOperator::HandleCLogicalOperator(
     const clang::Preprocessor& preprocessor,
     const std::string& new_function_prefix, const std::string& result_type,
     const std::string& lhs_type, const std::string& rhs_type,
-    bool only_track_mutant_coverage, int first_mutation_id_in_file,
-    int& mutation_id, clang::Rewriter& rewriter,
+    const Options& options, int first_mutation_id_in_file, int& mutation_id,
+    clang::Rewriter& rewriter,
     std::unordered_set<std::string>& dredd_declarations,
     protobufs::MutationReplaceBinaryOperator& protobuf_message) const {
   // A C logical operator "op" is handled by transforming:
@@ -740,7 +704,7 @@ void MutationReplaceBinaryOperator::HandleCLogicalOperator(
   //   and "rhs" functions do nothing, and the "lhs" function return either 0 or
   //   1, depending on the operator.
 
-  if (!only_track_mutant_coverage) {
+  if (!options.GetOnlyTrackMutantCoverage()) {
     {
       // Rewrite the LHS of the expression, and introduce the associated
       // function.
@@ -756,7 +720,10 @@ void MutationReplaceBinaryOperator::HandleCLogicalOperator(
       std::stringstream lhs_function;
       lhs_function << "static " << lhs_type << " " << lhs_function_name << "("
                    << lhs_type << " arg, int local_mutation_id) {\n";
-      lhs_function << "  if (!__dredd_some_mutation_enabled) return arg;\n";
+      if (options.GetEnablednessCheckingMode() ==
+          Options::EnablednessCheckingMode::STANDARD) {
+        lhs_function << "  if (!__dredd_some_mutation_enabled) return arg;\n";
+      }
       // Case 0: swapping the operator.
       // Replacing && with || is achieved by negating the whole expression, and
       // negating each of the LHS and RHS. The same holds for replacing || with
@@ -798,7 +765,10 @@ void MutationReplaceBinaryOperator::HandleCLogicalOperator(
       std::stringstream rhs_function;
       rhs_function << "static " << rhs_type << " " << rhs_function_name << "("
                    << rhs_type << " arg, int local_mutation_id) {\n";
-      rhs_function << "  if (!__dredd_some_mutation_enabled) return arg;\n";
+      if (options.GetEnablednessCheckingMode() ==
+          Options::EnablednessCheckingMode::STANDARD) {
+        rhs_function << "  if (!__dredd_some_mutation_enabled) return arg;\n";
+      }
       // Case 0: swapping the operator.
       // Replacing && with || is achieved by negating the whole expression, and
       // negating each of the LHS and RHS. The same holds for replacing || with
@@ -841,7 +811,7 @@ void MutationReplaceBinaryOperator::HandleCLogicalOperator(
     std::stringstream outer_function;
     outer_function << "static " << result_type << " " << outer_function_name
                    << "(" << result_type << " arg, int local_mutation_id) {\n";
-    if (!only_track_mutant_coverage) {
+    if (!options.GetOnlyTrackMutantCoverage()) {
       // Case 0: swapping the operator.
       // Replacing && with || is achieved by negating the whole expression, and
       // negating each of the LHS and RHS. The same holds for replacing || with
@@ -854,7 +824,7 @@ void MutationReplaceBinaryOperator::HandleCLogicalOperator(
 
       // Case 2: replacing with RHS: no action is needed here.
     }
-    if (only_track_mutant_coverage) {
+    if (options.GetOnlyTrackMutantCoverage()) {
       // The fact that three mutants are covered is recorded, to reflect
       // swapping the operator, replacing with LHS and replacing with RHS.
       // It does not matter in which function this is recorded, but intuitively
@@ -1058,7 +1028,8 @@ bool MutationReplaceBinaryOperator::
         clang::BinaryOperatorKind operator_kind) const {
   switch (binary_operator_->getOpcode()) {
     // From
-    // https://people.cs.umass.edu/~rjust/publ/non_redundant_mutants_jstvr_2014.pdf:
+    // https://doi.org/10.1002/stvr.1561
+    // https://homes.cs.washington.edu/~rjust/publ/non_redundant_mutants_jstvr_2014.pdf:
     // For boolean operators, only a subset of replacements are non-redundant.
     case clang::BO_LAnd:
       return operator_kind != clang::BO_EQ;
@@ -1152,6 +1123,51 @@ bool MutationReplaceBinaryOperator::IsRedundantReplacementForArithmeticOperator(
   }
 
   return false;
+}
+
+bool MutationReplaceBinaryOperator::ArgumentReplacementIsRelevant(
+    const Options& options) const {
+  if (options.GetOptimisations().GetDoNotReplaceRelationalWithArgument()) {
+    switch (binary_operator_->getOpcode()) {
+      case clang::BO_GT:
+      case clang::BO_GE:
+      case clang::BO_LT:
+      case clang::BO_LE:
+      case clang::BO_EQ:
+      case clang::BO_NE:
+        // Even though it is type-correct in C/C++ to replace the result of a
+        // relational operator with one of its arguments, this will typically be
+        // uninteresting and almost certainly subsumed by other mutations.
+        return false;
+      default:
+        break;
+    }
+  }
+
+  if (binary_operator_->isAssignmentOp()) {
+    // It would be possible to replace an assignment operator, such as `x = y`,
+    // with its LHS. However, since the most common case is for such expressions
+    // to appear as top-level statements, with the LHS being a side effect-free
+    // expression, this replacement will almost always be equivalent to removing
+    // the enclosing statement.
+    return false;
+  }
+  return true;
+}
+
+bool MutationReplaceBinaryOperator::Arg1RequiresLambda(
+    const clang::ASTContext& ast_context, const Options& options) const {
+  return ast_context.getLangOpts().CPlusPlus &&
+         binary_operator_->getLHS()->HasSideEffects(ast_context) &&
+         ArgumentReplacementIsRelevant(options);
+}
+
+bool MutationReplaceBinaryOperator::Arg2RequiresLambda(
+    const clang::ASTContext& ast_context, const Options& options) const {
+  return ast_context.getLangOpts().CPlusPlus &&
+         (binary_operator_->isLogicalOp() ||
+          (binary_operator_->getRHS()->HasSideEffects(ast_context) &&
+           ArgumentReplacementIsRelevant(options)));
 }
 
 }  // namespace dredd

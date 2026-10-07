@@ -232,16 +232,18 @@ bool MutateVisitor::TraverseStmt(clang::Stmt* stmt) {
     return true;
   }
 
-  // Do not mutate under 'sizeof' or 'alignof', as this is guaranteed to yield
-  // equivalent mutants. Note that we *do* want to mutate above these
-  // expressions, hence we ignore children of such expressions, rather than
-  // ignoring the expressions themselves.
-  if (const auto* unary_expr_or_type_trait_parent =
-          GetFirstParentOfType<clang::UnaryExprOrTypeTraitExpr>(
-              *stmt, compiler_instance_->getASTContext())) {
-    const auto kind = unary_expr_or_type_trait_parent->getKind();
-    if (kind == clang::UETT_SizeOf || kind == clang::UETT_AlignOf) {
-      return true;
+  if (options_->GetOptimisations().DoNotMutateSizeofAndAlignof()) {
+    // Do not mutate under 'sizeof' or 'alignof', as this is guaranteed to yield
+    // equivalent mutants. Note that we *do* want to mutate above these
+    // expressions, hence we ignore children of such expressions, rather than
+    // ignoring the expressions themselves.
+    if (const auto* unary_expr_or_type_trait_parent =
+            GetFirstParentOfType<clang::UnaryExprOrTypeTraitExpr>(
+                *stmt, compiler_instance_->getASTContext())) {
+      const auto kind = unary_expr_or_type_trait_parent->getKind();
+      if (kind == clang::UETT_SizeOf || kind == clang::UETT_AlignOf) {
+        return true;
+      }
     }
   }
 
@@ -395,7 +397,7 @@ void MutateVisitor::HandleUnaryOperator(clang::UnaryOperator* unary_operator) {
     return;
   }
 
-  if (options_->GetOptimiseMutations()) {
+  if (options_->GetOptimisations().GetLeverageConstantFolding()) {
     if (unary_operator->getOpcode() == clang::UO_Minus &&
         (MutationReplaceExpr::ExprIsEquivalentToInt(
              *unary_operator->getSubExpr(), 1,
@@ -469,7 +471,7 @@ void MutateVisitor::HandleBinaryOperator(
 
   // There is no useful way to mutate this expression since it is equivalent to
   // replacement with a constant in all cases.
-  if (options_->GetOptimiseMutations() &&
+  if (options_->GetOptimisations().GetLeverageConstantFolding() &&
       (MutationReplaceExpr::ExprIsEquivalentToInt(
            *binary_operator->getLHS(), 0,
            compiler_instance_->getASTContext()) ||
@@ -536,7 +538,8 @@ void MutateVisitor::HandleExpr(clang::Expr* expr) {
     }
   }
 
-  if (options_->GetOptimiseMutations()) {
+  if (options_->GetOptimisations()
+          .GetDoNotMutateCastsCleanupsAndParentheses()) {
     // If an expression is the direct child of a cast expression, do not mutate
     // it unless the cast is an l-value to r-value cast. In an l-value to
     // r-value cast it is worth mutating the expression before and after casting
@@ -583,13 +586,15 @@ void MutateVisitor::HandleExpr(clang::Expr* expr) {
 }
 
 bool MutateVisitor::VisitExpr(clang::Expr* expr) {
-  if (options_->GetOptimiseMutations() &&
+  if (options_->GetOptimisations()
+          .GetDoNotMutateCastsCleanupsAndParentheses() &&
       llvm::dyn_cast<clang::ParenExpr>(expr) != nullptr) {
     // There is no value in mutating a parentheses expression.
     return true;
   }
 
-  if (options_->GetOptimiseMutations() &&
+  if (options_->GetOptimisations()
+          .GetDoNotMutateCastsCleanupsAndParentheses() &&
       llvm::dyn_cast<clang::ExprWithCleanups>(expr) != nullptr) {
     // This special AST node represents an expression with certain associated
     // cleanup actions. The node's subexpression captures the actual syntactic
@@ -675,7 +680,8 @@ bool MutateVisitor::TraverseCompoundStmt(clang::CompoundStmt* compound_stmt) {
     while (auto* switch_case = llvm::dyn_cast<clang::SwitchCase>(target_stmt)) {
       target_stmt = switch_case->getSubStmt();
     }
-    if (options_->GetOptimiseMutations()) {
+    if (options_->GetOptimisations()
+            .GetDoNotRemoveSideEffectFreeExpressionStatements()) {
       if (const auto* expr = llvm::dyn_cast<clang::Expr>(target_stmt)) {
         if (!expr->HasSideEffects(compiler_instance_->getASTContext())) {
           // There is no point mutating a side-effect free expression statement.
@@ -703,7 +709,7 @@ bool MutateVisitor::TraverseCompoundStmt(clang::CompoundStmt* compound_stmt) {
       // without risking breaking compilation.
       continue;
     }
-    if (options_->GetOptimiseMutations() &&
+    if (options_->GetOptimisations().GetDoNotRemoveCompoundStatements() &&
         llvm::dyn_cast<clang::CompoundStmt>(target_stmt) != nullptr) {
       // It is likely redundant to remove a compound statement since each of its
       // sub-statements will be considered for removal anyway.

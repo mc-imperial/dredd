@@ -59,6 +59,60 @@ static llvm::cl::OptionCategory mutate_category("mutate options");
 static llvm::cl::opt<bool> no_mutation_opts(
     "no-mutation-opts", llvm::cl::desc("Disable Dredd's optimisations"),
     llvm::cl::cat(mutate_category));
+static llvm::cl::opt<bool>
+    // NOLINTNEXTLINE
+    opt_do_not_remove_side_effect_free_expression_statements(
+        "opt-do-not-remove-side-effect-free-expression-statements",
+        llvm::cl::desc(
+            "Do not remove a statement if it is a side-effect-free expression"),
+        llvm::cl::cat(mutate_category));
+// NOLINTNEXTLINE
+static llvm::cl::opt<bool> opt_do_not_remove_compound_statements(
+    "opt-do-not-remove-compound-statements",
+    llvm::cl::desc(
+        "Do not delete an entire compound statement, because each "
+        "sub-statement will be considered for individual deletetion"),
+    llvm::cl::cat(mutate_category));
+// NOLINTNEXTLINE
+static llvm::cl::opt<bool> opt_do_not_mutate_casts_cleanups_and_parentheses(
+    "opt-do-not-mutate-casts-cleanups-and-parentheses",
+    llvm::cl::desc("Skip over internal AST nodes for casts and cleanups, as "
+                   "well as parentheses, because it is already sufficient to "
+                   "mutate the expressions that such nodes target"),
+    llvm::cl::cat(mutate_category));
+// NOLINTNEXTLINE
+static llvm::cl::opt<bool> opt_leverage_constant_folding(
+    "opt-leverage-constant-folding",
+    llvm::cl::desc("Use constant folding to identify and avoid redundant and "
+                   "equivalent mutants - e.g., do not replace an expression "
+                   "with 0 if constant folding shows that it is already 0"),
+    llvm::cl::cat(mutate_category));
+// NOLINTNEXTLINE
+static llvm::cl::opt<bool> opt_do_not_replace_relational_with_argument(
+    "opt-do-not-replace-relational-with-argument",
+    llvm::cl::desc(
+        "Do not replace a relational expression with one of its arguments; "
+        "even though this is type-correct in C/C++, it will typically be "
+        "uninteresting and almost certainly subsumed by other mutations"),
+    llvm::cl::cat(mutate_category));
+// NOLINTNEXTLINE
+static llvm::cl::opt<bool> opt_avoid_redundant_operator_mutation_combinations(
+    "opt-avoid-redundant-operator-mutation-combinations",
+    llvm::cl::desc("Avoid redundant mutation operator combinations as proposed "
+                   "by Just and Schweiggert (STVR 2014)"),
+    llvm::cl::cat(mutate_category));
+// NOLINTNEXTLINE
+static llvm::cl::opt<bool> opt_avoid_self_inverse_unary_operator_removal(
+    "opt-avoid-self-inverse-unary-operator-removal",
+    llvm::cl::desc("Do not replace a self-inverse binary operator with its "
+                   "argument, because this is equivalent to applying the "
+                   "binary operator again (which will also be considered)"),
+    llvm::cl::cat(mutate_category));
+// NOLINTNEXTLINE
+static llvm::cl::opt<bool> opt_do_not_mutate_sizeof_and_alignof(
+    "opt-do-not-mutate-sizeof-and-alignof",
+    llvm::cl::desc("Do not mutate arguments to 'sizeof' and 'alignof'"),
+    llvm::cl::cat(mutate_category));
 // NOLINTNEXTLINE
 static llvm::cl::opt<bool> only_track_mutant_coverage(
     "only-track-mutant-coverage",
@@ -83,6 +137,27 @@ static llvm::cl::opt<bool> show_ast_node_types(
         "In the mutated code, show (via comments) the type of each AST node to "
         "which mutation has been applied; useful for debugging"),
     llvm::cl::cat(mutate_category));
+static llvm::cl::opt<dredd::Options::EnablednessCheckingMode>
+    // NOLINTNEXTLINE
+    enabledness_checking_mode(
+        "enabledness-checking-mode",
+        llvm::cl::desc("Method for enabledness checking (default: STANDARD)"),
+        llvm::cl::init(dredd::Options::EnablednessCheckingMode::STANDARD),
+        llvm::cl::values(
+            clEnumValN(dredd::Options::EnablednessCheckingMode::STANDARD,
+                       "STANDARD", "Default and recommended"),
+            clEnumValN(
+                dredd::Options::EnablednessCheckingMode::NO_SOME_ENABLED_CHECK,
+                "NO_SOME_ENABLED_CHECK",
+                "Disable pre-testing of whether any mutants are enabled "
+                "for a file"),
+            clEnumValN(
+                dredd::Options::EnablednessCheckingMode::
+                    ALWAYS_READ_ENVIRONMENT_VARIABLE,
+                "ALWAYS_READ_ENVIRONMENT_VARIABLE",
+                "Read the environment variable on every mutant enabledness "
+                "check; for evaluation purposes only")),
+        llvm::cl::cat(mutate_category));
 // NOLINTNEXTLINE
 static llvm::cl::opt<bool> allow_reset_of_tracking_counters(
     "allow-reset-of-tracking-counters",
@@ -96,6 +171,65 @@ static llvm::cl::opt<bool> allow_reset_of_tracking_counters(
 #elif defined(_MSC_VER)
 #pragma warning(pop)
 #endif
+
+namespace {
+[[nodiscard]] dredd::Options::Optimisations GetOptimisations() {
+  bool specific_optimisations_enabled = false;
+  bool enabled_do_not_remove_side_effect_free_expression_statements = false;
+  bool enabled_do_not_mutate_sizeof_and_alignof = false;
+  if (opt_do_not_remove_side_effect_free_expression_statements) {
+    specific_optimisations_enabled = true;
+    enabled_do_not_remove_side_effect_free_expression_statements = true;
+  }
+  bool enabled_do_not_remove_compound_statements = false;
+  if (opt_do_not_remove_compound_statements) {
+    specific_optimisations_enabled = true;
+    enabled_do_not_remove_compound_statements = true;
+  }
+  bool enabled_do_not_mutate_casts_cleanups_and_parentheses = false;
+  if (opt_do_not_mutate_casts_cleanups_and_parentheses) {
+    specific_optimisations_enabled = true;
+    enabled_do_not_mutate_casts_cleanups_and_parentheses = true;
+  }
+  bool enabled_leverage_constant_folding = false;
+  if (opt_leverage_constant_folding) {
+    specific_optimisations_enabled = true;
+    enabled_leverage_constant_folding = true;
+  }
+  bool enabled_do_not_replace_relational_with_argument = false;
+  if (opt_do_not_replace_relational_with_argument) {
+    specific_optimisations_enabled = true;
+    enabled_do_not_replace_relational_with_argument = true;
+  }
+  bool enabled_avoid_redundant_operator_mutation_combinations = false;
+  if (opt_avoid_redundant_operator_mutation_combinations) {
+    specific_optimisations_enabled = true;
+    enabled_avoid_redundant_operator_mutation_combinations = true;
+  }
+  bool enabled_avoid_self_inverse_unary_operator_removal = false;
+  if (opt_avoid_self_inverse_unary_operator_removal) {
+    specific_optimisations_enabled = true;
+    enabled_avoid_self_inverse_unary_operator_removal = true;
+  }
+  if (opt_do_not_mutate_sizeof_and_alignof) {
+    specific_optimisations_enabled = true;
+    enabled_do_not_mutate_sizeof_and_alignof = true;
+  }
+  if (specific_optimisations_enabled) {
+    return dredd::Options::Optimisations(
+        enabled_do_not_remove_side_effect_free_expression_statements,
+        enabled_do_not_remove_compound_statements,
+        enabled_do_not_mutate_casts_cleanups_and_parentheses,
+        enabled_leverage_constant_folding,
+        enabled_do_not_replace_relational_with_argument,
+        enabled_avoid_redundant_operator_mutation_combinations,
+        enabled_avoid_self_inverse_unary_operator_removal,
+        enabled_do_not_mutate_sizeof_and_alignof);
+  }
+  return no_mutation_opts ? dredd::Options::Optimisations::AllDisabled()
+                          : dredd::Options::Optimisations::AllEnabled();
+}
+}  // namespace
 
 int main(int argc, const char** argv) {
   llvm::sys::PrintStackTraceOnErrorSignal(argv[0]);
@@ -155,8 +289,9 @@ int main(int argc, const char** argv) {
   }
 
   const dredd::Options dredd_options(
-      !no_mutation_opts, dump_asts, only_track_mutant_coverage,
-      show_ast_node_types, allow_reset_of_tracking_counters);
+      GetOptimisations(), dump_asts, only_track_mutant_coverage,
+      show_ast_node_types, enabledness_checking_mode,
+      allow_reset_of_tracking_counters);
 
   const std::unique_ptr<clang::tooling::FrontendActionFactory> factory =
       dredd::NewMutateFrontendActionFactory(dredd_options, mutation_id, file_id,
